@@ -10,6 +10,7 @@ use crate::legendre::recurrence_scratch_len;
 use crate::legendre::{
     LegendreOperation, LegendreStrategy, SPIN1_FAST_MIN_LMAX, ScalarLegendreTable, ShtScalar,
     fill_spin2_factors, measured_table_break_even_calls, select_scalar_legendre_strategy,
+    sin_cos_from_f64,
 };
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
@@ -31,6 +32,53 @@ use std::sync::OnceLock;
 pub struct LegendreReuseEstimate {
     coefficient_to_map_calls: Option<usize>,
     map_to_coefficient_calls: Option<usize>,
+}
+
+/// Plan-invariant f64 scalar latitude values used by recurrence kernels.
+///
+/// Keeping these alongside the immutable grid avoids repeating trigonometric
+/// conversion and polar-cutoff calculations for every transform call. The
+/// execution workspace still owns mutable copies for its recurrence APIs.
+pub(crate) struct ScalarLatitudeGeometry<T: ShtScalar> {
+    pub(crate) theta_sin: Vec<T>,
+    pub(crate) theta_cos: Vec<T>,
+    pub(crate) ring_order_limits: Vec<usize>,
+}
+
+impl<T: ShtScalar> ScalarLatitudeGeometry<T> {
+    fn new(theta: &[f64], lmax: usize) -> Result<Self, ShtError> {
+        let mut theta_sin = Vec::new();
+        theta_sin
+            .try_reserve_exact(theta.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "scalar latitude sine cache",
+            })?;
+        let mut theta_cos = Vec::new();
+        theta_cos
+            .try_reserve_exact(theta.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "scalar latitude cosine cache",
+            })?;
+        let mut ring_order_limits = Vec::new();
+        ring_order_limits
+            .try_reserve_exact(theta.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "scalar latitude order-limit cache",
+            })?;
+
+        for &angle in theta {
+            let (sine, cosine) = sin_cos_from_f64::<T>(angle);
+            theta_sin.push(sine);
+            theta_cos.push(cosine);
+            ring_order_limits.push(T::polar_order_limit(lmax, 0, sine, cosine));
+        }
+
+        Ok(Self {
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+        })
+    }
 }
 
 impl LegendreReuseEstimate {
@@ -90,6 +138,8 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) grid: GridSpec,
     pub(crate) harmonics: HarmonicSpec,
     pub(crate) cc_resampling: Option<CCResamplingPlan<T>>,
+    pub(crate) scalar_latitude_geometry: Option<ScalarLatitudeGeometry<T>>,
+    pub(crate) prepared_scalar_latitude_geometry: Option<ScalarLatitudeGeometry<T>>,
     pub(crate) fft: RealFftPlan<T>,
     pub(crate) sectoral_norms: Vec<T>,
     pub(crate) sample_count: usize,
@@ -212,11 +262,27 @@ impl<T: ShtScalar> ShtPlan<T> {
             ),
             crate::grid::GridKind::GaussLegendre => None,
         };
+        let (scalar_latitude_geometry, prepared_scalar_latitude_geometry) = if harmonics.spin() == 0
+            && T::supports_paired_scalar()
+        {
+            let grid_geometry = Some(ScalarLatitudeGeometry::new(grid.theta(), harmonics.lmax())?);
+            let prepared_geometry = cc_resampling
+                .as_ref()
+                .map(|resampling| {
+                    ScalarLatitudeGeometry::new(resampling.prepared_theta(), harmonics.lmax())
+                })
+                .transpose()?;
+            (grid_geometry, prepared_geometry)
+        } else {
+            (None, None)
+        };
 
         Ok(Self {
             grid,
             harmonics,
             cc_resampling,
+            scalar_latitude_geometry,
+            prepared_scalar_latitude_geometry,
             fft,
             sectoral_norms,
             sample_count,

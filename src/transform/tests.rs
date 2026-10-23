@@ -36,6 +36,68 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
     .unwrap()
 }
 
+#[test]
+fn f64_scalar_plan_caches_exact_grid_and_prepared_latitude_geometry() {
+    let lmax = 31;
+    let nphi = 65;
+    let assert_geometry = |geometry: &crate::plan::ScalarLatitudeGeometry<f64>, theta: &[f64]| {
+        assert_eq!(geometry.theta_sin.len(), theta.len());
+        assert_eq!(geometry.theta_cos.len(), theta.len());
+        assert_eq!(geometry.ring_order_limits.len(), theta.len());
+        for (ring, &angle) in theta.iter().enumerate() {
+            let (sine, cosine) = crate::legendre::sin_cos_from_f64::<f64>(angle);
+            assert_eq!(geometry.theta_sin[ring], sine);
+            assert_eq!(geometry.theta_cos[ring], cosine);
+            assert_eq!(
+                geometry.ring_order_limits[ring],
+                <f64 as crate::legendre::ShtScalar>::polar_order_limit(lmax, 0, sine, cosine)
+            );
+        }
+    };
+
+    for (kind, ntheta) in [
+        (GridKind::GaussLegendre, lmax + 1),
+        (GridKind::ClenshawCurtis, lmax + 2),
+        (GridKind::Fejer1, lmax + 1),
+    ] {
+        let grid = GridSpec::new(kind, ntheta, nphi, 0.23).unwrap();
+        let plan = ShtPlan::new(grid.clone(), HarmonicSpec::scalar(lmax, lmax).unwrap()).unwrap();
+        assert_geometry(
+            plan.scalar_latitude_geometry
+                .as_ref()
+                .expect("f64 scalar plans cache their grid geometry"),
+            grid.theta(),
+        );
+
+        if let Some(resampling) = &plan.cc_resampling {
+            assert_geometry(
+                plan.prepared_scalar_latitude_geometry
+                    .as_ref()
+                    .expect("f64 scalar CC/F1 plans cache their prepared geometry"),
+                resampling.prepared_theta(),
+            );
+        } else {
+            assert!(plan.prepared_scalar_latitude_geometry.is_none());
+        }
+    }
+
+    let spin1_plan = ShtPlan::<f64>::new(
+        GridSpec::new(GridKind::ClenshawCurtis, lmax + 2, nphi, 0.23).unwrap(),
+        HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+    )
+    .unwrap();
+    assert!(spin1_plan.scalar_latitude_geometry.is_none());
+    assert!(spin1_plan.prepared_scalar_latitude_geometry.is_none());
+
+    let f32_plan = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::ClenshawCurtis, lmax + 2, nphi, 0.23).unwrap(),
+        HarmonicSpec::scalar(lmax, lmax).unwrap(),
+    )
+    .unwrap();
+    assert!(f32_plan.scalar_latitude_geometry.is_none());
+    assert!(f32_plan.prepared_scalar_latitude_geometry.is_none());
+}
+
 #[cfg(feature = "parallel")]
 fn median(samples: &[f64]) -> f64 {
     assert!(!samples.is_empty());

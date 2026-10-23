@@ -20,7 +20,7 @@ use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, SCALAR_ANALYSIS_PAIR_TILE_SIZE,
     ShtScalar, longitude_phase, recurrence_scratch_len, sin_cos_from_f64,
 };
-use crate::plan::ShtPlan;
+use crate::plan::{ScalarLatitudeGeometry, ShtPlan};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
@@ -1131,6 +1131,29 @@ impl<T: ShtScalar> ShtPlan<T> {
         true
     }
 
+    #[inline]
+    fn copy_scalar_latitude_geometry(
+        &self,
+        geometry: &ScalarLatitudeGeometry<T>,
+        workspace: &mut ShtWorkspace<T>,
+        include_cosine_squared: bool,
+    ) {
+        let ntheta = geometry.theta_sin.len();
+        debug_assert_eq!(geometry.theta_cos.len(), ntheta);
+        debug_assert_eq!(geometry.ring_order_limits.len(), ntheta);
+        workspace.theta_sin[..ntheta].copy_from_slice(&geometry.theta_sin);
+        workspace.theta_cos[..ntheta].copy_from_slice(&geometry.theta_cos);
+        workspace.ring_order_limits[..ntheta].copy_from_slice(&geometry.ring_order_limits);
+        if include_cosine_squared {
+            for ring in 0..ntheta {
+                workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
+                    geometry.theta_sin[ring],
+                    geometry.theta_cos[ring],
+                );
+            }
+        }
+    }
+
     /// Synthesizes one real scalar field into north-to-south row-major samples.
     ///
     /// For even longitude counts, the Nyquist order is allowed and its
@@ -1162,14 +1185,18 @@ impl<T: ShtScalar> ShtPlan<T> {
         let spectrum_len = self.fft.spectrum_len();
         let lmax = self.harmonics.lmax();
         let phi0 = self.grid.phi0();
-        for (ring, &theta) in self.grid.theta().iter().enumerate() {
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64(theta);
-            workspace.ring_order_limits[ring] = T::polar_order_limit(
-                lmax,
-                0,
-                workspace.theta_sin[ring],
-                workspace.theta_cos[ring],
-            );
+        if let Some(geometry) = &self.scalar_latitude_geometry {
+            self.copy_scalar_latitude_geometry(geometry, workspace, false);
+        } else {
+            for (ring, &theta) in self.grid.theta().iter().enumerate() {
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64(theta);
+                workspace.ring_order_limits[ring] = T::polar_order_limit(
+                    lmax,
+                    0,
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
+            }
         }
         #[cfg(all(test, feature = "parallel"))]
         {
@@ -2100,14 +2127,19 @@ impl<T: ShtScalar> ShtPlan<T> {
             .as_ref()
             .expect("CC adjoint analysis requires the prepared CC operator");
         let prepared_ntheta = resampling.prepared_ntheta();
-        for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64::<T>(theta);
-            workspace.ring_order_limits[ring] = T::polar_order_limit(
-                self.harmonics.lmax(),
-                0,
-                workspace.theta_sin[ring],
-                workspace.theta_cos[ring],
-            );
+        if let Some(geometry) = &self.prepared_scalar_latitude_geometry {
+            self.copy_scalar_latitude_geometry(geometry, workspace, false);
+        } else {
+            for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                    sin_cos_from_f64::<T>(theta);
+                workspace.ring_order_limits[ring] = T::polar_order_limit(
+                    self.harmonics.lmax(),
+                    0,
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
+            }
         }
         workspace
             .prepared_spectra
@@ -2327,19 +2359,23 @@ impl<T: ShtScalar> ShtPlan<T> {
             {
                 resampling_was_parallel = use_parallel_resampling;
             }
-            for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
-                (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
-                    sin_cos_from_f64::<T>(theta);
-                workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
-                    workspace.theta_sin[ring],
-                    workspace.theta_cos[ring],
-                );
-                workspace.ring_order_limits[ring] = T::polar_order_limit(
-                    self.harmonics.lmax(),
-                    0,
-                    workspace.theta_sin[ring],
-                    workspace.theta_cos[ring],
-                );
+            if let Some(geometry) = &self.prepared_scalar_latitude_geometry {
+                self.copy_scalar_latitude_geometry(geometry, workspace, true);
+            } else {
+                for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
+                    (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                        sin_cos_from_f64::<T>(theta);
+                    workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
+                        workspace.theta_sin[ring],
+                        workspace.theta_cos[ring],
+                    );
+                    workspace.ring_order_limits[ring] = T::polar_order_limit(
+                        self.harmonics.lmax(),
+                        0,
+                        workspace.theta_sin[ring],
+                        workspace.theta_cos[ring],
+                    );
+                }
             }
             (
                 workspace.prepared_spectra.as_slice(),
@@ -2347,19 +2383,23 @@ impl<T: ShtScalar> ShtPlan<T> {
                 None,
             )
         } else {
-            for (ring, &theta) in self.grid.theta().iter().enumerate() {
-                (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
-                    sin_cos_from_f64::<T>(theta);
-                workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
-                    workspace.theta_sin[ring],
-                    workspace.theta_cos[ring],
-                );
-                workspace.ring_order_limits[ring] = T::polar_order_limit(
-                    self.harmonics.lmax(),
-                    0,
-                    workspace.theta_sin[ring],
-                    workspace.theta_cos[ring],
-                );
+            if let Some(geometry) = &self.scalar_latitude_geometry {
+                self.copy_scalar_latitude_geometry(geometry, workspace, true);
+            } else {
+                for (ring, &theta) in self.grid.theta().iter().enumerate() {
+                    (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                        sin_cos_from_f64::<T>(theta);
+                    workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
+                        workspace.theta_sin[ring],
+                        workspace.theta_cos[ring],
+                    );
+                    workspace.ring_order_limits[ring] = T::polar_order_limit(
+                        self.harmonics.lmax(),
+                        0,
+                        workspace.theta_sin[ring],
+                        workspace.theta_cos[ring],
+                    );
+                }
             }
             (workspace.spectra.as_slice(), ntheta, ring_weights)
         };
