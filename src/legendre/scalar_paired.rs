@@ -4248,6 +4248,49 @@ impl<
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scalar analysis dispatch binds one channel's spectra to shared recurrence geometry and scratch."
+)]
+#[inline(always)]
+fn dispatch_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    range_check_was_exercised: &mut bool,
+    cos_theta: &[f64],
+    cos_theta_squared: &[f64],
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    staged_coefficients: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+) -> bool {
+    arch.dispatch(FusedScalarAnalysisPair::<false, CHECK_PAIR_GROUP_RANGE> {
+        m,
+        lmax,
+        range_check_was_exercised,
+        pair_start: 0,
+        cos_theta,
+        cos_theta_squared,
+        coefficient_a,
+        coefficient_b,
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        staged_coefficients,
+        previous,
+        current,
+        next,
+    })
+}
+
 /// Computes a normal-range scalar analysis block for two spin-conversion channels.
 ///
 /// Returns `false` when the recurrence requires binary scaling. Any staged
@@ -4338,6 +4381,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     // Keep the reflected inputs packed once, then reuse the checked single-channel
     // kernel with its smaller accumulator set for each row.
     let mut channels_succeeded = true;
+    let mut first_channel_proved_recurrence_range = false;
     for (channel, staged) in [
         (0, &mut staged_first[..coefficient_count]),
         (1, &mut staged_second[..coefficient_count]),
@@ -4356,28 +4400,49 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
             continue;
         }
         let mut range_check_was_exercised = false;
-        let recurrence_succeeded = arch.dispatch(FusedScalarAnalysisPair::<false> {
-            m,
-            lmax,
-            range_check_was_exercised: &mut range_check_was_exercised,
-            pair_start: 0,
-            cos_theta,
-            cos_theta_squared: &cos_theta_squared[..sin_theta.len()],
-            coefficient_a,
-            coefficient_b,
-            same_real: same_real[channel],
-            same_imag: same_imag[channel],
-            opposite_real: opposite_real[channel],
-            opposite_imag: opposite_imag[channel],
-            staged_coefficients: staged,
-            previous: &mut previous[..sin_theta.len()],
-            current: &mut current[..sin_theta.len()],
-            next: &mut next[..sin_theta.len()],
-        });
+        let recurrence_succeeded = if first_channel_proved_recurrence_range {
+            dispatch_fused_scalar_analysis_pair::<false>(
+                arch,
+                m,
+                lmax,
+                &mut range_check_was_exercised,
+                cos_theta,
+                &cos_theta_squared[..sin_theta.len()],
+                coefficient_a,
+                coefficient_b,
+                same_real[channel],
+                same_imag[channel],
+                opposite_real[channel],
+                opposite_imag[channel],
+                staged,
+                &mut previous[..sin_theta.len()],
+                &mut current[..sin_theta.len()],
+                &mut next[..sin_theta.len()],
+            )
+        } else {
+            dispatch_fused_scalar_analysis_pair::<{ !cfg!(rustsht_unchecked_analysis_pair_range) }>(
+                arch,
+                m,
+                lmax,
+                &mut range_check_was_exercised,
+                cos_theta,
+                &cos_theta_squared[..sin_theta.len()],
+                coefficient_a,
+                coefficient_b,
+                same_real[channel],
+                same_imag[channel],
+                opposite_real[channel],
+                opposite_imag[channel],
+                staged,
+                &mut previous[..sin_theta.len()],
+                &mut current[..sin_theta.len()],
+                &mut next[..sin_theta.len()],
+            )
+        };
         // The two-pair groups advance `previous` and `current` directly and
         // leave `next` untouched. Only the single-pair tail writes that slot.
         let pair_count = (lmax - m + 2) / 2;
-        let single_pair_tail_writes_next = pair_count.saturating_sub(1) % 2 != 0;
+        let single_pair_tail_writes_next = !pair_count.saturating_sub(1).is_multiple_of(2);
         let state_within_upper_bound = previous[..sin_theta.len()]
             .iter()
             .chain(&current[..sin_theta.len()])
@@ -4386,7 +4451,14 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
                 || next[..sin_theta.len()]
                     .iter()
                     .all(|value| value.is_finite() && value.abs() <= scalar::BIG));
-        channels_succeeded &= recurrence_succeeded && state_within_upper_bound;
+        let channel_succeeded = recurrence_succeeded && state_within_upper_bound;
+        if channel == 0 {
+            // The basis recurrence depends only on order and latitude geometry.
+            // A completed checked first-channel traversal therefore proves that
+            // the reinitialized recurrence for channel two stays in range too.
+            first_channel_proved_recurrence_range = channel_succeeded && range_check_was_exercised;
+        }
+        channels_succeeded &= channel_succeeded;
     }
     Ok(channels_succeeded)
 }
