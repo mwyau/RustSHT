@@ -1131,41 +1131,40 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         #[cfg(test)]
         SCALAR_RECURRENCE_SYNTHESIS_CALLS.fetch_add(1, Ordering::Relaxed);
-        let ordered_scalar_used =
-            if T::supports_scalar_ordered() && self.grid.kind() == GridKind::GaussLegendre {
-                if workspace.execution_capacity == 1 {
-                    let recurrence = &mut workspace.recurrence_workers[0];
-                    #[cfg(all(test, feature = "parallel"))]
-                    recurrence.record_active_worker();
-                    let mut scratch = scalar_ordered_scratch(recurrence);
-                    T::synthesize_scalar_ordered_dispatched(
-                        arch,
-                        alm,
-                        lmax,
-                        self.harmonics.mmax(),
-                        nphi,
-                        spectrum_len,
-                        phi0,
-                        &self.sectoral_norms,
-                        &workspace.theta_sin[..ntheta],
-                        &workspace.theta_cos[..ntheta],
-                        &workspace.ring_order_limits[..ntheta],
-                        &mut workspace.spectra,
-                        &mut scratch,
-                    )
-                } else {
-                    #[cfg(feature = "parallel")]
-                    {
-                        self.synthesize_scalar_ordered_parallel(alm, arch, workspace)
-                    }
-                    #[cfg(not(feature = "parallel"))]
-                    {
-                        false
-                    }
-                }
+        let ordered_scalar_used = if self.scalar_ordered_synthesis_supported() {
+            if workspace.execution_capacity == 1 {
+                let recurrence = &mut workspace.recurrence_workers[0];
+                #[cfg(all(test, feature = "parallel"))]
+                recurrence.record_active_worker();
+                let mut scratch = scalar_ordered_scratch(recurrence);
+                T::synthesize_scalar_ordered_dispatched(
+                    arch,
+                    alm,
+                    lmax,
+                    self.harmonics.mmax(),
+                    nphi,
+                    spectrum_len,
+                    phi0,
+                    &self.sectoral_norms,
+                    &workspace.theta_sin[..ntheta],
+                    &workspace.theta_cos[..ntheta],
+                    &workspace.ring_order_limits[..ntheta],
+                    &mut workspace.spectra,
+                    &mut scratch,
+                )
             } else {
-                false
-            };
+                #[cfg(feature = "parallel")]
+                {
+                    self.synthesize_scalar_ordered_parallel(alm, arch, workspace)
+                }
+                #[cfg(not(feature = "parallel"))]
+                {
+                    false
+                }
+            }
+        } else {
+            false
+        };
         if !ordered_scalar_used {
             // The ordered and table routes initialize every Fourier cell they
             // leave untouched. The general recurrence accumulates into its
@@ -3256,6 +3255,22 @@ impl<T: ShtScalar> ShtPlan<T> {
                 nphi: self.grid.nphi(),
             })
         }
+    }
+
+    /// The reflected scalar recurrence is shared by the canonical GL, CC,
+    /// and F1 grids. Keep CC/F1 on sampling-complete geometries until their
+    /// pole and half-grid cases have passed the same numerical checks;
+    /// under-resolved plans continue through the established general route.
+    fn scalar_ordered_synthesis_supported(&self) -> bool {
+        if !T::supports_scalar_ordered() {
+            return false;
+        }
+        let minimum_ntheta = match self.grid.kind() {
+            GridKind::GaussLegendre => return true,
+            GridKind::ClenshawCurtis => self.harmonics.lmax().checked_add(2),
+            GridKind::Fejer1 => self.harmonics.lmax().checked_add(1),
+        };
+        minimum_ntheta.is_some_and(|minimum| self.grid.ntheta() >= minimum)
     }
 
     pub(crate) fn check_analysis_sampling(&self) -> Result<(), ShtError> {

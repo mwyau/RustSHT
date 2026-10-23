@@ -3225,6 +3225,161 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn scalar_ordered_synthesis_matches_general_on_exact_cc_and_f1_grids() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for kind in [GridKind::ClenshawCurtis, GridKind::Fejer1] {
+        let lmax = 31;
+        let ntheta = match kind {
+            GridKind::ClenshawCurtis => lmax + 2,
+            GridKind::Fejer1 => lmax + 1,
+            GridKind::GaussLegendre => unreachable!(),
+        };
+        for mmax in [lmax, lmax / 4] {
+            let grid = GridSpec::new(kind, ntheta, 67, 0.23).unwrap();
+            let harmonics = HarmonicSpec::scalar(lmax, mmax).unwrap();
+            let plan = ShtPlan::new(grid, harmonics).unwrap();
+            assert!(plan.scalar_ordered_synthesis_supported());
+            assert!(plan.scalar_legendre_table.set(None).is_ok());
+
+            let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            for m in 0..=mmax {
+                for l in m..=lmax {
+                    let re = ((l * 7 + m * 11) % 19) as f64 - 9.0;
+                    let im = if m == 0 {
+                        0.0
+                    } else {
+                        ((l * 13 + m * 5) % 23) as f64 - 11.0
+                    };
+                    alm[plan.harmonics.index(l, m).unwrap()] =
+                        Complex64::new(re * 1.0e-6, im * 1.0e-6);
+                }
+            }
+
+            let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
+            let mut expected_map = vec![0.0; plan.sample_count];
+            let mut reference_workspace = plan.workspace().unwrap();
+            plan.prepare_workspace(&mut reference_workspace, 1).unwrap();
+            let reference_capacity = reference_workspace.execution_capacity;
+            plan.inverse_synthesis_rows(
+                &reference_spectra,
+                &mut expected_map,
+                &mut reference_workspace.fft,
+                &mut reference_workspace.fft_worker_workspaces,
+                reference_capacity,
+            )
+            .unwrap();
+
+            for (pool, threads) in [(&one_thread, 1), (&eight_threads, 8)] {
+                let mut workspace = pool.install(|| plan.workspace()).unwrap();
+                pool.install(|| plan.prepare_workspace(&mut workspace, threads))
+                    .unwrap();
+                let mut actual_map = vec![0.0; plan.sample_count];
+                pool.install(|| plan.synthesis_into(&alm, &mut actual_map, &mut workspace))
+                    .unwrap();
+
+                let spectrum_error = relative_l2_complex(&workspace.spectra, &reference_spectra);
+                assert!(
+                    spectrum_error < 4e-13,
+                    "{kind:?} T{lmax} m{mmax} q{threads}: spectrum error={spectrum_error:.3e}"
+                );
+                let map_error = relative_l2_real(&actual_map, &expected_map);
+                assert!(
+                    map_error < 5e-13,
+                    "{kind:?} T{lmax} m{mmax} q{threads}: map error={map_error:.3e}"
+                );
+            }
+
+            let mut ordered_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+            eight_threads
+                .install(|| plan.prepare_workspace(&mut ordered_workspace, 8))
+                .unwrap();
+            prepare_scalar_latitudes(&plan, &mut ordered_workspace);
+            assert!(eight_threads.install(|| {
+                plan.synthesize_scalar_ordered_parallel(
+                    &alm,
+                    pulp::Arch::new(),
+                    &mut ordered_workspace,
+                )
+            }));
+            assert!(
+                relative_l2_complex(&ordered_workspace.spectra, &reference_spectra) < 4e-13,
+                "{kind:?} T{lmax} m{mmax}: direct ordered route diverged from general recurrence"
+            );
+
+            let analytic_alm = coefficients(&plan.harmonics);
+            let analytic_expected = analytic_map(&plan, &analytic_alm);
+            for (pool, threads) in [(&one_thread, 1), (&eight_threads, 8)] {
+                let mut workspace = pool.install(|| plan.workspace()).unwrap();
+                pool.install(|| plan.prepare_workspace(&mut workspace, threads))
+                    .unwrap();
+                let mut actual_map = vec![0.0; plan.sample_count];
+                pool.install(|| {
+                    plan.synthesis_into(&analytic_alm, &mut actual_map, &mut workspace)
+                })
+                .unwrap();
+                let error = relative_l2_real(&actual_map, &analytic_expected);
+                assert!(
+                    error < 5e-13,
+                    "{kind:?} analytic T{lmax} m{mmax} q{threads}: map error={error:.3e}"
+                );
+            }
+
+            let undersampled_ntheta = ntheta - 1;
+            let undersampled = ShtPlan::<f64>::new(
+                GridSpec::new(kind, undersampled_ntheta, 67, 0.23).unwrap(),
+                HarmonicSpec::scalar(lmax, mmax).unwrap(),
+            )
+            .unwrap();
+            assert!(!undersampled.scalar_ordered_synthesis_supported());
+            let undersampled_reference = scalar_ring_group_spectra(&undersampled, &alm);
+            let mut undersampled_expected_map = vec![0.0; undersampled.sample_count];
+            let mut undersampled_reference_workspace = undersampled.workspace().unwrap();
+            undersampled
+                .prepare_workspace(&mut undersampled_reference_workspace, 1)
+                .unwrap();
+            let reference_capacity = undersampled_reference_workspace.execution_capacity;
+            undersampled
+                .inverse_synthesis_rows(
+                    &undersampled_reference,
+                    &mut undersampled_expected_map,
+                    &mut undersampled_reference_workspace.fft,
+                    &mut undersampled_reference_workspace.fft_worker_workspaces,
+                    reference_capacity,
+                )
+                .unwrap();
+            let mut undersampled_workspace = undersampled.workspace().unwrap();
+            undersampled
+                .prepare_workspace(&mut undersampled_workspace, 8)
+                .unwrap();
+            let mut undersampled_map = vec![0.0; undersampled.sample_count];
+            eight_threads
+                .install(|| {
+                    undersampled.synthesis_into(
+                        &alm,
+                        &mut undersampled_map,
+                        &mut undersampled_workspace,
+                    )
+                })
+                .unwrap();
+            assert!(
+                relative_l2_complex(&undersampled_workspace.spectra, &undersampled_reference)
+                    < 4e-13
+            );
+            assert!(relative_l2_real(&undersampled_map, &undersampled_expected_map) < 5e-13);
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn scalar_ordered_parallel_sparse_tails_reuse_odd_and_even_latitude_workspaces() {
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
