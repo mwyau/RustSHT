@@ -3889,8 +3889,7 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
-        let fused_analysis_enabled =
-            self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX && single_threaded_execution();
+        let fused_analysis_enabled = self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX;
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
         recurrence.fast_scalar_first[..scalar_coefficient_count]

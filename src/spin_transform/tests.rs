@@ -2950,75 +2950,400 @@ fn spin1_gl_paired_analysis_matches_full_latitude_recurrence() {
 }
 
 #[test]
-fn spin1_gl_paired_analysis_falls_back_for_extreme_inputs() {
+fn spin1_reflected_analysis_subranges_fall_back_for_extreme_inputs_on_all_grids() {
     let lmax = 511;
-    let ntheta = lmax + 1;
     let nphi = 2 * lmax + 3;
-    let plan = make_plan(1, lmax, lmax, ntheta, nphi);
-    let mut workspace = plan.workspace().unwrap();
-    plan.prepare_spin_latitudes(&mut workspace, 1);
-    let spectrum_len = plan.fft.spectrum_len();
-    let ring_scales: Vec<_> = plan
-        .grid
-        .ring_weights()
-        .iter()
-        .zip(&workspace.theta_sin)
-        .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
-        .collect();
-    let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
-    let u_spectra = q_spectra.clone();
-    for ring in 0..ntheta {
-        q_spectra[ring * spectrum_len] = Complex64::new(1.0e300, -1.0e300);
-    }
-    let mut paired_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
-    let mut paired_b = paired_e.clone();
-    let used = plan
-        .analyze_spin_scalar_gl_paired_order(
+    for kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+        )
+        .unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_spin_latitudes(&mut workspace, 1);
+        let spectrum_len = plan.fft.spectrum_len();
+        let ring_start = workspace
+            .theta_sin
+            .iter()
+            .position(|&sine| sine >= SPIN1_FAST_MIN_SIN_THETA)
+            .unwrap();
+        let ring_end = workspace.theta_sin[ring_start..]
+            .iter()
+            .position(|&sine| sine < SPIN1_FAST_MIN_SIN_THETA)
+            .map_or(ntheta, |offset| ring_start + offset);
+        assert_eq!(ring_start, ntheta - ring_end);
+        let ring_scales: Vec<_> = plan
+            .grid
+            .ring_weights()
+            .iter()
+            .zip(&workspace.theta_sin)
+            .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
+            .collect();
+        let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+        let u_spectra = q_spectra.clone();
+        for ring in 0..ntheta {
+            q_spectra[ring * spectrum_len] = Complex64::new(1.0e300, -1.0e300);
+        }
+        let sentinel = Complex64::new(0.25, -0.5);
+        let mut paired_e = vec![sentinel; lmax + 1];
+        let mut paired_b = paired_e.clone();
+        let used = plan
+            .analyze_spin_scalar_reflected_order(
+                &q_spectra,
+                &u_spectra,
+                spectrum_len,
+                longitude_phase::<f64>(0, plan.grid.phi0(), true),
+                &ring_scales,
+                0,
+                ring_start,
+                ring_end,
+                &workspace.theta_sin,
+                &workspace.theta_cos,
+                &workspace.ring_order_limits,
+                pulp::Arch::new(),
+                &mut paired_e,
+                Some(&mut paired_b),
+                &mut workspace.recurrence_workers[0],
+            )
+            .unwrap();
+        assert!(
+            !used,
+            "{kind:?} exceptional input should decline the fast path"
+        );
+        assert!(paired_e.iter().all(|&value| value == sentinel));
+        assert!(paired_b.iter().all(|&value| value == sentinel));
+
+        let mut fallback_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut fallback_b = fallback_e.clone();
+        plan.analyze_spin_scalar_fast_order(
             &q_spectra,
             &u_spectra,
             spectrum_len,
+            nphi as f64,
             longitude_phase::<f64>(0, plan.grid.phi0(), true),
-            &ring_scales,
+            Some(plan.grid.ring_weights()),
+            true,
             0,
+            ring_start,
+            ring_end,
             &workspace.theta_sin,
             &workspace.theta_cos,
             &workspace.ring_order_limits,
             pulp::Arch::new(),
-            &mut paired_e,
-            Some(&mut paired_b),
+            &mut fallback_e,
+            Some(&mut fallback_b[..]),
             &mut workspace.recurrence_workers[0],
         )
         .unwrap();
-    assert!(!used);
+        assert!(
+            fallback_e
+                .iter()
+                .chain(&fallback_b)
+                .all(|value| value.re.is_finite() && value.im.is_finite()),
+            "{kind:?} fallback should keep extreme finite inputs finite"
+        );
+    }
+}
 
-    let mut full_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
-    let mut full_b = full_e.clone();
-    plan.analyze_spin_scalar_fast_order(
-        &q_spectra,
-        &u_spectra,
-        spectrum_len,
-        nphi as f64,
-        longitude_phase::<f64>(0, plan.grid.phi0(), true),
-        Some(plan.grid.ring_weights()),
-        true,
-        0,
-        0,
-        ntheta,
-        &workspace.theta_sin,
-        &workspace.theta_cos,
-        &workspace.ring_order_limits,
-        pulp::Arch::new(),
-        &mut full_e,
-        Some(&mut full_b),
-        &mut workspace.recurrence_workers[0],
-    )
-    .unwrap();
-    assert!(
-        full_e
+#[test]
+fn spin1_reflected_analysis_subranges_reset_poisoned_scratch_on_gl_cc() {
+    let lmax = 511;
+    let nphi = 2 * lmax + 3;
+    for kind in [GridKind::GaussLegendre, GridKind::ClenshawCurtis] {
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+        )
+        .unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_spin_latitudes(&mut workspace, 1);
+        let spectrum_len = plan.fft.spectrum_len();
+        let ring_start = workspace
+            .theta_sin
             .iter()
-            .chain(&full_b)
-            .all(|value| value.re.is_finite() && value.im.is_finite())
-    );
+            .position(|&sine| sine >= SPIN1_FAST_MIN_SIN_THETA)
+            .unwrap();
+        let ring_end = workspace.theta_sin[ring_start..]
+            .iter()
+            .position(|&sine| sine < SPIN1_FAST_MIN_SIN_THETA)
+            .map_or(ntheta, |offset| ring_start + offset);
+        assert_eq!(ring_start, ntheta - ring_end);
+        let ring_scales: Vec<_> = plan
+            .grid
+            .ring_weights()
+            .iter()
+            .zip(&workspace.theta_sin)
+            .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
+            .collect();
+        let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+        let mut u_spectra = q_spectra.clone();
+        for ring in 0..ntheta {
+            let weight = (ring + 1) as f64 / ntheta as f64;
+            q_spectra[ring * spectrum_len] = Complex64::new(weight * 1.0e-3, 0.0);
+            u_spectra[ring * spectrum_len] = Complex64::new(-weight * 0.7e-3, 0.0);
+        }
+        let phase = longitude_phase::<f64>(0, plan.grid.phi0(), true);
+        let mut expected_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut expected_b = expected_e.clone();
+        let used = plan
+            .analyze_spin_scalar_reflected_order(
+                &q_spectra,
+                &u_spectra,
+                spectrum_len,
+                phase,
+                &ring_scales,
+                0,
+                ring_start,
+                ring_end,
+                &workspace.theta_sin,
+                &workspace.theta_cos,
+                &workspace.ring_order_limits,
+                pulp::Arch::new(),
+                &mut expected_e,
+                Some(&mut expected_b),
+                &mut workspace.recurrence_workers[0],
+            )
+            .unwrap();
+        assert!(used, "{kind:?} normal input should use the reflected path");
+
+        let recurrence = &mut workspace.recurrence_workers[0];
+        for values in [
+            &mut recurrence.previous[..],
+            &mut recurrence.current[..],
+            &mut recurrence.next[..],
+            &mut recurrence.analysis_same_real[..],
+            &mut recurrence.analysis_same_imag[..],
+            &mut recurrence.analysis_opposite_real[..],
+            &mut recurrence.analysis_opposite_imag[..],
+        ] {
+            values.fill(f64::NAN);
+        }
+        recurrence.epsilon.fill(f64::NAN);
+        recurrence.exponents.fill(i64::MAX);
+        recurrence.analysis_scale_epochs.fill(f64::NAN);
+        recurrence.analysis_scale_corrections.fill(f64::NAN);
+        recurrence.spin_alpha.fill(f64::NAN);
+        recurrence.spin_coefficient_a.fill(f64::NAN);
+        recurrence.spin_coefficient_b.fill(f64::NAN);
+        recurrence.spin_previous_plus.fill(f64::NAN);
+        recurrence.spin_current_plus.fill(f64::NAN);
+        recurrence.spin_previous_minus.fill(f64::NAN);
+        recurrence.spin_current_minus.fill(f64::NAN);
+        recurrence.compact_theta_sin.fill(f64::NAN);
+        recurrence.compact_theta_cos.fill(f64::NAN);
+        recurrence
+            .fast_scalar_first
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        recurrence
+            .fast_scalar_second
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        recurrence
+            .fast_spin_first
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        recurrence
+            .fast_spin_second
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+
+        let mut actual_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut actual_b = actual_e.clone();
+        let used = plan
+            .analyze_spin_scalar_reflected_order(
+                &q_spectra,
+                &u_spectra,
+                spectrum_len,
+                phase,
+                &ring_scales,
+                0,
+                ring_start,
+                ring_end,
+                &workspace.theta_sin,
+                &workspace.theta_cos,
+                &workspace.ring_order_limits,
+                pulp::Arch::new(),
+                &mut actual_e,
+                Some(&mut actual_b),
+                &mut workspace.recurrence_workers[0],
+            )
+            .unwrap();
+        assert!(used, "{kind:?} poisoned scratch should be overwritten");
+        for (actual, expected) in actual_e
+            .iter()
+            .chain(&actual_b)
+            .zip(expected_e.iter().chain(&expected_b))
+        {
+            assert!(
+                (*actual - *expected).norm() <= 2.0e-12 * expected.norm().max(1.0),
+                "{kind:?} poisoned-scratch mismatch"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_analysis_reuses_poisoned_workspace_for_extremes_on_all_grids() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let lmax = 511;
+    let nphi = 2 * lmax + 3;
+    for kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+        )
+        .unwrap();
+        let (first, second) = arbitrary_maps(&plan);
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        let mut expected_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut expected_b = expected_e.clone();
+        pool.install(|| {
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut expected_e,
+                &mut expected_b,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+
+        workspace.analysis_ring_scales.fill(f64::NAN);
+        workspace
+            .spin1_scalar_coefficients
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        workspace.spin1_scalar_coefficient_finite_orders.fill(0);
+        for recurrence in &mut workspace.recurrence_workers {
+            for values in [
+                &mut recurrence.previous[..],
+                &mut recurrence.current[..],
+                &mut recurrence.next[..],
+                &mut recurrence.analysis_same_real[..],
+                &mut recurrence.analysis_same_imag[..],
+                &mut recurrence.analysis_opposite_real[..],
+                &mut recurrence.analysis_opposite_imag[..],
+            ] {
+                values.fill(f64::NAN);
+            }
+            recurrence.epsilon.fill(f64::NAN);
+            recurrence.exponents.fill(i64::MAX);
+            recurrence.analysis_scale_epochs.fill(f64::NAN);
+            recurrence.analysis_scale_corrections.fill(f64::NAN);
+            recurrence.spin_alpha.fill(f64::NAN);
+            recurrence.spin_coefficient_a.fill(f64::NAN);
+            recurrence.spin_coefficient_b.fill(f64::NAN);
+            recurrence.spin_previous_plus.fill(f64::NAN);
+            recurrence.spin_current_plus.fill(f64::NAN);
+            recurrence.spin_previous_minus.fill(f64::NAN);
+            recurrence.spin_current_minus.fill(f64::NAN);
+            recurrence.compact_theta_sin.fill(f64::NAN);
+            recurrence.compact_theta_cos.fill(f64::NAN);
+            recurrence.compact_theta_cos_squared.fill(f64::NAN);
+            recurrence
+                .fast_scalar_first
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .fast_scalar_second
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .fast_spin_first
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .fast_spin_second
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .fast_spin_pair_first
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .fast_spin_pair_second
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .weighted_spin_q_spectrum
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence
+                .weighted_spin_u_spectrum
+                .fill(Complex64::new(f64::NAN, f64::NAN));
+            recurrence.scalar_order_correction.fill(f64::NAN);
+            recurrence.compact_ring_indices.fill(usize::MAX);
+            recurrence.spin_hemisphere_pair_basis.fill(f64::NAN);
+        }
+
+        let mut actual_e = vec![Complex64::new(f64::NAN, f64::NAN); plan.harmonics().nalm()];
+        let mut actual_b = actual_e.clone();
+        pool.install(|| {
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut actual_e,
+                &mut actual_b,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+        assert!(
+            relative_l2_complex(&actual_e, &expected_e) <= 2.0e-12,
+            "{kind:?} E"
+        );
+        assert!(
+            relative_l2_complex(&actual_b, &expected_b) <= 2.0e-12,
+            "{kind:?} B"
+        );
+
+        let large_first = vec![1.0e200; plan.sample_count];
+        let large_second = vec![-2.5e199; plan.sample_count];
+        actual_e.fill(Complex64::new(f64::NAN, f64::NAN));
+        actual_b.fill(Complex64::new(f64::NAN, f64::NAN));
+        pool.install(|| {
+            plan.analysis_spin_into(
+                &large_first,
+                &large_second,
+                &mut actual_e,
+                &mut actual_b,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+        assert!(
+            actual_e
+                .iter()
+                .chain(&actual_b)
+                .all(|value| value.re.is_finite() && value.im.is_finite()),
+            "{kind:?} extreme finite analysis"
+        );
+
+        let tiny = f64::from_bits(1);
+        let tiny_first = vec![tiny; plan.sample_count];
+        let tiny_second = vec![-tiny; plan.sample_count];
+        pool.install(|| {
+            plan.analysis_spin_into(
+                &tiny_first,
+                &tiny_second,
+                &mut actual_e,
+                &mut actual_b,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+        assert!(
+            actual_e
+                .iter()
+                .chain(&actual_b)
+                .all(|value| value.re.is_finite() && value.im.is_finite()),
+            "{kind:?} subnormal analysis"
+        );
+    }
 }
 
 #[test]
