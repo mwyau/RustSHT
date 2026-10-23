@@ -2104,11 +2104,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let output_modes = if self.grid.kind() == GridKind::GaussLegendre {
-            self.harmonics.mmax() + 1
-        } else {
-            spectrum_len
-        };
+        // All scalar analysis stages consume only the requested order prefix.
+        // Keep unused longitude modes stale in the caller-owned scratch rather
+        // than recombining, storing, and normalizing modes above mmax.
+        let output_modes = self.harmonics.mmax() + 1;
         #[cfg(all(test, feature = "parallel"))]
         let mut phase_started = std::time::Instant::now();
         #[cfg(all(test, feature = "parallel"))]
@@ -2204,8 +2203,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .as_ref()
                 .filter(|_| ring_weights.is_some() && resample_cc)
         {
-            for value in &mut workspace.spectra {
-                *value /= T::from_usize(nphi).expect("longitude count converts");
+            let longitude_scale = T::from_usize(nphi).expect("longitude count converts");
+            for spectrum in workspace
+                .spectra
+                .chunks_exact_mut(spectrum_len)
+                .take(ntheta)
+            {
+                for value in &mut spectrum[..output_modes] {
+                    *value /= longitude_scale;
+                }
             }
             #[cfg(feature = "parallel")]
             let (use_parallel_resampling, resampling_workers) = {

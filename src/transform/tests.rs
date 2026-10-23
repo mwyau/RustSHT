@@ -5732,6 +5732,55 @@ fn scalar_cc_f1_analysis_parallelizes_only_large_resampling_work() {
 }
 
 #[test]
+fn scalar_reduced_order_analysis_ignores_unused_spectrum_tail() {
+    for kind in [GridKind::ClenshawCurtis, GridKind::Fejer1] {
+        let lmax = 16;
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, 65, 0.23).unwrap(),
+            HarmonicSpec::scalar(lmax, 3).unwrap(),
+        )
+        .unwrap();
+        let map = arbitrary_map(&plan);
+        let mut reference_workspace = plan.workspace().unwrap();
+        let mut poisoned_workspace = plan.workspace().unwrap();
+
+        let mut reference = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut poisoned = reference.clone();
+        plan.analysis_into(&map, &mut reference, &mut reference_workspace)
+            .unwrap();
+        poisoned_workspace
+            .spectra
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        plan.analysis_into(&map, &mut poisoned, &mut poisoned_workspace)
+            .unwrap();
+        assert_eq!(poisoned, reference, "{kind:?} exact analysis");
+
+        reference.fill(Complex64::new(0.0, 0.0));
+        poisoned.fill(Complex64::new(0.0, 0.0));
+        plan.analysis_projected_into(&map, &mut reference, &mut reference_workspace)
+            .unwrap();
+        poisoned_workspace
+            .spectra
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        plan.analysis_projected_into(&map, &mut poisoned, &mut poisoned_workspace)
+            .unwrap();
+        assert_eq!(poisoned, reference, "{kind:?} projected analysis");
+
+        reference.fill(Complex64::new(0.0, 0.0));
+        poisoned.fill(Complex64::new(0.0, 0.0));
+        plan.adjoint_synthesis_into(&map, &mut reference, &mut reference_workspace)
+            .unwrap();
+        poisoned_workspace
+            .spectra
+            .fill(Complex64::new(f64::NAN, f64::NAN));
+        plan.adjoint_synthesis_into(&map, &mut poisoned, &mut poisoned_workspace)
+            .unwrap();
+        assert_eq!(poisoned, reference, "{kind:?} synthesis adjoint");
+    }
+}
+
+#[test]
 #[allow(clippy::excessive_precision)]
 fn t191_analysis_compaction_matches_ducc_all_grids() {
     // Reference: ducc0==0.41.0, T191, nphi=385, phi0=0.37, one thread.
