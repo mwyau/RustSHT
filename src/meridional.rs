@@ -335,7 +335,7 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
     }
 
     /// Resamples independent Fourier orders in bounded parallel tiles, then
-    /// scatters each tile into the transform's ring-major spectrum layout.
+    /// scatters each tile across disjoint ring-major output row ranges.
     #[cfg(feature = "parallel")]
     #[expect(
         clippy::too_many_arguments,
@@ -411,7 +411,19 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
             )?;
         }
 
-        output.fill(Complex::new(T::zero(), T::zero()));
+        let prepared_ntheta = self.prepared_ntheta();
+        let rows_per_worker = prepared_ntheta.div_ceil(worker_count);
+        let output_per_worker = checked_product(
+            rows_per_worker,
+            spectrum_len,
+            "CC worker prepared output rows",
+        )?;
+        output
+            .par_chunks_mut(output_per_worker)
+            .zip(worker_workspaces[..worker_count].par_iter_mut())
+            .for_each(|(worker_output, _worker)| {
+                worker_output.fill(Complex::new(T::zero(), T::zero()));
+            });
         let nfull_out = self.prepared_full_len;
         let norm = T::from_f64(0.5).expect("half is representable")
             / (T::from_usize(nfull_out).expect("usize converts to the transform scalar")
@@ -421,18 +433,16 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
                 } else {
                     T::one()
                 });
-        let prepared_ntheta = self.prepared_ntheta();
-
         for order_start in (0..order_count).step_by(CC_RESAMPLING_ORDER_TILE) {
             let block_orders = (order_count - order_start).min(CC_RESAMPLING_ORDER_TILE);
             let block_len =
                 checked_product(block_orders, prepared_ntheta, "CC meridional order tile")?;
             let active_workers = worker_count.min(block_orders);
             let orders_per_worker = block_orders.div_ceil(active_workers);
-            let output_per_worker =
+            let tile_per_worker =
                 checked_product(orders_per_worker, prepared_ntheta, "CC worker order output")?;
             order_tile[..block_len]
-                .par_chunks_mut(output_per_worker)
+                .par_chunks_mut(tile_per_worker)
                 .zip(worker_workspaces[..active_workers].par_iter_mut())
                 .enumerate()
                 .for_each(|(worker_index, (worker_output, worker))| {
@@ -467,13 +477,23 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
                     }
                 });
 
-            for ring in 0..prepared_ntheta {
-                let ring_start = ring * spectrum_len + order_start;
-                let ring_output = &mut output[ring_start..ring_start + block_orders];
-                for (local_order, output_value) in ring_output.iter_mut().enumerate() {
-                    *output_value = order_tile[local_order * prepared_ntheta + ring];
-                }
-            }
+            output
+                .par_chunks_mut(output_per_worker)
+                .zip(worker_workspaces[..worker_count].par_iter_mut())
+                .enumerate()
+                .for_each(|(worker_index, (worker_output, _worker))| {
+                    let first_ring = worker_index * rows_per_worker;
+                    for (local_ring, ring_output) in
+                        worker_output.chunks_exact_mut(spectrum_len).enumerate()
+                    {
+                        let ring = first_ring + local_ring;
+                        let output_orders =
+                            &mut ring_output[order_start..order_start + block_orders];
+                        for (local_order, output_value) in output_orders.iter_mut().enumerate() {
+                            *output_value = order_tile[local_order * prepared_ntheta + ring];
+                        }
+                    }
+                });
         }
         Ok(())
     }

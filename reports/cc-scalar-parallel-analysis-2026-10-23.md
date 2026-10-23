@@ -356,3 +356,46 @@ The Rust worker was rebuilt from the working tree based on
 SHA-256 `09a7ac5a916e529d44c42dd288722f66cdcc38e80f3c1778f09527322bf3db02`).
 The pinned DUCC binary SHA-256 was
 `3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a`.
+
+## Parallel prepared-output initialization and scatter follow-up
+
+The tiled CC/F1 resampler now initializes its prepared ring-major output in
+parallel and scatters each completed order tile across disjoint ring-row ranges.
+The bounded order tile, worker scratch and numerical operations are unchanged;
+the q1 route remains serial.
+
+The focused A/B used exact CC T720 (`ntheta=722`, `nphi=1458`), full order,
+`phi0=0.23`, q8 and pinned DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Baseline source was
+`f96de1f4`; candidate source adds this scatter change. Both runs used the same
+benchmark harness and collected 30 batches per backend across three process
+pairs. Rust and DUCC ran in separate source runs, so their source-to-source
+comparison is directional. The candidate had 90% of timed batches in the
+20–100 ms target window (the baseline had 100%); both rows passed numerical
+and reset checks with relative L2 `6.01e-14` and no failure records.
+
+| Source | Rust ms [p10, p90] | DUCC ms | Rust/DUCC | Paired ratio p10–p90 |
+|---|---:|---:|---:|---:|
+| Before scatter change | 7.124 [6.839, 8.380] | 10.311 | 0.694x | 0.676–0.726x |
+| Parallel scatter | 6.811 [6.386, 7.598] | 10.407 | 0.654x | 0.629–0.688x |
+
+Rust latency fell 4.4% (`0.313 ms`). The ratio intervals overlap slightly, so
+this is a modest directional gain; the q8 case was already faster than DUCC
+before this change. It does not establish current q1, other-degree, or F1
+performance. Host runqueue wait p90 was 3.8% for baseline and 3.0% for the
+candidate; candidate timed batches were partially outside the target window.
+
+Reproduce each source run from its checkout with `DUCC_SRC` set to the pinned
+DUCC tree and `RESULTS_DIR` set to a fresh result directory:
+
+```sh
+python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py \
+  --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --grid CC --lmax 720 --mmax 720 --threads 8 \
+  --operation analysis --longitude-mode even_smooth \
+  --results-dir "$RESULTS_DIR" --no-report --retain-local-host-telemetry \
+  --sweep-id cc-resampling-parallel-scatter
+```
+
+Raw JSON, timed samples and host telemetry remain local and untracked.
