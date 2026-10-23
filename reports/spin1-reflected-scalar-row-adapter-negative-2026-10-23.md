@@ -38,3 +38,26 @@ local and untracked.
 conversion and two separate reflected recurrences did not reduce end-to-end
 latency. Continue with a fused two-channel reflected recurrence as a separate
 source change before the next benchmark.
+
+## Follow-up separate-channel implementation
+
+A follow-up implementation used the existing checked scalar ordered engine
+for the two converted channels separately. It passed the T1023 GL
+order-major q1/q8 cache and exceptional-value regression. A focused exact
+T720 CC full-order q8 synthesis comparison used one deterministic even-smooth
+fixture, 30 timed batches per backend across three interleaved process pairs,
+and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`:
+
+| Backend/source | Median (ms) | p10–p90 (ms) | Relative L2 vs DUCC |
+|---|---:|---:|---:|
+| Pre-change Rust `3b1d546a` | 15.056 | 14.877–15.227 | `2.29e-13` |
+| Separate-channel candidate | 24.029 | 23.826–24.379 | `2.68e-13` |
+| DUCC | 6.136 | 6.097–6.194 | — |
+
+The candidate was `1.596x` slower than pre-change Rust and `3.915x` DUCC.
+Host wait fractions were below `0.023` for all three backends. The numerical
+comparison passed, but the performance regression is decisive; the candidate
+was removed. This confirms that the next attempt must share recurrence work
+across both converted channels instead of dispatching two independent scalar
+recurrences. The candidate source and raw per-batch samples were temporary and
+were not retained in the worktree.
