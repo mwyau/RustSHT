@@ -297,7 +297,11 @@ fn spin1_hemisphere_pair_synthesis_matches_general_recurrence() {
             .num_threads(threads)
             .build()
             .unwrap();
-        assert!(pool.install(|| hemisphere::is_beneficial(&plan, threads)));
+        assert_eq!(
+            pool.install(|| hemisphere::is_beneficial(&plan, threads)),
+            lmax != 511 || threads < 8,
+            "T{lmax} q{threads} hemisphere selection"
+        );
 
         let (mut e, mut b) = coefficients(&plan);
         if sparse_high_mode {
@@ -512,7 +516,7 @@ fn spin1_hemisphere_pair_selector_matches_measured_domain() {
         .build()
         .unwrap();
     eight_threads.install(|| {
-        assert!(hemisphere::is_beneficial(&t511, 8));
+        assert!(!hemisphere::is_beneficial(&t511, 8));
         assert!(hemisphere::is_beneficial(&equatorial, 8));
         assert!(hemisphere::is_beneficial(&partial_group, 8));
         assert!(!hemisphere::is_beneficial(&t720, 8));
@@ -524,6 +528,11 @@ fn spin1_hemisphere_pair_selector_matches_measured_domain() {
             assert_eq!(workspace.allocated_worker_count(), 10);
         }
     });
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    four_threads.install(|| assert!(hemisphere::is_beneficial(&t511, 4)));
 }
 
 #[cfg(feature = "parallel")]

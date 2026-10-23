@@ -61,6 +61,7 @@ pub(crate) fn spin1_hemisphere_worker_count<T: ShtScalar>(
     if plan.harmonics.spin() != 1
         || !T::supports_paired_scalar()
         || !(319..=511).contains(&lmax)
+        || (lmax == 511 && thread_count >= 8)
         || plan.harmonics.mmax() != lmax
         || plan.grid.kind() != crate::grid::GridKind::GaussLegendre
         || plan.grid.ntheta() != lmax + 1
