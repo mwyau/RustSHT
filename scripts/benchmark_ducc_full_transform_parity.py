@@ -50,6 +50,11 @@ BATCHES_PER_PROCESS = 10
 RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE = 5e-12
 VALIDATION_RELATIVE_L2_TOLERANCE = 5e-11
 ADJOINT_RELATIVE_RESIDUAL_TOLERANCE = 5e-11
+ERROR_METRICS_CONTRACT = (
+    "complex-magnitude-relative-l2-v2;"
+    "zero-reference-subnormal-abs-below-min-normal-v1"
+)
+SUBNORMAL_ABSOLUTE_ERROR_LIMIT = float(np.finfo(np.float64).tiny)
 DENSE_SWEEP_HIGH_LMAX = (
     257, 258, 300, 320, 384, 511, 512, 513, 640, 720, 721, 768, 896,
     1023, 1024, 1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072,
@@ -450,6 +455,7 @@ def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float 
     if not np.isfinite(actual).all() or not np.isfinite(reference).all():
         return {
             "absolute_max": None,
+            "reference_peak": None,
             "relative_l2": None,
             "max_relative_above_1e-12_peak": None,
             "near_zero_reference_count": None,
@@ -465,7 +471,9 @@ def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float 
         relative_l2 = math.inf
     else:
         scaled_error_norm = math.sqrt(float(np.square(delta / error_peak).sum()))
-        scaled_reference_norm = math.sqrt(float(np.square(reference / reference_peak).sum()))
+        scaled_reference_norm = math.sqrt(
+            float(np.square(reference_abs / reference_peak).sum())
+        )
         relative_l2 = (error_peak / reference_peak) * (scaled_error_norm / scaled_reference_norm)
     maximum = float(reference_abs.max(initial=0.0))
     near_zero = reference_abs <= max(maximum * 1e-12, np.finfo(np.float64).tiny)
@@ -476,6 +484,7 @@ def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float 
     max_relative_value: float | None = max_relative if math.isfinite(max_relative) else None
     return {
         "absolute_max": absolute_max,
+        "reference_peak": reference_peak,
         "relative_l2": relative_l2_value,
         "max_relative_above_1e-12_peak": max_relative_value,
         "near_zero_reference_count": int(near_zero.sum()),
@@ -506,6 +515,21 @@ def selected_modes(lmax: int, mmax: int) -> list[tuple[int, int]]:
 def compact_index(lmax: int, degree: int, order: int) -> int:
     order_start = order * (lmax + 1) - order * (order - 1) // 2
     return order_start + degree - order
+
+
+def zero_reference_subnormal_comparison_acceptable(
+    metric: dict, expected_count: int
+) -> bool:
+    """Accept only finite underflow-sized error when the reference is exactly zero."""
+    absolute_max = metric.get("absolute_max")
+    return (
+        metric.get("relative_l2") is None
+        and metric.get("reference_peak") == 0.0
+        and metric.get("near_zero_reference_count") == expected_count
+        and isinstance(absolute_max, (int, float))
+        and math.isfinite(absolute_max)
+        and absolute_max <= SUBNORMAL_ABSOLUTE_ERROR_LIMIT
+    )
 
 
 def compare_validation(case: dict, outputs: dict[str, pathlib.Path], records: dict[str, dict]) -> dict:
@@ -613,8 +637,15 @@ def compare_validation(case: dict, outputs: dict[str, pathlib.Path], records: di
                 acceptance_failures.append(f"basis_{field}_l{basis['l']}_m{basis['m']}")
     for edge_name, edge in checks["edge_cases"].items():
         for field in ("map_rust_ducc", "alm_rust_ducc"):
-            relative_l2 = edge[field].get("relative_l2")
+            metric = edge[field]
+            relative_l2 = metric.get("relative_l2")
             if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
+                expected_count = nmap if field == "map_rust_ducc" else nalm
+                if (edge_name == "subnormal"
+                        and zero_reference_subnormal_comparison_acceptable(
+                            metric, expected_count
+                        )):
+                    continue
                 acceptance_failures.append(f"{edge_name}_{field}")
     checks["acceptance_failures"] = acceptance_failures
     checks["acceptance_status"] = "rejected" if acceptance_failures else "accepted"
@@ -667,8 +698,21 @@ def saved_validation_acceptance(validation: dict) -> tuple[str, list[str]]:
                 failures.append(f"basis_{field}_l{basis.get('l')}_m{basis.get('m')}")
     for edge_name, edge in validation.get("edge_cases", {}).items():
         for field in ("map_rust_ducc", "alm_rust_ducc"):
-            relative_l2 = edge.get(field, {}).get("relative_l2")
+            metric = edge.get(field, {})
+            relative_l2 = metric.get("relative_l2")
             if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
+                nmap = validation.get("ntheta", 0) * validation.get("nphi", 0)
+                lmax, mmax = validation.get("lmax"), validation.get("mmax")
+                nalm = (
+                    (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+                    if isinstance(lmax, int) and isinstance(mmax, int) else 0
+                )
+                expected_count = nmap if field == "map_rust_ducc" else nalm
+                if (edge_name == "subnormal"
+                        and zero_reference_subnormal_comparison_acceptable(
+                            metric, expected_count
+                        )):
+                    continue
                 failures.append(f"{edge_name}_{field}")
     return ("rejected" if failures else "accepted"), failures
 
@@ -849,6 +893,7 @@ def execution_protocol(metadata: dict) -> dict:
     """Fields that must agree before measurements from shards can be merged."""
     keys = (
         "production_source_revision", "ducc_source_revision",
+        "numerical_metric_contract",
         "grid", "ducc_version", "rustc", "cargo", "cxx", "rust_flags", "ducc_flags",
         "cpu_model", "selected_q1_cpu", "selected_q8_cpus", "selected_q8_topology",
         "selected_q8_l3_cache_ids", "process_pairs", "batches_per_process",
@@ -3422,6 +3467,7 @@ def main() -> None:
         "production_source_revision": args.production_source_revision or (
             None if args.skip_build else metadata["rust_source_revision"]
         ),
+        "numerical_metric_contract": ERROR_METRICS_CONTRACT,
         "benchmark_harness_revision": metadata["rust_source_revision"],
         "benchmark_harness_sha256": sha256_file(pathlib.Path(__file__).resolve()),
         "benchmark_invocation": shlex.join([sys.executable, *sys.argv]),

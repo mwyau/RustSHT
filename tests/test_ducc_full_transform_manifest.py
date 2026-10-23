@@ -2,11 +2,24 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Independent manifest checks for the native scalar parity runner."""
 
+import importlib.util
 import json
+from pathlib import Path
 
+import numpy as np
 import pytest
 
 from scripts import benchmark_ducc_full_transform_parity as benchmark
+
+
+_AUDIT_SPEC = importlib.util.spec_from_file_location(
+    "cc_audit_manifest",
+    Path(__file__).resolve().parents[1]
+    / "reports/data/ducc-scalar-f64-cc-full-sweep-2026-10-22/audit_manifest.py",
+)
+assert _AUDIT_SPEC is not None and _AUDIT_SPEC.loader is not None
+cc_audit_manifest = importlib.util.module_from_spec(_AUDIT_SPEC)
+_AUDIT_SPEC.loader.exec_module(cc_audit_manifest)
 
 
 HIGH_LMAX = (
@@ -153,3 +166,34 @@ def test_merged_sample_export_strips_local_host_telemetry() -> None:
 
     assert raw_shard is samples
     assert aggregate == [{"backend": "rustsht", "batch_ms": [1.0]}]
+
+
+def test_complex_relative_l2_uses_magnitude_squared() -> None:
+    reference = np.array([2.0 + 1.0j, 1.0 - 0.2j], dtype=np.complex128)
+    actual = reference.copy()
+    actual[0] += 1e-8 - 2e-8j
+
+    metrics = benchmark.error_metrics(actual, reference)
+    expected = np.linalg.norm(actual - reference) / np.linalg.norm(reference)
+
+    assert metrics["relative_l2"] == pytest.approx(expected, rel=1e-14)
+    assert metrics["reference_peak"] == pytest.approx(np.abs(reference).max())
+
+
+def test_zero_reference_subnormal_comparison_has_a_tight_absolute_gate() -> None:
+    smallest_subnormal = np.nextafter(0.0, 1.0)
+    reference = np.zeros(3, dtype=np.complex128)
+    actual = np.array([3 * smallest_subnormal, 0.0, 0.0], dtype=np.complex128)
+    metric = benchmark.error_metrics(actual, reference)
+
+    assert benchmark.zero_reference_subnormal_comparison_acceptable(metric, 3)
+    assert cc_audit_manifest.zero_reference_subnormal_metric_acceptable(metric, 3)
+    assert not benchmark.zero_reference_subnormal_comparison_acceptable(metric, 2)
+    assert not cc_audit_manifest.zero_reference_subnormal_metric_acceptable(metric, 2)
+
+    too_large = benchmark.error_metrics(
+        np.array([2 * np.finfo(np.float64).tiny, 0.0, 0.0], dtype=np.complex128),
+        reference,
+    )
+    assert not benchmark.zero_reference_subnormal_comparison_acceptable(too_large, 3)
+    assert not cc_audit_manifest.zero_reference_subnormal_metric_acceptable(too_large, 3)

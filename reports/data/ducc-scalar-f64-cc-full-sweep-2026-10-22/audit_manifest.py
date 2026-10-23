@@ -26,6 +26,11 @@ BATCHES_PER_PROCESS = 10
 RANDOM_RELATIVE_L2_LIMIT = 5e-12
 VALIDATION_RELATIVE_L2_LIMIT = 5e-11
 ADJOINT_RELATIVE_RESIDUAL_LIMIT = 5e-11
+NUMERICAL_METRIC_CONTRACT = (
+    "complex-magnitude-relative-l2-v2;"
+    "zero-reference-subnormal-abs-below-min-normal-v1"
+)
+SUBNORMAL_ABSOLUTE_ERROR_LIMIT = float.fromhex("0x1.0000000000000p-1022")
 
 
 def smooth_even_longitude(mmax: int) -> int:
@@ -81,6 +86,17 @@ def relative_values(tree, field: str) -> list[float]:
     return []
 
 
+def zero_reference_subnormal_metric_acceptable(error: dict, expected_count: int) -> bool:
+    absolute_max = error.get("absolute_max")
+    return (
+        error.get("relative_l2") is None
+        and error.get("reference_peak") == 0.0
+        and error.get("near_zero_reference_count") == expected_count
+        and finite_number(absolute_max)
+        and absolute_max <= SUBNORMAL_ABSOLUTE_ERROR_LIMIT
+    )
+
+
 def validation_reasons(validation: dict | None) -> list[str]:
     if validation is None:
         return ["missing_validation"]
@@ -108,8 +124,19 @@ def validation_reasons(validation: dict | None) -> list[str]:
         if name not in edges:
             reasons.append(f"{name}_edge_case_missing")
             continue
+        lmax, mmax = validation.get("lmax"), validation.get("mmax")
+        ntheta, nphi = validation.get("ntheta"), validation.get("nphi")
+        nalm = (
+            (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+            if isinstance(lmax, int) and isinstance(mmax, int) else 0
+        )
+        nmap = ntheta * nphi if isinstance(ntheta, int) and isinstance(nphi, int) else 0
         for field in ("map_rust_ducc", "alm_rust_ducc"):
             error = edges[name].get(field)
+            expected_count = nmap if field == "map_rust_ducc" else nalm
+            if (name == "subnormal" and isinstance(error, dict)
+                    and zero_reference_subnormal_metric_acceptable(error, expected_count)):
+                continue
             if not isinstance(error, dict) or not all(
                 finite_number(error.get(metric))
                 for metric in ("absolute_max", "relative_l2")
@@ -172,6 +199,7 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
     identity_fields = (
         "production_source_revision", "binary_source_revision", "ducc_source_revision", "rust_binary_sha256",
         "ducc_binary_sha256", "rustc", "cargo", "cxx", "rust_flags", "ducc_flags",
+        "numerical_metric_contract",
     )
     identities = defaultdict(set)
     harnesses = set()
@@ -387,6 +415,9 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         "duration_window_status": dict(Counter(row["duration_window_status"] for row in expected_group_records)),
         "reset_consistency_status": dict(Counter(row["reset_consistency_status"] for row in expected_group_records)),
     }
+    metric_contract_pass = identities["numerical_metric_contract"] == {
+        NUMERICAL_METRIC_CONTRACT
+    }
     audit = {
         "audit_method": "independent stdlib manifest and raw-record audit; does not import benchmark runner",
         "input_shards": [
@@ -412,6 +443,11 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         "source_identity_mismatch_fields": sorted(
             field for field, values in identities.items() if len(values) != 1
         ),
+        "numerical_metric_contract": {
+            "expected": NUMERICAL_METRIC_CONTRACT,
+            "observed": sorted(str(value) for value in identities["numerical_metric_contract"]),
+            "pass": metric_contract_pass,
+        },
         "shard_count": len(shard_paths),
         "expected_geometry_count": len(expected),
         "observed_expected_geometry_count": len(expected_actual),
@@ -448,6 +484,7 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             not missing_cases and not geometry_mismatches and not missing_groups
             and not rejected and not timing_incomplete and not failures and not duplicates
             and all(len(values) == 1 for values in identities.values())
+            and metric_contract_pass
         ),
     }
     (output_dir / "independent-audit.json").write_text(
