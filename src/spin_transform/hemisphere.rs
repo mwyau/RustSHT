@@ -104,30 +104,22 @@ fn synthesize_group<T: ShtScalar>(
             },
             |finite_orders| finite_orders[m] != 0,
         );
-        let first_ready = converted_finite
+        let pair_ready = converted_finite
             && factors_ready
-            && T::prepare_paired_scalar_synthesis_coefficients(
+            && T::prepare_paired_scalar_synthesis_coefficient_pair(
                 m,
                 scalar_lmax,
                 &recurrence.epsilon,
                 &recurrence.spin_alpha,
                 &recurrence.fast_scalar_first[m..=scalar_lmax],
+                &recurrence.fast_scalar_second[m..=scalar_lmax],
                 &mut recurrence.fast_spin_first[..pair_count],
                 &mut recurrence.fast_spin_second[..pair_count],
-            );
-        let second_ready = converted_finite
-            && factors_ready
-            && T::prepare_paired_scalar_synthesis_coefficients(
-                m,
-                scalar_lmax,
-                &recurrence.epsilon,
-                &recurrence.spin_alpha,
-                &recurrence.fast_scalar_second[m..=scalar_lmax],
                 &mut recurrence.fast_spin_pair_first[..pair_count],
                 &mut recurrence.fast_spin_pair_second[..pair_count],
             );
 
-        if !first_ready || !second_ready {
+        if !pair_ready {
             // Conversion and paired preparation are checked before either
             // hemisphere commits this order. The fallback retains original E/B.
             plan.synthesize_general_spin_order(

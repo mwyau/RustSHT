@@ -2468,21 +2468,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &recurrence.fast_scalar_first[..scalar_lmax + 1],
                     &recurrence.fast_scalar_second[..scalar_lmax + 1],
                 ));
-                let prepared_first = T::prepare_paired_scalar_synthesis_coefficients(
+                let prepared_pair = T::prepare_paired_scalar_synthesis_coefficient_pair(
                     m,
                     scalar_lmax,
                     &recurrence.epsilon,
                     &recurrence.spin_alpha,
                     &scalar_first[m..=scalar_lmax],
+                    &scalar_second[m..=scalar_lmax],
                     &mut recurrence.fast_spin_first[..coefficient_pair_count],
                     &mut recurrence.fast_spin_second[..coefficient_pair_count],
-                );
-                let prepared_second = T::prepare_paired_scalar_synthesis_coefficients(
-                    m,
-                    scalar_lmax,
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &scalar_second[m..=scalar_lmax],
                     &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
                     &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
                 );
@@ -2491,7 +2485,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     recurrence.spin1_profile_pair_prepare_ns +=
                         prepare_started.elapsed().as_nanos();
                 }
-                prepared_first && prepared_second
+                prepared_pair
             } else {
                 false
             };

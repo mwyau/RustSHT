@@ -220,6 +220,40 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "Spin-1 synthesis prepares both converted scalar channels together."
+    )]
+    fn prepare_paired_scalar_synthesis_coefficient_pair(
+        m: usize,
+        lmax: usize,
+        epsilon: &[Self],
+        alpha: &[Self],
+        first_coefficients: &[Complex<Self>],
+        second_coefficients: &[Complex<Self>],
+        first_even: &mut [Complex<Self>],
+        first_odd: &mut [Complex<Self>],
+        second_even: &mut [Complex<Self>],
+        second_odd: &mut [Complex<Self>],
+    ) -> bool {
+        Self::prepare_paired_scalar_synthesis_coefficients(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            first_coefficients,
+            first_even,
+            first_odd,
+        ) && Self::prepare_paired_scalar_synthesis_coefficients(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            second_coefficients,
+            second_even,
+            second_odd,
+        )
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The fused scalar block receives operator data and worker scratch explicitly."
     )]
     #[cfg(test)]
@@ -910,6 +944,32 @@ impl ShtScalar for f64 {
             coefficients,
             coefficient_even,
             coefficient_odd,
+        )
+    }
+
+    fn prepare_paired_scalar_synthesis_coefficient_pair(
+        m: usize,
+        lmax: usize,
+        epsilon: &[Self],
+        alpha: &[Self],
+        first_coefficients: &[Complex<Self>],
+        second_coefficients: &[Complex<Self>],
+        first_even: &mut [Complex<Self>],
+        first_odd: &mut [Complex<Self>],
+        second_even: &mut [Complex<Self>],
+        second_odd: &mut [Complex<Self>],
+    ) -> bool {
+        scalar_paired::prepare_synthesis_coefficient_pair(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            first_coefficients,
+            second_coefficients,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
         )
     }
 

@@ -252,6 +252,82 @@ pub(crate) fn prepare_synthesis_coefficients(
     true
 }
 
+/// Prepares both converted spin-1 scalar rows in one degree-pair pass.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The spin-1 conversion supplies two coefficient rows and their paired outputs."
+)]
+pub(crate) fn prepare_synthesis_coefficient_pair(
+    m: usize,
+    lmax: usize,
+    epsilon: &[f64],
+    alpha: &[f64],
+    first_coefficients: &[Complex64],
+    second_coefficients: &[Complex64],
+    first_even: &mut [Complex64],
+    first_odd: &mut [Complex64],
+    second_even: &mut [Complex64],
+    second_odd: &mut [Complex64],
+) -> bool {
+    debug_assert!(m <= lmax);
+    debug_assert!(epsilon.len() > lmax + 2);
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(alpha.len() >= pair_count);
+    debug_assert!(first_coefficients.len() > lmax - m);
+    debug_assert!(second_coefficients.len() > lmax - m);
+    debug_assert!(first_even.len() >= pair_count);
+    debug_assert!(first_odd.len() >= pair_count);
+    debug_assert!(second_even.len() >= pair_count);
+    debug_assert!(second_odd.len() >= pair_count);
+
+    for pair in 0..pair_count {
+        let degree = m + 2 * pair;
+        let offset = degree - m;
+        let epsilon_even = epsilon[degree + 1];
+        let epsilon_odd = epsilon[degree + 2];
+        let alpha = alpha[pair];
+        let first_next_even = if degree + 2 <= lmax {
+            first_coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let second_next_even = if degree + 2 <= lmax {
+            second_coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let first_even_value =
+            (first_coefficients[offset] * epsilon_even + first_next_even * epsilon_odd) * alpha;
+        let second_even_value =
+            (second_coefficients[offset] * epsilon_even + second_next_even * epsilon_odd) * alpha;
+        let (first_odd_value, second_odd_value) = if degree < lmax {
+            (
+                first_coefficients[offset + 1] * alpha,
+                second_coefficients[offset + 1] * alpha,
+            )
+        } else {
+            (Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0))
+        };
+        if [
+            first_even_value,
+            first_odd_value,
+            second_even_value,
+            second_odd_value,
+        ]
+        .iter()
+        .flat_map(|coefficient| [coefficient.re, coefficient.im])
+        .any(|value| !value.is_finite())
+        {
+            return false;
+        }
+        first_even[pair] = first_even_value;
+        first_odd[pair] = first_odd_value;
+        second_even[pair] = second_even_value;
+        second_odd[pair] = second_odd_value;
+    }
+    true
+}
+
 /// Tries a register-resident scalar synthesis block for ordinary recurrence values.
 ///
 /// A block is declined when any lane is excluded by the polar order limit or
@@ -7487,6 +7563,115 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn paired_spin_coefficient_preparation_matches_independent_rows() {
+        for m in 0..=4 {
+            for lmax in m..=m + 9 {
+                let mut epsilon = vec![0.0; lmax + 4];
+                scalar::fill_epsilon(m, lmax, &mut epsilon);
+                let factor_count = lmax / 2 + 2;
+                let mut alpha = vec![0.0; factor_count];
+                let mut coefficient_a = vec![0.0; factor_count];
+                let mut coefficient_b = vec![0.0; factor_count];
+                assert!(fill_factors(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &mut alpha,
+                    &mut coefficient_a,
+                    &mut coefficient_b,
+                ));
+                let first: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex64::new(
+                            (0.31 * degree as f64 + 0.73 * m as f64).sin(),
+                            (0.19 * degree as f64 - 0.41 * m as f64).cos(),
+                        )
+                    })
+                    .collect();
+                let second: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex64::new(
+                            (0.47 * degree as f64 - 0.29 * m as f64).cos(),
+                            (0.13 * degree as f64 + 0.67 * m as f64).sin(),
+                        )
+                    })
+                    .collect();
+                let pair_count = (lmax - m + 2) / 2;
+                let mut first_even = vec![Complex64::new(0.0, 0.0); pair_count];
+                let mut first_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+                let mut second_even = vec![Complex64::new(0.0, 0.0); pair_count];
+                let mut second_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+                let mut expected_first_even = first_even.clone();
+                let mut expected_first_odd = first_odd.clone();
+                let mut expected_second_even = second_even.clone();
+                let mut expected_second_odd = second_odd.clone();
+
+                assert!(prepare_synthesis_coefficient_pair(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &first,
+                    &second,
+                    &mut first_even,
+                    &mut first_odd,
+                    &mut second_even,
+                    &mut second_odd,
+                ));
+                assert!(prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &first,
+                    &mut expected_first_even,
+                    &mut expected_first_odd,
+                ));
+                assert!(prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &second,
+                    &mut expected_second_even,
+                    &mut expected_second_odd,
+                ));
+                assert_eq!(first_even, expected_first_even);
+                assert_eq!(first_odd, expected_first_odd);
+                assert_eq!(second_even, expected_second_even);
+                assert_eq!(second_odd, expected_second_odd);
+            }
+        }
+    }
+
+    #[test]
+    fn paired_spin_coefficient_preparation_rejects_nonfinite_second_row() {
+        let (m, lmax) = (0, 1);
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax, &mut epsilon);
+        let alpha = [2.0];
+        let first = [Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0)];
+        let second = [Complex64::new(0.0, 0.0), Complex64::new(f64::MAX, 0.0)];
+        let mut first_even = [Complex64::new(0.0, 0.0)];
+        let mut first_odd = [Complex64::new(0.0, 0.0)];
+        let mut second_even = [Complex64::new(0.0, 0.0)];
+        let mut second_odd = [Complex64::new(0.0, 0.0)];
+
+        assert!(!prepare_synthesis_coefficient_pair(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &first,
+            &second,
+            &mut first_even,
+            &mut first_odd,
+            &mut second_even,
+            &mut second_odd,
+        ));
     }
 
     #[test]
