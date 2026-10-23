@@ -1201,13 +1201,25 @@ impl<T: ShtScalar> ShtPlan<T> {
                             quantity: "parallel Fourier spectrum group size",
                         },
                     )?;
+                    // CC's general synthesis recurrence has enough work in
+                    // each ring group to justify finer scheduling. The
+                    // coarser default batches several groups into one Rayon
+                    // task and underfills the q8 pool on representative CC
+                    // grids; each group already owns its bounded recurrence
+                    // workspace, so letting Rayon split to one group per task
+                    // does not add transform-sized scratch.
+                    let min_groups_per_task = if self.grid.kind() == GridKind::ClenshawCurtis {
+                        1
+                    } else {
+                        parallel_groups.div_ceil(execution_threads)
+                    };
                     debug_assert!(parallel_groups <= workspace.recurrence_workers.len());
                     workspace
                         .spectra
                         .par_chunks_mut(spectrum_group_len)
                         .zip(workspace.recurrence_workers[..parallel_groups].par_iter_mut())
                         .enumerate()
-                        .with_min_len(parallel_groups.div_ceil(execution_threads))
+                        .with_min_len(min_groups_per_task)
                         .map(|(group_index, (group_spectra, recurrence))| {
                             let ring_start = group_index * group_ring_count;
                             let ring_end =

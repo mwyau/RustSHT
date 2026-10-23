@@ -1,0 +1,65 @@
+{
+  "baseline_binary_sha256": "26203773054c1e0a37e015d435cac269a59b3e599ea31e988dae6917a2c7da3a",
+  "baseline_shards": {
+    "255": {
+      "artifact": "original CC low-224-256 shard",
+      "sha256": "b15fd3bc026f65948a8eac6d502483d86268761dca08e11f92bed2da6e3e88c5"
+    },
+    "511": {
+      "artifact": "original CC high-511-640 shard",
+      "sha256": "70a3cf1c01a566f21a27055fa25142bbf1d2203b7e7d978dbe55c3bc139d1b51"
+    },
+    "720": {
+      "artifact": "original CC high-720-896 shard",
+      "sha256": "b3da24d351151fb6f5c8db6bd40992ccd7a15b628a863317600605f785f12d4c"
+    }
+  },
+  "baseline_source_files_unchanged_since_baseline": true,
+  "baseline_source_revision": "3f838847273318acc167376735e43f845dad4e0e",
+  "benchmark_invocation": "python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py --ducc-src \"$DUCC_SRC\" --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b --grid CC --lmax 255 --lmax 511 --lmax 720 --operation synthesis --threads 1 --threads 8 --longitude-mode even_smooth --results-dir \"$RESULTS_DIR\" --no-report --sweep-id cc-grain-candidate-2026-10-23 --retain-local-host-telemetry",
+  "benchmark_runner_sha256": "045104b7ebff8f2b87c01fa3ea1c0ce8f3d3283bb8c581c26e99d0b97f0c6a2b",
+  "candidate_base_revision": "82aafa20ce42ffed97c43d0d9d1b4961c5ee86e4",
+  "candidate_binary_sha256": "75d47f8ddded269dd47fb7b20b7138b2360a44f0fa1bcb8bf08e13d3345416ba",
+  "candidate_harness_sha256": "045104b7ebff8f2b87c01fa3ea1c0ce8f3d3283bb8c581c26e99d0b97f0c6a2b",
+  "candidate_host_summary": {
+    "frequency_ghz_median": 4.516624,
+    "frequency_ghz_p10": 3.6732235,
+    "frequency_ghz_p90": 4.5927233,
+    "involuntary_switches_max": 247292,
+    "involuntary_switches_median": 83.0,
+    "runqueue_wait_fraction_median": 0.1427415854890281,
+    "runqueue_wait_fraction_p90": 0.2712476325335085,
+    "sampled_worker_processes": 96
+  },
+  "candidate_raw_results_capture_id": "cc-grain-candidate-2026-10-23/results.json (local capture; not committed)",
+  "candidate_raw_results_sha256": "d29c46dd7c6398abafa18dfdd517f5741f25848c1b74e52ad44e187683a1ca6d",
+  "candidate_runner_csv_capture_id": "cc-grain-candidate-2026-10-23/results.csv (local capture; not committed)",
+  "candidate_runner_csv_sha256": "2b76e3d5192156faa84a71d96b98f766506416df7ea25586cacd1945a0f61029",
+  "candidate_source_patch_sha256": "2413dab5b1358cf5772bc10be9da36e278f820f2151502ab14d3c268fe137c49",
+  "committed_summary_csv_sha256": "3e7d4a96cd44002aaaddc5e96b62cdcd3e4c7392137c0b03c84cd48341230257",
+  "compat_shim_path": "reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py",
+  "cpu_features": [
+    "avx2",
+    "fma"
+  ],
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "ducc_binary_sha256": "3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a",
+  "ducc_flags": "DUCC sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; benchmark driver: -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_source_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "experiment": "CC scalar synthesis ring-group task grain candidate",
+  "q1_cpu": 0,
+  "q8_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "raw_capture_storage": "outside repository under a local temporary directory; use capture_id and SHA-256 to identify it",
+  "raw_host_telemetry_retained_outside_repository": true,
+  "runner_compat_shim_sha256": "4f32ef9df8c483988ef315615eca0fee8c19ed3a1b6bcfc5a47b52dbe844d73a",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+}
