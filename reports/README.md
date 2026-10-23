@@ -1,6 +1,6 @@
 # RustSHT performance evidence — reading guide
 
-**Current plan:** [Plan 17 — f32 and high-resolution performance](../plans/17-f32-atmospheric-performance.md), Milestone A complete; Milestone B active. Plans 14–16 and the owner-directed scalar dispatch/paired-FFT/full-sweep checkpoint are complete.
+**Current active plan:** [2026-10-23 f64 spin-1 fused reflected-pair DUCC parity](../plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md). Accepted scalar CC/F1 near-parity kernels remain, small scalar outliers are open, and Plan 17 f32 is paused. Historical report entries below remain evidence, not execution commands.
 **Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
 
 - [Plan 17 native f32 baseline (2026-10-22)](plan17-f32-native-baseline-2026-10-22.md): 112 matched native Rust/DUCC cases across spin 0/1, A/S and q1/q8. At T720, test-only phase accounting assigns about 99% of total time to recurrence and coefficient accumulation; the report records compiler/runtime dispatch, errors, timing distributions and limitations.

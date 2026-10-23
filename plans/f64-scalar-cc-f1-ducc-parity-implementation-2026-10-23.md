@@ -1,6 +1,6 @@
-# ACTIVE — f64 scalar CC/F1 DUCC performance parity: implement, do not benchmark indefinitely
+# RETAINED — f64 scalar CC/F1 DUCC performance parity implementation
 
-**Owner reprioritization:** 2026-10-23. **Branch:** `opt/sht-performance-parity`. **Implementer:** Luna Max. **Status:** ACTIVE, supersedes the execution order of [the 2026-10-22 CC/GL/spin-1 plan](f64-cc-gl-kernel-port-and-spin1-parity-2026-10-22.md) and the earlier [full-sweep plan](scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md). Their accepted measurements, mathematical constraints and historical audits remain references, **not blocking prerequisites**. Explicit new owner instructions still take precedence.
+**Status update (2026-10-23):** Superseded as execution queue by [f64 spin-1 dual-channel fused reflected-pair parity](f64-spin1-ducc-reflected-fused-parity-2026-10-23.md). Selected scalar CC/F1 synthesis is now near parity but not universally ≤1.0×, and further broad scalar optimization must not delay the spin-1 recurrence breakthrough. Retain this plan as accepted scalar history and regression constraints. **Original owner reprioritization:** 2026-10-23. **Branch:** `opt/sht-performance-parity`. **Implementer:** Luna Max. **Status:** ACTIVE, supersedes the execution order of [the 2026-10-22 CC/GL/spin-1 plan](f64-cc-gl-kernel-port-and-spin1-parity-2026-10-22.md) and the earlier [full-sweep plan](scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md). Their accepted measurements, mathematical constraints and historical audits remain references, **not blocking prerequisites**. Explicit new owner instructions still take precedence.
 
 ## Goal and nonnegotiable priority
 
