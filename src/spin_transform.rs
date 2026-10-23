@@ -834,22 +834,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             )
         } else {
             self.prepare_spin_latitudes(workspace, recurrence_spin);
-            if T::supports_paired_scalar()
-                && recurrence_spin == 1
-                && !derivative_norm
-                && self.grid.kind() == crate::grid::GridKind::GaussLegendre
-                && let Some(ring_weights) = ring_weights
-            {
-                let longitude_count = T::from_usize(nphi).expect("longitude count converts");
-                for (ring, &weight) in ring_weights.iter().enumerate() {
-                    let mut scale = T::from_f64(weight).expect("ring weight is representable")
-                        / workspace.theta_sin[ring];
-                    if normalize_fourier {
-                        scale /= longitude_count;
-                    }
-                    workspace.analysis_ring_scales[ring] = scale;
-                }
-            }
             (
                 workspace.spectra.as_slice(),
                 workspace.spin_spectra.as_slice(),
@@ -868,19 +852,34 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
             phase_started = std::time::Instant::now();
         }
+        let theta_sin = &workspace.theta_sin[..analysis_ntheta];
+        let theta_cos = &workspace.theta_cos[..analysis_ntheta];
+        let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
         let analysis_ring_scales = if T::supports_paired_scalar()
             && recurrence_spin == 1
             && !derivative_norm
-            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
-            && analysis_ring_weights.is_some()
+            && (analysis_ring_weights.is_some() || analysis_spectra_preweighted)
         {
+            let longitude_count = T::from_usize(nphi).expect("longitude count converts");
+            for ring in 0..analysis_ntheta {
+                let sine = theta_sin[ring];
+                let mut scale = if sine == T::zero() {
+                    T::zero()
+                } else {
+                    let weight = analysis_ring_weights.map_or(T::one(), |weights| {
+                        T::from_f64(weights[ring]).expect("ring weight is representable")
+                    });
+                    weight / sine
+                };
+                if analysis_normalize_fourier {
+                    scale /= longitude_count;
+                }
+                workspace.analysis_ring_scales[ring] = scale;
+            }
             Some(&workspace.analysis_ring_scales[..analysis_ntheta])
         } else {
             None
         };
-        let theta_sin = &workspace.theta_sin[..analysis_ntheta];
-        let theta_cos = &workspace.theta_cos[..analysis_ntheta];
-        let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
         let arch = pulp::Arch::new();
         let order_count = self.harmonics.mmax() + 1;
 
@@ -3411,15 +3410,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                         continue;
                     }
                 }
-                let paired_order = self.grid.kind() == crate::grid::GridKind::GaussLegendre
-                    && ring_weights.is_some()
-                    && self.analyze_spin_scalar_gl_paired_order(
+                let paired_order = analysis_ring_scales.is_some()
+                    && self.analyze_spin_scalar_reflected_order(
                         q_spectra,
                         u_spectra,
                         spectrum_len,
                         phase,
-                        analysis_ring_scales.expect("GL spin analysis has ring scales"),
+                        analysis_ring_scales.expect("spin analysis has reflected ring scales"),
                         m,
+                        0,
+                        theta_sin.len(),
                         theta_sin,
                         theta_cos,
                         ring_order_limits,
@@ -3484,25 +3484,46 @@ impl<T: ShtScalar> ShtPlan<T> {
                         recurrence,
                     )?;
                 } else {
-                    self.analyze_spin_scalar_fast_order(
-                        q_spectra,
-                        u_spectra,
-                        spectrum_len,
-                        longitude_count,
-                        phase,
-                        ring_weights,
-                        normalize_fourier,
-                        m,
-                        fast_start,
-                        fast_end,
-                        theta_sin,
-                        theta_cos,
-                        ring_order_limits,
-                        arch,
-                        e_coefficients,
-                        b_coefficients.as_deref_mut(),
-                        recurrence,
-                    )?;
+                    let paired_order = recurrence_spin == 1
+                        && analysis_ring_scales.is_some()
+                        && self.analyze_spin_scalar_reflected_order(
+                            q_spectra,
+                            u_spectra,
+                            spectrum_len,
+                            phase,
+                            analysis_ring_scales.expect("spin analysis has reflected ring scales"),
+                            m,
+                            fast_start,
+                            fast_end,
+                            theta_sin,
+                            theta_cos,
+                            ring_order_limits,
+                            arch,
+                            e_coefficients,
+                            b_coefficients.as_deref_mut(),
+                            recurrence,
+                        )?;
+                    if !paired_order {
+                        self.analyze_spin_scalar_fast_order(
+                            q_spectra,
+                            u_spectra,
+                            spectrum_len,
+                            longitude_count,
+                            phase,
+                            ring_weights,
+                            normalize_fourier,
+                            m,
+                            fast_start,
+                            fast_end,
+                            theta_sin,
+                            theta_cos,
+                            ring_order_limits,
+                            arch,
+                            e_coefficients,
+                            b_coefficients.as_deref_mut(),
+                            recurrence,
+                        )?;
+                    }
                 }
                 initial = T::fill_spin_factors(
                     recurrence_spin,
@@ -3834,9 +3855,9 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[expect(
         clippy::too_many_arguments,
-        reason = "The GL paired analysis path receives its mirrored Fourier data and worker scratch explicitly."
+        reason = "The reflected analysis path receives paired Fourier data, its latitude range, and worker scratch explicitly."
     )]
-    fn analyze_spin_scalar_gl_paired_order(
+    fn analyze_spin_scalar_reflected_order(
         &self,
         q_spectra: &[Complex<T>],
         u_spectra: &[Complex<T>],
@@ -3844,6 +3865,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         phase: Complex<T>,
         ring_scales: &[T],
         m: usize,
+        ring_start: usize,
+        ring_end: usize,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
@@ -3858,6 +3881,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
         debug_assert_eq!(theta_sin.len(), ring_order_limits.len());
         debug_assert_eq!(ring_scales.len(), theta_sin.len());
+
+        let ntheta = theta_sin.len();
+        if ring_start >= ring_end || ring_end > ntheta || ring_start != ntheta - ring_end {
+            return Ok(false);
+        }
 
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
@@ -3880,16 +3908,16 @@ impl<T: ShtScalar> ShtPlan<T> {
         );
         debug_assert!(paired_factors_ready);
 
-        let ntheta = theta_sin.len();
-        let pair_count = ntheta.div_ceil(2);
+        let pair_count = (ring_end - ring_start).div_ceil(2);
         let compaction_enabled = self.harmonics.lmax() >= 127;
         for block_start in (0..pair_count).step_by(LATITUDE_BLOCK_SIZE) {
             let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_count);
             let block_len = block_end - block_start;
             let mut active_lanes = 0;
             for lane in 0..block_len {
-                let north_ring = block_start + lane;
-                let south_ring = ntheta - 1 - north_ring;
+                let pair_index = block_start + lane;
+                let north_ring = ring_start + pair_index;
+                let south_ring = ring_end - 1 - pair_index;
                 let north_active = m <= ring_order_limits[north_ring];
                 let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
                 if north_active || south_active {
@@ -3935,7 +3963,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             // Check each reflected input before forming its sum and difference.
             // This keeps very large finite values on the established recurrence
             // path instead of overflowing an intermediate parity combination.
-            let all_cosines = &theta_cos[block_start..block_end];
+            let block_ring_start = ring_start + block_start;
+            let block_ring_end = ring_start + block_end;
+            let all_cosines = &theta_cos[block_ring_start..block_ring_end];
             let q_inputs_safe = T::scalar_analysis_products_safe(
                 &recurrence.analysis_same_real[..block_len],
                 &recurrence.analysis_same_imag[..block_len],
@@ -3957,8 +3987,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             let compact = compaction_enabled && active_lanes < block_len;
             let mut compact_len = 0;
             for lane in 0..block_len {
-                let north_ring = block_start + lane;
-                let south_ring = ntheta - 1 - north_ring;
+                let pair_index = block_start + lane;
+                let north_ring = ring_start + pair_index;
+                let south_ring = ring_end - 1 - pair_index;
                 let active = m <= ring_order_limits[north_ring]
                     || (south_ring != north_ring && m <= ring_order_limits[south_ring]);
                 if compact && !active {
@@ -3993,12 +4024,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             let block_sine = if compact {
                 &recurrence.compact_theta_sin[..lane_count]
             } else {
-                &theta_sin[block_start..block_end]
+                &theta_sin[block_ring_start..block_ring_end]
             };
             let block_cosine = if compact {
                 &recurrence.compact_theta_cos[..lane_count]
             } else {
-                &theta_cos[block_start..block_end]
+                &theta_cos[block_ring_start..block_ring_end]
             };
             let q_products_safe = T::scalar_analysis_products_safe(
                 &recurrence.analysis_same_real[..lane_count],
@@ -4158,6 +4189,46 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
         Ok(true)
+    }
+
+    #[cfg(test)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Existing GL tests exercise the full-grid reflected analysis adapter."
+    )]
+    fn analyze_spin_scalar_gl_paired_order(
+        &self,
+        q_spectra: &[Complex<T>],
+        u_spectra: &[Complex<T>],
+        spectrum_len: usize,
+        phase: Complex<T>,
+        ring_scales: &[T],
+        m: usize,
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        e_coefficients: &mut [Complex<T>],
+        b_coefficients: Option<&mut [Complex<T>]>,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<bool, ShtError> {
+        self.analyze_spin_scalar_reflected_order(
+            q_spectra,
+            u_spectra,
+            spectrum_len,
+            phase,
+            ring_scales,
+            m,
+            0,
+            theta_sin.len(),
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            e_coefficients,
+            b_coefficients,
+            recurrence,
+        )
     }
 
     #[expect(
