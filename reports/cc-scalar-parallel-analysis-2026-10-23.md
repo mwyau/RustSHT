@@ -256,3 +256,46 @@ small directional profile improvement, not a matched full-transform A/B. The
 last matched end-to-end q1 Rust/DUCC row remains `24.523/18.609 ms` (`1.315x`);
 this change does not close the CC q1 gap. The raw profiles remain untracked in
 `/tmp`.
+
+## Runtime SIMD-tail padding
+
+Commit `f0ce2aae` pads the final short block of the fused scalar-analysis path
+to Pulp's runtime f64 lane width. The additional lanes use equatorial geometry
+and zero spectra. If the fused route declines, the recurrence fallback receives
+only the original active lanes. The fixed 256-pair tile is unchanged.
+
+The release CC/F1 q1/q8 resampling regression, T191 DUCC reference test across
+all grids, scalar-analysis compaction and range-cache tests passed. The
+no-default-features scalar-analysis tests and strict all-target/all-feature
+Clippy also passed.
+
+The focused post-change benchmark used pinned DUCC 0.42.0 on exact CC T720 at
+q1. Each row collected 30 calibrated timed batches across three process pairs;
+numerical and output-reset checks passed. Rust used Pulp V3 (AVX2/FMA) and DUCC
+used its fixed x86-64-v3 build.
+
+| Order | nphi | Rust ms | DUCC ms | Rust/DUCC | Excess ms | Relative L2 |
+|---|---:|---:|---:|---:|---:|---:|
+| Full (`mmax=720`) | 1458 | 57.552 | 57.000 | 1.008x | 0.552 | `6.01e-14` |
+| Quarter (`mmax=180`) | 1536 | 24.357 | 18.554 | 1.317x | 5.803 | `6.47e-14` |
+
+The quarter-order row is close to the saved prior-source `24.523/18.609 ms`
+result, but those runs were not interleaved as a source A/B. No whole-transform
+gain is attributed to tail padding. The full-order case is near DUCC; the
+quarter-order q1 recurrence gap remains open, and scalar CC/F1 parity is not
+closed.
+
+Reproduce the focused quarter-order row with `DUCC_SRC` pointing to the pinned
+checkout:
+
+```sh
+python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py \
+  --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --grid CC --lmax 720 --mmax 180 --fixed-nphi 1536 \
+  --longitude-mode even_smooth --operation analysis --threads 1 \
+  --results-dir "$RESULTS_DIR" --no-report --retain-local-host-telemetry \
+  --sweep-id cc-t720-quarter-tail-padding-q1
+```
+
+Raw benchmark JSON, timed samples, and host telemetry remain under `/tmp`.
