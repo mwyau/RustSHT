@@ -8,7 +8,7 @@ The direct kernel comparison against the existing paired-block reference passed 
 
 ## Bounded CC T720 q8 screen
 
-The screen used full-order CC T720 (`ntheta=722`, `nphi=1458`), q8 on physical CPUs 0–7, and ten timed single-call batches per backend. Parent source was `61ae7717`; DUCC was pinned at `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+The screen used full-order CC T720 (`ntheta=722`, `nphi=1458`), q8, and ten calibrated batches targeting 25 ms each. Candidate and parent used two calls per batch; DUCC used three. Parent source was `61ae7717`; DUCC was pinned at `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
 
 | Backend | Median | p10–p90 | Range |
 | --- | ---: | ---: | ---: |
@@ -18,7 +18,7 @@ The screen used full-order CC T720 (`ntheta=722`, `nphi=1458`), q8 on physical C
 
 The candidate was 33% slower than parent; its p10 was above the parent's p90, so it was rejected without reduced-order, F1, q1, or T1023 follow-up. Candidate outputs were finite and matched parent at relative L2 `1.27e-13` (maximum absolute error `1.57e-9`) and DUCC at relative L2 `2.83e-13` (maximum absolute error `3.16e-9`). Candidate wait fraction was 3.4%, parent 0.4%, and DUCC 8.1%.
 
-Raw batches, fixture hashes, binary hashes, and host diagnostics are in [the quick-screen record](data/spin1-reflected-pair-stream-register-2026-10-23/cc-t720-full-q8/quick-screen.json).
+Raw batches and detailed fixture, binary, and host records remain local and were not pushed; the timing and numerical summary is recorded above.
 
 ## Bounded AVX2 diagnosis
 

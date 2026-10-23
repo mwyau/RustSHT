@@ -12,7 +12,7 @@ Three interleaved process triplets collected 30 calibrated batches per backend a
 | Category-lane candidate | 35.884 | 34.898–43.108 | 30 |
 | Pinned DUCC | 6.212 | 6.143–6.481 | 30 |
 
-Candidate/parent paired ratios were `2.736`, `2.306`, and `2.249`. Relative L2 error was `9.90e-16` versus the parent and `2.23e-13` versus DUCC; maximum absolute error versus DUCC was `2.48e-9`. q8 runqueue wait stayed below 0.9% in each process. The result is a clear regression, so reduced order, F1, q1, and T1023 cases were skipped. Raw worker records are in [the bounded result data](data/spin1-reflected-pair-category-2026-10-23/cc-t720-full-q8/results.json).
+Candidate/parent paired ratios were `2.736`, `2.306`, and `2.249`. Relative L2 error was `9.90e-16` versus the parent and `2.23e-13` versus DUCC; maximum absolute error versus DUCC was `2.48e-9`. q8 runqueue wait stayed below 0.9% in each process. The result is a clear regression, so reduced order, F1, q1, and T1023 cases were skipped. Raw worker records remain local and were not pushed; this report contains the committed timing and error summary.
 
 ## Source diagnosis
 
