@@ -4517,15 +4517,18 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
         {
             let basis = *basis;
             let cosine = *cosine;
-            let opposite_basis = simd.mul_f64s(basis, cosine);
+            let opposite_real_scaled = simd.mul_f64s(*opposite_real, basis);
+            let opposite_imag_scaled = simd.mul_f64s(*opposite_imag, basis);
+            let opposite_real_1_scaled = simd.mul_f64s(*opposite_real_1, basis);
+            let opposite_imag_1_scaled = simd.mul_f64s(*opposite_imag_1, basis);
             sums_0[0] = simd.mul_add_f64s(*same_real, basis, sums_0[0]);
             sums_0[1] = simd.mul_add_f64s(*same_imag, basis, sums_0[1]);
-            sums_0[2] = simd.mul_add_f64s(*opposite_real, opposite_basis, sums_0[2]);
-            sums_0[3] = simd.mul_add_f64s(*opposite_imag, opposite_basis, sums_0[3]);
+            sums_0[2] = simd.mul_add_f64s(opposite_real_scaled, cosine, sums_0[2]);
+            sums_0[3] = simd.mul_add_f64s(opposite_imag_scaled, cosine, sums_0[3]);
             sums_1[0] = simd.mul_add_f64s(*same_real_1, basis, sums_1[0]);
             sums_1[1] = simd.mul_add_f64s(*same_imag_1, basis, sums_1[1]);
-            sums_1[2] = simd.mul_add_f64s(*opposite_real_1, opposite_basis, sums_1[2]);
-            sums_1[3] = simd.mul_add_f64s(*opposite_imag_1, opposite_basis, sums_1[3]);
+            sums_1[2] = simd.mul_add_f64s(opposite_real_1_scaled, cosine, sums_1[2]);
+            sums_1[3] = simd.mul_add_f64s(opposite_imag_1_scaled, cosine, sums_1[3]);
         }
 
         let mut results = [
@@ -4561,7 +4564,6 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
         debug_assert_eq!(basis_tail.len(), opposite_imag_tail_1.len());
         debug_assert_eq!(basis_tail.len(), cosine_tail.len());
         for lane in 0..basis_tail.len() {
-            let opposite_basis = basis_tail[lane] * cosine_tail[lane];
             for (channel, same_real, same_imag, opposite_real, opposite_imag) in [
                 (
                     0,
@@ -4578,14 +4580,16 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
                     opposite_imag_tail_1,
                 ),
             ] {
+                let opposite_real_scaled = opposite_real[lane] * basis_tail[lane];
+                let opposite_imag_scaled = opposite_imag[lane] * basis_tail[lane];
                 results[channel].0.re =
                     same_real[lane].mul_add(basis_tail[lane], results[channel].0.re);
                 results[channel].0.im =
                     same_imag[lane].mul_add(basis_tail[lane], results[channel].0.im);
                 results[channel].1.re =
-                    opposite_real[lane].mul_add(opposite_basis, results[channel].1.re);
+                    opposite_real_scaled.mul_add(cosine_tail[lane], results[channel].1.re);
                 results[channel].1.im =
-                    opposite_imag[lane].mul_add(opposite_basis, results[channel].1.im);
+                    opposite_imag_scaled.mul_add(cosine_tail[lane], results[channel].1.im);
             }
         }
         results
@@ -7025,6 +7029,34 @@ mod tests {
                 assert!((*actual - *expected).norm() <= 2.0e-14);
             }
         }
+    }
+
+    #[test]
+    fn fused_two_channel_analysis_preserves_opposite_product_range() {
+        let lane_count = 9;
+        let basis = vec![2.0_f64.powi(-1022); lane_count];
+        let cosine = vec![2.0_f64.powi(-54); lane_count];
+        let opposite_real: [Vec<f64>; 2] =
+            std::array::from_fn(|_| vec![2.0_f64.powi(500); lane_count]);
+        let zeros: [Vec<f64>; 2] = std::array::from_fn(|_| vec![0.0; lane_count]);
+        let exponents = vec![0; lane_count];
+
+        let sums = accumulate_analysis_pair_channels_dispatched(
+            Arch::new(),
+            [true, true],
+            true,
+            [&zeros[0], &zeros[1]],
+            [&zeros[0], &zeros[1]],
+            [&opposite_real[0], &opposite_real[1]],
+            [&zeros[0], &zeros[1]],
+            &basis,
+            &exponents,
+            &cosine,
+        );
+
+        let expected = lane_count as f64 * 2.0_f64.powi(-576);
+        assert_eq!(sums[0].1.re, expected);
+        assert_eq!(sums[1].1.re, expected);
     }
 
     #[test]
