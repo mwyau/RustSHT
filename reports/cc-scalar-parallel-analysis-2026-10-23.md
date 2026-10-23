@@ -175,3 +175,53 @@ python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_co
 ```
 
 Raw JSON, timed batches and host telemetry remain local under `/tmp`.
+
+## Reflected-profile clear follow-up
+
+The resampler used to clear the full caller-owned profile before constructing
+each reflected CC/F1 profile. The reflection writes every entry in the active
+FFT span; larger scratch tails are not read before later padding or transforms
+overwrite their active range. The redundant clear is removed. Tests poison the
+serial and parallel profile scratch with NaNs before resampling and verify the
+prepared output remains equal.
+
+The T720 quarter-order CC comparison used the same geometry as the previous
+section (`mmax=180`, `nphi=1536`, pinned DUCC 0.42.0), q1/q8, 30 timed batches
+across three process pairs per backend, and accepted numerical/reset checks
+(relative L2 `6.47e-14`). The prior-source and candidate runs were separate
+process-pair sets, so the small differences below are directional, not a
+paired source A/B.
+
+| q | Prior Rust/DUCC ms | Candidate Rust/DUCC ms | Prior ratio | Candidate ratio | Candidate paired-ratio p10–p90 |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 24.273/18.671 | 24.523/18.609 | 1.304x | 1.315x | 1.298–1.335x |
+| 8 | 3.905/5.253 | 3.826/5.219 | 0.743x | 0.734x | 0.725–0.740x |
+
+The q1 distributions overlap and the median is effectively unchanged. q8
+Rust time fell about 2%, with similar pinned-DUCC time; host runqueue wait p90
+was 9.5% for the candidate and 10.4% for the saved prior run. This is a small
+directional q8 improvement, not a parity claim. The measured q1 Rust/DUCC
+excess remains about `5.9 ms`, the largest open analysis excess in these
+focused cases.
+
+After this change, `cargo test --release --lib -- --test-threads=1` passed
+(274 passed, 36 ignored), `cargo test --release --no-default-features --lib
+-- --test-threads=1` passed (222 passed, 17 ignored), strict all-target
+all-feature Clippy passed, and formatting/diff checks passed.
+
+The candidate source is `4a3a173599d81ac7c3078159ead6f08b796886e6`; the prior
+source was `f03b16bfb6b71f6382055ce0c6cf03cbbc4702c3`. Reproduce the candidate
+comparison with `DUCC_SRC` pointing to the pinned checkout:
+
+```sh
+python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py \
+  --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --grid CC --lmax 720 --mmax 180 --fixed-nphi 1536 \
+  --threads 1 --threads 8 --operation analysis \
+  --production-source-revision 4a3a173599d81ac7c3078159ead6f08b796886e6 \
+  --results-dir "$RESULTS_DIR" --no-report --retain-local-host-telemetry \
+  --sweep-id cc-no-profile-clear
+```
+
+Raw candidate data and host telemetry remain untracked under `/tmp`.
