@@ -30,6 +30,12 @@ NUMERICAL_METRIC_CONTRACT = (
     "complex-magnitude-relative-l2-v2;"
     "zero-reference-subnormal-abs-below-min-normal-v1"
 )
+LEGACY_STABLE_NORM_METRIC_CONTRACT = "complex-magnitude-stable-norm-v1"
+LEGACY_STABLE_NORM_HARNESS_REVISION = "cd8beaa3d554b9d45725eee73bb55697767d9a37"
+SUPPORTED_METRIC_CONTRACTS = frozenset({
+    NUMERICAL_METRIC_CONTRACT,
+    LEGACY_STABLE_NORM_METRIC_CONTRACT,
+})
 SUBNORMAL_ABSOLUTE_ERROR_LIMIT = float.fromhex("0x1.0000000000000p-1022")
 
 
@@ -72,6 +78,18 @@ def finite_number(value) -> bool:
     return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
 
 
+def metric_contract_from_metadata(metadata: dict) -> str | None:
+    declared = metadata.get("numerical_metric_contract")
+    if declared is not None:
+        return declared
+    harness_revision = metadata.get(
+        "benchmark_harness_revision", metadata.get("rust_source_revision")
+    )
+    if harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION:
+        return LEGACY_STABLE_NORM_METRIC_CONTRACT
+    return None
+
+
 def relative_values(tree, field: str) -> list[float]:
     if isinstance(tree, dict):
         result = []
@@ -109,9 +127,45 @@ def zero_reference_exact_metric_acceptable(error: dict, expected_count: int) -> 
 
 def _metric_reasons(metric, label: str, limit: float,
                     expected_count: int, allow_zero_reference_subnormal: bool = False,
-                    require_exact_zero: bool = False) -> list[str]:
+                    require_exact_zero: bool = False,
+                    metric_contract: str | None = None) -> list[str]:
     if not isinstance(metric, dict):
         return [f"{label}_metrics_missing"]
+    metric_contract = metric_contract or metric.get("numerical_metric_contract")
+    if metric_contract == LEGACY_STABLE_NORM_METRIC_CONTRACT:
+        reasons = []
+        for field in ("absolute_max", "max_relative_above_1e-12_peak"):
+            value = metric.get(field)
+            if not finite_number(value) or value < 0.0:
+                reasons.append(f"{label}_{field}_missing_or_nonfinite")
+        near_zero_count = metric.get("near_zero_reference_count")
+        if (not isinstance(near_zero_count, int) or isinstance(near_zero_count, bool)
+                or near_zero_count < 0 or near_zero_count > expected_count):
+            reasons.append(f"{label}_near_zero_reference_count_invalid")
+        relative_l2 = metric.get("relative_l2")
+        if not finite_number(relative_l2) or relative_l2 < 0.0:
+            reasons.append(f"{label}_relative_l2_missing_or_nonfinite")
+        if metric.get("metrics_finite") is False:
+            reasons.append(f"{label}_metrics_not_finite")
+        if require_exact_zero:
+            if (metric.get("absolute_max") != 0.0 or relative_l2 != 0.0
+                    or metric.get("max_relative_above_1e-12_peak") != 0.0):
+                reasons.append(f"{label}_not_exact_zero")
+            if near_zero_count != expected_count:
+                reasons.append(f"{label}_zero_reference_count_invalid")
+        elif allow_zero_reference_subnormal:
+            if near_zero_count != expected_count:
+                reasons.append(f"{label}_subnormal_reference_count_invalid")
+            if metric.get("absolute_max") != 0.0:
+                # The pinned legacy norm floors its denominator at MIN_NORMAL.
+                # A nonzero subnormal error cannot establish its true relative
+                # error without the reference peak, so require exact agreement.
+                reasons.append(f"{label}_legacy_subnormal_reference_peak_unavailable")
+        if finite_number(relative_l2) and relative_l2 > limit:
+            reasons.append(f"{label}_relative_l2_exceeded")
+        return reasons
+    if metric_contract != NUMERICAL_METRIC_CONTRACT:
+        return [f"{label}_numerical_metric_contract_unrecognized"]
     reasons = []
     for field in ("absolute_max", "reference_peak", "max_relative_above_1e-12_peak"):
         if not finite_number(metric.get(field)) or metric[field] < 0.0:
@@ -154,7 +208,8 @@ def _metric_reasons(metric, label: str, limit: float,
     return reasons
 
 
-def random_numeric_reasons(record: dict | None) -> list[str]:
+def random_numeric_reasons(record: dict | None,
+                           metric_contract: str | None = None) -> list[str]:
     if not isinstance(record, dict):
         return ["random_numeric_record_missing"]
     if record.get("finite_outputs") is not True:
@@ -171,16 +226,21 @@ def random_numeric_reasons(record: dict | None) -> list[str]:
         else (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
     )
     return _metric_reasons(
-        record, "random_output", RANDOM_RELATIVE_L2_LIMIT, expected_count
+        record, "random_output", RANDOM_RELATIVE_L2_LIMIT, expected_count,
+        metric_contract=metric_contract or record.get("numerical_metric_contract"),
     )
 
 
-def validation_reasons(validation: dict | None, expected_case: dict | None = None) -> list[str]:
+def validation_reasons(validation: dict | None, expected_case: dict | None = None,
+                       metric_contract: str | None = None) -> list[str]:
     if validation is None:
         return ["missing_validation"]
     if not isinstance(validation, dict):
         return ["malformed_validation"]
     reasons = []
+    metric_contract = (
+        metric_contract or validation.get("numerical_metric_contract")
+    )
     if validation.get("finite_outputs") is not True:
         reasons.append("nonfinite_validation_output")
     lmax, mmax = validation.get("lmax"), validation.get("mmax")
@@ -223,6 +283,7 @@ def validation_reasons(validation: dict | None, expected_case: dict | None = Non
         reasons.extend(_metric_reasons(
             roundtrip.get(backend) if isinstance(roundtrip, dict) else None,
             f"roundtrip_{backend}", VALIDATION_RELATIVE_L2_LIMIT, nalm,
+            metric_contract=metric_contract,
         ))
 
     expected_basis_modes = {
@@ -255,6 +316,7 @@ def validation_reasons(validation: dict | None, expected_case: dict | None = Non
             reasons.extend(_metric_reasons(
                 item.get(field), f"{label}_{field}",
                 VALIDATION_RELATIVE_L2_LIMIT, count,
+                metric_contract=metric_contract,
             ))
 
     adjoints = validation.get("adjoints")
@@ -287,14 +349,16 @@ def validation_reasons(validation: dict | None, expected_case: dict | None = Non
                 VALIDATION_RELATIVE_L2_LIMIT, count,
                 allow_zero_reference_subnormal=(name == "subnormal"),
                 require_exact_zero=(name == "zero"),
+                metric_contract=metric_contract,
             ))
     return reasons
 
 
 def audited_numerical_status(complete: bool, numeric_reasons: list[str],
                              validation: dict | None, reset_status: str,
-                             expected_case: dict | None = None) -> tuple[str, list[str]]:
-    check_reasons = validation_reasons(validation, expected_case)
+                             expected_case: dict | None = None,
+                             metric_contract: str | None = None) -> tuple[str, list[str]]:
+    check_reasons = validation_reasons(validation, expected_case, metric_contract)
     if numeric_reasons or reset_status == "rejected" or (validation is not None and check_reasons):
         return "rejected", check_reasons
     if not complete or reset_status != "accepted" or validation is None:
@@ -316,7 +380,8 @@ def independent_full_sweep_pass(expected_groups: list[dict], missing_cases: list
         and all(row.get("numerical_status") == "accepted" for row in expected_groups)
         and all(row.get("timing_quality_status") == "qualified" for row in expected_groups)
         and all(row.get("reset_consistency_status") == "accepted" for row in expected_groups)
-        and all(len(values) == 1 for values in identities.values())
+        and all(len(values) == 1 for field, values in identities.items()
+                if field != "numerical_metric_contract")
         and metric_contract_pass
     )
 
@@ -329,6 +394,8 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
     samples: dict[tuple, dict] = {}
     numerics: dict[tuple, dict] = {}
     validations: dict[tuple, dict] = {}
+    numeric_contracts: dict[tuple, str | None] = {}
+    validation_contracts: dict[tuple, str | None] = {}
     failures = []
     duplicates = Counter()
     identity_fields = (
@@ -343,10 +410,17 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
 
     for path, doc in zip(shard_paths, docs):
         metadata = doc.get("metadata", {})
+        shard_contract = metric_contract_from_metadata(metadata)
         for field in identity_fields:
             value = metadata.get(field)
             if field == "binary_source_revision" and value is None:
                 value = metadata.get("production_source_revision")
+            elif field == "numerical_metric_contract":
+                variants = metadata.get("numerical_metric_contracts")
+                if isinstance(variants, list) and variants:
+                    identities[field].update(variants)
+                    continue
+                value = shard_contract
             identities[field].add(value)
         harnesses.add((metadata.get("benchmark_harness_revision", metadata.get("rust_source_revision")),
                        metadata.get("benchmark_harness_sha256")))
@@ -376,11 +450,17 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             if key in numerics:
                 duplicates["numerics"] += 1
             numerics[key] = numeric
+            numeric_contracts[key] = (
+                numeric.get("numerical_metric_contract") or shard_contract
+            )
         for validation in doc.get("validation", []):
             key = (validation["case_id"], validation["threads"])
             if key in validations:
                 duplicates["validation"] += 1
             validations[key] = validation
+            validation_contracts[key] = (
+                validation.get("numerical_metric_contract") or shard_contract
+            )
         failures.extend(doc.get("failures", []))
 
     actual_groups = {
@@ -438,14 +518,20 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         )
         numeric_reasons = []
         for item in group_numerics:
-            numeric_reasons.extend(random_numeric_reasons(item))
+            numeric_key = (item["case_id"], item["operation"], item["threads"],
+                           item["process_pair"])
+            numeric_reasons.extend(
+                random_numeric_reasons(item, numeric_contracts.get(numeric_key))
+            )
             value = item.get("relative_l2")
             if finite_number(value) and (max_random[0] is None or value > max_random[0]):
                 max_random = (value, item["case_id"])
         validation = validations.get((case_id, threads))
+        validation_contract = validation_contracts.get((case_id, threads))
         expected_case = expected.get(case_id)
         numerical_status, check_reasons = audited_numerical_status(
-            complete, numeric_reasons, validation, reset_status, expected_case
+            complete, numeric_reasons, validation, reset_status, expected_case,
+            validation_contract,
         )
         validation_values = relative_values(validation or {}, "relative_l2")
         if validation_values:
@@ -560,9 +646,12 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         "duration_window_status": dict(Counter(row["duration_window_status"] for row in expected_group_records)),
         "reset_consistency_status": dict(Counter(row["reset_consistency_status"] for row in expected_group_records)),
     }
-    metric_contract_pass = identities["numerical_metric_contract"] == {
-        NUMERICAL_METRIC_CONTRACT
-    }
+    metric_contract_values = identities["numerical_metric_contract"]
+    metric_contract_pass = (
+        bool(metric_contract_values)
+        and None not in metric_contract_values
+        and metric_contract_values.issubset(SUPPORTED_METRIC_CONTRACTS)
+    )
     audit = {
         "audit_method": "independent stdlib manifest and raw-record audit; does not import benchmark runner",
         "input_shards": [
@@ -586,10 +675,11 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         ],
         "shards_with_build_record_verified_at_capture": verified_record_shards,
         "source_identity_mismatch_fields": sorted(
-            field for field, values in identities.items() if len(values) != 1
+            field for field, values in identities.items()
+            if field != "numerical_metric_contract" and len(values) != 1
         ),
         "numerical_metric_contract": {
-            "expected": NUMERICAL_METRIC_CONTRACT,
+            "supported": sorted(SUPPORTED_METRIC_CONTRACTS),
             "observed": sorted(str(value) for value in identities["numerical_metric_contract"]),
             "pass": metric_contract_pass,
         },

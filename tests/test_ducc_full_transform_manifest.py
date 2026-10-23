@@ -253,6 +253,90 @@ def test_legacy_execution_protocol_uses_declared_binary_source() -> None:
     assert benchmark.execution_protocol(legacy)["binary_source_revision"] == "a" * 40
 
 
+def test_pinned_precontract_harness_resolves_only_to_legacy_stable_norm() -> None:
+    metadata = {
+        "benchmark_harness_revision": benchmark.LEGACY_STABLE_NORM_HARNESS_REVISION,
+    }
+    assert benchmark.metric_contract_from_metadata(metadata) == (
+        benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT
+    )
+    assert cc_audit_manifest.metric_contract_from_metadata(metadata) == (
+        cc_audit_manifest.LEGACY_STABLE_NORM_METRIC_CONTRACT
+    )
+    assert benchmark.metric_contract_from_metadata({
+        "benchmark_harness_revision": "38e57b0fd5efe7dfe3db1786bb69b1a2c60d5d50",
+    }) is None
+
+
+def test_legacy_metric_schema_is_accepted_but_nonzero_subnormal_error_needs_revalidation() -> None:
+    validation = accepted_validation()
+    validation["numerical_metric_contract"] = benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT
+    for tree in (validation["roundtrip"],):
+        for metric in tree.values():
+            metric.pop("reference_peak")
+            metric.pop("metrics_finite")
+    for item in validation["basis"]:
+        for field in ("map_rust_ducc", "analysis_of_synthesis_rust",
+                      "analysis_of_synthesis_ducc"):
+            item[field].pop("reference_peak")
+            item[field].pop("metrics_finite")
+    for edge_name, edge in validation["edge_cases"].items():
+        for field in ("map_rust_ducc", "alm_rust_ducc"):
+            edge[field].pop("reference_peak")
+            edge[field].pop("metrics_finite")
+    validation["edge_cases"]["subnormal"]["map_rust_ducc"].update({
+        "absolute_max": 0.0,
+        "relative_l2": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+    })
+    validation["edge_cases"]["subnormal"]["alm_rust_ducc"].update({
+        "absolute_max": 0.0,
+        "relative_l2": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+    })
+
+    assert benchmark.saved_validation_acceptance(
+        validation, SYNTHETIC_CC_CASE,
+        benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT,
+    ) == ("accepted", [])
+    assert cc_audit_manifest.validation_reasons(
+        validation, SYNTHETIC_CC_CASE,
+        cc_audit_manifest.LEGACY_STABLE_NORM_METRIC_CONTRACT,
+    ) == []
+
+    validation["edge_cases"]["subnormal"]["alm_rust_ducc"]["absolute_max"] = np.nextafter(0.0, 1.0)
+    runner_status, runner_reasons = benchmark.saved_validation_acceptance(
+        validation, SYNTHETIC_CC_CASE,
+        benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT,
+    )
+    audit_reasons = cc_audit_manifest.validation_reasons(
+        validation, SYNTHETIC_CC_CASE,
+        cc_audit_manifest.LEGACY_STABLE_NORM_METRIC_CONTRACT,
+    )
+    assert runner_status == "rejected"
+    assert any("legacy_subnormal_reference_peak_unavailable" in reason
+               for reason in runner_reasons)
+    assert any("legacy_subnormal_reference_peak_unavailable" in reason
+               for reason in audit_reasons)
+
+
+def test_metric_protocol_compatibility_allows_only_known_metric_version_differences() -> None:
+    legacy = {
+        "numerical_metric_contract": benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT,
+        "grid": "CC",
+        "rust_binary_sha256": "a" * 64,
+    }
+    current = {
+        **legacy,
+        "numerical_metric_contract": benchmark.ERROR_METRICS_CONTRACT,
+    }
+    assert benchmark.compatible_metric_protocols([legacy, current])
+    changed_binary = {**current, "rust_binary_sha256": "b" * 64}
+    assert not benchmark.compatible_metric_protocols([legacy, changed_binary])
+    unknown = {**current, "numerical_metric_contract": "unknown"}
+    assert not benchmark.compatible_metric_protocols([legacy, unknown])
+
+
 def test_skipped_build_requires_matching_binary_build_identity(tmp_path) -> None:
     record = {
         "metadata": {
@@ -357,7 +441,9 @@ def test_runner_and_independent_auditor_accept_the_same_complete_validation() ->
     assert benchmark.saved_validation_acceptance(validation, SYNTHETIC_CC_CASE) == (
         "accepted", []
     )
-    assert cc_audit_manifest.validation_reasons(validation, SYNTHETIC_CC_CASE) == []
+    assert cc_audit_manifest.validation_reasons(
+        validation, SYNTHETIC_CC_CASE, cc_audit_manifest.NUMERICAL_METRIC_CONTRACT
+    ) == []
 
 
 def test_zero_reference_exact_edge_match_is_accepted() -> None:
@@ -368,7 +454,9 @@ def test_zero_reference_exact_edge_match_is_accepted() -> None:
     validation["edge_cases"]["subnormal"]["map_rust_ducc"] = exact_match
 
     assert benchmark.saved_validation_acceptance(validation, SYNTHETIC_CC_CASE)[0] == "accepted"
-    assert cc_audit_manifest.validation_reasons(validation, SYNTHETIC_CC_CASE) == []
+    assert cc_audit_manifest.validation_reasons(
+        validation, SYNTHETIC_CC_CASE, cc_audit_manifest.NUMERICAL_METRIC_CONTRACT
+    ) == []
 
 
 @pytest.mark.parametrize("missing_or_invalid", [
@@ -397,7 +485,8 @@ def test_runner_and_auditor_reject_incomplete_or_nonfinite_validation(
         validation, SYNTHETIC_CC_CASE
     )
     audit_status, audit_reasons = cc_audit_manifest.audited_numerical_status(
-        True, [], validation, "accepted", SYNTHETIC_CC_CASE
+        True, [], validation, "accepted", SYNTHETIC_CC_CASE,
+        cc_audit_manifest.NUMERICAL_METRIC_CONTRACT,
     )
 
     assert runner_status == audit_status == "rejected"
@@ -438,6 +527,7 @@ def test_random_numeric_record_requires_all_finite_metrics() -> None:
         **SYNTHETIC_CC_CASE,
         "operation": "analysis",
         "finite_outputs": True,
+        "numerical_metric_contract": cc_audit_manifest.NUMERICAL_METRIC_CONTRACT,
         **synthetic_metric(),
     }
 

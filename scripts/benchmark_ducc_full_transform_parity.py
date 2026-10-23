@@ -54,6 +54,13 @@ ERROR_METRICS_CONTRACT = (
     "complex-magnitude-relative-l2-v2;"
     "zero-reference-subnormal-abs-below-min-normal-v1"
 )
+LEGACY_STABLE_NORM_METRIC_CONTRACT = "complex-magnitude-stable-norm-v1"
+LEGACY_STABLE_NORM_HARNESS_REVISION = "cd8beaa3d554b9d45725eee73bb55697767d9a37"
+SUPPORTED_METRIC_CONTRACTS = frozenset({
+    ERROR_METRICS_CONTRACT,
+    LEGACY_STABLE_NORM_METRIC_CONTRACT,
+})
+ACTIVE_METRIC_CONTRACT = ERROR_METRICS_CONTRACT
 SUBNORMAL_ABSOLUTE_ERROR_LIMIT = float(np.finfo(np.float64).tiny)
 DENSE_SWEEP_HIGH_LMAX = (
     257, 258, 300, 320, 384, 511, 512, 513, 640, 720, 721, 768, 896,
@@ -515,6 +522,34 @@ def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float 
     }
 
 
+def metric_contract_from_metadata(metadata: dict) -> str | None:
+    """Resolve a declared metric contract or the one pinned pre-contract harness."""
+    declared = metadata.get("numerical_metric_contract")
+    if declared is not None:
+        return declared
+    harness_revision = metadata.get(
+        "benchmark_harness_revision", metadata.get("rust_source_revision")
+    )
+    if harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION:
+        return LEGACY_STABLE_NORM_METRIC_CONTRACT
+    return None
+
+
+def compatible_metric_protocols(protocols: list[dict]) -> bool:
+    """Allow only known metric-version differences over an otherwise exact protocol."""
+    if not protocols:
+        return False
+    contracts = {protocol.get("numerical_metric_contract") for protocol in protocols}
+    if None in contracts or not contracts.issubset(SUPPORTED_METRIC_CONTRACTS):
+        return False
+    common = [
+        {key: value for key, value in protocol.items()
+         if key != "numerical_metric_contract"}
+        for protocol in protocols
+    ]
+    return all(protocol == common[0] for protocol in common[1:])
+
+
 def validation_sidecar(output: pathlib.Path, name: str, dtype: str) -> np.ndarray:
     return np.fromfile(pathlib.Path(f"{output}.{name}"), dtype=dtype)
 
@@ -646,9 +681,48 @@ def compare_validation(case: dict, outputs: dict[str, pathlib.Path], records: di
 
 def _validation_metric_failures(metric, label: str, limit: float, expected_count: int,
                                 allow_zero_reference_subnormal: bool = False,
-                                require_exact_zero: bool = False) -> list[str]:
+                                require_exact_zero: bool = False,
+                                metric_contract: str | None = None) -> list[str]:
     if not isinstance(metric, dict):
         return [f"{label}_metrics_missing"]
+    metric_contract = metric_contract or metric.get("numerical_metric_contract") or ACTIVE_METRIC_CONTRACT
+    if metric_contract == LEGACY_STABLE_NORM_METRIC_CONTRACT:
+        failures = []
+        for field in ("absolute_max", "max_relative_above_1e-12_peak"):
+            value = metric.get(field)
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) or value < 0.0):
+                failures.append(f"{label}_{field}_missing_or_nonfinite")
+        near_zero_count = metric.get("near_zero_reference_count")
+        if (not isinstance(near_zero_count, int) or isinstance(near_zero_count, bool)
+                or near_zero_count < 0 or near_zero_count > expected_count):
+            failures.append(f"{label}_near_zero_reference_count_invalid")
+        relative_l2 = metric.get("relative_l2")
+        if (isinstance(relative_l2, bool) or not isinstance(relative_l2, (int, float))
+                or not math.isfinite(relative_l2) or relative_l2 < 0.0):
+            failures.append(f"{label}_relative_l2_missing_or_nonfinite")
+        if metric.get("metrics_finite") is False:
+            failures.append(f"{label}_metrics_not_finite")
+        if require_exact_zero:
+            if (metric.get("absolute_max") != 0.0 or relative_l2 != 0.0
+                    or metric.get("max_relative_above_1e-12_peak") != 0.0):
+                failures.append(f"{label}_not_exact_zero")
+            if near_zero_count != expected_count:
+                failures.append(f"{label}_zero_reference_count_invalid")
+        elif allow_zero_reference_subnormal:
+            if near_zero_count != expected_count:
+                failures.append(f"{label}_subnormal_reference_count_invalid")
+            if metric.get("absolute_max") != 0.0:
+                # The legacy stable norm floors its denominator at MIN_NORMAL. A
+                # nonzero subnormal error therefore cannot establish the true
+                # relative error without the omitted reference peak.
+                failures.append(f"{label}_legacy_subnormal_reference_peak_unavailable")
+        if (isinstance(relative_l2, (int, float)) and not isinstance(relative_l2, bool)
+                and math.isfinite(relative_l2) and relative_l2 > limit):
+            failures.append(f"{label}_relative_l2_exceeded")
+        return failures
+    if metric_contract != ERROR_METRICS_CONTRACT:
+        return [f"{label}_numerical_metric_contract_unrecognized"]
     failures = []
     for field in ("absolute_max", "reference_peak", "max_relative_above_1e-12_peak"):
         value = metric.get(field)
@@ -698,7 +772,8 @@ def _validation_metric_failures(metric, label: str, limit: float, expected_count
     return failures
 
 
-def random_comparison_failures(record: dict | None) -> list[str]:
+def random_comparison_failures(record: dict | None,
+                               metric_contract: str | None = None) -> list[str]:
     if not isinstance(record, dict):
         return ["random_numeric_record_missing"]
     if record.get("finite_outputs") is not True:
@@ -715,18 +790,23 @@ def random_comparison_failures(record: dict | None) -> list[str]:
         else (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
     )
     return _validation_metric_failures(
-        record, "random_output", RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE, expected_count
+        record, "random_output", RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE, expected_count,
+        metric_contract=metric_contract or record.get("numerical_metric_contract"),
     )
 
 
 def saved_validation_acceptance(validation: dict | None,
-                                expected_case: dict | None = None) -> tuple[str, list[str]]:
+                                expected_case: dict | None = None,
+                                metric_contract: str | None = None) -> tuple[str, list[str]]:
     """Apply strict per-field acceptance to one saved analytic validation record."""
     if validation is None:
         return "incomplete", ["missing_validation"]
     if not isinstance(validation, dict):
         return "rejected", ["malformed_validation"]
     failures = []
+    metric_contract = (
+        metric_contract or validation.get("numerical_metric_contract") or ACTIVE_METRIC_CONTRACT
+    )
     if validation.get("finite_outputs") is not True:
         failures.append("nonfinite_validation_output")
 
@@ -775,6 +855,7 @@ def saved_validation_acceptance(validation: dict | None,
         failures.extend(_validation_metric_failures(
             roundtrip.get(backend) if isinstance(roundtrip, dict) else None,
             f"roundtrip_{backend}", VALIDATION_RELATIVE_L2_TOLERANCE, nalm,
+            metric_contract=metric_contract,
         ))
 
     basis = validation.get("basis")
@@ -800,6 +881,7 @@ def saved_validation_acceptance(validation: dict | None,
             failures.extend(_validation_metric_failures(
                 item.get(field), f"{label}_{field}",
                 VALIDATION_RELATIVE_L2_TOLERANCE, count,
+                metric_contract=metric_contract,
             ))
 
     adjoints = validation.get("adjoints")
@@ -832,6 +914,7 @@ def saved_validation_acceptance(validation: dict | None,
                 VALIDATION_RELATIVE_L2_TOLERANCE, count,
                 allow_zero_reference_subnormal=(edge_name == "subnormal"),
                 require_exact_zero=(edge_name == "zero"),
+                metric_contract=metric_contract,
             ))
     return ("rejected" if failures else "accepted"), sorted(set(failures))
 
@@ -1020,6 +1103,7 @@ def execution_protocol(metadata: dict) -> dict:
         "ducc_sht_compile_command", "ducc_driver_compile_command",
     )
     protocol = {key: metadata.get(key) for key in keys}
+    protocol["numerical_metric_contract"] = metric_contract_from_metadata(metadata)
     # Older shards predate this field. Their production_source_revision was
     # explicitly supplied as the source represented by the frozen binary.
     protocol["binary_source_revision"] = metadata.get(
@@ -3408,6 +3492,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
     base_binary_source = metadata.get(
         "binary_source_revision", metadata.get("production_source_revision")
     )
+    protocol_variants = [base_protocol]
     for index, shard in enumerate(shards[1:], 2):
         for field in invariant_fields:
             if shard["metadata"].get(field) != metadata.get(field):
@@ -3417,8 +3502,15 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         )
         if shard_binary_source != base_binary_source:
             raise ValueError(f"shard {index} metadata mismatch for binary_source_revision")
-        if shard_protocol(shard["metadata"]) != base_protocol:
+        protocol = shard_protocol(shard["metadata"])
+        protocol_variants.append(protocol)
+        if not compatible_metric_protocols([base_protocol, protocol]):
             raise ValueError(f"shard {index} benchmark execution protocol mismatch")
+    metric_contracts = sorted({
+        protocol.get("numerical_metric_contract") for protocol in protocol_variants
+    })
+    if not metric_contracts or None in metric_contracts:
+        raise ValueError("shards must declare a recognized numerical metric contract")
     cases: list[dict] = []
     raw: list[dict] = []
     errors: list[dict] = []
@@ -3443,8 +3535,20 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
                 raise ValueError(f"duplicate native sample key: {key}")
             seen_samples.add(key)
             raw.append(sample)
-        errors.extend(shard["numerics"])
-        validations.extend(shard["validation"])
+        shard_contract = shard_protocol(shard["metadata"])["numerical_metric_contract"]
+        harness_revision = shard["metadata"].get(
+            "benchmark_harness_revision", shard["metadata"].get("rust_source_revision")
+        )
+        errors.extend({
+            **item,
+            "numerical_metric_contract": shard_contract,
+            "source_harness_revision": harness_revision,
+        } for item in shard["numerics"])
+        validations.extend({
+            **item,
+            "numerical_metric_contract": shard_contract,
+            "source_harness_revision": harness_revision,
+        } for item in shard["validation"])
         failures.extend(shard.get("failures", []))
         historical_attempts.extend(
             {"source_shard": path.parent.name, **attempt}
@@ -3510,6 +3614,10 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
     }
     metadata["binary_build_records"] = [json.loads(record) for record in sorted(build_records)]
     metadata["binary_source_revision"] = base_binary_source
+    metadata["numerical_metric_contracts"] = metric_contracts
+    metadata["numerical_metric_contract"] = (
+        metric_contracts[0] if len(metric_contracts) == 1 else None
+    )
     metadata["binary_provenance_verified"] = bool(build_records) and all(
         shard["metadata"].get("rust_binary_sha256") == metadata["rust_binary_sha256"]
         and shard["metadata"].get("ducc_binary_sha256") == metadata["ducc_binary_sha256"]
@@ -3518,10 +3626,25 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         ) == base_binary_source
         for shard in shards
     )
-    metadata["benchmark_execution_protocol"] = base_protocol
-    metadata["benchmark_execution_protocol_sha256"] = hashlib.sha256(
-        json.dumps(base_protocol, sort_keys=True).encode()
-    ).hexdigest()
+    canonical_protocols = {
+        json.dumps(protocol, sort_keys=True): protocol for protocol in protocol_variants
+    }
+    metadata["benchmark_execution_protocol_variants"] = [
+        {
+            "protocol": protocol,
+            "sha256": hashlib.sha256(encoded.encode()).hexdigest(),
+        }
+        for encoded, protocol in sorted(canonical_protocols.items())
+    ]
+    if len(canonical_protocols) == 1:
+        encoded, protocol = next(iter(canonical_protocols.items()))
+        metadata["benchmark_execution_protocol"] = protocol
+        metadata["benchmark_execution_protocol_sha256"] = hashlib.sha256(
+            encoded.encode()
+        ).hexdigest()
+    else:
+        metadata.pop("benchmark_execution_protocol", None)
+        metadata.pop("benchmark_execution_protocol_sha256", None)
     metadata["recurrence_stage_attribution_status"] = "not_measured"
     if recurrence_stage_attribution is not None:
         attribution = json.loads(recurrence_stage_attribution.read_text())
