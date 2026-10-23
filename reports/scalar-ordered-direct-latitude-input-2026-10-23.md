@@ -31,3 +31,16 @@ Each row has 30 calibrated batches per backend across three process pairs, q1 on
 The clearest signals are F1 q1 (`-3.9%` Rust time; nonoverlapping paired-ratio ranges), CC q8 (`-2.3%`; nonoverlapping ranges) and the GL q8 comparison (`-2.7%`; nonoverlapping ranges). CC q1 and F1 q8 ranges overlap; GL q1 has a large process outlier. Selected CC/F1 synthesis now ranges from `1.011x` to `1.043x` DUCC at T720, so this does not establish broad parity or remove the remaining q1 CC excess.
 
 The benchmark used `scripts/benchmark_ducc_full_transform_parity.py` at harness SHA-256 `4d753f915f80bcc4476cdaeb3b563c8c83fddc933f3ec8ed7073d0fb1c8ca97a`, with `--skip-build`, `--lmax 720 --full-mmax-only --longitude-mode even_smooth --operation synthesis --threads 1 --threads 8`. Raw results and local CPU/runqueue telemetry remain untracked locally.
+
+## T255 full-order holdout
+
+The source pair was also checked at `lmax=mmax=255`, `nphi=512`, with exact CC (`ntheta=257`) and F1 (`ntheta=256`) grids. Each row again used 30 batches per backend across three process pairs. The runner reported maximum relative L2 `5.01e-15` for CC and `5.64e-15` for F1, with output-reset checks accepted. Its broader validation sidecar remains incomplete.
+
+| Grid | Threads | Rust ms, baseline → candidate | DUCC ms, baseline → candidate | Ratio, baseline → candidate | Paired-ratio p10–p90, baseline → candidate |
+|---|---:|---:|---:|---:|---:|
+| CC | 1 | 1.529 → 1.448 | 1.416 → 1.418 | 1.082 → 1.024 | 1.066–1.114 → 1.019–1.026 |
+| CC | 8 | 0.237 → 0.228 | 0.235 → 0.234 | 1.003 → 0.972 | 1.002–1.118 → 0.966–0.977 |
+| F1 | 1 | 1.559 → 1.412 | 1.380 → 1.376 | 1.097 → 1.030 | 1.091–1.130 → 1.017–1.062 |
+| F1 | 8 | 0.228 → 0.220 | 0.230 → 0.228 | 0.995 → 0.964 | 0.984–0.996 → 0.957–0.975 |
+
+The q1 paired-ratio ranges do not overlap for either grid, and the candidate q8 medians are below DUCC. The host was contended: runqueue-wait p90 was about `20.8%` across these source runs, and the baseline CC q8 row had batches outside the target window. Treat this lower-degree set as directional. Together with T720, it shows no clear low-degree regression and places selected CC/F1 full-order synthesis within about 3% of DUCC or faster; CC T720 q1 remains the largest measured excess.
