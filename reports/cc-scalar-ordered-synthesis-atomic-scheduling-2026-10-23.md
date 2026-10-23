@@ -54,3 +54,27 @@ Rust binary SHA-256 values are `f19064dccdf352e2b11c33af7ed2a5744100b71d5cd4dd50
 (baseline) and `23d9402ea44a62bf3cf3051eda677f2d489d2f0d1bd5d65ac964514bb4e68121`
 (candidate). The runs used the existing focused harness and its compatibility
 wrapper from `reports/data/cc-scalar-synthesis-grain-2026-10-23/`.
+
+## GL control
+
+The shared scheduler also serves scalar GL synthesis. At exact GL T720, full
+order, q8, the previous source measured Rust/DUCC at `2.754/2.719 ms`
+(`1.018×`), and the candidate measured `2.746/2.729 ms` (`1.004×`). Each
+backend produced 30 qualified batches across three process pairs; the paired
+ratio intervals were `1.007–1.022×` and `1.003–1.007×`. Their edge overlaps,
+so this control shows no GL regression but does not establish a GL speedup.
+Relative L2 was `4.46e-14`, reset checks were accepted, and no failures were
+recorded. The q8 process order was candidate then baseline. The candidate used
+DUCC binary SHA-256 `3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a`.
+
+## Held-out CC degree
+
+The pushed candidate source was also checked against DUCC on exact CC T1023,
+full order, q8, `ntheta=1025`, `nphi=2048`. Warm medians were `6.921 ms`
+(Rust) and `6.801 ms` (DUCC), a `1.018×` ratio with process-pair ratios
+`1.015–1.019×`. Each backend had 30 qualified batches across three process
+pairs, all within the target window. Relative L2 was `2.57e-14`, reset checks
+were accepted, and there were no failure records. The harness's broad
+validation sidecar was not run, so this remains a focused numerical check.
+This is a current-source-versus-DUCC result; no T1023 Rust baseline A/B was
+run for the atomic scheduling change.
