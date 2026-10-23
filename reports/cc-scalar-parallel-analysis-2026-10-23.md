@@ -133,3 +133,45 @@ python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_co
 
 Raw JSON, timed batches and host telemetry remain local under `/tmp` and are
 not committed.
+
+## Direct prepared-spectrum follow-up
+
+After CC/F1 resampling, the ring-major spectrum is already normalized and
+weighted. The scalar recurrence analysis path now consumes that prepared input
+directly while packing reflected latitude pairs, skipping the extra
+order-major transpose and copy. The weighted direct-input path used by GL and
+projected grids is unchanged. The regression test compares direct prepared
+input with the previous order-preparation values for CC/F1.
+
+The focused comparison used CC T720 (`ntheta=722`), `mmax=180`,
+`nphi=1536`, q1/q8 and pinned DUCC 0.42.0. Each backend had 30 timed batches
+across three interleaved process pairs; all comparisons passed numerical and
+reset checks (relative L2 `6.47e-14`).
+
+| q | Rust ms | DUCC ms | paired Rust/DUCC ratio | paired ratio p10–p90 | saved Rust/DUCC ms |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 24.273 | 18.671 | 1.304x | 1.293–1.305x | 24.810/18.833 |
+| 8 | 3.905 | 5.253 | 0.743x | 0.730–0.781x | 5.988/6.275 |
+
+The saved q8 run had noisy host telemetry and missed the calibrated batch
+window for some samples, so the q8 comparison is directional rather than a
+strict before/after claim. The current q1 case remains 30% slower than DUCC;
+the q8 case is faster. This does not close CC analysis parity. A GL T720
+quarter-order control (`nphi=1458`) measured Rust/DUCC ratios of `0.911x` at
+both q1 (7.635/8.366 ms) and q8 (1.125/1.242 ms); numerical and timing checks
+passed.
+
+Reproduction commands, with `DUCC_SRC` pointing to the pinned checkout:
+
+```sh
+python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py \
+  --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --grid CC --lmax 720 --mmax 180 --fixed-nphi 1536 \
+  --threads 1 --threads 8 --operation analysis \
+  --production-source-revision f03b16bfb6b71f6382055ce0c6cf03cbbc4702c3 \
+  --results-dir "$RESULTS_DIR" --no-report --retain-local-host-telemetry \
+  --sweep-id cc-prepared-direct-analysis
+```
+
+Raw JSON, timed batches and host telemetry remain local under `/tmp`.
