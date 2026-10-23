@@ -7625,26 +7625,26 @@ fn plan14_odd_inverse_phase_attribution() {
         work.1 += leaf.active_ring_order_pairs;
         work.2 += leaf.estimated_work;
         work.3 += leaf.elapsed_ns;
-        work.4 += leaf.queue_lock_ns;
+        work.4 += leaf.job_claim_ns;
     }
-    let queue_lock_us = order_leaves
+    let job_claim_us = order_leaves
         .iter()
-        .map(|leaf| leaf.queue_lock_ns)
+        .map(|leaf| leaf.job_claim_ns)
         .sum::<u128>() as f64
         / 1.0e3;
     eprintln!(
-        "PLAN14_ORDER_SCHEDULE jobs={} queue_lock_total_us={queue_lock_us:.3} worker_jobs_work_elapsed_queue_lock_us={:?}",
+        "PLAN14_ORDER_SCHEDULE jobs={} job_claim_total_us={job_claim_us:.3} worker_jobs_work_elapsed_claim_us={:?}",
         order_leaves.len(),
         order_workers
             .iter()
             .map(
-                |(&worker, &(jobs, active_pairs, estimated_work, elapsed_ns, queue_lock_ns))| (
+                |(&worker, &(jobs, active_pairs, estimated_work, elapsed_ns, job_claim_ns))| (
                     worker,
                     jobs,
                     active_pairs,
                     estimated_work,
                     elapsed_ns as f64 * 1.0e-3,
-                    queue_lock_ns as f64 * 1.0e-3,
+                    job_claim_ns as f64 * 1.0e-3,
                 )
             )
             .collect::<Vec<_>>()

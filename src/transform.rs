@@ -9,7 +9,7 @@ use rayon::prelude::*;
 use std::collections::VecDeque;
 #[cfg(feature = "parallel")]
 use std::sync::Mutex;
-#[cfg(test)]
+#[cfg(any(test, feature = "parallel"))]
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -983,24 +983,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         // Assign short contiguous order blocks. The ring-major spectrum stores
         // adjacent orders next to one another, so block ownership reduces
         // cross-worker cache-line sharing while leaving enough jobs for dynamic
-        // load balancing.
-        let mut order_jobs = VecDeque::new();
+        // load balancing. Claim block indices atomically to avoid taking a
+        // mutex for every job and avoid allocating a queue on each transform.
         let order_block_count = order_count.div_ceil(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE);
-        if order_jobs.try_reserve_exact(order_block_count).is_err() {
-            return false;
-        }
-        let mut order_start = 0;
-        while order_start < order_count {
-            let order_end = order_start
-                .saturating_add(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE)
-                .min(order_count);
-            order_jobs.push_back((order_start, order_end));
-            order_start = order_end;
-        }
-        if order_jobs.len() != order_block_count {
-            return false;
-        }
-        let order_jobs = Mutex::new(order_jobs);
+        let next_order_block = AtomicUsize::new(0);
         let failed = AtomicBool::new(false);
         let ShtWorkspace {
             spectra,
@@ -1062,24 +1048,31 @@ impl<T: ShtScalar> ShtPlan<T> {
                             break;
                         }
                         #[cfg(all(test, feature = "parallel"))]
-                        let queue_lock_started = profile_order_queue.then(std::time::Instant::now);
-                        let job = order_jobs
-                            .lock()
-                            .expect("scalar synthesis order queue is not poisoned")
-                            .pop_front();
+                        let job_claim_started = profile_order_queue.then(std::time::Instant::now);
+                        let block_index = next_order_block.fetch_add(1, Ordering::Relaxed);
                         #[cfg(all(test, feature = "parallel"))]
-                        let queue_lock_ns = queue_lock_started
+                        let job_claim_ns = job_claim_started
                             .map(|started| started.elapsed().as_nanos())
                             .unwrap_or(0);
-                        let Some((order_start, order_end)) = job else {
+                        if block_index >= order_block_count {
+                            break;
+                        }
+                        let Some(order_start) =
+                            block_index.checked_mul(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE)
+                        else {
+                            failed.store(true, Ordering::Relaxed);
                             break;
                         };
+                        let order_end = order_start
+                            .saturating_add(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE)
+                            .min(order_count);
                         #[cfg(all(test, feature = "parallel"))]
                         let leaf_started = recurrence.scalar_order_leaf_started();
                         let succeeded = {
                             let mut scratch = scalar_ordered_scratch(recurrence);
-                            // SAFETY: `order_jobs` contains every order exactly
-                            // once, and each job writes only that order's column.
+                            // SAFETY: each atomic block index is claimed once,
+                            // blocks cover every order without overlap, and the
+                            // job writes only the columns in its block.
                             unsafe {
                                 T::synthesize_scalar_ordered_output_dispatched(
                                     arch,
@@ -1105,7 +1098,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             order_end,
                             &ring_order_limits[..ntheta],
                             leaf_started,
-                            queue_lock_ns,
+                            job_claim_ns,
                             succeeded,
                         );
                         if !succeeded {
@@ -1114,7 +1107,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                         }
                     }
                 });
-            drop(order_jobs);
             !failed.load(Ordering::Relaxed)
         };
         #[cfg(all(test, feature = "parallel"))]
