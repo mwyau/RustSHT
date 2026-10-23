@@ -6620,7 +6620,7 @@ mod tests {
         let mut staged = vec![Complex64::new(17.0, -9.0); coefficient_count];
         let mut previous = vec![0.0; lane_count];
         let mut current = vec![0.0; lane_count];
-        let mut next = vec![f64::INFINITY; lane_count];
+        let mut next = vec![0.0; lane_count];
         let mut exponents = vec![0; lane_count];
         let arch = Arch::new();
 
@@ -7006,7 +7006,7 @@ mod tests {
         let mut staged_second = vec![Complex64::new(-13.0, 7.0); coefficient_count];
         let mut previous = vec![0.0; lane_count];
         let mut current = vec![0.0; lane_count];
-        let mut next = vec![0.0; lane_count];
+        let mut next = vec![f64::INFINITY; lane_count];
         let mut exponents = vec![0; lane_count];
         let arch = Arch::new();
 
