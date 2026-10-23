@@ -544,6 +544,9 @@ fn cc_f1_parallel_order_resampling_matches_serial_with_reused_workspace() {
             }
             serial.fill(Complex64::new(91.0, -37.0));
             parallel.fill(Complex64::new(-22.0, 43.0));
+            workspace
+                .cc_profile
+                .fill(Complex64::new(f64::NAN, f64::NAN));
             resampling
                 .to_prepared(
                     &input,
@@ -555,6 +558,9 @@ fn cc_f1_parallel_order_resampling_matches_serial_with_reused_workspace() {
                     &mut workspace.cc_fft_scratch,
                 )
                 .unwrap();
+            for worker in &mut workspace.cc_resampling_workers {
+                worker.profile.fill(Complex64::new(f64::NAN, f64::NAN));
+            }
             resampling
                 .to_prepared_parallel(
                     &input,

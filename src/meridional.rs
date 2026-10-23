@@ -671,7 +671,9 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
         north_pole_included: bool,
         profile: &mut [Complex<T>],
     ) {
-        profile.fill(Complex::new(T::zero(), T::zero()));
+        // The reflected CC/F1 ring mapping writes every element in the active
+        // `full_len` span. The caller may provide larger reusable scratch, so
+        // clearing the whole buffer here only adds stores before every order.
         for ring in 0..ring_count {
             let mirror = full_len - 1 + usize::from(north_pole_included) - ring;
             let value = input[ring * spectrum_len + m];

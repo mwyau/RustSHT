@@ -5567,6 +5567,9 @@ fn scalar_analysis_direct_prepared_ring_input_matches_order_values() {
             }
         }
         let resampling = plan.cc_resampling.as_ref().unwrap();
+        workspace
+            .cc_profile
+            .fill(Complex64::new(f64::NAN, f64::NAN));
         resampling
             .to_prepared(
                 &workspace.spectra,
