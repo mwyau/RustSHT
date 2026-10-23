@@ -5007,6 +5007,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                 workspace.theta_cos[ring],
             );
         }
+        if spin == 1 {
+            // Grid constructors form north/south colatitudes as exact
+            // reflections. Evaluate each reflected pair from its northern
+            // member so independent libm rounding cannot split its order
+            // cutoff or recurrence geometry.
+            for north in 0..self.grid.ntheta() / 2 {
+                let south = self.grid.ntheta() - 1 - north;
+                workspace.theta_sin[south] = workspace.theta_sin[north];
+                workspace.theta_cos[south] = -workspace.theta_cos[north];
+                workspace.ring_order_limits[south] = workspace.ring_order_limits[north];
+            }
+        }
     }
 
     fn supported_spin(&self) -> Result<usize, ShtError> {

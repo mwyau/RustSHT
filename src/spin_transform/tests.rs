@@ -44,6 +44,36 @@ fn make_f1_plan(spin: usize, lmax: usize, mmax: usize, ntheta: usize, nphi: usiz
     .unwrap()
 }
 
+#[test]
+fn spin1_prepared_latitudes_are_exactly_reflected_on_supported_grids() {
+    for (kind, ntheta) in [
+        (GridKind::GaussLegendre, 6),
+        (GridKind::GaussLegendre, 7),
+        (GridKind::ClenshawCurtis, 6),
+        (GridKind::ClenshawCurtis, 7),
+        (GridKind::Fejer1, 6),
+        (GridKind::Fejer1, 7),
+    ] {
+        let plan: ShtPlan<f64> = ShtPlan::new(
+            GridSpec::new(kind, ntheta, 13, 0.37).unwrap(),
+            HarmonicSpec::new(5, 5, 1).unwrap(),
+        )
+        .unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_spin_latitudes(&mut workspace, 1);
+
+        for north in 0..ntheta / 2 {
+            let south = ntheta - 1 - north;
+            assert_eq!(workspace.theta_sin[north], workspace.theta_sin[south]);
+            assert_eq!(workspace.theta_cos[north], -workspace.theta_cos[south]);
+            assert_eq!(
+                workspace.ring_order_limits[north],
+                workspace.ring_order_limits[south]
+            );
+        }
+    }
+}
+
 #[cfg(feature = "parallel")]
 #[test]
 fn spin1_reuse_estimate_gates_analysis_table_by_executing_pool() {
