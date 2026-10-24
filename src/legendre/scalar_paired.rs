@@ -6484,10 +6484,8 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for FusedSynthesisPairBlock<'_,
                     let next = simd.mul_add_f64s(leading, current, previous);
                     previous = current;
                     current = next;
-                    if check_normal_range
-                        && (!simd_values_in_normal_range(simd, previous)
-                            || !simd_values_in_normal_range(simd, current))
-                    {
+                    // `previous` was the checked `current` from the prior step.
+                    if check_normal_range && !simd_values_in_normal_range(simd, current) {
                         return false;
                     }
                 }
@@ -6543,10 +6541,8 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for FusedSynthesisPairBlock<'_,
                     let next = leading.mul_add(current, previous);
                     previous = current;
                     current = next;
-                    if check_normal_range
-                        && (!scalar_value_in_normal_range(previous)
-                            || !scalar_value_in_normal_range(current))
-                    {
+                    // `previous` was the checked `current` from the prior step.
+                    if check_normal_range && !scalar_value_in_normal_range(current) {
                         return false;
                     }
                 }

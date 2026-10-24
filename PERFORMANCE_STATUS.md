@@ -10,10 +10,10 @@
 | GL T720 full q8 | 5.555 / 5.859 | 0.95× | 6.250 → 5.555 |
 | CC T1023 full q8 | 24.634 / 21.724 | 1.13× | 47.095 → 24.634 |
 | GL T1023 full q8 | 22.468 / 23.097 | 0.97× | 23.442 → 22.468 |
-| GL T1023 full q1 | 206.728 / 121.067 | 1.71× | 223.290 → 206.728 |
+| GL T1023 full q1 | 200.660 / 120.673 | 1.66× | 206.888 → 200.660 |
 | GL T511 full q8 | 3.175 / 2.384 | 1.33× | 3.182 → 3.175 |
 
-**Accepted changes:** the prepared scalar-ordered component adapter (M1), worker-local conversion for large order-major caches (M2), checked pair iteration, two-vector suffix broadcasts, and prepared-pair reuse in the checked transition. GL T1023 q1 remains the largest measured synthesis gap.
+**Accepted changes:** the prepared scalar-ordered component adapter (M1), worker-local conversion for large order-major caches (M2), checked pair iteration, two-vector suffix broadcasts, prepared-pair reuse in the checked transition, and removing a redundant prior-basis range check from checked SIMD/scalar suffixes. The last change improved GL T1023 q1 by 3.0% against exact parent `83132761` across 15 calls/backend; outputs were bit-identical to parent and `3.79e-13` relative L2 from DUCC. GL T1023 q1 remains the largest measured synthesis gap.
 
 **CC T720 reduced m180 q8 follow-up:** worker-local E/B conversion now streams each emitted degree into a three-degree pair-preparation window, removing the 4.18 MB global conversion cache and separate preparation scans. Three interleaved parent/candidate/DUCC process triples with 30 calibrated batches/backend produced 3.850 ms candidate, 4.238 ms parent (`0.906×` paired median), and 2.662 ms DUCC. Candidate output was byte-identical to parent and had `3.37e-13` relative L2 error to DUCC; reset/repeat checks passed.
 
@@ -21,4 +21,4 @@
 
 **GL T1023 full q1 prepared-transition follow-up:** the checked transition and ordinary suffix reuse the prepared even/odd channel pairs instead of rebuilding them per SIMD vector. Fifteen interleaved process triples (75 calls/backend) measured candidate 206.728 ms (p10–p90 204.695–210.714), exact parent `04095ef6` 223.290 ms (221.993–227.468), and DUCC 0.42.0 121.067 ms (119.662–122.605). Paired candidate/parent median was `0.929×`; candidate/DUCC was `1.719×`. Output was byte-identical to parent with `3.79e-13` relative L2 error to DUCC; repeat/reset checks passed. A focused scaled SIMD-prefix test verifies exact prepared/original sums.
 
-GL T720 q8 analysis remains 10.090 ms versus 4.553 ms DUCC (2.14×). The reduced-order CC and F1 q1-vs-q8 tolerance tests remain known failures on exact parent `d73c9217`; tolerance is unchanged. The latest focused spin-1 transition and local-conversion safety/workspace tests, strict parallel Clippy, formatting, and no-default-feature release check pass. The GL T511 q8 dispatch improvement remains intact.
+GL T720 q8 analysis remains 10.090 ms versus 4.553 ms DUCC (2.14×). Two reduced T720 m180 q1/q8 tests remain baseline failures on exact parent `83132761`: CC grouped synthesis misses its `2e-11` comparison bound; F1 expects 261,364 cached coefficients but gets zero. Both fail individually on the parent; tolerances are unchanged. The focused checked-transition tests, strict parallel Clippy, formatting, and no-default-feature release suite pass. The parallel release suite has only these two known parent failures. The GL T511 q8 dispatch improvement remains intact.
