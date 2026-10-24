@@ -118,6 +118,67 @@ pub(crate) fn scalar_to_spin1<
     e_coefficients: &mut [Complex<T>],
     b_coefficients: &mut [Complex<T>],
 ) {
+    scalar_to_spin1_inner::<false, T>(
+        m,
+        lmax,
+        scalar_first,
+        scalar_second,
+        &[],
+        e_coefficients,
+        b_coefficients,
+    );
+}
+
+/// Applies the transposed conversion using the scalar recurrence factors that
+/// were already prepared for this order.
+pub(crate) fn scalar_to_spin1_with_epsilon<
+    T: Float
+        + FromPrimitive
+        + std::ops::AddAssign
+        + std::ops::SubAssign
+        + std::ops::MulAssign
+        + std::ops::DivAssign
+        + std::ops::RemAssign,
+>(
+    m: usize,
+    lmax: usize,
+    scalar_first: &[Complex<T>],
+    scalar_second: &[Complex<T>],
+    epsilon: &[T],
+    e_coefficients: &mut [Complex<T>],
+    b_coefficients: &mut [Complex<T>],
+) {
+    debug_assert!(epsilon.len() > lmax + 1);
+    scalar_to_spin1_inner::<true, T>(
+        m,
+        lmax,
+        scalar_first,
+        scalar_second,
+        epsilon,
+        e_coefficients,
+        b_coefficients,
+    );
+}
+
+#[inline(always)]
+fn scalar_to_spin1_inner<
+    const USE_PREPARED_EPSILON: bool,
+    T: Float
+        + FromPrimitive
+        + std::ops::AddAssign
+        + std::ops::SubAssign
+        + std::ops::MulAssign
+        + std::ops::DivAssign
+        + std::ops::RemAssign,
+>(
+    m: usize,
+    lmax: usize,
+    scalar_first: &[Complex<T>],
+    scalar_second: &[Complex<T>],
+    epsilon: &[T],
+    e_coefficients: &mut [Complex<T>],
+    b_coefficients: &mut [Complex<T>],
+) {
     debug_assert!(scalar_first.len() >= lmax + 2);
     debug_assert!(scalar_second.len() >= lmax + 2);
     debug_assert_eq!(e_coefficients.len(), lmax - m + 1);
@@ -137,20 +198,27 @@ pub(crate) fn scalar_to_spin1<
             coefficient_second -= factor * scalar_first[l];
         }
         if l > m {
-            let lm = T::from_usize(l - m).expect("degree difference converts");
-            let lp = T::from_usize(l + m).expect("degree sum converts");
-            let two_l = T::from_usize(2 * l).expect("twice degree converts");
-            let previous_factor =
-                (((lp * lm) / ((two_l + T::one()) * (two_l - T::one()))).sqrt()) * (-lf - T::one());
+            let previous_factor = if USE_PREPARED_EPSILON {
+                epsilon[l] * (-lf - T::one())
+            } else {
+                let lm = T::from_usize(l - m).expect("degree difference converts");
+                let lp = T::from_usize(l + m).expect("degree sum converts");
+                let two_l = T::from_usize(2 * l).expect("twice degree converts");
+                (((lp * lm) / ((two_l + T::one()) * (two_l - T::one()))).sqrt()) * (-lf - T::one())
+            };
             coefficient_first += last_first * previous_factor;
             coefficient_second -= last_second * previous_factor;
         }
         let l_plus_one = lf + T::one();
-        let next_factor = (((l_plus_one + mf) * (l_plus_one - mf)
-            / (T::from_usize(2 * l + 3).expect("degree converts")
-                * T::from_usize(2 * l + 1).expect("degree converts")))
-        .sqrt())
-            * lf;
+        let next_factor = if USE_PREPARED_EPSILON {
+            epsilon[l + 1] * lf
+        } else {
+            (((l_plus_one + mf) * (l_plus_one - mf)
+                / (T::from_usize(2 * l + 3).expect("degree converts")
+                    * T::from_usize(2 * l + 1).expect("degree converts")))
+            .sqrt())
+                * lf
+        };
         coefficient_first += scalar_first[l + 1] * next_factor;
         coefficient_second -= scalar_second[l + 1] * next_factor;
 
@@ -649,6 +717,24 @@ mod tests {
                 &mut adjoint_e,
                 &mut adjoint_b,
             );
+            let mut prepared_e = vec![Complex::new(0.0, 0.0); degree_count];
+            let mut prepared_b = vec![Complex::new(0.0, 0.0); degree_count];
+            scalar_to_spin1_with_epsilon(
+                m,
+                lmax,
+                &scalar_test_first,
+                &scalar_test_second,
+                &epsilon,
+                &mut prepared_e,
+                &mut prepared_b,
+            );
+            for (prepared, reference) in prepared_e
+                .iter()
+                .chain(&prepared_b)
+                .zip(adjoint_e.iter().chain(&adjoint_b))
+            {
+                assert!((*prepared - *reference).norm() <= 2.0e-14);
+            }
             let mut scalar_inner_product = Complex::new(0.0, 0.0);
             for l in m..=lmax + 1 {
                 scalar_inner_product += scalar_first[l].conj() * scalar_test_first[l];

@@ -37,7 +37,8 @@ pub(crate) use scalar_table::{
     measured_table_break_even_calls, select_scalar_legendre_strategy,
 };
 pub(crate) use spin_fast::{
-    fill_spin2_factors, scalar_to_spin1, scalar_to_spin2, spin1_to_scalar, spin2_to_scalar,
+    fill_spin2_factors, scalar_to_spin1, scalar_to_spin1_with_epsilon, scalar_to_spin2,
+    spin1_to_scalar, spin2_to_scalar,
 };
 
 #[cfg(all(test, feature = "parallel"))]

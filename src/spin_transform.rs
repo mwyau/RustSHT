@@ -17,8 +17,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::error::{ShtError, check_len};
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendreOperation, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX,
-    SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin2,
-    sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
+    SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin1_with_epsilon,
+    scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
 };
 use crate::meridional::CCResamplingPlan;
 #[cfg(feature = "parallel")]
@@ -4568,11 +4568,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         let coefficient_count = self.harmonics.lmax() - m + 1;
         let fast_e = &mut recurrence.fast_spin_first[..coefficient_count];
         let fast_b = &mut recurrence.fast_spin_second[..coefficient_count];
-        scalar_to_spin1(
+        scalar_to_spin1_with_epsilon(
             m,
             self.harmonics.lmax(),
             &recurrence.fast_scalar_first[..scalar_coefficient_count],
             &recurrence.fast_scalar_second[..scalar_coefficient_count],
+            &recurrence.epsilon,
             fast_e,
             fast_b,
         );
@@ -5045,11 +5046,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         let coefficient_count = self.harmonics.lmax() - m + 1;
         let fast_e = &mut recurrence.fast_spin_first[..coefficient_count];
         let fast_b = &mut recurrence.fast_spin_second[..coefficient_count];
-        scalar_to_spin1(
+        scalar_to_spin1_with_epsilon(
             m,
             self.harmonics.lmax(),
             &recurrence.fast_scalar_first[..scalar_coefficient_count],
             &recurrence.fast_scalar_second[..scalar_coefficient_count],
+            &recurrence.epsilon,
             fast_e,
             fast_b,
         );

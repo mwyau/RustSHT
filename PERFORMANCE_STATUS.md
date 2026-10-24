@@ -1,6 +1,6 @@
 # RustSHT — performance snapshot
 
-**Source:** `opt/sht-performance-parity` through `c200958` plus the checked-prefix vector-promotion candidate below. DUCC reference: pinned 0.42.0 (`42ce8ab5`). **Active:** [spin-1 parity plan](plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md).
+**Source:** current `opt/sht-performance-parity`; DUCC reference: pinned 0.42.0 (`42ce8ab5`). **Active:** [spin-1 parity plan](plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md).
 
 | f64 spin-1 synthesis | RustSHT / DUCC | Rust / DUCC median (ms) | Parent → candidate (ms) |
 |---|---:|---:|---:|
@@ -21,8 +21,10 @@ The latest GL T511 q8 recheck used 30 timed batches/backend over three pairs: `a
 
 **Bounded GL T720 q8 analysis follow-up:** preweight each opposite input once per lane before the existing checked per-channel recurrence. Across 30 batches/backend and three interleaved pairs, candidate was 10.090 ms versus 10.899 ms on exact parent `a889cf87` (paired median `0.934×`) and 4.553 ms for DUCC (paired `2.14×`). Output relative L2 was `1.91e-16` to parent and `4.76e-14` to DUCC; weighted/unweighted, reflected recurrence, fallback and no-default tests pass. This is a 6–7% gain, not parity.
 
+**Prepared-epsilon conversion follow-up:** reusing `recurrence.epsilon[l]` and `[l+1]` avoids rebuilding two square-root factors per coefficient in GL T720 q8 analysis. Across 40 batches/backend and four interleaved process pairs, candidate was 7.808 ms versus 7.971 ms on exact parent `d73c9217` (2.0% faster) and 4.241 ms for DUCC (1.84×). Outputs were bit-identical to parent and had `4.76e-14` relative L2 error to DUCC; one candidate process had elevated scheduler wait and involuntary switches. The two existing reduced-order CC/F1 T720 synthesis tolerance failures also reproduce on exact parent `d73c9217` at the unchanged `2e-11` tolerance.
+
 The attempted serial prepared-component route for GL T1023 q1 was rejected and reverted: across 15 long calls/backend it measured 443.850 ms versus 254.683 ms on parent and 124.158 ms for DUCC (1.74× parent, 3.57× DUCC).
 
-Formatting, strict parallel Clippy, focused transition/finite-value tests and 281 release tests passed; 36 release tests were ignored. The only release failures were the known T720 m180 q1-vs-q8 assertions in F1 `spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace` and CC `spin1_cc_grouped_synthesis_reuses_checked_coefficients`; both also fail separately on exact parent `c200958` at the unchanged `2e-11` tolerance. No-default tests reported 219 passed and 10 failures in existing scalar-analysis tile assertions and a spin-1 analysis endpoint-count check; representative failures reproduce on `c200958`. The GL T511 q8 selector remains intact.
+Formatting, strict parallel Clippy and the focused conversion test passed. The parallel release suite had 281 passes, 36 ignored and two existing reduced-T720 q1-vs-q8 tolerance failures: F1 `spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace` and CC `spin1_cc_grouped_synthesis_reuses_checked_coefficients`. Both fail at the unchanged `2e-11` tolerance on exact parent `d73c9217`. All no-default release tests passed (229 library, 4 extreme-value, 11 f32 and 1 workspace tests; 18 ignored). The GL T511 q8 selector remains intact.
 
 **Focused CC T720 q8 profile:** all 721 orders used the prepared route; 114 polar blocks used scalar fallback. Across workers, prepared passes summed to 42.7–47.8 ms, compared with 0.19–0.71 ms for row clearing, 2.36–5.00 ms for scattering, and 2.86–6.07 ms for fallback. These are test-instrumented worker sums, not wall latency; clear/scatter/fallback do not explain the remaining gap. A distinct organization of the prepared passes is the next useful mechanism to investigate.
