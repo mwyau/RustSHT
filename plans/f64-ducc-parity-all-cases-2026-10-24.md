@@ -17,13 +17,16 @@
 |---|---:|---:|---:|---|
 | GL T1023 full synthesis q1 | 176.605 / 125.492 | 1.41x | +51.113 ms | GAP |
 | GL T720 full analysis q1 | 51.536 / 29.414 | 1.75x | +22.122 ms | GAP |
-| GL T720 full analysis q8 | 7.317 / 4.267 | 1.71x | +3.050 ms | GAP |
+| GL T720 full analysis q8 | 6.968 / 4.251 | 1.64x | +2.716 ms | GAP (candidate `f1f4589b`) |
+| CC T720 full analysis q8 | 20.590 / 20.942 | 0.98x | −0.353 ms | PASS for this cell (candidate `f1f4589b`) |
 | CC T1023 full synthesis q8 | 24.634 / 21.724 | 1.13x | +2.910 ms | GAP |
 | CC T720 full synthesis q8 | 7.534 / 6.091 | 1.24x | +1.443 ms | GAP |
 | CC T720 m180 synthesis q8 | 3.850 / 2.662 | 1.45x | +1.188 ms | GAP |
 | GL T511 full synthesis q8 | 3.175 / 2.384 | 1.33x | +0.791 ms | GAP |
 | F1/GL T720 full synthesis q8; GL T1023 synthesis q8 | selected 0.94–0.97x | faster | — | PASS for those measured snapshots only |
 | Other supported spin-0/spin-1 sizes, grids, threads, order cuts and operations | not yet shown in one source-matched matrix | — | — | UNMEASURED |
+
+**Current mixed Q/U scaled-accumulation candidate (`f1f4589b`):** three interleaved parent/candidate/DUCC process triples, 30 calibrated batches/backend, AMD Ryzen 9 5950X, q8 pinned to CPUs 0–7. Exact parent source `53ef4f2b` binary SHA-256 `1edd6f97b93075c11d2bd32ade9b59fb621cec565f4b560f04f7e814fbd02d67`; candidate binary SHA-256 `41402baa1be46485461d11bbbd72152c3c66d851e3349046d03139aea7af773b`; DUCC binary SHA-256 `89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423`. GL medians: candidate/parent/DUCC `6.968/7.293/4.251 ms`; paired candidate/parent median ratio `0.956×`. CC: `20.590/21.173/20.942 ms`; paired candidate/parent median ratio `0.983×`. Both candidate outputs were bitwise identical to parent; relative L2 to DUCC was `4.76e-14` (GL) and `6.05e-14` (CC), with repeat/reset checks passing. GL remains a gap; the measured CC cell is below DUCC in all three paired process comparisons.
 
 **Action ordering, not exemption:** maximize absolute time saved first with broadly reusable code, then close even small residuals. Finish the running bounded experiment before redirecting. GL T1023 q1 synthesis is currently the biggest measured excess; inspect checked physical-latitude prefix/ordinary-suffix path in `src/legendre/scalar_paired.rs`, retaining accepted AVX2 exponent scaling and proper fallback. GL T720 q1/q8 analysis is next: `src/spin_transform.rs::analyze_spin_scalar_reflected_order` and scalar_paired checked recurrence/accumulation. Targeted GL q8 analysis profiling found **599/3,579** mixed/scaled recurrence blocks over **475/721** order leaves, about **80% of estimated recurrence work**; another 256-pair tile regressed, and input-scan fusion, route caching and independent replay did not win. Investigate scaled recurrence math/codegen itself rather than repeat retired mappings.
 
