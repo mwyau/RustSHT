@@ -1220,9 +1220,10 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
         .zip(coefficient_even_pairs)
         .zip(coefficient_odd_pairs)
     {
-        ordinary_two_pair_step(
+        ordinary_two_pair_step_two_vectors(
             simd,
             first_csq,
+            second_csq,
             a[0],
             b[0],
             a[1],
@@ -1237,18 +1238,6 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
             &mut first_even_im,
             &mut first_odd_re,
             &mut first_odd_im,
-        );
-        ordinary_two_pair_step(
-            simd,
-            second_csq,
-            a[0],
-            b[0],
-            a[1],
-            b[1],
-            even[0],
-            odd[0],
-            even[1],
-            odd[1],
             &mut second_previous,
             &mut second_current,
             &mut second_even_re,
@@ -2081,6 +2070,81 @@ fn ordinary_two_pair_step<S: Simd>(
     let next2 = simd.mul_add_f64s(leading2, next1, old_current);
     *previous = next1;
     *current = next2;
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The two-vector ordinary suffix shares each coefficient broadcast across its lanes."
+)]
+#[inline(always)]
+fn ordinary_two_pair_step_two_vectors<S: Simd>(
+    simd: S,
+    first_csq: S::f64s,
+    second_csq: S::f64s,
+    coefficient_a1: f64,
+    coefficient_b1: f64,
+    coefficient_a2: f64,
+    coefficient_b2: f64,
+    even1: Complex64,
+    odd1: Complex64,
+    even2: Complex64,
+    odd2: Complex64,
+    first_previous: &mut S::f64s,
+    first_current: &mut S::f64s,
+    first_sum_even_re: &mut S::f64s,
+    first_sum_even_im: &mut S::f64s,
+    first_sum_odd_re: &mut S::f64s,
+    first_sum_odd_im: &mut S::f64s,
+    second_previous: &mut S::f64s,
+    second_current: &mut S::f64s,
+    second_sum_even_re: &mut S::f64s,
+    second_sum_even_im: &mut S::f64s,
+    second_sum_odd_re: &mut S::f64s,
+    second_sum_odd_im: &mut S::f64s,
+) {
+    let even1_re = simd.splat_f64s(even1.re);
+    *first_sum_even_re = simd.mul_add_f64s(*first_current, even1_re, *first_sum_even_re);
+    *second_sum_even_re = simd.mul_add_f64s(*second_current, even1_re, *second_sum_even_re);
+    let even1_im = simd.splat_f64s(even1.im);
+    *first_sum_even_im = simd.mul_add_f64s(*first_current, even1_im, *first_sum_even_im);
+    *second_sum_even_im = simd.mul_add_f64s(*second_current, even1_im, *second_sum_even_im);
+    let odd1_re = simd.splat_f64s(odd1.re);
+    *first_sum_odd_re = simd.mul_add_f64s(*first_current, odd1_re, *first_sum_odd_re);
+    *second_sum_odd_re = simd.mul_add_f64s(*second_current, odd1_re, *second_sum_odd_re);
+    let odd1_im = simd.splat_f64s(odd1.im);
+    *first_sum_odd_im = simd.mul_add_f64s(*first_current, odd1_im, *first_sum_odd_im);
+    *second_sum_odd_im = simd.mul_add_f64s(*second_current, odd1_im, *second_sum_odd_im);
+
+    let a1 = simd.splat_f64s(coefficient_a1);
+    let b1 = simd.splat_f64s(coefficient_b1);
+    let first_leading1 = simd.mul_add_f64s(a1, first_csq, b1);
+    let first_next1 = simd.mul_add_f64s(first_leading1, *first_current, *first_previous);
+    *first_previous = first_next1;
+    let second_leading1 = simd.mul_add_f64s(a1, second_csq, b1);
+    let second_next1 = simd.mul_add_f64s(second_leading1, *second_current, *second_previous);
+    *second_previous = second_next1;
+
+    let even2_re = simd.splat_f64s(even2.re);
+    *first_sum_even_re = simd.mul_add_f64s(*first_previous, even2_re, *first_sum_even_re);
+    *second_sum_even_re = simd.mul_add_f64s(*second_previous, even2_re, *second_sum_even_re);
+    let even2_im = simd.splat_f64s(even2.im);
+    *first_sum_even_im = simd.mul_add_f64s(*first_previous, even2_im, *first_sum_even_im);
+    *second_sum_even_im = simd.mul_add_f64s(*second_previous, even2_im, *second_sum_even_im);
+    let odd2_re = simd.splat_f64s(odd2.re);
+    *first_sum_odd_re = simd.mul_add_f64s(*first_previous, odd2_re, *first_sum_odd_re);
+    *second_sum_odd_re = simd.mul_add_f64s(*second_previous, odd2_re, *second_sum_odd_re);
+    let odd2_im = simd.splat_f64s(odd2.im);
+    *first_sum_odd_im = simd.mul_add_f64s(*first_previous, odd2_im, *first_sum_odd_im);
+    *second_sum_odd_im = simd.mul_add_f64s(*second_previous, odd2_im, *second_sum_odd_im);
+
+    let a2 = simd.splat_f64s(coefficient_a2);
+    let b2 = simd.splat_f64s(coefficient_b2);
+    let first_leading2 = simd.mul_add_f64s(a2, first_csq, b2);
+    let first_next2 = simd.mul_add_f64s(first_leading2, *first_previous, *first_current);
+    *first_current = first_next2;
+    let second_leading2 = simd.mul_add_f64s(a2, second_csq, b2);
+    let second_next2 = simd.mul_add_f64s(second_leading2, *second_previous, *second_current);
+    *second_current = second_next2;
 }
 
 #[expect(
