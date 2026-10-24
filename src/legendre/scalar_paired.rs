@@ -769,12 +769,14 @@ pub(crate) fn synthesize_order_pair_block_dispatched(
         lmax,
         pair_start: 0,
         cos_theta,
-        epsilon,
-        alpha,
         coefficient_a,
         coefficient_b,
-        first_coefficients,
-        second_coefficients,
+        coefficients: OriginalSynthesisPairCoefficients {
+            epsilon,
+            alpha,
+            first_coefficients,
+            second_coefficients,
+        },
         previous: &previous[..sin_theta.len()],
         current: &current[..sin_theta.len()],
         first_sum_re: &mut first_sum_re[..sin_theta.len()],
@@ -955,6 +957,153 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
         return Ok(false);
     }
 
+    dispatch_synthesis_pair_transition(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        OriginalSynthesisPairCoefficients {
+            epsilon,
+            alpha,
+            first_coefficients,
+            second_coefficients,
+        },
+        previous,
+        current,
+        next,
+        exponents,
+        first_sum_re,
+        first_sum_im,
+        second_sum_re,
+        second_sum_im,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The prepared transition receives four checked coefficient-pair rows and lane scratch."
+)]
+pub(crate) fn try_synthesize_prepared_order_pair_transition_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    first_even: &[Complex64],
+    first_odd: &[Complex64],
+    second_even: &[Complex64],
+    second_odd: &[Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+    first_sum_re: &mut [f64],
+    first_sum_im: &mut [f64],
+    second_sum_re: &mut [f64],
+    second_sum_im: &mut [f64],
+) -> Result<bool, ShtError> {
+    let lane_count = sin_theta.len();
+    debug_assert_eq!(lane_count, cos_theta.len());
+    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+    debug_assert!(previous.len() >= lane_count);
+    debug_assert!(current.len() >= lane_count);
+    debug_assert!(next.len() >= lane_count);
+    debug_assert!(exponents.len() >= lane_count);
+    debug_assert!(first_sum_re.len() >= lane_count);
+    debug_assert!(first_sum_im.len() >= lane_count);
+    debug_assert!(second_sum_re.len() >= lane_count);
+    debug_assert!(second_sum_im.len() >= lane_count);
+
+    if lane_count == 0
+        || sin_theta
+            .iter()
+            .any(|&sine| !sine.is_finite() || sine < 0.01)
+    {
+        return Ok(false);
+    }
+
+    let pair_count = (lmax - m + 2) / 2;
+    let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
+    if !maximum_sum_bound.is_finite()
+        || !prepared_pair_coefficients_are_safe(
+            pair_count,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+        )
+    {
+        return Ok(false);
+    }
+
+    dispatch_synthesis_pair_transition(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        PreparedSynthesisPairCoefficients {
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+        },
+        previous,
+        current,
+        next,
+        exponents,
+        first_sum_re,
+        first_sum_im,
+        second_sum_re,
+        second_sum_im,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The shared checked transition initializes recurrence lanes and four output sums."
+)]
+fn dispatch_synthesis_pair_transition<C: SynthesisPairCoefficientSource>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    coefficients: C,
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+    first_sum_re: &mut [f64],
+    first_sum_im: &mut [f64],
+    second_sum_re: &mut [f64],
+    second_sum_im: &mut [f64],
+) -> Result<bool, ShtError> {
+    let lane_count = sin_theta.len();
+    debug_assert_eq!(lane_count, cos_theta.len());
+    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+    debug_assert!(previous.len() >= lane_count);
+    debug_assert!(current.len() >= lane_count);
+    debug_assert!(next.len() >= lane_count);
+    debug_assert!(exponents.len() >= lane_count);
+    debug_assert!(first_sum_re.len() >= lane_count);
+    debug_assert!(first_sum_im.len() >= lane_count);
+    debug_assert!(second_sum_re.len() >= lane_count);
+    debug_assert!(second_sum_im.len() >= lane_count);
+
     let completed = arch.dispatch(StagedSynthesisPairTransitionPerVector {
         m,
         lmax,
@@ -963,10 +1112,7 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
         sectoral_norm,
         coefficient_a,
         coefficient_b,
-        epsilon,
-        alpha,
-        first_coefficients,
-        second_coefficients,
+        coefficients,
         previous: &mut previous[..lane_count],
         current: &mut current[..lane_count],
         next: &mut next[..lane_count],
@@ -989,10 +1135,111 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
     Ok(true)
 }
 
+trait SynthesisPairCoefficientSource: Copy {
+    fn values(
+        self,
+        m: usize,
+        lmax: usize,
+        pair: usize,
+    ) -> (Complex64, Complex64, Complex64, Complex64);
+}
+
+#[derive(Clone, Copy)]
+struct OriginalSynthesisPairCoefficients<'a> {
+    epsilon: &'a [f64],
+    alpha: &'a [f64],
+    first_coefficients: &'a [Complex64],
+    second_coefficients: &'a [Complex64],
+}
+
+impl SynthesisPairCoefficientSource for OriginalSynthesisPairCoefficients<'_> {
+    #[inline(always)]
+    fn values(
+        self,
+        m: usize,
+        lmax: usize,
+        pair: usize,
+    ) -> (Complex64, Complex64, Complex64, Complex64) {
+        let l = m + 2 * pair;
+        let offset = l - m;
+        let next_first_even = if l + 2 <= lmax {
+            self.first_coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let next_second_even = if l + 2 <= lmax {
+            self.second_coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let first_even = (self.first_coefficients[offset] * self.epsilon[l + 1]
+            + next_first_even * self.epsilon[l + 2])
+            * self.alpha[pair];
+        let second_even = (self.second_coefficients[offset] * self.epsilon[l + 1]
+            + next_second_even * self.epsilon[l + 2])
+            * self.alpha[pair];
+        let first_odd = if l < lmax {
+            self.first_coefficients[offset + 1] * self.alpha[pair]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let second_odd = if l < lmax {
+            self.second_coefficients[offset + 1] * self.alpha[pair]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        (first_even, first_odd, second_even, second_odd)
+    }
+}
+
+#[derive(Clone, Copy)]
+struct PreparedSynthesisPairCoefficients<'a> {
+    first_even: &'a [Complex64],
+    first_odd: &'a [Complex64],
+    second_even: &'a [Complex64],
+    second_odd: &'a [Complex64],
+}
+
+impl SynthesisPairCoefficientSource for PreparedSynthesisPairCoefficients<'_> {
+    #[inline(always)]
+    fn values(
+        self,
+        _m: usize,
+        _lmax: usize,
+        pair: usize,
+    ) -> (Complex64, Complex64, Complex64, Complex64) {
+        (
+            self.first_even[pair],
+            self.first_odd[pair],
+            self.second_even[pair],
+            self.second_odd[pair],
+        )
+    }
+}
+
+fn prepared_pair_coefficients_are_safe(
+    pair_count: usize,
+    first_even: &[Complex64],
+    first_odd: &[Complex64],
+    second_even: &[Complex64],
+    second_odd: &[Complex64],
+) -> bool {
+    first_even.len() >= pair_count
+        && first_odd.len() >= pair_count
+        && second_even.len() >= pair_count
+        && second_odd.len() >= pair_count
+        && (0..pair_count).all(|pair| {
+            complex_components_in_normal_range(first_even[pair])
+                && complex_components_in_normal_range(first_odd[pair])
+                && complex_components_in_normal_range(second_even[pair])
+                && complex_components_in_normal_range(second_odd[pair])
+        })
+}
+
 /// Runs the checked prefix independently for each SIMD latitude vector so a
 /// vector that reaches ordinary range can enter the register-resident suffix
 /// without waiting for unrelated scaled lanes elsewhere in the block.
-struct StagedSynthesisPairTransitionPerVector<'a> {
+struct StagedSynthesisPairTransitionPerVector<'a, C> {
     m: usize,
     lmax: usize,
     sin_theta: &'a [f64],
@@ -1000,10 +1247,7 @@ struct StagedSynthesisPairTransitionPerVector<'a> {
     sectoral_norm: f64,
     coefficient_a: &'a [f64],
     coefficient_b: &'a [f64],
-    epsilon: &'a [f64],
-    alpha: &'a [f64],
-    first_coefficients: &'a [Complex64],
-    second_coefficients: &'a [Complex64],
+    coefficients: C,
     previous: &'a mut [f64],
     current: &'a mut [f64],
     next: &'a mut [f64],
@@ -1014,7 +1258,7 @@ struct StagedSynthesisPairTransitionPerVector<'a> {
     second_sum_im: &'a mut [f64],
 }
 
-impl WithSimd for StagedSynthesisPairTransitionPerVector<'_> {
+impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransitionPerVector<'_, C> {
     type Output = bool;
 
     #[inline(always)]
@@ -1027,10 +1271,7 @@ impl WithSimd for StagedSynthesisPairTransitionPerVector<'_> {
             sectoral_norm,
             coefficient_a,
             coefficient_b,
-            epsilon,
-            alpha,
-            first_coefficients,
-            second_coefficients,
+            coefficients,
             previous,
             current,
             next,
@@ -1051,10 +1292,7 @@ impl WithSimd for StagedSynthesisPairTransitionPerVector<'_> {
                 sectoral_norm,
                 coefficient_a,
                 coefficient_b,
-                epsilon,
-                alpha,
-                first_coefficients,
-                second_coefficients,
+                coefficients,
                 previous: &mut previous[start..end],
                 current: &mut current[start..end],
                 next: &mut next[start..end],
@@ -1169,7 +1407,7 @@ fn complex_components_in_normal_range(value: Complex64) -> bool {
     scalar_value_in_normal_range(value.re) && scalar_value_in_normal_range(value.im)
 }
 
-struct StagedSynthesisPairTransition<'a> {
+struct StagedSynthesisPairTransition<'a, C> {
     m: usize,
     lmax: usize,
     sin_theta: &'a [f64],
@@ -1177,10 +1415,7 @@ struct StagedSynthesisPairTransition<'a> {
     sectoral_norm: f64,
     coefficient_a: &'a [f64],
     coefficient_b: &'a [f64],
-    epsilon: &'a [f64],
-    alpha: &'a [f64],
-    first_coefficients: &'a [Complex64],
-    second_coefficients: &'a [Complex64],
+    coefficients: C,
     previous: &'a mut [f64],
     current: &'a mut [f64],
     next: &'a mut [f64],
@@ -1191,7 +1426,7 @@ struct StagedSynthesisPairTransition<'a> {
     second_sum_im: &'a mut [f64],
 }
 
-impl WithSimd for StagedSynthesisPairTransition<'_> {
+impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransition<'_, C> {
     type Output = bool;
 
     #[inline(always)]
@@ -1204,10 +1439,7 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
             sectoral_norm,
             coefficient_a,
             coefficient_b,
-            epsilon,
-            alpha,
-            first_coefficients,
-            second_coefficients,
+            coefficients,
             previous,
             current,
             next,
@@ -1247,12 +1479,9 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
                 lmax,
                 pair_start: 0,
                 cos_theta,
-                epsilon,
-                alpha,
                 coefficient_a,
                 coefficient_b,
-                first_coefficients,
-                second_coefficients,
+                coefficients,
                 previous,
                 current,
                 first_sum_re,
@@ -1268,33 +1497,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
         let pair_count = (lmax - m + 2) / 2;
         for pair in 0..pair_count {
             let l = m + 2 * pair;
-            let offset = l - m;
-            let next_first_even = if l + 2 <= lmax {
-                first_coefficients[offset + 2]
-            } else {
-                Complex64::new(0.0, 0.0)
-            };
-            let next_second_even = if l + 2 <= lmax {
-                second_coefficients[offset + 2]
-            } else {
-                Complex64::new(0.0, 0.0)
-            };
-            let first_even = (first_coefficients[offset] * epsilon[l + 1]
-                + next_first_even * epsilon[l + 2])
-                * alpha[pair];
-            let second_even = (second_coefficients[offset] * epsilon[l + 1]
-                + next_second_even * epsilon[l + 2])
-                * alpha[pair];
-            let first_odd = if l < lmax {
-                first_coefficients[offset + 1] * alpha[pair]
-            } else {
-                Complex64::new(0.0, 0.0)
-            };
-            let second_odd = if l < lmax {
-                second_coefficients[offset + 1] * alpha[pair]
-            } else {
-                Complex64::new(0.0, 0.0)
-            };
+            let (first_even, first_odd, second_even, second_odd) =
+                coefficients.values(m, lmax, pair);
             for lane in 0..current.len() {
                 let cosine = cos_theta[lane];
                 let first_odd_factor = Complex64::new(first_odd.re * cosine, first_odd.im * cosine);
@@ -1393,12 +1597,9 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
                     lmax,
                     pair_start: pair + 1,
                     cos_theta,
-                    epsilon,
-                    alpha,
                     coefficient_a,
                     coefficient_b,
-                    first_coefficients,
-                    second_coefficients,
+                    coefficients,
                     previous,
                     current,
                     first_sum_re,
@@ -6163,17 +6364,14 @@ impl WithSimd for FusedHemispherePairBlock<'_> {
     }
 }
 
-struct FusedSynthesisPairBlock<'a> {
+struct FusedSynthesisPairBlock<'a, C> {
     m: usize,
     lmax: usize,
     pair_start: usize,
     cos_theta: &'a [f64],
-    epsilon: &'a [f64],
-    alpha: &'a [f64],
     coefficient_a: &'a [f64],
     coefficient_b: &'a [f64],
-    first_coefficients: &'a [Complex64],
-    second_coefficients: &'a [Complex64],
+    coefficients: C,
     previous: &'a [f64],
     current: &'a [f64],
     first_sum_re: &'a mut [f64],
@@ -6184,7 +6382,7 @@ struct FusedSynthesisPairBlock<'a> {
     check_normal_range: bool,
 }
 
-impl WithSimd for FusedSynthesisPairBlock<'_> {
+impl<C: SynthesisPairCoefficientSource> WithSimd for FusedSynthesisPairBlock<'_, C> {
     type Output = bool;
 
     #[inline(always)]
@@ -6194,12 +6392,9 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
             lmax,
             pair_start,
             cos_theta,
-            epsilon,
-            alpha,
             coefficient_a,
             coefficient_b,
-            first_coefficients,
-            second_coefficients,
+            coefficients,
             previous: initial_previous,
             current,
             first_sum_re,
@@ -6252,34 +6447,8 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
                 second_sum_im_vectors[lane_block]
             };
             for pair in pair_start..pair_count {
-                let l = m + 2 * pair;
-                let offset = l - m;
-                let next_first_even = if l + 2 <= lmax {
-                    first_coefficients[offset + 2]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let next_second_even = if l + 2 <= lmax {
-                    second_coefficients[offset + 2]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let first_even = (first_coefficients[offset] * epsilon[l + 1]
-                    + next_first_even * epsilon[l + 2])
-                    * alpha[pair];
-                let second_even = (second_coefficients[offset] * epsilon[l + 1]
-                    + next_second_even * epsilon[l + 2])
-                    * alpha[pair];
-                let first_odd = if l < lmax {
-                    first_coefficients[offset + 1] * alpha[pair]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let second_odd = if l < lmax {
-                    second_coefficients[offset + 1] * alpha[pair]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
+                let (first_even, first_odd, second_even, second_odd) =
+                    coefficients.values(m, lmax, pair);
                 let first_coefficient_re = simd.mul_add_f64s(
                     simd.splat_f64s(first_odd.re),
                     cosine,
@@ -6360,34 +6529,8 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
                 second_sum_im_tail[lane]
             };
             for pair in pair_start..pair_count {
-                let l = m + 2 * pair;
-                let offset = l - m;
-                let next_first_even = if l + 2 <= lmax {
-                    first_coefficients[offset + 2]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let next_second_even = if l + 2 <= lmax {
-                    second_coefficients[offset + 2]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let first_even = (first_coefficients[offset] * epsilon[l + 1]
-                    + next_first_even * epsilon[l + 2])
-                    * alpha[pair];
-                let second_even = (second_coefficients[offset] * epsilon[l + 1]
-                    + next_second_even * epsilon[l + 2])
-                    * alpha[pair];
-                let first_odd = if l < lmax {
-                    first_coefficients[offset + 1] * alpha[pair]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let second_odd = if l < lmax {
-                    second_coefficients[offset + 1] * alpha[pair]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
+                let (first_even, first_odd, second_even, second_odd) =
+                    coefficients.values(m, lmax, pair);
                 first_re = current.mul_add(first_odd.re.mul_add(cosine, first_even.re), first_re);
                 first_im = current.mul_add(first_odd.im.mul_add(cosine, first_even.im), first_im);
                 second_re =
@@ -8485,12 +8628,14 @@ mod tests {
             lmax: 3,
             pair_start: 0,
             cos_theta: &cosine,
-            epsilon: &epsilon,
-            alpha: &alpha,
             coefficient_a: &coefficient_a,
             coefficient_b: &coefficient_b,
-            first_coefficients: &first_coefficients,
-            second_coefficients: &second_coefficients,
+            coefficients: OriginalSynthesisPairCoefficients {
+                epsilon: &epsilon,
+                alpha: &alpha,
+                first_coefficients: &first_coefficients,
+                second_coefficients: &second_coefficients,
+            },
             previous: &previous,
             current: &current,
             first_sum_re: &mut first_sum_re,
@@ -8508,5 +8653,227 @@ mod tests {
         assert_eq!(first_sum_im[4], 20.0);
         assert_eq!(second_sum_re[4], 30.0);
         assert_eq!(second_sum_im[4], 40.0);
+    }
+
+    #[test]
+    fn prepared_order_pair_transition_matches_original_coefficients() {
+        let m = 0;
+        let lmax = 3;
+        let pair_count = (lmax - m + 2) / 2;
+        let sin_theta = [0.2, 0.7, 0.98];
+        let cos_theta = sin_theta.map(|sine| (1.0 - sine * sine).sqrt());
+        let sectoral_norm = 0.75;
+        let epsilon = [1.0, 0.9, 1.1, 0.8, 1.2, 1.0];
+        let alpha = [0.95, 1.05];
+        let coefficient_a = [0.15, 0.1];
+        let coefficient_b = [0.2, -0.05];
+        let first_coefficients = [
+            Complex64::new(0.25, -0.125),
+            Complex64::new(0.5, 0.375),
+            Complex64::new(-0.75, 0.25),
+            Complex64::new(0.125, 0.625),
+        ];
+        let second_coefficients = [
+            Complex64::new(-0.125, 0.5),
+            Complex64::new(0.75, -0.25),
+            Complex64::new(0.375, 0.125),
+            Complex64::new(-0.5, 0.25),
+        ];
+        let mut first_even = [Complex64::new(0.0, 0.0); 2];
+        let mut first_odd = [Complex64::new(0.0, 0.0); 2];
+        let mut second_even = [Complex64::new(0.0, 0.0); 2];
+        let mut second_odd = [Complex64::new(0.0, 0.0); 2];
+        assert!(prepare_synthesis_coefficient_pair(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &first_coefficients,
+            &second_coefficients,
+            &mut first_even,
+            &mut first_odd,
+            &mut second_even,
+            &mut second_odd,
+        ));
+
+        let mut original_first_sum_re = [0.0; 3];
+        let mut original_first_sum_im = [0.0; 3];
+        let mut original_second_sum_re = [0.0; 3];
+        let mut original_second_sum_im = [0.0; 3];
+        let mut original_previous = [0.0; 3];
+        let mut original_current = [0.0; 3];
+        let mut original_next = [0.0; 3];
+        let mut original_exponents = [0; 3];
+        let original_completed = try_synthesize_order_pair_transition_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &epsilon,
+            &alpha,
+            &coefficient_a,
+            &coefficient_b,
+            &first_coefficients,
+            &second_coefficients,
+            &mut original_previous,
+            &mut original_current,
+            &mut original_next,
+            &mut original_exponents,
+            &mut original_first_sum_re,
+            &mut original_first_sum_im,
+            &mut original_second_sum_re,
+            &mut original_second_sum_im,
+        )
+        .unwrap();
+
+        let mut prepared_first_sum_re = [0.0; 3];
+        let mut prepared_first_sum_im = [0.0; 3];
+        let mut prepared_second_sum_re = [0.0; 3];
+        let mut prepared_second_sum_im = [0.0; 3];
+        let mut prepared_previous = [0.0; 3];
+        let mut prepared_current = [0.0; 3];
+        let mut prepared_next = [0.0; 3];
+        let mut prepared_exponents = [0; 3];
+        let prepared_completed = try_synthesize_prepared_order_pair_transition_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &first_even[..pair_count],
+            &first_odd[..pair_count],
+            &second_even[..pair_count],
+            &second_odd[..pair_count],
+            &mut prepared_previous,
+            &mut prepared_current,
+            &mut prepared_next,
+            &mut prepared_exponents,
+            &mut prepared_first_sum_re,
+            &mut prepared_first_sum_im,
+            &mut prepared_second_sum_re,
+            &mut prepared_second_sum_im,
+        )
+        .unwrap();
+
+        assert!(original_completed);
+        assert_eq!(prepared_completed, original_completed);
+        assert_eq!(prepared_first_sum_re, original_first_sum_re);
+        assert_eq!(prepared_first_sum_im, original_first_sum_im);
+        assert_eq!(prepared_second_sum_re, original_second_sum_re);
+        assert_eq!(prepared_second_sum_im, original_second_sum_im);
+    }
+
+    #[test]
+    fn prepared_order_pair_transition_promotes_scaled_simd_vector() {
+        let m = 100;
+        let lmax = 106;
+        let pair_count = (lmax - m + 2) / 2;
+        let lanes = 9;
+        let sin_theta = [0.01; 9];
+        let cos_theta = sin_theta.map(|sine| (1.0 - sine * sine).sqrt());
+        let sectoral_norm = 0.75;
+        let epsilon = vec![1.0; lmax + 3];
+        let alpha = vec![1.0; pair_count];
+        let coefficient_a = vec![0.0; pair_count];
+        let coefficient_b = vec![2.0_f64.powi(300); pair_count];
+        let large_coefficient = 2.0_f64.powi(264);
+        let first_coefficients = [Complex64::new(large_coefficient, large_coefficient); 7];
+        let second_coefficients = [Complex64::new(-large_coefficient, large_coefficient * 0.5); 7];
+        let mut first_even = vec![Complex64::new(0.0, 0.0); pair_count];
+        let mut first_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+        let mut second_even = vec![Complex64::new(0.0, 0.0); pair_count];
+        let mut second_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+        assert!(prepare_synthesis_coefficient_pair(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &first_coefficients,
+            &second_coefficients,
+            &mut first_even,
+            &mut first_odd,
+            &mut second_even,
+            &mut second_odd,
+        ));
+
+        let mut original_first_sum_re = [0.0; 9];
+        let mut original_first_sum_im = [0.0; 9];
+        let mut original_second_sum_re = [0.0; 9];
+        let mut original_second_sum_im = [0.0; 9];
+        let mut original_previous = [0.0; 9];
+        let mut original_current = [0.0; 9];
+        let mut original_next = [0.0; 9];
+        let mut original_exponents = [0; 9];
+        let original_completed = try_synthesize_order_pair_transition_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta[..lanes],
+            &cos_theta[..lanes],
+            sectoral_norm,
+            &epsilon,
+            &alpha,
+            &coefficient_a,
+            &coefficient_b,
+            &first_coefficients,
+            &second_coefficients,
+            &mut original_previous,
+            &mut original_current,
+            &mut original_next,
+            &mut original_exponents,
+            &mut original_first_sum_re,
+            &mut original_first_sum_im,
+            &mut original_second_sum_re,
+            &mut original_second_sum_im,
+        )
+        .unwrap();
+
+        let mut prepared_first_sum_re = [0.0; 9];
+        let mut prepared_first_sum_im = [0.0; 9];
+        let mut prepared_second_sum_re = [0.0; 9];
+        let mut prepared_second_sum_im = [0.0; 9];
+        let mut prepared_previous = [0.0; 9];
+        let mut prepared_current = [0.0; 9];
+        let mut prepared_next = [0.0; 9];
+        let mut prepared_exponents = [0; 9];
+        let prepared_completed = try_synthesize_prepared_order_pair_transition_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta[..lanes],
+            &cos_theta[..lanes],
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &first_even,
+            &first_odd,
+            &second_even,
+            &second_odd,
+            &mut prepared_previous,
+            &mut prepared_current,
+            &mut prepared_next,
+            &mut prepared_exponents,
+            &mut prepared_first_sum_re,
+            &mut prepared_first_sum_im,
+            &mut prepared_second_sum_re,
+            &mut prepared_second_sum_im,
+        )
+        .unwrap();
+
+        assert!(
+            original_completed,
+            "fixture should reach the ordinary suffix"
+        );
+        assert_eq!(prepared_completed, original_completed);
+        assert_eq!(prepared_exponents, original_exponents);
+        assert_eq!(prepared_first_sum_re, original_first_sum_re);
+        assert_eq!(prepared_first_sum_im, original_first_sum_im);
+        assert_eq!(prepared_second_sum_re, original_second_sum_re);
+        assert_eq!(prepared_second_sum_im, original_second_sum_im);
     }
 }

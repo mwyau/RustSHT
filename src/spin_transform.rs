@@ -2797,6 +2797,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             return Ok(());
         }
 
+        let mut prepared_pair_for_transition = false;
         let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
             .expect("spin-1 paired scalar sine limit converts");
         if allow_table
@@ -2891,6 +2892,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 false
             };
+            prepared_pair_for_transition = prepared_pair;
             if prepared_pair {
                 #[cfg(all(test, feature = "parallel"))]
                 let recurrence_started = recurrence
@@ -3132,28 +3134,53 @@ impl<T: ShtScalar> ShtPlan<T> {
             };
         let mut staged_pair =
             if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX && !split_transition_attempted {
-                T::try_synthesize_paired_scalar_transition_dispatched(
-                    arch,
-                    m,
-                    scalar_lmax,
-                    fallback_sin,
-                    fallback_cos,
-                    self.sectoral_norms[m],
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &recurrence.spin_coefficient_a,
-                    &recurrence.spin_coefficient_b,
-                    &recurrence.fast_scalar_first[m..=scalar_lmax],
-                    &recurrence.fast_scalar_second[m..=scalar_lmax],
-                    &mut recurrence.previous[..fallback_len],
-                    &mut recurrence.current[..fallback_len],
-                    &mut recurrence.next[..fallback_len],
-                    &mut recurrence.exponents[..fallback_len],
-                    &mut recurrence.analysis_same_real[..fallback_len],
-                    &mut recurrence.analysis_same_imag[..fallback_len],
-                    &mut recurrence.analysis_opposite_real[..fallback_len],
-                    &mut recurrence.analysis_opposite_imag[..fallback_len],
-                )?
+                if prepared_pair_for_transition {
+                    T::try_synthesize_prepared_paired_scalar_transition_dispatched(
+                        arch,
+                        m,
+                        scalar_lmax,
+                        fallback_sin,
+                        fallback_cos,
+                        self.sectoral_norms[m],
+                        &recurrence.spin_coefficient_a,
+                        &recurrence.spin_coefficient_b,
+                        &recurrence.fast_spin_first,
+                        &recurrence.fast_spin_second,
+                        &recurrence.fast_spin_pair_first,
+                        &recurrence.fast_spin_pair_second,
+                        &mut recurrence.previous[..fallback_len],
+                        &mut recurrence.current[..fallback_len],
+                        &mut recurrence.next[..fallback_len],
+                        &mut recurrence.exponents[..fallback_len],
+                        &mut recurrence.analysis_same_real[..fallback_len],
+                        &mut recurrence.analysis_same_imag[..fallback_len],
+                        &mut recurrence.analysis_opposite_real[..fallback_len],
+                        &mut recurrence.analysis_opposite_imag[..fallback_len],
+                    )?
+                } else {
+                    T::try_synthesize_paired_scalar_transition_dispatched(
+                        arch,
+                        m,
+                        scalar_lmax,
+                        fallback_sin,
+                        fallback_cos,
+                        self.sectoral_norms[m],
+                        &recurrence.epsilon,
+                        &recurrence.spin_alpha,
+                        &recurrence.spin_coefficient_a,
+                        &recurrence.spin_coefficient_b,
+                        &recurrence.fast_scalar_first[m..=scalar_lmax],
+                        &recurrence.fast_scalar_second[m..=scalar_lmax],
+                        &mut recurrence.previous[..fallback_len],
+                        &mut recurrence.current[..fallback_len],
+                        &mut recurrence.next[..fallback_len],
+                        &mut recurrence.exponents[..fallback_len],
+                        &mut recurrence.analysis_same_real[..fallback_len],
+                        &mut recurrence.analysis_same_imag[..fallback_len],
+                        &mut recurrence.analysis_opposite_real[..fallback_len],
+                        &mut recurrence.analysis_opposite_imag[..fallback_len],
+                    )?
+                }
             } else {
                 false
             };
