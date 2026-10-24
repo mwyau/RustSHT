@@ -2828,6 +2828,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             return Ok(());
         }
 
+        #[cfg(all(test, feature = "parallel"))]
+        let profile_bin = if m <= 255 { 0 } else if m <= 767 { 1 } else { 2 };
+        let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
         let mut prepared_pair_for_transition = false;
         let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
             .expect("spin-1 paired scalar sine limit converts");
@@ -2889,8 +2892,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             #[cfg(all(test, feature = "parallel"))]
             if recurrence.spin1_profile_enabled && paired_channels_eligible {
                 recurrence.spin1_profile_pair_eligible_blocks += 1;
+                let profile = &mut recurrence.spin1_profile_route_bins[profile_bin];
+                profile.eligible_blocks += 1;
+                profile.eligible_lane_pair_work +=
+                    (block_len * coefficient_pair_count) as u128;
             }
-            let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
             let prepared_pair = if paired_channels_eligible {
                 #[cfg(all(test, feature = "parallel"))]
                 let prepare_started = recurrence
@@ -2923,8 +2929,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 false
             };
+            #[cfg(all(test, feature = "parallel"))]
+            if recurrence.spin1_profile_enabled && paired_channels_eligible && !prepared_pair {
+                recurrence.spin1_profile_route_bins[profile_bin].coefficient_prep_declines += 1;
+            }
             prepared_pair_for_transition = prepared_pair;
             if prepared_pair {
+                #[cfg(all(test, feature = "parallel"))]
+                if recurrence.spin1_profile_enabled {
+                    recurrence.spin1_profile_route_bins[profile_bin].regular_kernel_attempts += 1;
+                }
                 #[cfg(all(test, feature = "parallel"))]
                 let recurrence_started = recurrence
                     .spin1_profile_enabled
@@ -2965,6 +2979,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     #[cfg(all(test, feature = "parallel"))]
                     if recurrence.spin1_profile_enabled {
                         recurrence.spin1_profile_pair_success_blocks += 1;
+                        let profile = &mut recurrence.spin1_profile_route_bins[profile_bin];
+                        profile.ordinary_fused_successes += 1;
+                        profile.ordinary_fused_lane_pair_work +=
+                            (block_len * coefficient_pair_count) as u128;
                     }
                     for (ring, &sin_theta) in theta_sin.iter().enumerate() {
                         let spectrum_index = ring * spectrum_len + output_order;
@@ -3086,6 +3104,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(all(test, feature = "parallel"))]
         if recurrence.spin1_profile_enabled {
             recurrence.spin1_profile_fallback_blocks += 1;
+            recurrence.spin1_profile_route_bins[profile_bin].fallback_entries += 1;
         }
         let mut split_transition_attempted = false;
         let mut split_polar_count = None;
@@ -3232,6 +3251,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
         if staged_pair {
+            #[cfg(all(test, feature = "parallel"))]
+            if recurrence.spin1_profile_enabled {
+                recurrence.spin1_profile_route_bins[profile_bin].transition_successes += 1;
+            }
             for lane in 0..fallback_len {
                 let local_ring = compact_ring_indices.map_or(lane, |indices| indices[lane]);
                 let spectrum_index = local_ring * spectrum_len + output_order;
@@ -3266,6 +3289,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         } else {
             None
         };
+        #[cfg(all(test, feature = "parallel"))]
+        if recurrence.spin1_profile_enabled {
+            let profile = &mut recurrence.spin1_profile_route_bins[profile_bin];
+            profile.generic_per_degree_blocks += 1;
+            profile.generic_lane_pair_work += (fallback_len * coefficient_pair_count) as u128;
+        }
         T::for_each_y_lm_dispatched(
             arch,
             m,

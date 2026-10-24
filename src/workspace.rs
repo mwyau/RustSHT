@@ -163,6 +163,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) spin1_profile_fallback_blocks: usize,
     #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_route_bins: [Spin1SynthesisProfileBin; 3],
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) spin1_profile_coefficient_safety_ns: u128,
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) spin1_profile_coefficient_safety_values: u128,
@@ -170,6 +172,21 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin1_profile_group_ns: u128,
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) spin1_profile_group_worker_id: usize,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[derive(Clone, Copy, Default)]
+pub(crate) struct Spin1SynthesisProfileBin {
+    pub(crate) eligible_blocks: usize,
+    pub(crate) eligible_lane_pair_work: u128,
+    pub(crate) coefficient_prep_declines: usize,
+    pub(crate) regular_kernel_attempts: usize,
+    pub(crate) ordinary_fused_successes: usize,
+    pub(crate) ordinary_fused_lane_pair_work: u128,
+    pub(crate) fallback_entries: usize,
+    pub(crate) transition_successes: usize,
+    pub(crate) generic_per_degree_blocks: usize,
+    pub(crate) generic_lane_pair_work: u128,
 }
 
 #[repr(align(64))]
@@ -461,6 +478,8 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             spin1_profile_pair_success_blocks: 0,
             #[cfg(all(test, feature = "parallel"))]
             spin1_profile_fallback_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_route_bins: [Spin1SynthesisProfileBin::default(); 3],
             #[cfg(all(test, feature = "parallel"))]
             spin1_profile_coefficient_safety_ns: 0,
             #[cfg(all(test, feature = "parallel"))]

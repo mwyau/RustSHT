@@ -9992,6 +9992,8 @@ fn profile_spin1_standard_synthesis_phases() {
             worker.spin1_profile_pair_eligible_blocks = 0;
             worker.spin1_profile_pair_success_blocks = 0;
             worker.spin1_profile_fallback_blocks = 0;
+            worker.spin1_profile_route_bins =
+                [crate::workspace::Spin1SynthesisProfileBin::default(); 3];
             worker.spin1_profile_coefficient_safety_ns = 0;
             worker.spin1_profile_coefficient_safety_values = 0;
             worker.spin1_profile_group_ns = 0;
@@ -10071,6 +10073,35 @@ fn profile_spin1_standard_synthesis_phases() {
         eprintln!(
             "PROFILE_ROUTES,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},pair_eligible={pair_eligible_blocks},pair_success={pair_success_blocks},fallback={fallback_blocks}"
         );
+        for (bin, label) in [(0, "m000-255"), (1, "m256-767"), (2, "m768-1023")] {
+            let mut total = crate::workspace::Spin1SynthesisProfileBin::default();
+            for worker in &workspace.recurrence_workers {
+                let source = worker.spin1_profile_route_bins[bin];
+                total.eligible_blocks += source.eligible_blocks;
+                total.eligible_lane_pair_work += source.eligible_lane_pair_work;
+                total.coefficient_prep_declines += source.coefficient_prep_declines;
+                total.regular_kernel_attempts += source.regular_kernel_attempts;
+                total.ordinary_fused_successes += source.ordinary_fused_successes;
+                total.ordinary_fused_lane_pair_work += source.ordinary_fused_lane_pair_work;
+                total.fallback_entries += source.fallback_entries;
+                total.transition_successes += source.transition_successes;
+                total.generic_per_degree_blocks += source.generic_per_degree_blocks;
+                total.generic_lane_pair_work += source.generic_lane_pair_work;
+            }
+            eprintln!(
+                "PROFILE_ROUTE_BIN,{lmax},{mmax},{thread_count},{repetition},{label},eligible_blocks={},eligible_lane_pair_work={},coefficient_prep_declines={},regular_kernel_attempts={},ordinary_fused_successes={},ordinary_fused_lane_pair_work={},fallback_entries={},transition_successes={},generic_per_degree_blocks={},generic_lane_pair_work={}",
+                total.eligible_blocks,
+                total.eligible_lane_pair_work,
+                total.coefficient_prep_declines,
+                total.regular_kernel_attempts,
+                total.ordinary_fused_successes,
+                total.ordinary_fused_lane_pair_work,
+                total.fallback_entries,
+                total.transition_successes,
+                total.generic_per_degree_blocks,
+                total.generic_lane_pair_work,
+            );
+        }
         eprintln!(
             "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum coefficient finite scans,{:.6},complex_values={safety_values}",
             safety_ns as f64 / 1.0e6,
