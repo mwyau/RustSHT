@@ -4,8 +4,8 @@
 
 ## Verified baseline and completion
 
-- **Analysis closeout DONE** at `8074844c` (production source from `8f99a274`; focused q8 release/adjoint/poison/Clippy/no-default checks pass). Matched T720 q8 analysis CC `1.04×`, F1 `1.15×`, GL `2.08×`. GL analysis is a later >=2× target, not the immediate task.
-- **GL T511 q8 dispatch remains accepted**, but its former 2.95× result is stale. Recheck on `6633b3ec` measured 3.830 ms versus 2.747 ms for DUCC (1.40×); the exact `08c1ba0e` parent was 3.783 ms. The older special-path comparison remains historical evidence only. Larger-T CC/F1/GL q8 measurements are not a current-source full matrix.
+- **Analysis closeout DONE** at `8074844c` (production source from `8f99a274`; focused q8 release/adjoint/poison/Clippy/no-default checks pass). A bounded follow-up preweights opposite inputs once per lane before the checked per-channel recurrence: GL T720 q8 is 10.090 ms versus 10.899 ms on exact parent `a889cf87` (paired median `0.934×`) and 4.553 ms for DUCC (`2.14×`); output relative L2 is `1.91e-16` to parent and `4.76e-14` to DUCC. Retain this 6–7% gain; the remaining analysis gap is still backlog after synthesis.
+- **GL T511 q8 dispatch remains accepted**, but its former 2.95× result is stale. The latest recheck measured `a889cf87` at 3.175 ms, exact parent `6633b3ec` at 3.182 ms, and DUCC at 2.384 ms (1.33×); output matched parent bit-for-bit. The older special-path comparison remains historical evidence only. Larger-T CC/F1/GL q8 measurements are not a current-source full matrix.
 - Scalar CC/F1 f64 synthesis is near but not universally <=1× DUCC; preserve existing improvements. No new scalar benchmark completeness prerequisite.
 - **M1 accepted:** the prepared-component adapter improves full/reduced CC, F1 and GL T720 q8 by about 34–40% over the exact parent and brings CC T1023 q8 to 1.13× DUCC. CC T720 full q8 is 1.57× DUCC. Focused correctness and strict lint checks pass; see the short performance snapshot for medians and numerical errors.
 
@@ -35,7 +35,6 @@ Pin `mreineck/ducc@42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`:
 
 ## Remaining synthesis priorities
 
-- GL T1023 full q1 currently measures 250.7 ms versus 123.5 ms for DUCC (2.03×). A degree-major prepared dual-channel block was rejected at 305.0 ms; it matched the parent bit-for-bit but wrote recurrence state and four running sums to scratch on every degree pair. Do not repeat this mapping.
-- Next distinct q1 hypothesis: tile two or four SIMD ring vectors while keeping recurrence and accumulators register-resident, sharing coefficient broadcasts without per-degree scratch traffic. If that does not yield a clear gain, move to the GL T720 q8 analysis backlog at 2.08×. Keep ~1.6× T720 q8 synthesis deferred.
+- GL T1023 full q1 currently measures 279.589 ms versus 125.115 ms for DUCC (2.23×). Rejected: degree-major prepared block (305.0 ms), two-ring-vector tile (293.328 ms; AVX2 spills), corrected two-pair unroll (273.260 ms versus 279.589 ms parent but paired ratios `0.888/1.036/0.995`), and serial prepared-component route (443.850 ms versus 254.683 ms parent). Do not repeat these mappings. A later q1 attempt should change the execution axis and retain recurrence state across an output band, rather than add another degree tile or per-degree scratch stream. The GL T720 q8 analysis preweight gain is recorded above; keep ~1.6× T720 q8 synthesis deferred.
 
 **Invariants:** `S/A/S*/A*`, all supported grids/spins, full/quarter order, phi0, poles/equator, SIMD tails, subnormal/extreme/nonfinite, workspace poison/reset, error and adjoint behavior; original-spin fallback must always remain correct. stable Rust/Pulp SIMD, GPL attribution, no API or FFT rewrite, f32 paused. Fetch/reconcile before non-force pushes and commit tested kernel milestones. `PERFORMANCE_STATUS.md` remains short and current; immutable negative/report evidence may be stored separately only if important.

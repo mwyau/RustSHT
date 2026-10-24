@@ -4168,6 +4168,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     fn try_fused_spin_scalar_analysis_pair_block(
         arch: pulp::Arch,
         sequential_channels: bool,
+        opposite_preweighted: bool,
         m: usize,
         scalar_lmax: usize,
         sectoral_norm: T,
@@ -4210,6 +4211,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let fused = T::fused_scalar_analysis_pair_channels_block(
             arch,
             sequential_channels,
+            opposite_preweighted,
             m,
             scalar_lmax,
             sin_theta,
@@ -4433,12 +4435,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             if !q_products_safe || !u_products_safe {
                 return Ok(false);
             }
+            let opposite_preweighted = sequential_channels && T::supports_paired_scalar();
             #[cfg(all(test, feature = "parallel"))]
             let mut block_range_status = (false, false);
             let fused_block = fused_analysis_enabled
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
                     sequential_channels,
+                    opposite_preweighted,
                     m,
                     scalar_lmax,
                     self.sectoral_norms[m],
@@ -4944,6 +4948,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
                     false,
+                    false,
                     m,
                     scalar_lmax,
                     self.sectoral_norms[m],
@@ -5141,6 +5146,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let fused_block = if q_products_safe && u_products_safe {
                 T::fused_scalar_analysis_pair_channels_block(
                     arch,
+                    false,
                     false,
                     m,
                     scalar_lmax,

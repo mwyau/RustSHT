@@ -3446,6 +3446,7 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
     let fused = ShtPlan::<f64>::try_fused_spin_scalar_analysis_pair_block(
         pulp::Arch::new(),
         true,
+        false,
         m,
         scalar_lmax,
         plan.sectoral_norms[m],

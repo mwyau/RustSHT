@@ -4258,6 +4258,7 @@ fn dispatch_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     m: usize,
     lmax: usize,
     range_check_was_exercised: &mut bool,
+    opposite_preweighted: bool,
     cos_theta: &[f64],
     cos_theta_squared: &[f64],
     coefficient_a: &[f64],
@@ -4271,24 +4272,93 @@ fn dispatch_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     current: &mut [f64],
     next: &mut [f64],
 ) -> bool {
-    arch.dispatch(FusedScalarAnalysisPair::<false, CHECK_PAIR_GROUP_RANGE> {
-        m,
-        lmax,
-        range_check_was_exercised,
-        pair_start: 0,
-        cos_theta,
-        cos_theta_squared,
-        coefficient_a,
-        coefficient_b,
-        same_real,
-        same_imag,
-        opposite_real,
-        opposite_imag,
-        staged_coefficients,
-        previous,
-        current,
-        next,
-    })
+    if opposite_preweighted {
+        dispatch_fused_scalar_analysis_pair_weighted::<true, CHECK_PAIR_GROUP_RANGE>(
+            arch,
+            m,
+            lmax,
+            range_check_was_exercised,
+            cos_theta,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+        )
+    } else {
+        dispatch_fused_scalar_analysis_pair_weighted::<false, CHECK_PAIR_GROUP_RANGE>(
+            arch,
+            m,
+            lmax,
+            range_check_was_exercised,
+            cos_theta,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+        )
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scalar analysis dispatch binds one channel's spectra to shared recurrence geometry and scratch."
+)]
+#[inline(always)]
+fn dispatch_fused_scalar_analysis_pair_weighted<
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_PAIR_GROUP_RANGE: bool,
+>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    range_check_was_exercised: &mut bool,
+    cos_theta: &[f64],
+    cos_theta_squared: &[f64],
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    staged_coefficients: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+) -> bool {
+    arch.dispatch(
+        FusedScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED, CHECK_PAIR_GROUP_RANGE> {
+            m,
+            lmax,
+            range_check_was_exercised,
+            pair_start: 0,
+            cos_theta,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+        },
+    )
 }
 
 /// Computes a normal-range scalar analysis block for two spin-conversion channels.
@@ -4302,6 +4372,7 @@ fn dispatch_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
 pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     arch: Arch,
     sequential_channels: bool,
+    opposite_preweighted: bool,
     m: usize,
     lmax: usize,
     sin_theta: &[f64],
@@ -4321,6 +4392,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
     debug_assert!(m <= lmax);
+    debug_assert!(!opposite_preweighted || sequential_channels);
     let coefficient_count = lmax - m + 1;
     debug_assert!(sin_theta.len() <= LATITUDE_BLOCK_SIZE);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
@@ -4382,6 +4454,9 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     // kernel with its smaller accumulator set for each row.
     let mut channels_succeeded = true;
     let mut first_channel_proved_recurrence_range = false;
+    // Weight each opposite input once per lane; retain the originals for fallback.
+    let mut weighted_opposite_real = [0.0; LATITUDE_BLOCK_SIZE];
+    let mut weighted_opposite_imag = [0.0; LATITUDE_BLOCK_SIZE];
     for (channel, staged) in [
         (0, &mut staged_first[..coefficient_count]),
         (1, &mut staged_second[..coefficient_count]),
@@ -4399,6 +4474,25 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
             channels_succeeded = false;
             continue;
         }
+        let (opposite_real, opposite_imag, channel_opposite_preweighted) = if opposite_preweighted {
+            weighted_opposite_real[..sin_theta.len()].copy_from_slice(opposite_real[channel]);
+            weighted_opposite_imag[..sin_theta.len()].copy_from_slice(opposite_imag[channel]);
+            if prepare_analysis_opposite(
+                &mut weighted_opposite_real[..sin_theta.len()],
+                &mut weighted_opposite_imag[..sin_theta.len()],
+                cos_theta,
+            ) {
+                (
+                    &weighted_opposite_real[..sin_theta.len()],
+                    &weighted_opposite_imag[..sin_theta.len()],
+                    true,
+                )
+            } else {
+                (opposite_real[channel], opposite_imag[channel], false)
+            }
+        } else {
+            (opposite_real[channel], opposite_imag[channel], false)
+        };
         let mut range_check_was_exercised = false;
         let recurrence_succeeded = if first_channel_proved_recurrence_range {
             dispatch_fused_scalar_analysis_pair::<false>(
@@ -4406,14 +4500,15 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
                 m,
                 lmax,
                 &mut range_check_was_exercised,
+                channel_opposite_preweighted,
                 cos_theta,
                 &cos_theta_squared[..sin_theta.len()],
                 coefficient_a,
                 coefficient_b,
                 same_real[channel],
                 same_imag[channel],
-                opposite_real[channel],
-                opposite_imag[channel],
+                opposite_real,
+                opposite_imag,
                 staged,
                 &mut previous[..sin_theta.len()],
                 &mut current[..sin_theta.len()],
@@ -4425,14 +4520,15 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
                 m,
                 lmax,
                 &mut range_check_was_exercised,
+                channel_opposite_preweighted,
                 cos_theta,
                 &cos_theta_squared[..sin_theta.len()],
                 coefficient_a,
                 coefficient_b,
                 same_real[channel],
                 same_imag[channel],
-                opposite_real[channel],
-                opposite_imag[channel],
+                opposite_real,
+                opposite_imag,
                 staged,
                 &mut previous[..sin_theta.len()],
                 &mut current[..sin_theta.len()],
@@ -7085,6 +7181,7 @@ mod tests {
         let fused = fused_scalar_analysis_pair_channels_block_dispatched(
             arch,
             true,
+            false,
             m,
             lmax,
             &sin_theta,
@@ -7165,6 +7262,44 @@ mod tests {
                 assert!((*actual - *expected).norm() <= 2.0e-14);
             }
         }
+
+        let baseline_first = staged_first.clone();
+        let baseline_second = staged_second.clone();
+        let mut weighted_first = vec![Complex64::new(17.0, -9.0); coefficient_count];
+        let mut weighted_second = vec![Complex64::new(-13.0, 7.0); coefficient_count];
+        next.fill(0.0);
+        let weighted = fused_scalar_analysis_pair_channels_block_dispatched(
+            arch,
+            true,
+            true,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            [&same_real[0], &same_real[1]],
+            [&same_imag[0], &same_imag[1]],
+            [&opposite_real[0], &opposite_real[1]],
+            [&opposite_imag[0], &opposite_imag[1]],
+            &mut weighted_first,
+            &mut weighted_second,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+        )
+        .unwrap();
+        assert!(weighted);
+        for (weighted, baseline) in [
+            (&weighted_first, &baseline_first),
+            (&weighted_second, &baseline_second),
+        ] {
+            for (actual, expected) in weighted.iter().zip(baseline) {
+                assert!((*actual - *expected).norm() <= 5.0e-14);
+            }
+        }
     }
 
     #[test]
@@ -7228,6 +7363,7 @@ mod tests {
             let fused = fused_scalar_analysis_pair_channels_block_dispatched(
                 Arch::new(),
                 true,
+                false,
                 m,
                 lmax,
                 &sin_theta,
@@ -7285,6 +7421,7 @@ mod tests {
         let fused = fused_scalar_analysis_pair_channels_block_dispatched(
             Arch::new(),
             true,
+            false,
             m,
             lmax,
             &sin_theta,
