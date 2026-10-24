@@ -898,7 +898,7 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
         return Ok(false);
     }
 
-    let completed = arch.dispatch(StagedSynthesisPairTransition {
+    let completed = arch.dispatch(StagedSynthesisPairTransitionPerVector {
         m,
         lmax,
         sin_theta,
@@ -930,6 +930,90 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
         return Ok(false);
     }
     Ok(true)
+}
+
+/// Runs the checked prefix independently for each SIMD latitude vector so a
+/// vector that reaches ordinary range can enter the register-resident suffix
+/// without waiting for unrelated scaled lanes elsewhere in the block.
+struct StagedSynthesisPairTransitionPerVector<'a> {
+    m: usize,
+    lmax: usize,
+    sin_theta: &'a [f64],
+    cos_theta: &'a [f64],
+    sectoral_norm: f64,
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    epsilon: &'a [f64],
+    alpha: &'a [f64],
+    first_coefficients: &'a [Complex64],
+    second_coefficients: &'a [Complex64],
+    previous: &'a mut [f64],
+    current: &'a mut [f64],
+    next: &'a mut [f64],
+    exponents: &'a mut [i64],
+    first_sum_re: &'a mut [f64],
+    first_sum_im: &'a mut [f64],
+    second_sum_re: &'a mut [f64],
+    second_sum_im: &'a mut [f64],
+}
+
+impl WithSimd for StagedSynthesisPairTransitionPerVector<'_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> bool {
+        let Self {
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            epsilon,
+            alpha,
+            first_coefficients,
+            second_coefficients,
+            previous,
+            current,
+            next,
+            exponents,
+            first_sum_re,
+            first_sum_im,
+            second_sum_re,
+            second_sum_im,
+        } = self;
+        let vector_lanes = S::F64_LANES.max(1);
+        for start in (0..sin_theta.len()).step_by(vector_lanes) {
+            let end = (start + vector_lanes).min(sin_theta.len());
+            let completed = StagedSynthesisPairTransition {
+                m,
+                lmax,
+                sin_theta: &sin_theta[start..end],
+                cos_theta: &cos_theta[start..end],
+                sectoral_norm,
+                coefficient_a,
+                coefficient_b,
+                epsilon,
+                alpha,
+                first_coefficients,
+                second_coefficients,
+                previous: &mut previous[start..end],
+                current: &mut current[start..end],
+                next: &mut next[start..end],
+                exponents: &mut exponents[start..end],
+                first_sum_re: &mut first_sum_re[start..end],
+                first_sum_im: &mut first_sum_im[start..end],
+                second_sum_re: &mut second_sum_re[start..end],
+                second_sum_im: &mut second_sum_im[start..end],
+            }
+            .with_simd(simd);
+            if !completed {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 #[inline]
