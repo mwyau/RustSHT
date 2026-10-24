@@ -21,6 +21,6 @@ The GL T511 q8 recheck on `6633b3ec` used 15 long calls/backend over three inter
 
 The attempted serial prepared-component route for GL T1023 q1 was rejected and reverted: across 15 long calls/backend it measured 443.850 ms versus 254.683 ms on parent and 124.158 ms for DUCC (1.74× parent, 3.57× DUCC).
 
-Focused cache-path tests, formatting, strict parallel Clippy, and all 229 no-default-feature library tests passed. The parallel release suite passed 281 tests; two T720 reduced-order q1/q8 tolerance tests also fail on exact parent `08c1ba0e`. The GL T511 q8 selector remains intact.
+Focused cache-path tests, formatting, strict parallel Clippy, and all 229 no-default-feature library tests passed. The two T720 m180 failures are q1-vs-q8 consistency checks: F1 `spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace` and CC `spin1_cc_grouped_synthesis_reuses_checked_coefficients`. Each fails its unchanged `2e-11` assertion when run separately on current source and exact parent `08c1ba0e` (test lines 5943 and 6082). The GL T511 q8 selector remains intact.
 
 **Focused CC T720 q8 profile:** all 721 orders used the prepared route; 114 polar blocks used scalar fallback. Across workers, prepared passes summed to 42.7–47.8 ms, compared with 0.19–0.71 ms for row clearing, 2.36–5.00 ms for scattering, and 2.86–6.07 ms for fallback. These are test-instrumented worker sums, not wall latency; clear/scatter/fallback do not explain the remaining gap. A distinct organization of the prepared passes is the next useful mechanism to investigate.
