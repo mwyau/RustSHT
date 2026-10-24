@@ -44,7 +44,9 @@ const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
-const SPIN1_ORDER_MAJOR_TILE: usize = 8;
+const SPIN1_ORDER_MAJOR_TILE: usize = 1;
+#[cfg(feature = "parallel")]
+const SPIN1_ORDER_MAJOR_ELIGIBILITY_TILE: usize = 8;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 1023;
@@ -1289,12 +1291,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                 };
                 debug_assert!(required_recurrence_workers <= workspace.recurrence_workers.len());
                 let order_tile_count = (self.harmonics.mmax() + 1).div_ceil(SPIN1_ORDER_MAJOR_TILE);
+                let order_eligibility_tile_count =
+                    (self.harmonics.mmax() + 1).div_ceil(SPIN1_ORDER_MAJOR_ELIGIBILITY_TILE);
                 let order_major_queue_eligible = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && !derivative_norm
                     && b_alm.is_some()
                     && execution_threads >= 8
-                    && order_tile_count >= execution_threads.saturating_mul(2)
+                    && order_eligibility_tile_count >= execution_threads.saturating_mul(2)
                     && use_dynamic_spin1_group_queue
                     && use_spin1_coefficient_cache;
                 let local_coefficient_cache_bytes = self
