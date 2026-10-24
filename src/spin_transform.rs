@@ -1932,6 +1932,49 @@ impl<T: ShtScalar> ShtPlan<T> {
             && T::supports_paired_scalar()
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (spin != 2 || self.spin2_fast_f1.len() > self.harmonics.lmax());
+        let reflected_q1_full_order = spin == 1
+            && fast_scalar_enabled
+            && !derivative_norm
+            && !allow_spin1_table
+            && b_alm.is_some()
+            && self.harmonics.spin() == 1
+            && self.harmonics.mmax() == self.harmonics.lmax()
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && self.grid.ntheta() == self.harmonics.lmax() + 1
+            && spectrum_len == self.fft.spectrum_len()
+            && ring_start == 0
+            && ring_end == self.grid.ntheta()
+            && order_start == 0
+            && order_end == self.harmonics.mmax() + 1
+            && q_spectra.len() == theta_sin.len() * spectrum_len
+            && u_spectra.len() == q_spectra.len()
+            && single_threaded_execution();
+        if reflected_q1_full_order {
+            return self.synthesize_spin_ring_group_mode_orders(
+                e_alm,
+                b_alm,
+                spin,
+                derivative_norm,
+                fast_scalar_enabled,
+                allow_spin1_table,
+                spin1_scalar_coefficients,
+                spin1_scalar_coefficient_finite_orders,
+                nphi,
+                spectrum_len,
+                phi0,
+                ring_start,
+                ring_end,
+                order_start,
+                order_end,
+                q_spectra,
+                u_spectra,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                recurrence,
+            );
+        }
         let fast_sine_min = match spin {
             1 => SPIN1_FAST_MIN_SIN_THETA,
             2 => SPIN2_FAST_MIN_SIN_THETA,
@@ -2384,16 +2427,28 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 .iter()
                                 .all(|&limit| limit >= m)
                     };
+                    let q1_full_spectrum_component = spin == 1
+                        && self.harmonics.spin() == 1
+                        && self.harmonics.mmax() == lmax
+                        && order_start == 0
+                        && order_end == self.harmonics.mmax() + 1
+                        && output_order == m
+                        && spectrum_len == self.fft.spectrum_len()
+                        && ring_start == 0
+                        && ring_end == self.grid.ntheta()
+                        && q_spectra.len() == theta_sin.len() * spectrum_len
+                        && single_threaded_execution();
+                    let contiguous_component_order = order_start == m
+                        && order_end == m + 1
+                        && output_order == 0
+                        && spectrum_len == 1
+                        && q_spectra.len() == theta_sin.len();
                     let prepared_component_attempted = can_prepare_shared_pair
                         && paired_factors_ready
                         && !allow_spin1_table
                         && ring_start + ring_end == self.grid.ntheta()
-                        && order_start == m
-                        && order_end == m + 1
-                        && output_order == 0
-                        && spectrum_len == 1
-                        && q_spectra.len() == theta_sin.len()
-                        && u_spectra.len() == theta_sin.len();
+                        && (contiguous_component_order || q1_full_spectrum_component)
+                        && u_spectra.len() == q_spectra.len();
                     let prepared_component_safe_start = if prepared_component_attempted {
                         if let Some(coefficients) = spin1_scalar_coefficients {
                             let row_len = lmax + 2;
@@ -2402,7 +2457,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             let scalar_first = &coefficients[row_start..row_start + row_len];
                             let scalar_second =
                                 &coefficients[row_start + row_len..row_start + row_stride];
-                            self.try_synthesize_spin1_prepared_component_order_to_order(
+                            self.try_synthesize_spin1_prepared_component_order_to_strided_spectra(
                                 m,
                                 scalar_lmax,
                                 &scalar_first[m..=scalar_lmax],
@@ -2411,13 +2466,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 theta_sin,
                                 theta_cos,
                                 &ring_order_limits[ring_start..ring_end],
+                                spectrum_len,
+                                output_order,
                                 arch,
                                 recurrence,
                                 q_spectra,
                                 u_spectra,
                             )
                         } else if local_pair_coefficients_prepared {
-                            self.try_synthesize_spin1_prepared_component_order_to_order(
+                            self.try_synthesize_spin1_prepared_component_order_to_strided_spectra(
                                 m,
                                 scalar_lmax,
                                 &[],
@@ -2426,6 +2483,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 theta_sin,
                                 theta_cos,
                                 &ring_order_limits[ring_start..ring_end],
+                                spectrum_len,
+                                output_order,
                                 arch,
                                 recurrence,
                                 q_spectra,
@@ -2438,6 +2497,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 theta_sin,
                                 theta_cos,
                                 &ring_order_limits[ring_start..ring_end],
+                                spectrum_len,
+                                output_order,
                                 arch,
                                 recurrence,
                                 q_spectra,
@@ -2458,8 +2519,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                         // or earlier ring batches. Discard the whole local order
                         // before entering the established checked fallback.
                         if prepared_component_attempted {
-                            q_spectra.fill(Complex::new(T::zero(), T::zero()));
-                            u_spectra.fill(Complex::new(T::zero(), T::zero()));
+                            for ring in 0..theta_sin.len() {
+                                let spectrum_index = ring * spectrum_len + output_order;
+                                q_spectra[spectrum_index] =
+                                    Complex::new(T::zero(), T::zero());
+                                u_spectra[spectrum_index] =
+                                    Complex::new(T::zero(), T::zero());
+                            }
                         }
                         [(0, theta_sin.len()), (0, 0)]
                     };
@@ -3348,9 +3414,9 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[expect(
         clippy::too_many_arguments,
-        reason = "The reflected spin-1 component adapter shares order geometry and worker scratch."
+        reason = "The reflected component adapter writes one order into strided Fourier spectra."
     )]
-    fn try_synthesize_spin1_prepared_component_order_to_order(
+    fn try_synthesize_spin1_prepared_component_order_to_strided_spectra(
         &self,
         m: usize,
         scalar_lmax: usize,
@@ -3360,17 +3426,21 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        spectrum_len: usize,
+        output_order: usize,
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
         q_spectra: &mut [Complex<T>],
         u_spectra: &mut [Complex<T>],
     ) -> Option<usize> {
         let ntheta = theta_sin.len();
+        let expected_spectrum_len = ntheta.checked_mul(spectrum_len)?;
         if theta_sin.len() != ntheta
             || theta_cos.len() != ntheta
             || ring_order_limits.len() != ntheta
-            || q_spectra.len() != ntheta
-            || u_spectra.len() != ntheta
+            || output_order >= spectrum_len
+            || q_spectra.len() != expected_spectrum_len
+            || u_spectra.len() != expected_spectrum_len
         {
             return None;
         }
@@ -3515,9 +3585,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                 {
                     return None;
                 }
-                q_spectra[north] = north_value;
+                let north_spectrum_index = north * spectrum_len + output_order;
+                q_spectra[north_spectrum_index] = north_value;
                 if south != north {
-                    q_spectra[south] = south_value;
+                    let south_spectrum_index = south * spectrum_len + output_order;
+                    q_spectra[south_spectrum_index] = south_value;
                 }
             }
 
@@ -3551,9 +3623,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                 {
                     return None;
                 }
-                u_spectra[north] = north_value;
+                let north_spectrum_index = north * spectrum_len + output_order;
+                u_spectra[north_spectrum_index] = north_value;
                 if south != north {
-                    u_spectra[south] = south_value;
+                    let south_spectrum_index = south * spectrum_len + output_order;
+                    u_spectra[south_spectrum_index] = south_value;
                 }
             }
             pair_start += active_lanes;
@@ -3572,6 +3646,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        spectrum_len: usize,
+        output_order: usize,
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
         q_spectra: &mut [Complex<T>],
@@ -3615,7 +3691,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             return None;
         }
-        self.try_synthesize_spin1_prepared_component_order_to_order(
+        self.try_synthesize_spin1_prepared_component_order_to_strided_spectra(
             m,
             scalar_lmax,
             &[],
@@ -3624,6 +3700,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_sin,
             theta_cos,
             ring_order_limits,
+            spectrum_len,
+            output_order,
             arch,
             recurrence,
             q_spectra,
