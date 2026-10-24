@@ -6044,6 +6044,21 @@ fn try_synthesize_spin1_transition_safe_lanes_to_order<T: ShtScalar>(
         return Ok(None);
     }
 
+    #[cfg(all(test, feature = "parallel"))]
+    if recurrence.spin1_profile_enabled {
+        let profile_bin = if m <= 255 {
+            0
+        } else if m <= 767 {
+            1
+        } else {
+            2
+        };
+        let profile = &mut recurrence.spin1_profile_route_bins[profile_bin];
+        profile.polar_split_attempts += 1;
+        profile.polar_split_safe_lane_pair_work +=
+            (transition_len * (scalar_lmax - m + 2) / 2) as u128;
+    }
+
     let transitioned = T::try_synthesize_paired_scalar_transition_dispatched(
         arch,
         m,
@@ -6067,6 +6082,17 @@ fn try_synthesize_spin1_transition_safe_lanes_to_order<T: ShtScalar>(
         &mut recurrence.analysis_opposite_imag[..transition_len],
     )?;
     if !transitioned {
+        #[cfg(all(test, feature = "parallel"))]
+        if recurrence.spin1_profile_enabled {
+            let profile_bin = if m <= 255 {
+                0
+            } else if m <= 767 {
+                1
+            } else {
+                2
+            };
+            recurrence.spin1_profile_route_bins[profile_bin].polar_split_declines += 1;
+        }
         return Ok(None);
     }
     for lane in 0..transition_len {
@@ -6080,6 +6106,17 @@ fn try_synthesize_spin1_transition_safe_lanes_to_order<T: ShtScalar>(
         .into_iter()
         .all(|value| value.is_finite())
         {
+            #[cfg(all(test, feature = "parallel"))]
+            if recurrence.spin1_profile_enabled {
+                let profile_bin = if m <= 255 {
+                    0
+                } else if m <= 767 {
+                    1
+                } else {
+                    2
+                };
+                recurrence.spin1_profile_route_bins[profile_bin].polar_split_declines += 1;
+            }
             return Ok(None);
         }
     }
@@ -6096,6 +6133,17 @@ fn try_synthesize_spin1_transition_safe_lanes_to_order<T: ShtScalar>(
             recurrence.analysis_opposite_real[lane] * inverse_sine,
             recurrence.analysis_opposite_imag[lane] * inverse_sine,
         );
+    }
+    #[cfg(all(test, feature = "parallel"))]
+    if recurrence.spin1_profile_enabled {
+        let profile_bin = if m <= 255 {
+            0
+        } else if m <= 767 {
+            1
+        } else {
+            2
+        };
+        recurrence.spin1_profile_route_bins[profile_bin].polar_split_successes += 1;
     }
     Ok(Some(polar_len))
 }

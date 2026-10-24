@@ -187,6 +187,10 @@ pub(crate) struct Spin1SynthesisProfileBin {
     pub(crate) transition_successes: usize,
     pub(crate) generic_per_degree_blocks: usize,
     pub(crate) generic_lane_pair_work: u128,
+    pub(crate) polar_split_attempts: usize,
+    pub(crate) polar_split_successes: usize,
+    pub(crate) polar_split_declines: usize,
+    pub(crate) polar_split_safe_lane_pair_work: u128,
 }
 
 #[repr(align(64))]

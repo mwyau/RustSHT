@@ -9926,22 +9926,35 @@ fn profile_spin1_standard_synthesis_phases() {
     .unwrap();
     let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
     let mut b_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
-    let mut state = 0x7a31_9d42_8b6c_05e1_u64;
-    let mut next_value = || {
-        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
-        let mut value = state;
-        value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-        value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-        value ^= value >> 31;
-        ((value >> 11) as f64) * (1.0 / ((1_u64 << 53) as f64)) * 2.0 - 1.0
-    };
-    for order in 0..=mmax {
-        for degree in 1.max(order)..=lmax {
-            let index = plan.harmonics.index(degree, order).unwrap();
-            e_alm[index].re = next_value();
-            e_alm[index].im = if order == 0 { 0.0 } else { next_value() };
-            b_alm[index].re = next_value();
-            b_alm[index].im = if order == 0 { 0.0 } else { next_value() };
+    if let Some(fixture_dir) = std::env::var_os("RUSTSHT_PROFILE_ALM_DIR") {
+        let fixture_dir = std::path::PathBuf::from(fixture_dir);
+        for (name, coefficients) in [("e.bin", &mut e_alm), ("b.bin", &mut b_alm)] {
+            let bytes = std::fs::read(fixture_dir.join(name)).unwrap();
+            assert_eq!(bytes.len(), coefficients.len() * 16);
+            for (coefficient, pair) in coefficients.iter_mut().zip(bytes.chunks_exact(16)) {
+                coefficient.re = f64::from_le_bytes(pair[..8].try_into().unwrap());
+                coefficient.im = f64::from_le_bytes(pair[8..].try_into().unwrap());
+            }
+        }
+        eprintln!("PROFILE_ALM_FIXTURE,loaded=true,nalm={}", e_alm.len());
+    } else {
+        let mut state = 0x7a31_9d42_8b6c_05e1_u64;
+        let mut next_value = || {
+            state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+            let mut value = state;
+            value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+            value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+            value ^= value >> 31;
+            ((value >> 11) as f64) * (1.0 / ((1_u64 << 53) as f64)) * 2.0 - 1.0
+        };
+        for order in 0..=mmax {
+            for degree in 1.max(order)..=lmax {
+                let index = plan.harmonics.index(degree, order).unwrap();
+                e_alm[index].re = next_value();
+                e_alm[index].im = if order == 0 { 0.0 } else { next_value() };
+                b_alm[index].re = next_value();
+                b_alm[index].im = if order == 0 { 0.0 } else { next_value() };
+            }
         }
     }
     let mut first = vec![0.0; plan.sample_count];
@@ -10087,9 +10100,14 @@ fn profile_spin1_standard_synthesis_phases() {
                 total.transition_successes += source.transition_successes;
                 total.generic_per_degree_blocks += source.generic_per_degree_blocks;
                 total.generic_lane_pair_work += source.generic_lane_pair_work;
+                total.polar_split_attempts += source.polar_split_attempts;
+                total.polar_split_successes += source.polar_split_successes;
+                total.polar_split_declines += source.polar_split_declines;
+                total.polar_split_safe_lane_pair_work +=
+                    source.polar_split_safe_lane_pair_work;
             }
             eprintln!(
-                "PROFILE_ROUTE_BIN,{lmax},{mmax},{thread_count},{repetition},{label},eligible_blocks={},eligible_lane_pair_work={},coefficient_prep_declines={},regular_kernel_attempts={},ordinary_fused_successes={},ordinary_fused_lane_pair_work={},fallback_entries={},transition_successes={},generic_per_degree_blocks={},generic_lane_pair_work={}",
+                "PROFILE_ROUTE_BIN,{lmax},{mmax},{thread_count},{repetition},{label},eligible_blocks={},eligible_lane_pair_work={},coefficient_prep_declines={},regular_kernel_attempts={},ordinary_fused_successes={},ordinary_fused_lane_pair_work={},fallback_entries={},transition_successes={},generic_per_degree_blocks={},generic_lane_pair_work={},polar_split_attempts={},polar_split_successes={},polar_split_declines={},polar_split_safe_lane_pair_work={}",
                 total.eligible_blocks,
                 total.eligible_lane_pair_work,
                 total.coefficient_prep_declines,
@@ -10100,6 +10118,10 @@ fn profile_spin1_standard_synthesis_phases() {
                 total.transition_successes,
                 total.generic_per_degree_blocks,
                 total.generic_lane_pair_work,
+                total.polar_split_attempts,
+                total.polar_split_successes,
+                total.polar_split_declines,
+                total.polar_split_safe_lane_pair_work,
             );
         }
         eprintln!(
