@@ -60,6 +60,12 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     // Analysis and adjoint-synthesis may use different latitude geometry and
     // insignificant-prefix rules on the same plan.
     pub(crate) analysis_pair_range_geometry: Option<(usize, bool)>,
+    // Spin-1 reflected analysis uses 64 latitude pairs per block, so it keeps
+    // a separate proof cache from scalar analysis's 256-pair tiles.
+    pub(crate) spin1_analysis_pair_range_safe: Vec<AtomicBool>,
+    pub(crate) spin1_analysis_pair_range_arch: Option<std::mem::Discriminant<pulp::Arch>>,
+    pub(crate) spin1_analysis_pair_range_cache_id: Option<Arc<u8>>,
+    pub(crate) spin1_analysis_pair_range_geometry: Option<(usize, usize, usize)>,
     pub(crate) ring_group_size: usize,
     pub(crate) execution_capacity: usize,
     pub(crate) fft: RealFftWorkspace<T>,
@@ -909,6 +915,17 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             .ok_or(ShtError::IntegerOverflow {
                 quantity: "scalar-analysis range cache count",
             })?;
+        let spin1_analysis_pair_range_block_count =
+            latitude_count.div_ceil(2).div_ceil(LATITUDE_BLOCK_SIZE);
+        let spin1_analysis_pair_range_cache_len = if T::supports_paired_scalar() {
+            analysis_order_count
+                .checked_mul(spin1_analysis_pair_range_block_count)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "spin-1 analysis range cache count",
+                })?
+        } else {
+            0
+        };
         let ring_group_size = Self::ring_group_size_for_capacity(ntheta, execution_capacity)?;
         let ring_worker_count = ntheta.div_ceil(ring_group_size);
         let analysis_worker_count = execution_capacity.min(analysis_order_count).max(1);
@@ -975,6 +992,12 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             analysis_pair_range_arch: None,
             analysis_pair_range_cache_id: None,
             analysis_pair_range_geometry: None,
+            spin1_analysis_pair_range_safe: allocate_atomic_bools(
+                spin1_analysis_pair_range_cache_len,
+            )?,
+            spin1_analysis_pair_range_arch: None,
+            spin1_analysis_pair_range_cache_id: None,
+            spin1_analysis_pair_range_geometry: None,
             ring_group_size,
             execution_capacity,
             fft: fft.workspace()?,

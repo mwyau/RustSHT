@@ -3077,6 +3077,7 @@ fn spin1_reflected_analysis_subranges_fall_back_for_extreme_inputs_on_all_grids(
                 &workspace.theta_sin,
                 &workspace.theta_cos,
                 &workspace.ring_order_limits,
+                &[],
                 pulp::Arch::new(),
                 &mut paired_e,
                 Some(&mut paired_b),
@@ -3176,6 +3177,7 @@ fn spin1_reflected_analysis_subranges_reset_poisoned_scratch_on_gl_cc() {
                 &workspace.theta_sin,
                 &workspace.theta_cos,
                 &workspace.ring_order_limits,
+                &[],
                 pulp::Arch::new(),
                 &mut expected_e,
                 Some(&mut expected_b),
@@ -3237,6 +3239,7 @@ fn spin1_reflected_analysis_subranges_reset_poisoned_scratch_on_gl_cc() {
                 &workspace.theta_sin,
                 &workspace.theta_cos,
                 &workspace.ring_order_limits,
+                &[],
                 pulp::Arch::new(),
                 &mut actual_e,
                 Some(&mut actual_b),
@@ -3291,6 +3294,23 @@ fn spin1_analysis_reuses_poisoned_workspace_for_extremes_on_all_grids() {
             )
         })
         .unwrap();
+        let spin1_range_proof: Vec<_> = workspace
+            .spin1_analysis_pair_range_safe
+            .iter()
+            .map(|safe| safe.load(std::sync::atomic::Ordering::Relaxed))
+            .collect();
+        if !cfg!(rustsht_unchecked_analysis_pair_range)
+            && !cfg!(rustsht_disable_analysis_pair_range_cache)
+        {
+            assert!(spin1_range_proof.iter().any(|&safe| safe), "{kind:?}");
+            assert!(std::sync::Arc::ptr_eq(
+                workspace
+                    .spin1_analysis_pair_range_cache_id
+                    .as_ref()
+                    .unwrap(),
+                &plan.analysis_pair_range_cache_id,
+            ));
+        }
 
         workspace.analysis_ring_scales.fill(f64::NAN);
         workspace
@@ -3372,6 +3392,12 @@ fn spin1_analysis_reuses_poisoned_workspace_for_extremes_on_all_grids() {
             relative_l2_complex(&actual_b, &expected_b) <= 2.0e-12,
             "{kind:?} B"
         );
+        let spin1_range_proof_after_reuse: Vec<_> = workspace
+            .spin1_analysis_pair_range_safe
+            .iter()
+            .map(|safe| safe.load(std::sync::atomic::Ordering::Relaxed))
+            .collect();
+        assert_eq!(spin1_range_proof_after_reuse, spin1_range_proof, "{kind:?}");
 
         let large_first = vec![1.0e200; plan.sample_count];
         let large_second = vec![-2.5e199; plan.sample_count];
@@ -3443,10 +3469,13 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
     recurrence.fast_scalar_first[..=scalar_lmax].fill(initial);
     recurrence.fast_scalar_second[..=scalar_lmax].fill(initial);
 
+    let mut range_check_was_exercised = false;
     let fused = ShtPlan::<f64>::try_fused_spin_scalar_analysis_pair_block(
         pulp::Arch::new(),
         true,
         false,
+        false,
+        &mut range_check_was_exercised,
         m,
         scalar_lmax,
         plan.sectoral_norms[m],
@@ -3628,6 +3657,7 @@ fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
                 &fast_workspace.theta_sin,
                 &fast_workspace.theta_cos,
                 &fast_workspace.ring_order_limits,
+                &[],
                 pulp::Arch::new(),
                 m,
                 m + 1,
@@ -3653,6 +3683,7 @@ fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
             &general_workspace.theta_sin,
             &general_workspace.theta_cos,
             &general_workspace.ring_order_limits,
+            &[],
             pulp::Arch::new(),
             m,
             m + 1,

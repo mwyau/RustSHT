@@ -11,7 +11,6 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 #[cfg(feature = "parallel")]
 use std::sync::atomic::AtomicUsize;
-#[cfg(feature = "parallel")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
@@ -889,6 +888,41 @@ impl<T: ShtScalar> ShtPlan<T> {
             None
         };
         let arch = pulp::Arch::new();
+        let spin1_range_geometry = if analysis_ring_scales.is_some() {
+            let minimum_sine =
+                T::from_f64(SPIN1_FAST_MIN_SIN_THETA).expect("spin fast sine limit converts");
+            let start = theta_sin
+                .iter()
+                .position(|&sine| sine >= minimum_sine)
+                .unwrap_or(theta_sin.len());
+            let end = theta_sin[start..]
+                .iter()
+                .position(|&sine| sine < minimum_sine)
+                .map_or(theta_sin.len(), |offset| start + offset);
+            (start < end).then_some((analysis_ntheta, start, end))
+        } else {
+            None
+        };
+        if let Some(geometry) = spin1_range_geometry {
+            let same_plan = workspace
+                .spin1_analysis_pair_range_cache_id
+                .as_ref()
+                .is_some_and(|cache_id| {
+                    std::sync::Arc::ptr_eq(cache_id, &self.analysis_pair_range_cache_id)
+                });
+            if !same_plan
+                || workspace.spin1_analysis_pair_range_arch != Some(std::mem::discriminant(&arch))
+                || workspace.spin1_analysis_pair_range_geometry != Some(geometry)
+            {
+                for cached in &workspace.spin1_analysis_pair_range_safe {
+                    cached.store(false, Ordering::Relaxed);
+                }
+                workspace.spin1_analysis_pair_range_cache_id =
+                    Some(std::sync::Arc::clone(&self.analysis_pair_range_cache_id));
+                workspace.spin1_analysis_pair_range_arch = Some(std::mem::discriminant(&arch));
+                workspace.spin1_analysis_pair_range_geometry = Some(geometry);
+            }
+        }
         let order_count = self.harmonics.mmax() + 1;
 
         #[cfg(feature = "parallel")]
@@ -914,6 +948,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    &workspace.spin1_analysis_pair_range_safe,
                     arch,
                     e_alm,
                     b_alm.as_deref_mut(),
@@ -948,6 +983,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    &workspace.spin1_analysis_pair_range_safe,
                     arch,
                     0,
                     order_count,
@@ -982,6 +1018,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_sin,
             theta_cos,
             ring_order_limits,
+            &workspace.spin1_analysis_pair_range_safe,
             arch,
             0,
             order_count,
@@ -3697,6 +3734,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        spin1_analysis_pair_range_safe: &[AtomicBool],
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
@@ -3809,6 +3847,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         theta_sin,
                         theta_cos,
                         ring_order_limits,
+                        spin1_analysis_pair_range_safe,
                         arch,
                         e_coefficients,
                         b_coefficients.as_deref_mut(),
@@ -3884,6 +3923,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             theta_sin,
                             theta_cos,
                             ring_order_limits,
+                            spin1_analysis_pair_range_safe,
                             arch,
                             e_coefficients,
                             b_coefficients.as_deref_mut(),
@@ -4173,6 +4213,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         arch: pulp::Arch,
         sequential_channels: bool,
         opposite_preweighted: bool,
+        range_check_is_proven_safe: bool,
+        range_check_was_exercised: &mut bool,
         m: usize,
         scalar_lmax: usize,
         sectoral_norm: T,
@@ -4216,6 +4258,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             arch,
             sequential_channels,
             opposite_preweighted,
+            range_check_is_proven_safe,
+            range_check_was_exercised,
             m,
             scalar_lmax,
             sin_theta,
@@ -4260,6 +4304,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        spin1_analysis_pair_range_safe: &[AtomicBool],
         arch: pulp::Arch,
         e_coefficients: &mut [Complex<T>],
         mut b_coefficients: Option<&mut [Complex<T>]>,
@@ -4282,6 +4327,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         let fused_analysis_enabled = self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX;
         let sequential_channels =
             fused_analysis_enabled && !single_threaded_execution() && scalar_lmax < 1024;
+        let range_cache_enabled = sequential_channels
+            && !cfg!(rustsht_disable_analysis_pair_range_cache)
+            && !cfg!(rustsht_unchecked_analysis_pair_range);
+        let range_cache_block_count = theta_sin.len().div_ceil(2).div_ceil(LATITUDE_BLOCK_SIZE);
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
         recurrence.fast_scalar_first[..scalar_coefficient_count]
@@ -4350,6 +4399,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             if active_lanes == 0 {
                 continue;
             }
+            let range_cache_index = m
+                .checked_mul(range_cache_block_count)
+                .and_then(|order_index| order_index.checked_add(block_start / LATITUDE_BLOCK_SIZE));
+            let range_check_is_proven_safe = range_cache_enabled
+                && range_cache_index
+                    .and_then(|index| spin1_analysis_pair_range_safe.get(index))
+                    .is_some_and(|safe| safe.load(Ordering::Relaxed));
 
             // Check each reflected input before forming its sum and difference.
             // This keeps very large finite values on the established recurrence
@@ -4442,11 +4498,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             let opposite_preweighted = sequential_channels && T::supports_paired_scalar();
             #[cfg(all(test, feature = "parallel"))]
             let mut block_range_status = (false, false);
+            let mut range_check_was_exercised = false;
             let fused_block = fused_analysis_enabled
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
                     sequential_channels,
                     opposite_preweighted,
+                    range_check_is_proven_safe,
+                    &mut range_check_was_exercised,
                     m,
                     scalar_lmax,
                     self.sectoral_norms[m],
@@ -4480,6 +4539,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.next,
                     &mut recurrence.exponents,
                 )?;
+            if fused_block
+                && range_cache_enabled
+                && !range_check_is_proven_safe
+                && range_check_was_exercised
+                && let Some(index) = range_cache_index
+                && let Some(safe) = spin1_analysis_pair_range_safe.get(index)
+            {
+                safe.store(true, Ordering::Relaxed);
+            }
             #[cfg(all(test, feature = "parallel"))]
             if fused_block {
                 block_range_status.0 = true;
@@ -4619,6 +4687,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_sin,
             theta_cos,
             ring_order_limits,
+            &[],
             arch,
             e_coefficients,
             b_coefficients,
@@ -4949,11 +5018,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::scalar_analysis_products_safe(q_real, q_imag, q_real, q_imag, block_cosine);
             let u_products_safe =
                 T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
+            let mut range_check_was_exercised = false;
             let fused_block = fused_analysis_enabled
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
                     false,
                     false,
+                    false,
+                    &mut range_check_was_exercised,
                     m,
                     scalar_lmax,
                     self.sectoral_norms[m],
@@ -5149,11 +5221,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             let u_products_safe =
                 T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
             let fused_count = scalar_lmax - m + 1;
+            let mut range_check_was_exercised = false;
             let fused_block = if q_products_safe && u_products_safe {
                 T::fused_scalar_analysis_pair_channels_block(
                     arch,
                     false,
                     false,
+                    false,
+                    &mut range_check_was_exercised,
                     m,
                     scalar_lmax,
                     &theta_sin[block_start..block_end],
@@ -5331,6 +5406,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        spin1_analysis_pair_range_safe: &[AtomicBool],
         arch: pulp::Arch,
         e_alm: &mut [Complex<T>],
         b_alm: Option<&mut [Complex<T>]>,
@@ -5354,6 +5430,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_sin,
                 theta_cos,
                 ring_order_limits,
+                spin1_analysis_pair_range_safe,
                 arch,
                 0,
                 order_count,
@@ -5382,6 +5459,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_sin,
                 theta_cos,
                 ring_order_limits,
+                spin1_analysis_pair_range_safe,
                 arch,
                 0,
                 order_count,
@@ -5442,6 +5520,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    spin1_analysis_pair_range_safe,
                     arch,
                     m,
                     m + 1,

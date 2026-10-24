@@ -4453,6 +4453,7 @@ fn dispatch_fused_scalar_analysis_pair_weighted<
     clippy::too_many_arguments,
     reason = "The two-channel analysis block receives lane spectra and worker-owned recurrence scratch explicitly."
 )]
+#[cfg(test)]
 pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     arch: Arch,
     sequential_channels: bool,
@@ -4475,6 +4476,62 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     next: &mut [f64],
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
+    let mut range_check_was_exercised = false;
+    fused_scalar_analysis_pair_channels_block_with_range_proof(
+        arch,
+        sequential_channels,
+        opposite_preweighted,
+        false,
+        &mut range_check_was_exercised,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        staged_first,
+        staged_second,
+        previous,
+        current,
+        next,
+        exponents,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The two-channel analysis block receives lane spectra and worker-owned recurrence scratch explicitly."
+)]
+pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
+    arch: Arch,
+    sequential_channels: bool,
+    opposite_preweighted: bool,
+    range_check_is_proven_safe: bool,
+    range_check_was_exercised: &mut bool,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: [&[f64]; 2],
+    same_imag: [&[f64]; 2],
+    opposite_real: [&[f64]; 2],
+    opposite_imag: [&[f64]; 2],
+    staged_first: &mut [Complex64],
+    staged_second: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    *range_check_was_exercised = false;
     debug_assert!(m <= lmax);
     debug_assert!(!opposite_preweighted || sequential_channels);
     let coefficient_count = lmax - m + 1;
@@ -4537,7 +4594,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     // Keep the reflected inputs packed once, then reuse the checked single-channel
     // kernel with its smaller accumulator set for each row.
     let mut channels_succeeded = true;
-    let mut first_channel_proved_recurrence_range = false;
+    let mut first_channel_proved_recurrence_range = range_check_is_proven_safe;
     // Weight each opposite input once per lane; retain the originals for fallback.
     let mut weighted_opposite_real = [0.0; LATITUDE_BLOCK_SIZE];
     let mut weighted_opposite_imag = [0.0; LATITUDE_BLOCK_SIZE];
@@ -4577,13 +4634,13 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         } else {
             (opposite_real[channel], opposite_imag[channel], false)
         };
-        let mut range_check_was_exercised = false;
+        let mut channel_range_check_was_exercised = false;
         let recurrence_succeeded = if first_channel_proved_recurrence_range {
             dispatch_fused_scalar_analysis_pair::<false>(
                 arch,
                 m,
                 lmax,
-                &mut range_check_was_exercised,
+                &mut channel_range_check_was_exercised,
                 channel_opposite_preweighted,
                 cos_theta,
                 &cos_theta_squared[..sin_theta.len()],
@@ -4603,7 +4660,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
                 arch,
                 m,
                 lmax,
-                &mut range_check_was_exercised,
+                &mut channel_range_check_was_exercised,
                 channel_opposite_preweighted,
                 cos_theta,
                 &cos_theta_squared[..sin_theta.len()],
@@ -4619,6 +4676,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
                 &mut next[..sin_theta.len()],
             )
         };
+        *range_check_was_exercised |= channel_range_check_was_exercised;
         // The two-pair groups advance `previous` and `current` directly and
         // leave `next` untouched. Only the single-pair tail writes that slot.
         let pair_count = (lmax - m + 2) / 2;
@@ -4636,7 +4694,8 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
             // The basis recurrence depends only on order and latitude geometry.
             // A completed checked first-channel traversal therefore proves that
             // the reinitialized recurrence for channel two stays in range too.
-            first_channel_proved_recurrence_range = channel_succeeded && range_check_was_exercised;
+            first_channel_proved_recurrence_range = channel_succeeded
+                && (channel_range_check_was_exercised || range_check_is_proven_safe);
         }
         channels_succeeded &= channel_succeeded;
     }
@@ -7262,10 +7321,13 @@ mod tests {
         let mut exponents = vec![0; lane_count];
         let arch = Arch::new();
 
-        let fused = fused_scalar_analysis_pair_channels_block_dispatched(
+        let mut range_check_was_exercised = false;
+        let fused = fused_scalar_analysis_pair_channels_block_with_range_proof(
             arch,
             true,
             false,
+            false,
+            &mut range_check_was_exercised,
             m,
             lmax,
             &sin_theta,
@@ -7286,6 +7348,42 @@ mod tests {
         )
         .unwrap();
         assert!(fused);
+        assert!(range_check_was_exercised);
+        let checked_first = staged_first.clone();
+        let checked_second = staged_second.clone();
+
+        let mut unchecked_first = vec![Complex64::new(17.0, -9.0); coefficient_count];
+        let mut unchecked_second = vec![Complex64::new(-13.0, 7.0); coefficient_count];
+        range_check_was_exercised = false;
+        let unchecked = fused_scalar_analysis_pair_channels_block_with_range_proof(
+            arch,
+            true,
+            false,
+            true,
+            &mut range_check_was_exercised,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            [&same_real[0], &same_real[1]],
+            [&same_imag[0], &same_imag[1]],
+            [&opposite_real[0], &opposite_real[1]],
+            [&opposite_imag[0], &opposite_imag[1]],
+            &mut unchecked_first,
+            &mut unchecked_second,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+        )
+        .unwrap();
+        assert!(unchecked);
+        assert!(!range_check_was_exercised);
+        assert_eq!(unchecked_first, checked_first);
+        assert_eq!(unchecked_second, checked_second);
 
         next.fill(0.0);
         let mut reference: [Vec<Complex64>; 2] =

@@ -676,6 +676,8 @@ pub(crate) trait ShtScalar:
         _arch: Arch,
         _sequential_channels: bool,
         _opposite_preweighted: bool,
+        _range_check_is_proven_safe: bool,
+        _range_check_was_exercised: &mut bool,
         _m: usize,
         _lmax: usize,
         _sin_theta: &[Self],
@@ -1619,6 +1621,8 @@ impl ShtScalar for f64 {
         arch: Arch,
         sequential_channels: bool,
         opposite_preweighted: bool,
+        range_check_is_proven_safe: bool,
+        range_check_was_exercised: &mut bool,
         m: usize,
         lmax: usize,
         sin_theta: &[Self],
@@ -1637,10 +1641,12 @@ impl ShtScalar for f64 {
         next: &mut [Self],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
-        scalar_paired::fused_scalar_analysis_pair_channels_block_dispatched(
+        scalar_paired::fused_scalar_analysis_pair_channels_block_with_range_proof(
             arch,
             sequential_channels,
             opposite_preweighted,
+            range_check_is_proven_safe,
+            range_check_was_exercised,
             m,
             lmax,
             sin_theta,
