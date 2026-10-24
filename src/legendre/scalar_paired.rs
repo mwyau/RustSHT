@@ -2119,6 +2119,18 @@ pub(crate) fn accumulate_analysis_pair_channels_dispatched(
         });
     }
 
+    if products_safe == [true, true] && !normal_range && exponents.contains(&0) {
+        return arch.dispatch(MixedAnalysisPairChannelsAccumulation {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+        });
+    }
+
     std::array::from_fn(|channel| {
         accumulate_analysis_pair_dispatched(
             arch,
@@ -6395,6 +6407,216 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
+/// Accumulates mixed scaled lanes for Q and U while computing the ordinary
+/// lane mask once. Each channel uses four live SIMD sums, keeping AVX2
+/// register pressure bounded.
+struct MixedAnalysisPairChannelsAccumulation<'a> {
+    same_real: [&'a [f64]; 2],
+    same_imag: [&'a [f64]; 2],
+    opposite_real: [&'a [f64]; 2],
+    opposite_imag: [&'a [f64]; 2],
+    basis: &'a [f64],
+    exponents: &'a [i64],
+    cos_theta: &'a [f64],
+}
+
+impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
+    type Output = [(Complex64, Complex64); 2];
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let MixedAnalysisPairChannelsAccumulation {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+        } = self;
+        debug_assert_eq!(basis.len(), exponents.len());
+        debug_assert_eq!(basis.len(), cos_theta.len());
+        for channel in 0..2 {
+            debug_assert_eq!(basis.len(), same_real[channel].len());
+            debug_assert_eq!(basis.len(), same_imag[channel].len());
+            debug_assert_eq!(basis.len(), opposite_real[channel].len());
+            debug_assert_eq!(basis.len(), opposite_imag[channel].len());
+        }
+        let mut ordinary_basis = [0.0; LATITUDE_BLOCK_SIZE];
+        let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
+        let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
+        let (ordinary_basis_vectors, ordinary_basis_tail) =
+            S::as_mut_simd_f64s(&mut ordinary_basis[..basis.len()]);
+        debug_assert!(basis.len() <= LATITUDE_BLOCK_SIZE);
+        debug_assert_eq!(basis_vectors.len(), exponent_vectors.len());
+        debug_assert_eq!(basis_vectors.len(), ordinary_basis_vectors.len());
+        debug_assert_eq!(basis_tail.len(), exponent_tail.len());
+        debug_assert_eq!(basis_tail.len(), ordinary_basis_tail.len());
+
+        let zero_f64 = simd.splat_f64s(0.0);
+        let minimum = simd.splat_f64s(scalar::SMALL);
+        let maximum = simd.splat_f64s(scalar::BIG);
+        let zero_i64 = simd.splat_i64s(0);
+        for index in 0..basis_vectors.len() {
+            let magnitude = simd.abs_f64s(basis_vectors[index]);
+            let in_range = simd.and_m64s(
+                simd.less_than_or_equal_f64s(magnitude, maximum),
+                simd.or_m64s(
+                    simd.equal_f64s(magnitude, zero_f64),
+                    simd.greater_than_or_equal_f64s(magnitude, minimum),
+                ),
+            );
+            let ordinary =
+                simd.and_m64s(simd.equal_i64s(exponent_vectors[index], zero_i64), in_range);
+            ordinary_basis_vectors[index] =
+                simd.select_f64s(ordinary, basis_vectors[index], zero_f64);
+        }
+        for lane in 0..basis_tail.len() {
+            if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
+                ordinary_basis_tail[lane] = basis_tail[lane];
+            }
+        }
+
+        let (same_real_0, _) = S::as_simd_f64s(same_real[0]);
+        let (same_imag_0, _) = S::as_simd_f64s(same_imag[0]);
+        let (opposite_real_0, _) = S::as_simd_f64s(opposite_real[0]);
+        let (opposite_imag_0, _) = S::as_simd_f64s(opposite_imag[0]);
+        let (same_real_1, _) = S::as_simd_f64s(same_real[1]);
+        let (same_imag_1, _) = S::as_simd_f64s(same_imag[1]);
+        let (opposite_real_1, _) = S::as_simd_f64s(opposite_real[1]);
+        let (opposite_imag_1, _) = S::as_simd_f64s(opposite_imag[1]);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+        for vectors in [
+            same_real_0,
+            same_imag_0,
+            opposite_real_0,
+            opposite_imag_0,
+            same_real_1,
+            same_imag_1,
+            opposite_real_1,
+            opposite_imag_1,
+            cosine_vectors,
+        ] {
+            debug_assert_eq!(vectors.len(), ordinary_basis_vectors.len());
+        }
+
+        let zeros = simd.splat_f64s(0.0);
+        let mut sums_0 = [zeros; 4];
+        for index in 0..ordinary_basis_vectors.len() {
+            let basis = ordinary_basis_vectors[index];
+            let cosine = cosine_vectors[index];
+            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(same_real_0[index], basis));
+            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(same_imag_0[index], basis));
+            sums_0[2] = simd.add_f64s(
+                sums_0[2],
+                simd.mul_f64s(simd.mul_f64s(opposite_real_0[index], basis), cosine),
+            );
+            sums_0[3] = simd.add_f64s(
+                sums_0[3],
+                simd.mul_f64s(simd.mul_f64s(opposite_imag_0[index], basis), cosine),
+            );
+        }
+        let mut results = [
+            (
+                Complex64::new(
+                    simd.reduce_sum_f64s(sums_0[0]),
+                    simd.reduce_sum_f64s(sums_0[1]),
+                ),
+                Complex64::new(
+                    simd.reduce_sum_f64s(sums_0[2]),
+                    simd.reduce_sum_f64s(sums_0[3]),
+                ),
+            ),
+            (Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0)),
+        ];
+
+        let mut sums_1 = [zeros; 4];
+        for index in 0..ordinary_basis_vectors.len() {
+            let basis = ordinary_basis_vectors[index];
+            let cosine = cosine_vectors[index];
+            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(same_real_1[index], basis));
+            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(same_imag_1[index], basis));
+            sums_1[2] = simd.add_f64s(
+                sums_1[2],
+                simd.mul_f64s(simd.mul_f64s(opposite_real_1[index], basis), cosine),
+            );
+            sums_1[3] = simd.add_f64s(
+                sums_1[3],
+                simd.mul_f64s(simd.mul_f64s(opposite_imag_1[index], basis), cosine),
+            );
+        }
+        results[1] = (
+            Complex64::new(
+                simd.reduce_sum_f64s(sums_1[0]),
+                simd.reduce_sum_f64s(sums_1[1]),
+            ),
+            Complex64::new(
+                simd.reduce_sum_f64s(sums_1[2]),
+                simd.reduce_sum_f64s(sums_1[3]),
+            ),
+        );
+
+        let vector_lane_count = basis.len() - basis_tail.len();
+        for lane in 0..vector_lane_count {
+            if exponents[lane] == 0 && scalar_value_in_normal_range(basis[lane]) {
+                continue;
+            }
+            for channel in 0..2 {
+                results[channel].0 += scalar::multiply_complex_scaled(
+                    Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
+                    basis[lane],
+                    exponents[lane],
+                );
+                let opposite =
+                    Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]);
+                results[channel].1 += scalar::multiply_complex_scaled_product(
+                    opposite,
+                    basis[lane],
+                    cos_theta[lane],
+                    exponents[lane],
+                );
+            }
+        }
+        for lane in 0..basis_tail.len() {
+            if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
+                for channel in 0..2 {
+                    results[channel].0.re +=
+                        same_real[channel][vector_lane_count + lane] * basis_tail[lane];
+                    results[channel].0.im +=
+                        same_imag[channel][vector_lane_count + lane] * basis_tail[lane];
+                    results[channel].1.re += (opposite_real[channel][vector_lane_count + lane]
+                        * basis_tail[lane])
+                        * cosine_tail[lane];
+                    results[channel].1.im += (opposite_imag[channel][vector_lane_count + lane]
+                        * basis_tail[lane])
+                        * cosine_tail[lane];
+                }
+            } else {
+                for channel in 0..2 {
+                    results[channel].0 += scalar::multiply_complex_scaled(
+                        Complex64::new(
+                            same_real[channel][vector_lane_count + lane],
+                            same_imag[channel][vector_lane_count + lane],
+                        ),
+                        basis_tail[lane],
+                        exponent_tail[lane],
+                    );
+                    results[channel].1 += scalar::multiply_complex_scaled_product(
+                        Complex64::new(
+                            opposite_real[channel][vector_lane_count + lane],
+                            opposite_imag[channel][vector_lane_count + lane],
+                        ),
+                        basis_tail[lane],
+                        cosine_tail[lane],
+                        exponent_tail[lane],
+                    );
+                }
+            }
+        }
+        results
+    }
+}
+
 struct FusedMixedAnalysisPairStep<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     same_real: &'a [f64],
     same_imag: &'a [f64],
@@ -9236,6 +9458,82 @@ mod tests {
                 &cosine,
             );
             assert_eq!(actual[channel], expected);
+        }
+    }
+
+    #[test]
+    fn mixed_dual_analysis_accumulation_matches_channel_kernels() {
+        for lane_count in [6, LATITUDE_BLOCK_SIZE] {
+            let basis: Vec<_> = (0..lane_count)
+                .map(|lane| 0.2 + 0.003 * lane as f64)
+                .collect();
+            let cosine: Vec<_> = (0..lane_count)
+                .map(|lane| -0.9 + 1.8 * lane as f64 / lane_count as f64)
+                .collect();
+            let exponents: Vec<_> = (0..lane_count)
+                .map(|lane| match lane % 5 {
+                    1 => 800,
+                    3 => -800,
+                    _ => 0,
+                })
+                .collect();
+            let same_real: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| (lane + channel + 1) as f64 * 1.0e-4)
+                    .collect()
+            });
+            let same_imag: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| -((lane + channel + 2) as f64) * 1.1e-4)
+                    .collect()
+            });
+            let opposite_real: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| (lane + channel + 3) as f64 * 0.9e-4)
+                    .collect()
+            });
+            let opposite_imag: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| -((lane + channel + 4) as f64) * 0.7e-4)
+                    .collect()
+            });
+            for channel in 0..2 {
+                assert!(analysis_products_safe(
+                    &same_real[channel],
+                    &same_imag[channel],
+                    &opposite_real[channel],
+                    &opposite_imag[channel],
+                    &cosine,
+                ));
+            }
+
+            let actual = accumulate_analysis_pair_channels_dispatched(
+                Arch::new(),
+                [true, true],
+                false,
+                [&same_real[0], &same_real[1]],
+                [&same_imag[0], &same_imag[1]],
+                [&opposite_real[0], &opposite_real[1]],
+                [&opposite_imag[0], &opposite_imag[1]],
+                &basis,
+                &exponents,
+                &cosine,
+            );
+            for channel in 0..2 {
+                let expected = accumulate_analysis_pair_dispatched(
+                    Arch::new(),
+                    true,
+                    false,
+                    &same_real[channel],
+                    &same_imag[channel],
+                    &opposite_real[channel],
+                    &opposite_imag[channel],
+                    &basis,
+                    &exponents,
+                    &cosine,
+                );
+                assert_eq!(actual[channel], expected, "lanes={lane_count}");
+            }
         }
     }
 
