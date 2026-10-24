@@ -17,7 +17,8 @@ use crate::error::{ShtError, check_len};
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendreOperation, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX,
     SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin1_with_epsilon,
-    scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
+    scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin1_to_scalar_with_visit,
+    spin2_to_scalar,
 };
 use crate::meridional::CCResamplingPlan;
 #[cfg(feature = "parallel")]
@@ -52,7 +53,8 @@ const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 1023;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 34 * 1024 * 1024;
 #[cfg(feature = "parallel")]
-const SPIN1_ORDER_LOCAL_CONVERSION_MIN_BYTES: usize = 16_000_000;
+const SPIN1_ORDER_LOCAL_CONVERSION_MIN_BYTES: usize = 4_000_000;
+const SPIN1_ORDER_FUSED_LOCAL_PREPARATION_MAX_BYTES: usize = 16_000_000;
 
 #[cfg(all(test, feature = "parallel"))]
 static SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES: AtomicUsize = AtomicUsize::new(0);
@@ -2031,6 +2033,121 @@ impl<T: ShtScalar> ShtPlan<T> {
         )
     }
 
+    fn spin1_to_scalar_order_with_prepared_pairs(
+        &self,
+        m: usize,
+        lmax: usize,
+        e_coefficients: &[Complex<T>],
+        b_coefficients: &[Complex<T>],
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> (bool, bool, bool) {
+        let scalar_lmax = lmax + 1;
+        let factor_count = (scalar_lmax - m + 2) / 2;
+        T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+        let factors_ready = T::fill_paired_scalar_factors(
+            m,
+            scalar_lmax,
+            &recurrence.epsilon,
+            &mut recurrence.spin_alpha,
+            &mut recurrence.spin_coefficient_a,
+            &mut recurrence.spin_coefficient_b,
+        );
+        let pair_scratch_ready = factor_count <= recurrence.fast_spin_first.len()
+            && factor_count <= recurrence.fast_spin_second.len()
+            && factor_count <= recurrence.fast_spin_pair_first.len()
+            && factor_count <= recurrence.fast_spin_pair_second.len();
+        let component_limit = crate::legendre::ScalarLegendreTable::<T>::input_scale_limit()
+            / T::from_f64(4.0).expect("four is representable");
+        let min_normal = T::from_f64(f64::MIN_POSITIVE).expect("f64 minimum normal converts");
+        let value_is_prepared_safe = |value: T| {
+            crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(value, component_limit)
+                && (value == T::zero() || value.abs() >= min_normal)
+        };
+
+        let mut converted_finite = true;
+        let mut prepared_inputs_safe = true;
+        let mut prepared_outputs_finite = true;
+        let mut next_pair = 0usize;
+        let mut first_window = [Complex::new(T::zero(), T::zero()); 3];
+        let mut second_window = [Complex::new(T::zero(), T::zero()); 3];
+        spin1_to_scalar_with_visit(
+            m,
+            lmax,
+            e_coefficients,
+            Some(b_coefficients),
+            &mut recurrence.fast_scalar_first[..lmax + 2],
+            &mut recurrence.fast_scalar_second[..lmax + 2],
+            |degree, first, second| {
+                converted_finite &= first.re.is_finite()
+                    && first.im.is_finite()
+                    && second.re.is_finite()
+                    && second.im.is_finite();
+                prepared_inputs_safe &= value_is_prepared_safe(first.re)
+                    && value_is_prepared_safe(first.im)
+                    && value_is_prepared_safe(second.re)
+                    && value_is_prepared_safe(second.im);
+
+                let offset = degree - m;
+                let slot = offset % 3;
+                first_window[slot] = first;
+                second_window[slot] = second;
+
+                if next_pair < factor_count {
+                    let pair_degree = m + 2 * next_pair;
+                    if degree == (pair_degree + 2).min(scalar_lmax) {
+                        if factors_ready
+                            && pair_scratch_ready
+                            && prepared_inputs_safe
+                            && prepared_outputs_finite
+                        {
+                            let pair_offset = pair_degree - m;
+                            let prepared =
+                                crate::legendre::prepare_synthesis_coefficient_pair_values(
+                                    pair_degree,
+                                    scalar_lmax,
+                                    &recurrence.epsilon,
+                                    recurrence.spin_alpha[next_pair],
+                                    [
+                                        first_window[pair_offset % 3],
+                                        first_window[(pair_offset + 1) % 3],
+                                        first_window[(pair_offset + 2) % 3],
+                                    ],
+                                    [
+                                        second_window[pair_offset % 3],
+                                        second_window[(pair_offset + 1) % 3],
+                                        second_window[(pair_offset + 2) % 3],
+                                    ],
+                                );
+                            let values = [
+                                prepared.first_even,
+                                prepared.first_odd,
+                                prepared.second_even,
+                                prepared.second_odd,
+                            ];
+                            prepared_outputs_finite = values
+                                .iter()
+                                .all(|value| value.re.is_finite() && value.im.is_finite());
+                            if prepared_outputs_finite {
+                                recurrence.fast_spin_first[next_pair] = prepared.first_even;
+                                recurrence.fast_spin_second[next_pair] = prepared.first_odd;
+                                recurrence.fast_spin_pair_first[next_pair] = prepared.second_even;
+                                recurrence.fast_spin_pair_second[next_pair] = prepared.second_odd;
+                            }
+                        }
+                        next_pair += 1;
+                    }
+                }
+            },
+        );
+
+        let pair_coefficients_ready = factors_ready
+            && pair_scratch_ready
+            && prepared_inputs_safe
+            && prepared_outputs_finite
+            && next_pair == factor_count;
+        (converted_finite, factors_ready, pair_coefficients_ready)
+    }
+
     #[expect(
         clippy::too_many_arguments,
         reason = "The order-major queue restricts each latitude segment to an order range."
@@ -2061,6 +2178,19 @@ impl<T: ShtScalar> ShtPlan<T> {
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
+        let fused_local_preparation_eligible = lmax
+            .checked_add(2)
+            .and_then(|row_len| row_len.checked_mul(2))
+            .and_then(|row_stride| {
+                self.harmonics
+                    .mmax()
+                    .checked_add(1)
+                    .and_then(|order_count| row_stride.checked_mul(order_count))
+            })
+            .and_then(|coefficient_count| {
+                coefficient_count.checked_mul(std::mem::size_of::<Complex<T>>())
+            })
+            .is_some_and(|bytes| bytes < SPIN1_ORDER_FUSED_LOCAL_PREPARATION_MAX_BYTES);
         debug_assert_eq!(ring_end - ring_start, theta_sin.len());
         debug_assert_eq!(q_spectra.len(), (ring_end - ring_start) * spectrum_len);
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
@@ -2082,80 +2212,111 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             let phase = longitude_phase::<T>(m, phi0, false);
             let mut fast_scalar_order = fast_scalar;
+            let mut local_pair_coefficients_prepared = false;
+            let mut local_paired_factors_ready = false;
             if fast_scalar_order && spin == 1 {
                 let coefficient_start = self
                     .harmonics
                     .index(m, m)
                     .expect("every packed order starts at its diagonal degree");
                 let coefficient_count = lmax - m + 1;
-                let coefficient_slice = if derivative_norm {
-                    let scaled = &mut recurrence.fast_spin_first[..coefficient_count];
-                    for (offset, coefficient) in scaled.iter_mut().enumerate() {
-                        let degree = m + offset;
-                        let degree = T::from_usize(degree).expect("degree converts");
-                        let scale = if degree == T::zero() {
-                            T::zero()
-                        } else {
-                            (degree * (degree + T::one())).sqrt()
-                        };
-                        *coefficient = e_alm[coefficient_start + offset] * scale;
-                        if !coefficient.re.is_finite() || !coefficient.im.is_finite() {
-                            fast_scalar_order = false;
-                            break;
-                        }
-                    }
-                    fast_scalar_order.then_some(&scaled[..])
+                let use_fused_local_preparation = !derivative_norm
+                    && b_alm.is_some()
+                    && spin1_scalar_coefficients.is_none()
+                    && spin1_scalar_coefficient_finite_orders.is_none()
+                    && !allow_spin1_table
+                    && T::supports_paired_scalar()
+                    && fused_local_preparation_eligible
+                    && ring_start + ring_end == self.grid.ntheta()
+                    && order_start == m
+                    && order_end == m + 1
+                    && output_order == 0
+                    && spectrum_len == 1
+                    && q_spectra.len() == theta_sin.len()
+                    && u_spectra.len() == theta_sin.len();
+                if use_fused_local_preparation {
+                    let b_coefficients = &b_alm.expect("both spin-1 channels are available")
+                        [coefficient_start..coefficient_start + coefficient_count];
+                    let (finite, factors_ready, pair_coefficients_ready) = self
+                        .spin1_to_scalar_order_with_prepared_pairs(
+                            m,
+                            lmax,
+                            &e_alm[coefficient_start..coefficient_start + coefficient_count],
+                            b_coefficients,
+                            recurrence,
+                        );
+                    fast_scalar_order = finite;
+                    local_paired_factors_ready = factors_ready;
+                    local_pair_coefficients_prepared = pair_coefficients_ready;
                 } else {
-                    Some(&e_alm[coefficient_start..coefficient_start + coefficient_count])
-                };
-                if let Some(finite_orders) = spin1_scalar_coefficient_finite_orders {
-                    debug_assert!(spin1_scalar_coefficients.is_some());
-                    debug_assert!(m < finite_orders.len());
-                    fast_scalar_order = finite_orders[m] != 0;
-                } else if let Some(e_coefficients) = coefficient_slice {
-                    let (scalar_first, scalar_second): (&[Complex<T>], &[Complex<T>]) =
-                        if let Some(coefficients) = spin1_scalar_coefficients {
-                            let row_len = lmax + 2;
-                            let row_stride = row_len * 2;
-                            let row_start = m * row_stride;
-                            (
-                                &coefficients[row_start..row_start + row_len],
-                                &coefficients[row_start + row_len..row_start + row_stride],
-                            )
-                        } else {
-                            spin1_to_scalar(
-                                m,
-                                lmax,
-                                e_coefficients,
-                                b_alm.map(|values| {
-                                    &values
-                                        [coefficient_start..coefficient_start + coefficient_count]
-                                }),
-                                &mut recurrence.fast_scalar_first[..lmax + 2],
-                                &mut recurrence.fast_scalar_second[..lmax + 2],
-                            );
-                            (
-                                &recurrence.fast_scalar_first[..lmax + 2],
-                                &recurrence.fast_scalar_second[..lmax + 2],
-                            )
-                        };
-                    // The conversion can overflow for finite E/B coefficients
-                    // even when the scaled spin recurrence can represent the
-                    // sampled field. Keep the original channels for fallback.
-                    #[cfg(all(test, feature = "parallel"))]
-                    let safety_started = recurrence
-                        .spin1_profile_enabled
-                        .then(std::time::Instant::now);
-                    fast_scalar_order = scalar_first
-                        .iter()
-                        .chain(scalar_second)
-                        .all(|value| value.re.is_finite() && value.im.is_finite());
-                    #[cfg(all(test, feature = "parallel"))]
-                    if let Some(safety_started) = safety_started {
-                        recurrence.spin1_profile_coefficient_safety_ns +=
-                            safety_started.elapsed().as_nanos();
-                        recurrence.spin1_profile_coefficient_safety_values +=
-                            (scalar_first.len() + scalar_second.len()) as u128;
+                    let coefficient_slice = if derivative_norm {
+                        let scaled = &mut recurrence.fast_spin_first[..coefficient_count];
+                        for (offset, coefficient) in scaled.iter_mut().enumerate() {
+                            let degree = m + offset;
+                            let degree = T::from_usize(degree).expect("degree converts");
+                            let scale = if degree == T::zero() {
+                                T::zero()
+                            } else {
+                                (degree * (degree + T::one())).sqrt()
+                            };
+                            *coefficient = e_alm[coefficient_start + offset] * scale;
+                            if !coefficient.re.is_finite() || !coefficient.im.is_finite() {
+                                fast_scalar_order = false;
+                                break;
+                            }
+                        }
+                        fast_scalar_order.then_some(&scaled[..])
+                    } else {
+                        Some(&e_alm[coefficient_start..coefficient_start + coefficient_count])
+                    };
+                    if let Some(finite_orders) = spin1_scalar_coefficient_finite_orders {
+                        debug_assert!(spin1_scalar_coefficients.is_some());
+                        debug_assert!(m < finite_orders.len());
+                        fast_scalar_order = finite_orders[m] != 0;
+                    } else if let Some(e_coefficients) = coefficient_slice {
+                        let (scalar_first, scalar_second): (&[Complex<T>], &[Complex<T>]) =
+                            if let Some(coefficients) = spin1_scalar_coefficients {
+                                let row_len = lmax + 2;
+                                let row_stride = row_len * 2;
+                                let row_start = m * row_stride;
+                                (
+                                    &coefficients[row_start..row_start + row_len],
+                                    &coefficients[row_start + row_len..row_start + row_stride],
+                                )
+                            } else {
+                                spin1_to_scalar(
+                                    m,
+                                    lmax,
+                                    e_coefficients,
+                                    b_alm.map(|values| {
+                                        &values[coefficient_start
+                                            ..coefficient_start + coefficient_count]
+                                    }),
+                                    &mut recurrence.fast_scalar_first[..lmax + 2],
+                                    &mut recurrence.fast_scalar_second[..lmax + 2],
+                                );
+                                (
+                                    &recurrence.fast_scalar_first[..lmax + 2],
+                                    &recurrence.fast_scalar_second[..lmax + 2],
+                                )
+                            };
+                        // Conversion may overflow even when the checked spin
+                        // recurrence can still represent the sampled field.
+                        #[cfg(all(test, feature = "parallel"))]
+                        let safety_started = recurrence
+                            .spin1_profile_enabled
+                            .then(std::time::Instant::now);
+                        fast_scalar_order = scalar_first
+                            .iter()
+                            .chain(scalar_second)
+                            .all(|value| value.re.is_finite() && value.im.is_finite());
+                        #[cfg(all(test, feature = "parallel"))]
+                        if let Some(safety_started) = safety_started {
+                            recurrence.spin1_profile_coefficient_safety_ns +=
+                                safety_started.elapsed().as_nanos();
+                            recurrence.spin1_profile_coefficient_safety_values +=
+                                (scalar_first.len() + scalar_second.len()) as u128;
+                        }
                     }
                 }
             }
@@ -2182,15 +2343,19 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let factor_started = recurrence
                         .spin1_profile_enabled
                         .then(std::time::Instant::now);
-                    T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
-                    let paired_factors_ready = T::fill_paired_scalar_factors(
-                        m,
-                        scalar_lmax,
-                        &recurrence.epsilon,
-                        &mut recurrence.spin_alpha,
-                        &mut recurrence.spin_coefficient_a,
-                        &mut recurrence.spin_coefficient_b,
-                    );
+                    let paired_factors_ready = if local_paired_factors_ready {
+                        true
+                    } else {
+                        T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+                        T::fill_paired_scalar_factors(
+                            m,
+                            scalar_lmax,
+                            &recurrence.epsilon,
+                            &mut recurrence.spin_alpha,
+                            &mut recurrence.spin_coefficient_a,
+                            &mut recurrence.spin_coefficient_b,
+                        )
+                    };
                     debug_assert!(paired_factors_ready);
                     #[cfg(all(test, feature = "parallel"))]
                     if let Some(factor_started) = factor_started {
@@ -2243,6 +2408,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 &scalar_first[m..=scalar_lmax],
                                 &scalar_second[m..=scalar_lmax],
                                 false,
+                                theta_sin,
+                                theta_cos,
+                                &ring_order_limits[ring_start..ring_end],
+                                arch,
+                                recurrence,
+                                q_spectra,
+                                u_spectra,
+                            )
+                        } else if local_pair_coefficients_prepared {
+                            self.try_synthesize_spin1_prepared_component_order_to_order(
+                                m,
+                                scalar_lmax,
+                                &[],
+                                &[],
+                                true,
                                 theta_sin,
                                 theta_cos,
                                 &ring_order_limits[ring_start..ring_end],

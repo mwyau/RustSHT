@@ -38,9 +38,10 @@ pub(crate) use scalar_table::{
 };
 pub(crate) use spin_fast::{
     fill_spin2_factors, scalar_to_spin1, scalar_to_spin1_with_epsilon, scalar_to_spin2,
-    spin1_to_scalar, spin2_to_scalar,
+    spin1_to_scalar, spin1_to_scalar_with_visit, spin2_to_scalar,
 };
 
+pub(crate) use scalar_paired::prepare_synthesis_coefficient_pair_values;
 #[cfg(all(test, feature = "parallel"))]
 pub(crate) use scalar_paired::{
     ScalarAnalysisRouteCounts, begin_scalar_analysis_route_profile,

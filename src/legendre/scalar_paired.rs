@@ -19,6 +19,7 @@
 
 use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
+use rustfft::num_traits::Float;
 
 use crate::error::ShtError;
 use crate::legendre::scalar::{
@@ -255,6 +256,54 @@ pub(crate) fn prepare_synthesis_coefficients(
 }
 
 /// Prepares both converted spin-1 scalar rows in one degree-pair pass.
+#[derive(Clone, Copy)]
+pub(crate) struct PreparedSynthesisCoefficientPair<T> {
+    pub(crate) first_even: num_complex::Complex<T>,
+    pub(crate) first_odd: num_complex::Complex<T>,
+    pub(crate) second_even: num_complex::Complex<T>,
+    pub(crate) second_odd: num_complex::Complex<T>,
+}
+
+/// Prepares one pair from the three-degree windows emitted by spin1_to_scalar.
+/// Entries beyond `lmax` are ignored exactly as in the bulk preparation path.
+pub(crate) fn prepare_synthesis_coefficient_pair_values<T: Float>(
+    degree: usize,
+    lmax: usize,
+    epsilon: &[T],
+    alpha: T,
+    first: [num_complex::Complex<T>; 3],
+    second: [num_complex::Complex<T>; 3],
+) -> PreparedSynthesisCoefficientPair<T> {
+    let epsilon_even = epsilon[degree + 1];
+    let epsilon_odd = epsilon[degree + 2];
+    let first_next_even = if degree + 2 <= lmax {
+        first[2]
+    } else {
+        num_complex::Complex::new(T::zero(), T::zero())
+    };
+    let second_next_even = if degree + 2 <= lmax {
+        second[2]
+    } else {
+        num_complex::Complex::new(T::zero(), T::zero())
+    };
+    let first_even = (first[0] * epsilon_even + first_next_even * epsilon_odd) * alpha;
+    let second_even = (second[0] * epsilon_even + second_next_even * epsilon_odd) * alpha;
+    let (first_odd, second_odd) = if degree < lmax {
+        (first[1] * alpha, second[1] * alpha)
+    } else {
+        (
+            num_complex::Complex::new(T::zero(), T::zero()),
+            num_complex::Complex::new(T::zero(), T::zero()),
+        )
+    };
+    PreparedSynthesisCoefficientPair {
+        first_even,
+        first_odd,
+        second_even,
+        second_odd,
+    }
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "The spin-1 conversion supplies two coefficient rows and their paired outputs."
@@ -285,31 +334,39 @@ pub(crate) fn prepare_synthesis_coefficient_pair(
     for pair in 0..pair_count {
         let degree = m + 2 * pair;
         let offset = degree - m;
-        let epsilon_even = epsilon[degree + 1];
-        let epsilon_odd = epsilon[degree + 2];
         let alpha = alpha[pair];
-        let first_next_even = if degree + 2 <= lmax {
+        let first_next = if degree + 2 <= lmax {
             first_coefficients[offset + 2]
         } else {
             Complex64::new(0.0, 0.0)
         };
-        let second_next_even = if degree + 2 <= lmax {
+        let second_next = if degree + 2 <= lmax {
             second_coefficients[offset + 2]
         } else {
             Complex64::new(0.0, 0.0)
         };
-        let first_even_value =
-            (first_coefficients[offset] * epsilon_even + first_next_even * epsilon_odd) * alpha;
-        let second_even_value =
-            (second_coefficients[offset] * epsilon_even + second_next_even * epsilon_odd) * alpha;
-        let (first_odd_value, second_odd_value) = if degree < lmax {
-            (
-                first_coefficients[offset + 1] * alpha,
-                second_coefficients[offset + 1] * alpha,
-            )
+        let first_next_odd = if degree < lmax {
+            first_coefficients[offset + 1]
         } else {
-            (Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0))
+            Complex64::new(0.0, 0.0)
         };
+        let second_next_odd = if degree < lmax {
+            second_coefficients[offset + 1]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let prepared = prepare_synthesis_coefficient_pair_values(
+            degree,
+            lmax,
+            epsilon,
+            alpha,
+            [first_coefficients[offset], first_next_odd, first_next],
+            [second_coefficients[offset], second_next_odd, second_next],
+        );
+        let first_even_value = prepared.first_even;
+        let first_odd_value = prepared.first_odd;
+        let second_even_value = prepared.second_even;
+        let second_odd_value = prepared.second_odd;
         if [
             first_even_value,
             first_odd_value,

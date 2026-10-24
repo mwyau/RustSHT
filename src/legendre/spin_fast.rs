@@ -36,6 +36,38 @@ pub(crate) fn spin1_to_scalar<
     scalar_first: &mut [Complex<T>],
     scalar_second: &mut [Complex<T>],
 ) {
+    spin1_to_scalar_with_visit(
+        m,
+        lmax,
+        e_coefficients,
+        b_coefficients,
+        scalar_first,
+        scalar_second,
+        |_, _, _| {},
+    );
+}
+
+/// Converts spin-1 rows and visits each emitted degree without changing the
+/// recurrence order. The visitor lets order-major synthesis prepare paired
+/// coefficients while retaining the complete rows for its checked fallback.
+pub(crate) fn spin1_to_scalar_with_visit<
+    T: Float
+        + FromPrimitive
+        + std::ops::AddAssign
+        + std::ops::SubAssign
+        + std::ops::MulAssign
+        + std::ops::DivAssign
+        + std::ops::RemAssign,
+    F: FnMut(usize, Complex<T>, Complex<T>),
+>(
+    m: usize,
+    lmax: usize,
+    e_coefficients: &[Complex<T>],
+    b_coefficients: Option<&[Complex<T>]>,
+    scalar_first: &mut [Complex<T>],
+    scalar_second: &mut [Complex<T>],
+    mut visit: F,
+) {
     debug_assert_eq!(e_coefficients.len(), lmax - m + 1);
     debug_assert!(b_coefficients.is_none_or(|values| values.len() == lmax - m + 1));
     debug_assert!(scalar_first.len() >= lmax + 2);
@@ -98,6 +130,7 @@ pub(crate) fn spin1_to_scalar<
         }
         scalar_first[l] = -coefficient_first;
         scalar_second[l] = -coefficient_second;
+        visit(l, scalar_first[l], scalar_second[l]);
     }
 }
 
