@@ -2463,16 +2463,47 @@ impl<T: ShtScalar> ShtPlan<T> {
                         }
                         [(0, theta_sin.len()), (0, 0)]
                     };
+                    // In the full-order, single-worker GL route, each order is
+                    // active on one contiguous latitude interval. Trim wholly
+                    // excluded polar rings before forming SIMD blocks so a
+                    // mixed active/inactive block cannot force the checked
+                    // per-degree path for its otherwise ordinary lanes.
+                    let trim_excluded_gl_rings = !component_prepared
+                        && spin == 1
+                        && self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX
+                        && self.harmonics.mmax() == self.harmonics.lmax()
+                        && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+                        && self.grid.ntheta() == self.harmonics.lmax() + 1
+                        && single_threaded_execution()
+                        && ring_start == 0
+                        && ring_end == self.grid.ntheta();
                     for (range_start, range_end) in fallback_ranges {
-                        let mut block_start = range_start;
-                        while block_start < range_end {
-                            let block_end =
-                                (block_start + crate::legendre::LATITUDE_BLOCK_SIZE).min(range_end);
+                        let (active_start, active_end) =
+                            if trim_excluded_gl_rings && range_start < range_end {
+                                let limits = &ring_order_limits
+                                    [ring_start + range_start..ring_start + range_end];
+                                let first_active = limits.iter().position(|&limit| m <= limit);
+                                let last_active = limits.iter().rposition(|&limit| m <= limit);
+                                match (first_active, last_active) {
+                                    (Some(first), Some(last))
+                                        if limits[first..=last].iter().all(|&limit| m <= limit) =>
+                                    {
+                                        (range_start + first, range_start + last + 1)
+                                    }
+                                    _ => (range_start, range_end),
+                                }
+                            } else {
+                                (range_start, range_end)
+                            };
+                        let mut block_start = active_start;
+                        while block_start < active_end {
+                            let block_end = (block_start + crate::legendre::LATITUDE_BLOCK_SIZE)
+                                .min(active_end);
                             let mut run_end = block_end;
                             if can_prepare_shared_pair && pair_safe_block(block_start, block_end) {
-                                while run_end < range_end {
+                                while run_end < active_end {
                                     let next_end = (run_end + crate::legendre::LATITUDE_BLOCK_SIZE)
-                                        .min(range_end);
+                                        .min(active_end);
                                     if !pair_safe_block(run_end, next_end) {
                                         break;
                                     }
