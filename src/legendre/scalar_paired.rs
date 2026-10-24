@@ -1353,6 +1353,380 @@ fn component_sum_is_normal_or_zero(result: f64, left: f64, right: f64) -> bool {
     result.is_normal() || (result == 0.0 && left == 0.0 && right == 0.0)
 }
 
+#[inline(always)]
+fn scale_normal_prefix_product(product: f64, exponent: i64) -> Option<f64> {
+    if product == 0.0 {
+        return Some(product);
+    }
+    if !product.is_normal() || !(-4096..=4096).contains(&exponent) {
+        return None;
+    }
+    let bits = product.to_bits();
+    let raw_exponent = ((bits >> 52) & 0x7ff) as i64;
+    let scaled_exponent = raw_exponent + exponent;
+    if !(1..0x7ff).contains(&scaled_exponent) {
+        return None;
+    }
+    let exponent_mask = 0x7ff_u64 << 52;
+    Some(f64::from_bits(
+        (bits & !exponent_mask) | ((scaled_exponent as u64) << 52),
+    ))
+}
+
+#[inline(always)]
+fn scale_normal_prefix_products_simd<S: Simd>(
+    products: [S::f64s; 4],
+    exponents: &[i64],
+) -> Option<[S::f64s; 4]> {
+    #[cfg(target_arch = "x86_64")]
+    if const {
+        S::F64_LANES == 4
+            && core::mem::size_of::<S::f64s>() == core::mem::size_of::<std::arch::x86_64::__m256d>()
+    } {
+        if exponents.len() != 4 {
+            return None;
+        }
+        // SAFETY: the size test above selects only Pulp's four-lane AVX2 type.
+        let input = products.map(|value| unsafe { core::mem::transmute_copy(&value) });
+        // SAFETY: the same dispatch selects AVX2 at runtime, and the helper
+        // validates every exponent and result before returning scaled values.
+        let scaled = unsafe { scale_normal_prefix_products_avx2(input, exponents) }?;
+        // SAFETY: the output has the same four-lane layout checked above.
+        return Some(scaled.map(|value| unsafe { core::mem::transmute_copy(&value) }));
+    }
+    let _ = products;
+    let _ = exponents;
+    None
+}
+
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2")]
+#[inline]
+unsafe fn scale_normal_prefix_products_avx2(
+    products: [std::arch::x86_64::__m256d; 4],
+    exponents: &[i64],
+) -> Option<[std::arch::x86_64::__m256d; 4]> {
+    use std::arch::x86_64::{
+        __m256i, _mm256_add_epi64, _mm256_and_si256, _mm256_andnot_si256, _mm256_blendv_pd,
+        _mm256_castpd_si256, _mm256_castsi256_pd, _mm256_cmp_pd, _mm256_cmpgt_epi64,
+        _mm256_loadu_si256, _mm256_movemask_pd, _mm256_or_si256, _mm256_set1_epi64x,
+        _mm256_set1_pd, _mm256_slli_epi64, _mm256_srli_epi64,
+    };
+
+    // SAFETY: the caller dispatches this only for Pulp's four-lane AVX2
+    // specialization. The exponent slice has exactly four lanes.
+    unsafe {
+        let zero = _mm256_set1_pd(0.0);
+        let one = _mm256_set1_pd(1.0);
+        let exponent_vector = _mm256_loadu_si256(exponents.as_ptr().cast::<__m256i>());
+        let zero_cmp = _mm256_set1_epi64x(0);
+        let max_encoded_exponent = _mm256_set1_epi64x(0x7ff);
+        let mantissa_mask = _mm256_set1_epi64x(!(0x7ff_i64 << 52));
+        let positive_exponent_limit = _mm256_set1_epi64x(0x7ff);
+        let lower_exponent_limit = _mm256_set1_epi64x(0);
+
+        let mut product_bits = [core::mem::zeroed::<__m256i>(); 4];
+        let mut zero_masks = [zero; 4];
+        let mut scaled_exponents = [zero_cmp; 4];
+        let mut all_valid = _mm256_set1_epi64x(-1);
+        for index in 0..4 {
+            zero_masks[index] = _mm256_cmp_pd(products[index], zero, 0);
+            let zero_mask_i = _mm256_castpd_si256(zero_masks[index]);
+            let active_exponent = _mm256_andnot_si256(zero_mask_i, exponent_vector);
+            let exponent_in_range = _mm256_and_si256(
+                _mm256_cmpgt_epi64(active_exponent, _mm256_set1_epi64x(-4097)),
+                _mm256_cmpgt_epi64(_mm256_set1_epi64x(4097), active_exponent),
+            );
+            let product_for_bits = _mm256_blendv_pd(products[index], one, zero_masks[index]);
+            let bits = _mm256_castpd_si256(product_for_bits);
+            let encoded_exponent =
+                _mm256_and_si256(_mm256_srli_epi64(bits, 52), max_encoded_exponent);
+            let scaled_exponent = _mm256_add_epi64(encoded_exponent, active_exponent);
+            let adjusted_exponent_valid = _mm256_and_si256(
+                _mm256_cmpgt_epi64(scaled_exponent, lower_exponent_limit),
+                _mm256_cmpgt_epi64(positive_exponent_limit, scaled_exponent),
+            );
+            scaled_exponents[index] = scaled_exponent;
+            product_bits[index] = bits;
+            all_valid = _mm256_and_si256(
+                all_valid,
+                _mm256_and_si256(exponent_in_range, adjusted_exponent_valid),
+            );
+        }
+        if _mm256_movemask_pd(_mm256_castsi256_pd(all_valid)) != 0b1111 {
+            return None;
+        }
+
+        let mut scaled = [zero; 4];
+        for index in 0..4 {
+            let mantissa = _mm256_and_si256(product_bits[index], mantissa_mask);
+            let exponent_bits = _mm256_slli_epi64(scaled_exponents[index], 52);
+            let adjusted = _mm256_castsi256_pd(_mm256_or_si256(mantissa, exponent_bits));
+            scaled[index] = _mm256_blendv_pd(adjusted, products[index], zero_masks[index]);
+        }
+        Some(scaled)
+    }
+}
+
+#[inline(always)]
+fn normal_or_zero_mask<S: Simd>(simd: S, value: S::f64s) -> S::m64s {
+    let magnitude = simd.abs_f64s(value);
+    let normal = simd.and_m64s(
+        simd.greater_than_or_equal_f64s(magnitude, simd.splat_f64s(f64::MIN_POSITIVE)),
+        simd.less_than_or_equal_f64s(magnitude, simd.splat_f64s(f64::MAX)),
+    );
+    simd.or_m64s(normal, simd.equal_f64s(value, simd.splat_f64s(0.0)))
+}
+
+#[inline(always)]
+fn try_accumulate_scaled_pair_vector<S: Simd>(
+    simd: S,
+    cos_theta: &[f64],
+    current: &[f64],
+    exponents: &[i64],
+    first_even: Complex64,
+    first_odd: Complex64,
+    second_even: Complex64,
+    second_odd: Complex64,
+    first_sum_re: &mut [f64],
+    first_sum_im: &mut [f64],
+    second_sum_re: &mut [f64],
+    second_sum_im: &mut [f64],
+) -> bool {
+    const MAX_F64_LANES: usize = 8;
+    if S::F64_LANES < 2 || S::F64_LANES > MAX_F64_LANES || cos_theta.len() != S::F64_LANES {
+        return false;
+    }
+    let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
+    let (current_vectors, current_tail) = S::as_simd_f64s(current);
+    let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
+    if cos_vectors.len() != 1
+        || current_vectors.len() != 1
+        || exponent_vectors.len() != 1
+        || !cos_tail.is_empty()
+        || !current_tail.is_empty()
+        || !exponent_tail.is_empty()
+    {
+        return false;
+    }
+
+    let zero = simd.splat_f64s(0.0);
+    let cosine = cos_vectors[0];
+    let recurrence = current_vectors[0];
+    let first_odd_factor_re = simd.mul_f64s(simd.splat_f64s(first_odd.re), cosine);
+    let first_odd_factor_im = simd.mul_f64s(simd.splat_f64s(first_odd.im), cosine);
+    let second_odd_factor_re = simd.mul_f64s(simd.splat_f64s(second_odd.re), cosine);
+    let second_odd_factor_im = simd.mul_f64s(simd.splat_f64s(second_odd.im), cosine);
+    let first_factor_re = simd.mul_add_f64s(
+        simd.splat_f64s(first_odd.re),
+        cosine,
+        simd.splat_f64s(first_even.re),
+    );
+    let first_factor_im = simd.mul_add_f64s(
+        simd.splat_f64s(first_odd.im),
+        cosine,
+        simd.splat_f64s(first_even.im),
+    );
+    let second_factor_re = simd.mul_add_f64s(
+        simd.splat_f64s(second_odd.re),
+        cosine,
+        simd.splat_f64s(second_even.re),
+    );
+    let second_factor_im = simd.mul_add_f64s(
+        simd.splat_f64s(second_odd.im),
+        cosine,
+        simd.splat_f64s(second_even.im),
+    );
+
+    let factor_valid = |factor, odd_factor, even_is_zero| {
+        let magnitude = simd.abs_f64s(factor);
+        let normal = simd.and_m64s(
+            simd.greater_than_or_equal_f64s(magnitude, simd.splat_f64s(f64::MIN_POSITIVE)),
+            simd.less_than_or_equal_f64s(magnitude, simd.splat_f64s(f64::MAX)),
+        );
+        if even_is_zero {
+            simd.or_m64s(
+                simd.and_m64s(
+                    simd.equal_f64s(factor, zero),
+                    simd.equal_f64s(odd_factor, zero),
+                ),
+                normal,
+            )
+        } else {
+            normal
+        }
+    };
+    if !analysis_mask_all(
+        simd,
+        simd.and_m64s(
+            simd.and_m64s(
+                factor_valid(first_factor_re, first_odd_factor_re, first_even.re == 0.0),
+                factor_valid(first_factor_im, first_odd_factor_im, first_even.im == 0.0),
+            ),
+            simd.and_m64s(
+                factor_valid(
+                    second_factor_re,
+                    second_odd_factor_re,
+                    second_even.re == 0.0,
+                ),
+                factor_valid(
+                    second_factor_im,
+                    second_odd_factor_im,
+                    second_even.im == 0.0,
+                ),
+            ),
+        ),
+    ) || !analysis_mask_all(simd, normal_or_zero_mask(simd, recurrence))
+    {
+        return false;
+    }
+
+    let first_product_re = simd.mul_f64s(first_factor_re, recurrence);
+    let first_product_im = simd.mul_f64s(first_factor_im, recurrence);
+    let second_product_re = simd.mul_f64s(second_factor_re, recurrence);
+    let second_product_im = simd.mul_f64s(second_factor_im, recurrence);
+    let product_valid = |product, factor| {
+        let normal = normal_or_zero_mask(simd, product);
+        simd.and_m64s(
+            normal,
+            simd.or_m64s(
+                simd.not_m64s(simd.equal_f64s(product, zero)),
+                simd.or_m64s(
+                    simd.equal_f64s(factor, zero),
+                    simd.equal_f64s(recurrence, zero),
+                ),
+            ),
+        )
+    };
+    if !analysis_mask_all(
+        simd,
+        simd.and_m64s(
+            simd.and_m64s(
+                product_valid(first_product_re, first_factor_re),
+                product_valid(first_product_im, first_factor_im),
+            ),
+            simd.and_m64s(
+                product_valid(second_product_re, second_factor_re),
+                product_valid(second_product_im, second_factor_im),
+            ),
+        ),
+    ) {
+        return false;
+    }
+
+    let [
+        first_product_re,
+        first_product_im,
+        second_product_re,
+        second_product_im,
+    ] = if let Some(scaled) = scale_normal_prefix_products_simd::<S>(
+        [
+            first_product_re,
+            first_product_im,
+            second_product_re,
+            second_product_im,
+        ],
+        exponents,
+    ) {
+        scaled
+    } else {
+        let lane_count = cos_theta.len();
+        let mut product_values = [[0.0; MAX_F64_LANES]; 4];
+        simd.partial_store_f64s(&mut product_values[0][..lane_count], first_product_re);
+        simd.partial_store_f64s(&mut product_values[1][..lane_count], first_product_im);
+        simd.partial_store_f64s(&mut product_values[2][..lane_count], second_product_re);
+        simd.partial_store_f64s(&mut product_values[3][..lane_count], second_product_im);
+        let mut scaled_values = [[0.0; MAX_F64_LANES]; 4];
+        for lane in 0..lane_count {
+            for component in 0..4 {
+                let Some(value) =
+                    scale_normal_prefix_product(product_values[component][lane], exponents[lane])
+                else {
+                    return false;
+                };
+                scaled_values[component][lane] = value;
+            }
+        }
+        let mut scaled_vectors = [zero; 4];
+        for component in 0..4 {
+            let (vectors, tail) = S::as_simd_f64s(&scaled_values[component][..lane_count]);
+            if vectors.len() != 1 || !tail.is_empty() {
+                return false;
+            }
+            scaled_vectors[component] = vectors[0];
+        }
+        scaled_vectors
+    };
+
+    let (first_sum_re_vectors, first_sum_re_tail) = S::as_simd_f64s(first_sum_re);
+    let (first_sum_im_vectors, first_sum_im_tail) = S::as_simd_f64s(first_sum_im);
+    let (second_sum_re_vectors, second_sum_re_tail) = S::as_simd_f64s(second_sum_re);
+    let (second_sum_im_vectors, second_sum_im_tail) = S::as_simd_f64s(second_sum_im);
+    if first_sum_re_vectors.len() != 1
+        || first_sum_im_vectors.len() != 1
+        || second_sum_re_vectors.len() != 1
+        || second_sum_im_vectors.len() != 1
+        || !first_sum_re_tail.is_empty()
+        || !first_sum_im_tail.is_empty()
+        || !second_sum_re_tail.is_empty()
+        || !second_sum_im_tail.is_empty()
+    {
+        return false;
+    }
+
+    let next_first_sum_re = simd.add_f64s(first_sum_re_vectors[0], first_product_re);
+    let next_first_sum_im = simd.add_f64s(first_sum_im_vectors[0], first_product_im);
+    let next_second_sum_re = simd.add_f64s(second_sum_re_vectors[0], second_product_re);
+    let next_second_sum_im = simd.add_f64s(second_sum_im_vectors[0], second_product_im);
+    let sum_valid = |next_sum, prior_sum, product| {
+        let normal = normal_or_zero_mask(simd, next_sum);
+        let exact_zero = simd.and_m64s(
+            simd.equal_f64s(next_sum, zero),
+            simd.and_m64s(
+                simd.equal_f64s(prior_sum, zero),
+                simd.equal_f64s(product, zero),
+            ),
+        );
+        simd.or_m64s(
+            simd.and_m64s(normal, simd.not_m64s(simd.equal_f64s(next_sum, zero))),
+            exact_zero,
+        )
+    };
+    if !analysis_mask_all(
+        simd,
+        simd.and_m64s(
+            simd.and_m64s(
+                sum_valid(next_first_sum_re, first_sum_re_vectors[0], first_product_re),
+                sum_valid(next_first_sum_im, first_sum_im_vectors[0], first_product_im),
+            ),
+            simd.and_m64s(
+                sum_valid(
+                    next_second_sum_re,
+                    second_sum_re_vectors[0],
+                    second_product_re,
+                ),
+                sum_valid(
+                    next_second_sum_im,
+                    second_sum_im_vectors[0],
+                    second_product_im,
+                ),
+            ),
+        ),
+    ) {
+        return false;
+    }
+
+    let (first_sum_re_vectors, _) = S::as_mut_simd_f64s(first_sum_re);
+    let (first_sum_im_vectors, _) = S::as_mut_simd_f64s(first_sum_im);
+    let (second_sum_re_vectors, _) = S::as_mut_simd_f64s(second_sum_re);
+    let (second_sum_im_vectors, _) = S::as_mut_simd_f64s(second_sum_im);
+    first_sum_re_vectors[0] = next_first_sum_re;
+    first_sum_im_vectors[0] = next_first_sum_im;
+    second_sum_re_vectors[0] = next_second_sum_re;
+    second_sum_im_vectors[0] = next_second_sum_im;
+    true
+}
+
 fn paired_scalar_coefficients_are_safe(
     m: usize,
     lmax: usize,
@@ -1499,54 +1873,80 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransiti
             let l = m + 2 * pair;
             let (first_even, first_odd, second_even, second_odd) =
                 coefficients.values(m, lmax, pair);
-            for lane in 0..current.len() {
-                let cosine = cos_theta[lane];
-                let first_odd_factor = Complex64::new(first_odd.re * cosine, first_odd.im * cosine);
-                let second_odd_factor =
-                    Complex64::new(second_odd.re * cosine, second_odd.im * cosine);
-                let first_factor = Complex64::new(
-                    first_odd.re.mul_add(cosine, first_even.re),
-                    first_odd.im.mul_add(cosine, first_even.im),
-                );
-                let second_factor = Complex64::new(
-                    second_odd.re.mul_add(cosine, second_even.re),
-                    second_odd.im.mul_add(cosine, second_even.im),
-                );
-                if !complex_sum_is_normal_or_zero(first_factor, first_even, first_odd_factor)
-                    || !complex_sum_is_normal_or_zero(second_factor, second_even, second_odd_factor)
-                {
-                    return false;
+            if !try_accumulate_scaled_pair_vector(
+                simd,
+                cos_theta,
+                current,
+                exponents,
+                first_even,
+                first_odd,
+                second_even,
+                second_odd,
+                first_sum_re,
+                first_sum_im,
+                second_sum_re,
+                second_sum_im,
+            ) {
+                for lane in 0..current.len() {
+                    let cosine = cos_theta[lane];
+                    let first_odd_factor =
+                        Complex64::new(first_odd.re * cosine, first_odd.im * cosine);
+                    let second_odd_factor =
+                        Complex64::new(second_odd.re * cosine, second_odd.im * cosine);
+                    let first_factor = Complex64::new(
+                        first_odd.re.mul_add(cosine, first_even.re),
+                        first_odd.im.mul_add(cosine, first_even.im),
+                    );
+                    let second_factor = Complex64::new(
+                        second_odd.re.mul_add(cosine, second_even.re),
+                        second_odd.im.mul_add(cosine, second_even.im),
+                    );
+                    if !complex_sum_is_normal_or_zero(first_factor, first_even, first_odd_factor)
+                        || !complex_sum_is_normal_or_zero(
+                            second_factor,
+                            second_even,
+                            second_odd_factor,
+                        )
+                    {
+                        return false;
+                    }
+                    let first = scalar::multiply_complex_scaled(
+                        first_factor,
+                        current[lane],
+                        exponents[lane],
+                    );
+                    let second = scalar::multiply_complex_scaled(
+                        second_factor,
+                        current[lane],
+                        exponents[lane],
+                    );
+                    if !complex_scaled_product_is_normal_or_zero(
+                        first,
+                        first_factor,
+                        current[lane],
+                        1.0,
+                    ) || !complex_scaled_product_is_normal_or_zero(
+                        second,
+                        second_factor,
+                        current[lane],
+                        1.0,
+                    ) {
+                        return false;
+                    }
+                    let first_sum = Complex64::new(first_sum_re[lane], first_sum_im[lane]);
+                    let second_sum = Complex64::new(second_sum_re[lane], second_sum_im[lane]);
+                    let next_first_sum = first_sum + first;
+                    let next_second_sum = second_sum + second;
+                    if !complex_sum_is_normal_or_zero(next_first_sum, first_sum, first)
+                        || !complex_sum_is_normal_or_zero(next_second_sum, second_sum, second)
+                    {
+                        return false;
+                    }
+                    first_sum_re[lane] = next_first_sum.re;
+                    first_sum_im[lane] = next_first_sum.im;
+                    second_sum_re[lane] = next_second_sum.re;
+                    second_sum_im[lane] = next_second_sum.im;
                 }
-                let first =
-                    scalar::multiply_complex_scaled(first_factor, current[lane], exponents[lane]);
-                let second =
-                    scalar::multiply_complex_scaled(second_factor, current[lane], exponents[lane]);
-                if !complex_scaled_product_is_normal_or_zero(
-                    first,
-                    first_factor,
-                    current[lane],
-                    1.0,
-                ) || !complex_scaled_product_is_normal_or_zero(
-                    second,
-                    second_factor,
-                    current[lane],
-                    1.0,
-                ) {
-                    return false;
-                }
-                let first_sum = Complex64::new(first_sum_re[lane], first_sum_im[lane]);
-                let second_sum = Complex64::new(second_sum_re[lane], second_sum_im[lane]);
-                let next_first_sum = first_sum + first;
-                let next_second_sum = second_sum + second;
-                if !complex_sum_is_normal_or_zero(next_first_sum, first_sum, first)
-                    || !complex_sum_is_normal_or_zero(next_second_sum, second_sum, second)
-                {
-                    return false;
-                }
-                first_sum_re[lane] = next_first_sum.re;
-                first_sum_im[lane] = next_first_sum.im;
-                second_sum_re[lane] = next_second_sum.re;
-                second_sum_im[lane] = next_second_sum.im;
             }
             if l + 2 > lmax {
                 break;
@@ -7202,6 +7602,154 @@ mod tests {
 
         fn with_simd<S: Simd>(self, _: S) -> Self::Output {
             S::F64_LANES
+        }
+    }
+
+    struct ScaledPairAccumulationProbe<'a> {
+        cos_theta: &'a [f64],
+        current: &'a [f64],
+        exponents: &'a [i64],
+        first_even: Complex64,
+        first_odd: Complex64,
+        second_even: Complex64,
+        second_odd: Complex64,
+        first_sum_re: &'a mut [f64],
+        first_sum_im: &'a mut [f64],
+        second_sum_re: &'a mut [f64],
+        second_sum_im: &'a mut [f64],
+    }
+
+    impl WithSimd for ScaledPairAccumulationProbe<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            try_accumulate_scaled_pair_vector(
+                simd,
+                self.cos_theta,
+                self.current,
+                self.exponents,
+                self.first_even,
+                self.first_odd,
+                self.second_even,
+                self.second_odd,
+                self.first_sum_re,
+                self.first_sum_im,
+                self.second_sum_re,
+                self.second_sum_im,
+            )
+        }
+    }
+
+    #[test]
+    fn scaled_synthesis_prefix_vector_matches_scalar_and_declines_unsafe_products() {
+        let lane_count = Arch::new().dispatch(F64LaneCount);
+        if lane_count < 2 {
+            return;
+        }
+        let cos_theta = (0..lane_count)
+            .map(|lane| -0.4 + 0.3 * lane as f64)
+            .collect::<Vec<_>>();
+        let current = (0..lane_count)
+            .map(|lane| 0.75 + 0.25 * lane as f64)
+            .collect::<Vec<_>>();
+        let exponents = (0..lane_count)
+            .map(|lane| [4, -4, 0, 1, -2, 3, 2, -1][lane % 8])
+            .collect::<Vec<_>>();
+        let first_even = Complex64::new(0.5, -0.75);
+        let first_odd = Complex64::new(0.125, 0.25);
+        let second_even = Complex64::new(-0.75, 0.625);
+        let second_odd = Complex64::new(0.2, -0.15);
+        let mut first_sum_re = vec![0.125; lane_count];
+        let mut first_sum_im = vec![-0.25; lane_count];
+        let mut second_sum_re = vec![-0.375; lane_count];
+        let mut second_sum_im = vec![0.5; lane_count];
+        let mut expected = [
+            first_sum_re.clone(),
+            first_sum_im.clone(),
+            second_sum_re.clone(),
+            second_sum_im.clone(),
+        ];
+        for lane in 0..lane_count {
+            let cosine = cos_theta[lane];
+            let first_factor = Complex64::new(
+                first_odd.re.mul_add(cosine, first_even.re),
+                first_odd.im.mul_add(cosine, first_even.im),
+            );
+            let second_factor = Complex64::new(
+                second_odd.re.mul_add(cosine, second_even.re),
+                second_odd.im.mul_add(cosine, second_even.im),
+            );
+            let first =
+                scalar::multiply_complex_scaled(first_factor, current[lane], exponents[lane]);
+            let second =
+                scalar::multiply_complex_scaled(second_factor, current[lane], exponents[lane]);
+            expected[0][lane] += first.re;
+            expected[1][lane] += first.im;
+            expected[2][lane] += second.re;
+            expected[3][lane] += second.im;
+        }
+
+        assert!(Arch::new().dispatch(ScaledPairAccumulationProbe {
+            cos_theta: &cos_theta,
+            current: &current,
+            exponents: &exponents,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            first_sum_re: &mut first_sum_re,
+            first_sum_im: &mut first_sum_im,
+            second_sum_re: &mut second_sum_re,
+            second_sum_im: &mut second_sum_im,
+        }));
+        for (actual, expected) in [&first_sum_re, &first_sum_im, &second_sum_re, &second_sum_im]
+            .into_iter()
+            .zip(&expected)
+        {
+            assert!(
+                actual
+                    .iter()
+                    .zip(expected)
+                    .all(|(actual, expected)| { actual.to_bits() == expected.to_bits() })
+            );
+        }
+
+        let tiny = 1e-200;
+        let unsafe_even = Complex64::new(tiny, tiny);
+        let unsafe_odd = Complex64::new(0.0, 0.0);
+        let mut unsafe_first_re = vec![1.0; lane_count];
+        let mut unsafe_first_im = vec![2.0; lane_count];
+        let mut unsafe_second_re = vec![3.0; lane_count];
+        let mut unsafe_second_im = vec![4.0; lane_count];
+        let before = [
+            unsafe_first_re.clone(),
+            unsafe_first_im.clone(),
+            unsafe_second_re.clone(),
+            unsafe_second_im.clone(),
+        ];
+        assert!(!Arch::new().dispatch(ScaledPairAccumulationProbe {
+            cos_theta: &cos_theta,
+            current: &vec![tiny; lane_count],
+            exponents: &vec![0; lane_count],
+            first_even: unsafe_even,
+            first_odd: unsafe_odd,
+            second_even: unsafe_even,
+            second_odd: unsafe_odd,
+            first_sum_re: &mut unsafe_first_re,
+            first_sum_im: &mut unsafe_first_im,
+            second_sum_re: &mut unsafe_second_re,
+            second_sum_im: &mut unsafe_second_im,
+        }));
+        for (actual, before) in [
+            &unsafe_first_re,
+            &unsafe_first_im,
+            &unsafe_second_re,
+            &unsafe_second_im,
+        ]
+        .into_iter()
+        .zip(&before)
+        {
+            assert_eq!(actual, before);
         }
     }
 

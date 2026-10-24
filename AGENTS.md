@@ -2,12 +2,12 @@
 
 **Branch:** `opt/sht-performance-parity`. Read **only** this file, the [active spin-1 plan](plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md), the [current performance summary](PERFORMANCE_STATUS.md), and code touched by the current experiment. Historical plans, reviews and reports are **on demand**, not startup context. [Pre-update instructions preserved](reports/archive/context-2026-10-23/prepared-scalar-adapter/AGENTS.md).
 
-## Current owner priority (2026-10-23)
+## Current owner priority (2026-10-24)
 
-1. **Spin-1 analysis closeout COMPLETE**, including q8 GL/CC/F1 numerical checks, extreme/poison/adjoint, no-default, fmt and strict Clippy. Do not re-open or polish it by default. GL T720 analysis last measured **2.08×** DUCC, so retain as a later >=2× backlog item.
-2. Optimize **f64 spin-1 STANDARD synthesis >=2× native DUCC 0.42.0** first. CC/F1/GL T720 q8 remain ~2.4–2.6×; GL T511 q8 is now **2.95×**, after accepted measured q8 order-major dispatch (14.140→7.686 ms). **Do not revert the T511 q8 selector** or treat the former 5.19× baseline as current.
-3. **One bounded production experiment:** adapt the already-optimized f64 scalar ordered **prepared batch** (not its public/full transform) to spin-1 inside the existing order-major queue. Convert E/B once/order, pack mirrored eligible rings once/order, execute two **specialized sequential per-component scalar SIMD passes** with four parity accumulators each, share geometry/factors/scratch setup, reconstruct ± parity and scatter transactionally. Preserve DUCC-style checked scaled prefix and original-spin polar fallback. Reuse `src/legendre/scalar_ordered.rs` rather than rewrite DUCC recurrence or invoke two high-level ordered transforms.
-4. If a candidate is negative, allow one specifically diagnosed correction; then stop that mechanism and choose a **distinct, source-grounded >=2× case**. GL T720 analysis may be revisited then but avoid regressing the near-parity CC/F1 analysis. Keep f32 paused.
+1. **Spin-1 analysis closeout is complete.** GL T720 q8 analysis remains the largest documented gap at about **2.08×** DUCC and is the next high-gap investigation after the current synthesis checkpoint.
+2. Preserve all accepted synthesis changes. The checked AVX2 scaled-prefix accumulator improved GL T1023 full q1 to **176.605 ms** from **193.242 ms** on its exact parent; it remains **1.41×** DUCC. Current synthesis ratios are in [PERFORMANCE_STATUS.md](PERFORMANCE_STATUS.md); T720 F1/GL q8 are at or below DUCC, while CC T720 full/reduced q8 are 1.24×/1.45×.
+3. Continue with one bounded, source-grounded mechanism at a time. Do not repeat the rejected q1 dispatch no-op or checked reflected-prefix mappings. Keep f32 and broad benchmark sweeps paused.
+4. **Reviewer policy:** use a Sol reviewer only when the owner explicitly asks. Do not invoke other subagents.
 
 ## Required correctness/implementation guardrails
 
