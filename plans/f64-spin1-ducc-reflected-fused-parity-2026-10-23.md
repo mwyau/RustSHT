@@ -5,7 +5,7 @@
 ## Verified baseline and completion
 
 - **Analysis closeout DONE** at `8074844c` (production source from `8f99a274`; focused q8 release/adjoint/poison/Clippy/no-default checks pass). Matched T720 q8 analysis CC `1.04×`, F1 `1.15×`, GL `2.08×`. GL analysis is a later >=2× target, not the immediate task.
-- **GL T511 q8 dispatch accepted** at `4cbc1838`: the old special hemisphere path `14.140 ms`; existing order-major path `7.686 ms`; DUCC `2.606 ms` — **2.95×** remaining, down from 5.43×. q4 still uses hemisphere path; keep tested q8 selector. Larger-T spin-1 synthesis CC full `2.48×`, CC quarter `2.62×`, F1 full `2.41×`, GL full `2.40×` are **earlier focused measurements**, not a single current-source full matrix.
+- **GL T511 q8 dispatch remains accepted**, but its former 2.95× result is stale. Recheck on `6633b3ec` measured 3.830 ms versus 2.747 ms for DUCC (1.40×); the exact `08c1ba0e` parent was 3.783 ms. The older special-path comparison remains historical evidence only. Larger-T CC/F1/GL q8 measurements are not a current-source full matrix.
 - Scalar CC/F1 f64 synthesis is near but not universally <=1× DUCC; preserve existing improvements. No new scalar benchmark completeness prerequisite.
 - **M1 accepted:** the prepared-component adapter improves full/reduced CC, F1 and GL T720 q8 by about 34–40% over the exact parent and brings CC T1023 q8 to 1.13× DUCC. CC T720 full q8 is 1.57× DUCC. Focused correctness and strict lint checks pass; see the short performance snapshot for medians and numerical errors.
 
@@ -33,8 +33,9 @@ Pin `mreineck/ducc@42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`:
 5. **Avoid the old failure mode:** existing rejected adapter called the **high-level scalar ordered transform twice** and regressed T720 CC q8 `15.056→24.029 ms`. The new helper must reuse each order's conversion, packing, scratch and output ownership, calling **only** the internal optimized recurrence twice. If implementation degenerates to two full transform passes, stop before benchmarking.
 6. One **CC T720 full q8** release correctness/reference/poison/adjoint gate and one brief, matched original Rust/candidate Rust/DUCC whole-transform A/B. If gain, then quarter q8, q1, F1/GL full q8, T1023 holdout. If slower, investigate **one** measured cause (register spills, extra coefficient preparation/packing, fallback share, memory scatter), one focused correction, then reject. No extended sweep and no test/methodology refactor unless correctness requires it.
 
-## M2 and stop rules
+## Remaining synthesis priorities
 
-If M1 gains: extend checked scaled-to-ordinary recurrence to more safe paired lanes without weakening safety. Only optimize GL T511 independently if shared kernel does not transfer. If M1 fails after the bounded correction: **stop that mechanism**, choose a genuinely distinct DUCC-source-driven technique or GL T720 **analysis at 2.08×**; do not indefinitely return to previously rejected parity-stream, category-lane, degree-tile, checked-prefix or cache-only variants.
+- GL T1023 full q1 currently measures 250.7 ms versus 123.5 ms for DUCC (2.03×). A degree-major prepared dual-channel block was rejected at 305.0 ms; it matched the parent bit-for-bit but wrote recurrence state and four running sums to scratch on every degree pair. Do not repeat this mapping.
+- Next distinct q1 hypothesis: tile two or four SIMD ring vectors while keeping recurrence and accumulators register-resident, sharing coefficient broadcasts without per-degree scratch traffic. If that does not yield a clear gain, move to the GL T720 q8 analysis backlog at 2.08×. Keep ~1.6× T720 q8 synthesis deferred.
 
 **Invariants:** `S/A/S*/A*`, all supported grids/spins, full/quarter order, phi0, poles/equator, SIMD tails, subnormal/extreme/nonfinite, workspace poison/reset, error and adjoint behavior; original-spin fallback must always remain correct. stable Rust/Pulp SIMD, GPL attribution, no API or FFT rewrite, f32 paused. Fetch/reconcile before non-force pushes and commit tested kernel milestones. `PERFORMANCE_STATUS.md` remains short and current; immutable negative/report evidence may be stored separately only if important.
