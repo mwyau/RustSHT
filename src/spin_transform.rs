@@ -4568,7 +4568,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let sequential_channels = fused_analysis_enabled && scalar_lmax < 1024;
         let shared_recurrence_sequential_accumulation = sequential_channels
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
-            && current_execution_thread_count() == 8;
+            && matches!(current_execution_thread_count(), 1 | 8);
         let range_cache_enabled = sequential_channels
             && !cfg!(rustsht_disable_analysis_pair_range_cache)
             && !cfg!(rustsht_unchecked_analysis_pair_range);
