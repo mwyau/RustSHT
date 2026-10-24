@@ -1800,6 +1800,16 @@ struct StagedSynthesisPairTransition<'a, C> {
     second_sum_im: &'a mut [f64],
 }
 
+#[inline(never)]
+fn normalize_synthesis_pair_lanes_simd<S: Simd>(
+    simd: S,
+    previous: &mut [f64],
+    current: &mut [f64],
+    exponents: &mut [i64],
+) -> Option<bool> {
+    scalar::normalize_pair_lanes_simd(simd, previous, current, exponents)
+}
+
 impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransition<'_, C> {
     type Output = bool;
 
@@ -1840,9 +1850,10 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransiti
             second_sum_re[lane] = 0.0;
             second_sum_im[lane] = 0.0;
         }
-        let mut normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
-            Ok(normal_range) => normal_range,
-            Err(_) => return false,
+        let Some(mut normal_range) =
+            normalize_synthesis_pair_lanes_simd(simd, previous, current, exponents)
+        else {
+            return false;
         };
         if normal_range
             && lane_values_in_normal_range(previous)
@@ -1973,17 +1984,20 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransiti
             std::mem::swap(&mut current, &mut next);
             if normal_range {
                 if scalar::pair_lanes_need_scaling(simd, previous, current) {
-                    normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
-                    {
-                        Ok(normal_range) => normal_range,
-                        Err(_) => return false,
+                    let Some(ready) =
+                        normalize_synthesis_pair_lanes_simd(simd, previous, current, exponents)
+                    else {
+                        return false;
                     };
+                    normal_range = ready;
                 }
             } else {
-                normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
-                    Ok(normal_range) => normal_range,
-                    Err(_) => return false,
+                let Some(ready) =
+                    normalize_synthesis_pair_lanes_simd(simd, previous, current, exponents)
+                else {
+                    return false;
                 };
+                normal_range = ready;
             }
             if normal_range
                 && lane_values_in_normal_range(previous)

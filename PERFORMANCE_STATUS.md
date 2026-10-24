@@ -4,7 +4,7 @@
 
 | Selected spin-1 case | Rust / DUCC ms | Ratio | Evidence |
 |---|---:|---:|---|
-| GL T1023 synthesis q1 | **169.779 / 120.825** | **1.41×** | accepted polar inverse-sine hoist `78eca228`, exact-parent 174.473 ms |
+| GL T1023 synthesis q1 | **167.530 / 120.462** | **1.39×** | outlined checked SIMD normalization; exact-parent 170.094 ms |
 | GL T720 analysis q1 | 49.878 / 29.723 | 1.68× | accepted shared-recurrence dispatch `bddb420e`; a **different** later checked variant was rejected |
 | GL T720 analysis q8 | 6.968 / 4.251 | 1.64× | mixed Q/U checked accumulation `f1f4589b` |
 | CC T720 synthesis full q8 | 7.534 / 6.091 | 1.24× | earlier matched case |
@@ -16,4 +16,4 @@
 
 **Priority:** the ~49 ms GL T1023 q1 synthesis deficit, then GL T720 q1/q8 analysis, then every residual and UNMEASURED scalar/spin-1 cell. Optimize hot numerical kernels—not status documents. The two pre-existing reduced-order CC/F1 one-thread/eight-thread tolerance tests remain open correctness debt, not a new performance regression.
 
-**Latest source improvement:** `78eca228` caches reciprocal sine per polar latitude instead of calculating it every Legendre degree. Exact-parent 174.473 → 169.779 ms (2.7% faster); 3 interleaved paired ratios 0.973/0.966/0.982, outputs bit-identical, rel-L2 vs DUCC ~3.8e-13. Historical raw evidence stays in `reports/data/spin1-polar-inverse-sine-hoist-2026-10-24/results.json`. All table rows are selected, differently dated runs and must be reconfirmed before final parity certification.
+**Latest source improvement:** the checked synthesis transition now uses the existing AVX2-safe SIMD pair normalizer through an outlined helper. GL T1023 q1 exact-parent 170.094 → 167.530 ms (1.5% faster); 3 paired ratios 0.980/0.989/0.992, outputs bit-identical, rel-L2 vs DUCC ~3.8e-13. Parent already includes the accepted reciprocal-sine hoist `78eca228`. All table rows are selected, differently dated runs and must be reconfirmed before final parity certification.
