@@ -4532,8 +4532,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
         let fused_analysis_enabled = self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX;
-        let sequential_channels =
-            fused_analysis_enabled && !single_threaded_execution() && scalar_lmax < 1024;
+        let sequential_channels = fused_analysis_enabled && scalar_lmax < 1024;
         let range_cache_enabled = sequential_channels
             && !cfg!(rustsht_disable_analysis_pair_range_cache)
             && !cfg!(rustsht_unchecked_analysis_pair_range);
