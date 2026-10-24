@@ -20,4 +20,4 @@ The attempted serial prepared-component route for GL T1023 q1 was rejected and r
 
 Focused cache-path tests, formatting, strict parallel Clippy, and all 229 no-default-feature library tests passed. The parallel release suite passed 281 tests; two T720 reduced-order q1/q8 tolerance tests also fail on exact parent `08c1ba0e`. The GL T511 q8 selector remains intact.
 
-**Next:** use one focused CC T720 q8 phase profile to attribute order-output clearing/scattering overhead and prepared-route fallback frequency before selecting another kernel change.
+**Focused CC T720 q8 profile:** all 721 orders used the prepared route; 114 polar blocks used scalar fallback. Across workers, prepared passes summed to 42.7–47.8 ms, compared with 0.19–0.71 ms for row clearing, 2.36–5.00 ms for scattering, and 2.86–6.07 ms for fallback. These are test-instrumented worker sums, not wall latency; clear/scatter/fallback do not explain the remaining gap. A distinct organization of the prepared passes is the next useful mechanism to investigate.
