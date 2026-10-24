@@ -1,5 +1,7 @@
 # ACTIVE — f64 spin-1 DUCC parity: prepared scalar-ordered adapter
 
+> **OWNER OVERRIDE (2026-10-24):** The authoritative completion goal and uncovered-cell ledger are now in [f64 DUCC parity — all cases](f64-ducc-parity-all-cases-2026-10-24.md). Do not stop at 2×/1.5×/near-parity; spin-0 and spin-1 GL/CC/F1 synthesis/analysis, full/reduced and 1/2/4/8-thread representative cells must each reach native DUCC parity. Earlier stage priorities and "defer residuals" language below are historical, **not permission to leave gaps unresolved**.
+
 **Owner technical steering:** 2026-10-24. **Branch:** `opt/sht-performance-parity`. **Target:** f64 spin-1 STANDARD synthesis and analysis on GL/CC/F1, representative T511/T720/T1023 full/reduced q1/q8 **at or faster than pinned native DUCC 0.42.0**, with unchanged numerical behavior. The latest q1 synthesis gain is accepted; the largest open gap after the closed q1 analysis work is GL T720 full q8 analysis at 1.71× DUCC. Use one bounded, source-grounded experiment at a time. f32 and broad benchmark sweeps remain paused. [Full immediately preceding plan, archived verbatim](../reports/archive/context-2026-10-23/prepared-scalar-adapter/plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md).
 
 ## Verified baseline and completion

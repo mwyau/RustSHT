@@ -1,5 +1,7 @@
 # RustSHT — performance snapshot
 
+**PARITY COMPLETION RULE (owner 2026-10-24):** The table below is a historical selected-sample snapshot, **not** evidence that all f64 spin-0/1 cells are at DUCC parity. Any ratio above 1.00 is a remaining gap; unmeasured supported GL/CC/F1 synthesis/analysis, full/reduced, q1/q2/q4/q8 cases also remain open. [Coverage ledger and execution plan](plans/f64-ducc-parity-all-cases-2026-10-24.md). The previous ≥2× threshold is retired. Final acceptance requires a quiet-host matched matrix with numerical gates intact.
+
 **Branch:** `opt/sht-performance-parity`. **Reference:** pinned DUCC 0.42.0 (`42ce8ab5`). **Plan:** [f64 spin-1 parity](plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md).
 
 | f64 spin-1 synthesis | Rust / DUCC median (ms) | Ratio | Exact parent → candidate (ms) |
