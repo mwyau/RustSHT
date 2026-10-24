@@ -51,6 +51,21 @@ struct ScalarSynthesisBatch<'a> {
     vector_lanes: usize,
 }
 
+struct ScalarF64LaneCount;
+
+impl WithSimd for ScalarF64LaneCount {
+    type Output = usize;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, _simd: S) -> Self::Output {
+        S::F64_LANES
+    }
+}
+
+pub(crate) fn f64_lane_count(arch: Arch) -> usize {
+    arch.dispatch(ScalarF64LaneCount)
+}
+
 /// Shared destination for parallel jobs that each own a contiguous Fourier-order range.
 ///
 /// The output is ring-major, while each parallel job writes disjoint
@@ -692,6 +707,96 @@ fn prepare_order(
         .iter()
         .chain(&scratch.coefficient_odd[..pair_count])
         .any(|coefficient| is_subnormal(coefficient.re) || is_subnormal(coefficient.im))
+}
+
+/// Executes one already prepared scalar component over a packed latitude batch.
+///
+/// The caller owns coefficient preparation and reflected-ring packing so spin
+/// synthesis can reuse both for its Q and U passes. The scaled-prefix and
+/// ordinary SIMD suffix remain the same implementation as scalar ordered
+/// synthesis.
+pub(crate) fn synthesize_prepared_component_batch_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sectoral_norm: f64,
+    sin_theta: &[f64],
+    vector_lanes: usize,
+    scratch: &mut ScalarOrderedScratch<'_, f64>,
+) -> bool {
+    let Some(pair_count) = lmax
+        .checked_sub(m)
+        .and_then(|n| n.checked_add(2))
+        .map(|n| n / 2)
+    else {
+        return false;
+    };
+    if sin_theta.is_empty()
+        || vector_lanes < sin_theta.len()
+        || vector_lanes > SCALAR_ORDER_BATCH_SIZE
+        || scratch.packed_sin.len() < vector_lanes
+        || scratch.packed_csq.len() < vector_lanes
+        || scratch.previous.len() < vector_lanes
+        || scratch.current.len() < vector_lanes
+        || scratch.scale.len() < vector_lanes
+        || scratch.corfac.len() < vector_lanes
+        || scratch.sum_even_re.len() < vector_lanes
+        || scratch.sum_even_im.len() < vector_lanes
+        || scratch.sum_odd_re.len() < vector_lanes
+        || scratch.sum_odd_im.len() < vector_lanes
+        || scratch.coefficient_a.len() < pair_count
+        || scratch.coefficient_b.len() < pair_count
+        || scratch.coefficient_even.len() < pair_count
+        || scratch.coefficient_odd.len() < pair_count
+    {
+        return false;
+    }
+    arch.dispatch(PreparedComponentBatch {
+        m,
+        lmax,
+        sectoral_norm,
+        sin_theta,
+        vector_lanes,
+        scratch,
+    })
+}
+
+struct PreparedComponentBatch<'a, 's> {
+    m: usize,
+    lmax: usize,
+    sectoral_norm: f64,
+    sin_theta: &'a [f64],
+    vector_lanes: usize,
+    scratch: &'a mut ScalarOrderedScratch<'s, f64>,
+}
+
+impl WithSimd for PreparedComponentBatch<'_, '_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let Self {
+            m,
+            lmax,
+            sectoral_norm,
+            sin_theta,
+            vector_lanes,
+            scratch,
+        } = self;
+        synthesize_batch(
+            simd,
+            scratch,
+            m,
+            lmax,
+            sectoral_norm,
+            power_lower_limit(m),
+            ScalarSynthesisBatch {
+                sin_theta,
+                active_lanes: sin_theta.len(),
+                vector_lanes,
+            },
+        )
+    }
 }
 
 fn synthesize_batch<S: Simd>(

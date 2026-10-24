@@ -7,6 +7,7 @@
 - **Analysis closeout DONE** at `8074844c` (production source from `8f99a274`; focused q8 release/adjoint/poison/Clippy/no-default checks pass). Matched T720 q8 analysis CC `1.04×`, F1 `1.15×`, GL `2.08×`. GL analysis is a later >=2× target, not the immediate task.
 - **GL T511 q8 dispatch accepted** at `4cbc1838`: the old special hemisphere path `14.140 ms`; existing order-major path `7.686 ms`; DUCC `2.606 ms` — **2.95×** remaining, down from 5.43×. q4 still uses hemisphere path; keep tested q8 selector. Larger-T spin-1 synthesis CC full `2.48×`, CC quarter `2.62×`, F1 full `2.41×`, GL full `2.40×` are **earlier focused measurements**, not a single current-source full matrix.
 - Scalar CC/F1 f64 synthesis is near but not universally <=1× DUCC; preserve existing improvements. No new scalar benchmark completeness prerequisite.
+- **M1 accepted:** the prepared-component adapter improves full/reduced CC, F1 and GL T720 q8 by about 34–40% over the exact parent and brings CC T1023 q8 to 1.13× DUCC. CC T720 full q8 is 1.57× DUCC. Focused correctness and strict lint checks pass; see the short performance snapshot for medians and numerical errors.
 
 ## DUCC code being adapted — inspect source first
 
@@ -23,7 +24,7 @@ Pin `mreineck/ducc@42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`:
 - **Existing spin-1 hotspot** `src/spin_transform.rs:2444–2917` `synthesize_spin1_scalar_block_to_order`: physical 64-ring blocks; `src/legendre/scalar_paired.rs:5390–5535` `FusedPreparedSynthesisPairBlock` fuses both converted channels and does `odd*cosθ+even` per pair per lane. Its eligibility rejects whole blocks; lines `2724–2917` hold checked scale/excluded-ring/original-spin fallback.
 - `src/spin_transform/hemisphere.rs` and `scalar_paired.rs::FusedHemispherePairBlock` are the older special GL T319–511 design; q8 T511 dispatch now bypasses it. Don't blindly generalize special-case routing.
 
-## M1: one bounded source-level adapter, then test
+## M1: one bounded source-level adapter — completed
 
 1. **Keep the existing order-major queue and cached E/B-to-scalar conversion**. Expose a private prepared-component function from `scalar_ordered.rs` accepting **prepared scalar coefficients** (or one-time per-order preparation), active mirrored pair geometry/index map and caller-owned scratch; *not* a new transform scheduler. Preserve the already working scalar API and its tests.
 2. Pack **one 256-pair active north/south index set per m**, honoring both hemisphere eligibility, CC poles, F1 half-offset, equator singleton, ring m limits, phase and Nyquist. Precompute cosine-squared using cancellation-resistant formula near poles. Reuse ring packing/geometry for both converted components.

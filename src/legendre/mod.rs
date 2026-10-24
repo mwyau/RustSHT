@@ -356,6 +356,17 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn synthesize_prepared_scalar_component_batch_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sectoral_norm: Self,
+        _sin_theta: &[Self],
+        _vector_lanes: usize,
+        _scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
+    ) -> bool {
+        false
+    }
     /// Writes one uniquely scheduled contiguous order range directly into a
     /// shared ring-major spectrum destination.
     ///
@@ -1005,6 +1016,26 @@ impl ShtScalar for f64 {
             cos_theta,
             ring_order_limits,
             spectra,
+            scratch,
+        )
+    }
+
+    fn synthesize_prepared_scalar_component_batch_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sectoral_norm: Self,
+        sin_theta: &[Self],
+        vector_lanes: usize,
+        scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
+    ) -> bool {
+        scalar_ordered::synthesize_prepared_component_batch_dispatched(
+            arch,
+            m,
+            lmax,
+            sectoral_norm,
+            sin_theta,
+            vector_lanes,
             scratch,
         )
     }

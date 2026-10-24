@@ -2706,6 +2706,69 @@ fn spin1_order_major_synthesis_reuses_workspace_across_changed_coefficients() {
     }
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn cc_t720_full_order_prepared_component_route_matches_single_thread() {
+    let plan = make_cc_plan(1, 720, 720, 722, 1458);
+    let single_thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut single_workspace = single_thread_pool.install(|| plan.workspace()).unwrap();
+    let mut parallel_workspace = eight_thread_pool.install(|| plan.workspace()).unwrap();
+    let (e_alm, b_alm) = coefficients(&plan);
+    let mut single_first = vec![0.0; plan.sample_count];
+    let mut single_second = vec![0.0; plan.sample_count];
+    let mut parallel_first = vec![0.0; plan.sample_count];
+    let mut parallel_second = vec![0.0; plan.sample_count];
+
+    single_thread_pool
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e_alm,
+                &b_alm,
+                &mut single_first,
+                &mut single_second,
+                &mut single_workspace,
+            )
+        })
+        .unwrap();
+    SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES.store(0, Ordering::Relaxed);
+    eight_thread_pool
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e_alm,
+                &b_alm,
+                &mut parallel_first,
+                &mut parallel_second,
+                &mut parallel_workspace,
+            )
+        })
+        .unwrap();
+    assert!(
+        SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES.load(Ordering::Relaxed) > 0,
+        "prepared component route did not run"
+    );
+
+    let scale = single_first
+        .iter()
+        .chain(&single_second)
+        .map(|value| value.abs())
+        .fold(1.0_f64, f64::max);
+    for (&single, &parallel) in single_first
+        .iter()
+        .zip(&parallel_first)
+        .chain(single_second.iter().zip(&parallel_second))
+    {
+        assert!(parallel.is_finite());
+        assert!((single / scale - parallel / scale).abs() <= 2.0e-11);
+    }
+}
+
 #[test]
 fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
     let lmax = 511;
