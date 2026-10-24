@@ -7,7 +7,7 @@
 1. **Spin-1 analysis closeout is complete.** The current open GL T720 full q8 analysis case is **1.71×** DUCC (7.317 ms versus 4.267 ms on exact parent `53ef4f2b`); the earlier 2.08× figure is stale. Treat this as the next analysis investigation after the already-closed q1 analysis work.
 2. Preserve all accepted synthesis changes. The checked AVX2 scaled-prefix accumulator improved GL T1023 full q1 to **176.605 ms** from **193.242 ms** on its exact parent; it remains **1.41×** DUCC. Current synthesis ratios are in [PERFORMANCE_STATUS.md](PERFORMANCE_STATUS.md); T720 F1/GL q8 are at or below DUCC, while CC T720 full/reduced q8 are 1.24×/1.45×.
 3. Continue with one bounded, source-grounded mechanism at a time. Do not repeat the rejected q1 dispatch no-op, checked reflected-prefix mappings, or 256-pair spin-1 analysis block. Keep f32 and broad benchmark sweeps paused.
-4. **Reviewer policy:** use a Sol reviewer only when the owner explicitly asks. Do not invoke other subagents.
+4. **Reviewer policy:** do not use reviewers or other subagents unless the user explicitly asks. If asked for a review, use only a Sol reviewer.
 
 ## Required correctness/implementation guardrails
 
