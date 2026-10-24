@@ -4420,6 +4420,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         arch: pulp::Arch,
         sequential_channels: bool,
         opposite_preweighted: bool,
+        shared_recurrence_sequential_accumulation: bool,
         range_check_is_proven_safe: bool,
         range_check_was_exercised: &mut bool,
         m: usize,
@@ -4465,6 +4466,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             arch,
             sequential_channels,
             opposite_preweighted,
+            shared_recurrence_sequential_accumulation,
             range_check_is_proven_safe,
             range_check_was_exercised,
             m,
@@ -4533,6 +4535,9 @@ impl<T: ShtScalar> ShtPlan<T> {
         let scalar_coefficient_count = scalar_lmax + 1;
         let fused_analysis_enabled = self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX;
         let sequential_channels = fused_analysis_enabled && scalar_lmax < 1024;
+        let shared_recurrence_sequential_accumulation = sequential_channels
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && current_execution_thread_count() == 8;
         let range_cache_enabled = sequential_channels
             && !cfg!(rustsht_disable_analysis_pair_range_cache)
             && !cfg!(rustsht_unchecked_analysis_pair_range);
@@ -4710,6 +4715,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     arch,
                     sequential_channels,
                     opposite_preweighted,
+                    shared_recurrence_sequential_accumulation,
                     range_check_is_proven_safe,
                     &mut range_check_was_exercised,
                     m,
@@ -5231,6 +5237,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     false,
                     false,
                     false,
+                    false,
                     &mut range_check_was_exercised,
                     m,
                     scalar_lmax,
@@ -5431,6 +5438,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let fused_block = if q_products_safe && u_products_safe {
                 T::fused_scalar_analysis_pair_channels_block(
                     arch,
+                    false,
                     false,
                     false,
                     false,

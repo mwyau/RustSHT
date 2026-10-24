@@ -3480,6 +3480,7 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
         true,
         false,
         false,
+        false,
         &mut range_check_was_exercised,
         m,
         scalar_lmax,

@@ -2648,6 +2648,7 @@ fn fused_scalar_analysis_pair_block_impl<
         opposite_real,
         opposite_imag,
         staged_coefficients: &mut staged_coefficients[..coefficient_count],
+        second_channel: None,
         previous: &mut previous[..sin_theta.len()],
         current: &mut current[..sin_theta.len()],
         next: &mut next[..sin_theta.len()],
@@ -3314,6 +3315,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
                     opposite_real,
                     opposite_imag,
                     staged_coefficients,
+                    second_channel: None,
                     previous,
                     current,
                     next,
@@ -3657,6 +3659,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
                     opposite_real,
                     opposite_imag,
                     staged_coefficients,
+                    second_channel: None,
                     previous,
                     current,
                     next,
@@ -3744,6 +3747,9 @@ struct FusedScalarAnalysisPair<
     // Test-only source attribution compiles the same loop without coefficient
     // products; the production specialization always keeps accumulation.
     const ACCUMULATE: bool = true,
+    // Optional second channel is reduced from basis states saved by the first
+    // channel's fused recurrence pass.
+    const SEQUENTIAL_SECOND_CHANNEL: bool = false,
 > {
     m: usize,
     lmax: usize,
@@ -3758,9 +3764,18 @@ struct FusedScalarAnalysisPair<
     opposite_real: &'a [f64],
     opposite_imag: &'a [f64],
     staged_coefficients: &'a mut [Complex64],
+    second_channel: Option<FusedScalarAnalysisPairSecondChannel<'a>>,
     previous: &'a mut [f64],
     current: &'a mut [f64],
     next: &'a mut [f64],
+}
+
+struct FusedScalarAnalysisPairSecondChannel<'a> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    staged_coefficients: &'a mut [Complex64],
 }
 
 struct FusedAnalysisPairStep<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
@@ -3793,6 +3808,7 @@ struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     opposite_imag: &'a [f64],
     basis_previous: &'a mut [f64],
     basis_current: &'a mut [f64],
+    basis_snapshot: &'a mut [f64],
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
     first_coefficient_a: f64,
@@ -3973,6 +3989,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     const CHECK_GROUP_RANGE: bool,
     const TRACK_STATE_RANGE: bool,
     const ACCUMULATE: bool,
+    const SNAPSHOT_CURRENT: bool,
 >(
     simd: S,
     step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
@@ -3984,6 +4001,7 @@ fn fused_analysis_two_pair_steps_with_simd<
         opposite_imag,
         basis_previous,
         basis_current,
+        basis_snapshot,
         cos_theta,
         cos_theta_squared,
         first_coefficient_a,
@@ -4008,6 +4026,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
     let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(basis_previous);
     let (current_vectors, current_tail) = S::as_mut_simd_f64s(basis_current);
+    let (snapshot_vectors, snapshot_tail) = S::as_mut_simd_f64s(basis_snapshot);
     let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
     let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
     if same_real_vectors.len() != current_vectors.len()
@@ -4015,6 +4034,8 @@ fn fused_analysis_two_pair_steps_with_simd<
         || opposite_real_vectors.len() != current_vectors.len()
         || opposite_imag_vectors.len() != current_vectors.len()
         || previous_vectors.len() != current_vectors.len()
+        || (SNAPSHOT_CURRENT && snapshot_vectors.len() != current_vectors.len())
+        || (!SNAPSHOT_CURRENT && !snapshot_vectors.is_empty())
         || cosine_vectors.len() != current_vectors.len()
         || cosine_squared_vectors.len() != current_vectors.len()
         || same_real_tail.len() != current_tail.len()
@@ -4022,6 +4043,8 @@ fn fused_analysis_two_pair_steps_with_simd<
         || opposite_real_tail.len() != current_tail.len()
         || opposite_imag_tail.len() != current_tail.len()
         || previous_tail.len() != current_tail.len()
+        || (SNAPSHOT_CURRENT && snapshot_tail.len() != current_tail.len())
+        || (!SNAPSHOT_CURRENT && !snapshot_tail.is_empty())
         || cosine_tail.len() != current_tail.len()
         || cosine_squared_tail.len() != current_tail.len()
     {
@@ -4142,6 +4165,7 @@ fn fused_analysis_two_pair_steps_with_simd<
         }};
     }
 
+    let mut snapshot_vectors = snapshot_vectors.iter_mut();
     for (
         ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
         cosine_squared,
@@ -4155,6 +4179,10 @@ fn fused_analysis_two_pair_steps_with_simd<
         .zip(cosine_vectors.iter())
         .zip(cosine_squared_vectors.iter())
     {
+        if SNAPSHOT_CURRENT {
+            let snapshot = snapshot_vectors.next()?;
+            *snapshot = *current;
+        }
         update_analysis_pair_vector!(
             previous,
             current,
@@ -4187,6 +4215,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut second_opposite_re_sum = second_opposite.re;
     let mut second_opposite_im_sum = second_opposite.im;
 
+    let mut snapshot_tail = snapshot_tail.iter_mut();
     for (
         ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
         cosine_squared,
@@ -4202,6 +4231,10 @@ fn fused_analysis_two_pair_steps_with_simd<
     {
         let previous_value = *previous;
         let current_value = *current;
+        if SNAPSHOT_CURRENT {
+            let snapshot = snapshot_tail.next()?;
+            *snapshot = current_value;
+        }
         if ACCUMULATE {
             first_same_re_sum = (*same_real).mul_add(current_value, first_same_re_sum);
             first_same_im_sum = (*same_imag).mul_add(current_value, first_same_im_sum);
@@ -4399,6 +4432,7 @@ impl<
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
     const ACCUMULATE: bool,
+    const SEQUENTIAL_SECOND_CHANNEL: bool,
 > WithSimd
     for FusedScalarAnalysisPair<
         '_,
@@ -4406,6 +4440,7 @@ impl<
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
         ACCUMULATE,
+        SEQUENTIAL_SECOND_CHANNEL,
     >
 {
     type Output = bool;
@@ -4426,6 +4461,7 @@ impl<
             opposite_real,
             opposite_imag,
             staged_coefficients,
+            second_channel,
             previous,
             current,
             next,
@@ -4433,6 +4469,7 @@ impl<
         let mut previous = previous;
         let mut current = current;
         let mut next = next;
+        let mut second_channel = second_channel;
         let lane_count = current.len();
         if previous.len() != lane_count
             || next.len() != lane_count
@@ -4442,6 +4479,18 @@ impl<
             || same_imag.len() != lane_count
             || opposite_real.len() != lane_count
             || opposite_imag.len() != lane_count
+        {
+            return false;
+        }
+        if SEQUENTIAL_SECOND_CHANNEL != second_channel.is_some() {
+            return false;
+        }
+        if let Some(second) = second_channel.as_ref()
+            && (second.same_real.len() != lane_count
+                || second.same_imag.len() != lane_count
+                || second.opposite_real.len() != lane_count
+                || second.opposite_imag.len() != lane_count
+                || second.staged_coefficients.len() < lmax - m + 1)
         {
             return false;
         }
@@ -4462,6 +4511,7 @@ impl<
                 CHECK_PAIR_GROUP_RANGE,
                 FUSE_PAIR_GROUP_RANGE_CHECK,
                 ACCUMULATE,
+                SEQUENTIAL_SECOND_CHANNEL,
             >(
                 simd,
                 FusedAnalysisTwoPairSteps {
@@ -4471,6 +4521,11 @@ impl<
                     opposite_imag,
                     basis_previous: previous,
                     basis_current: current,
+                    basis_snapshot: if SEQUENTIAL_SECOND_CHANNEL {
+                        &mut next[..]
+                    } else {
+                        &mut []
+                    },
                     cos_theta,
                     cos_theta_squared,
                     first_coefficient_a: coefficient_a[pair_index],
@@ -4515,12 +4570,57 @@ impl<
                 group.second_same,
                 group.second_opposite,
             );
+            if let Some(second) = second_channel.as_mut() {
+                let [(first_same, first_opposite), (second_same, second_opposite)] =
+                    AnalysisTwoBasisAccumulation {
+                        same_real: second.same_real,
+                        same_imag: second.same_imag,
+                        opposite_real: second.opposite_real,
+                        opposite_imag: second.opposite_imag,
+                        first_basis: next,
+                        second_basis: previous,
+                    }
+                    .with_simd(simd);
+                store_analysis_pair(
+                    second.staged_coefficients,
+                    first_offset,
+                    first_l < lmax,
+                    first_same,
+                    first_opposite,
+                );
+                store_analysis_pair(
+                    second.staged_coefficients,
+                    second_offset,
+                    second_l < lmax,
+                    second_same,
+                    second_opposite,
+                );
+            }
             pair_index += 2;
         }
 
         while pair_index < recurrence_stop {
             let l = m + 2 * pair_index;
             let offset = l - m;
+            if let Some(second) = second_channel.as_mut() {
+                let (same_sum, opposite_sum) =
+                    AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
+                        same_real: second.same_real,
+                        same_imag: second.same_imag,
+                        opposite_real: second.opposite_real,
+                        opposite_imag: second.opposite_imag,
+                        basis: current,
+                        cos_theta,
+                    }
+                    .with_simd(simd);
+                store_analysis_pair(
+                    second.staged_coefficients,
+                    offset,
+                    l < lmax,
+                    same_sum,
+                    opposite_sum,
+                );
+            }
             let (same_sum, opposite_sum, pair_vectors_in_range, pair_tails_in_range) =
                 fused_analysis_pair_step_with_simd::<S, OPPOSITE_COSINE_WEIGHTED>(
                     simd,
@@ -4579,6 +4679,24 @@ impl<
             let zero = Complex64::new(0.0, 0.0);
             (zero, zero)
         };
+        if let Some(second) = second_channel.as_mut() {
+            let (same_sum, opposite_sum) = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
+                same_real: second.same_real,
+                same_imag: second.same_imag,
+                opposite_real: second.opposite_real,
+                opposite_imag: second.opposite_imag,
+                basis: current,
+                cos_theta,
+            }
+            .with_simd(simd);
+            store_analysis_pair(
+                second.staged_coefficients,
+                offset,
+                l < lmax,
+                same_sum,
+                opposite_sum,
+            );
+        }
         store_analysis_pair(
             staged_coefficients,
             offset,
@@ -4696,11 +4814,77 @@ fn dispatch_fused_scalar_analysis_pair_weighted<
             opposite_real,
             opposite_imag,
             staged_coefficients,
+            second_channel: None,
             previous,
             current,
             next,
         },
     )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The shared recurrence keeps Q inputs and staged U reductions in separate channel rows."
+)]
+#[allow(unexpected_cfgs)]
+#[inline(always)]
+fn dispatch_fused_scalar_analysis_pair_two_channels<
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_PAIR_GROUP_RANGE: bool,
+>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    range_check_was_exercised: &mut bool,
+    cos_theta: &[f64],
+    cos_theta_squared: &[f64],
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    q_same_real: &[f64],
+    q_same_imag: &[f64],
+    q_opposite_real: &[f64],
+    q_opposite_imag: &[f64],
+    u_same_real: &[f64],
+    u_same_imag: &[f64],
+    u_opposite_real: &[f64],
+    u_opposite_imag: &[f64],
+    staged_q: &mut [Complex64],
+    staged_u: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+) -> bool {
+    arch.dispatch(FusedScalarAnalysisPair::<
+        OPPOSITE_COSINE_WEIGHTED,
+        CHECK_PAIR_GROUP_RANGE,
+        { cfg!(rustsht_fused_analysis_pair_range_check) },
+        true,
+        true,
+    > {
+        m,
+        lmax,
+        range_check_was_exercised,
+        pair_start: 0,
+        cos_theta,
+        cos_theta_squared,
+        coefficient_a,
+        coefficient_b,
+        same_real: q_same_real,
+        same_imag: q_same_imag,
+        opposite_real: q_opposite_real,
+        opposite_imag: q_opposite_imag,
+        staged_coefficients: staged_q,
+        second_channel: Some(FusedScalarAnalysisPairSecondChannel {
+            same_real: u_same_real,
+            same_imag: u_same_imag,
+            opposite_real: u_opposite_real,
+            opposite_imag: u_opposite_imag,
+            staged_coefficients: staged_u,
+        }),
+        previous,
+        current,
+        next,
+    })
 }
 
 /// Computes a normal-range scalar analysis block for two spin-conversion channels.
@@ -4740,6 +4924,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         sequential_channels,
         opposite_preweighted,
         false,
+        false,
         &mut range_check_was_exercised,
         m,
         lmax,
@@ -4763,12 +4948,146 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
 
 #[expect(
     clippy::too_many_arguments,
+    reason = "The checked shared-recurrence trial stages both scalar channels independently."
+)]
+#[inline(never)]
+fn try_fused_scalar_analysis_pair_shared_recurrence(
+    arch: Arch,
+    range_check_is_proven_safe: bool,
+    range_check_was_exercised: &mut bool,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: [&[f64]; 2],
+    same_imag: [&[f64]; 2],
+    opposite_real: [&[f64]; 2],
+    opposite_imag: [&[f64]; 2],
+    staged_first: &mut [Complex64],
+    staged_second: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<Option<bool>, ShtError> {
+    let mut q_opposite_real = [0.0; LATITUDE_BLOCK_SIZE];
+    let mut q_opposite_imag = [0.0; LATITUDE_BLOCK_SIZE];
+    let mut u_opposite_real = [0.0; LATITUDE_BLOCK_SIZE];
+    let mut u_opposite_imag = [0.0; LATITUDE_BLOCK_SIZE];
+    q_opposite_real[..sin_theta.len()].copy_from_slice(opposite_real[0]);
+    q_opposite_imag[..sin_theta.len()].copy_from_slice(opposite_imag[0]);
+    u_opposite_real[..sin_theta.len()].copy_from_slice(opposite_real[1]);
+    u_opposite_imag[..sin_theta.len()].copy_from_slice(opposite_imag[1]);
+    let q_opposite_prepared = prepare_analysis_opposite(
+        &mut q_opposite_real[..sin_theta.len()],
+        &mut q_opposite_imag[..sin_theta.len()],
+        cos_theta,
+    );
+    let u_opposite_prepared = prepare_analysis_opposite(
+        &mut u_opposite_real[..sin_theta.len()],
+        &mut u_opposite_imag[..sin_theta.len()],
+        cos_theta,
+    );
+    if !q_opposite_prepared || !u_opposite_prepared {
+        return Ok(None);
+    }
+    if !initialize_analysis_sectoral_lanes(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        sectoral_norm,
+        &mut previous[..sin_theta.len()],
+        &mut current[..sin_theta.len()],
+        &mut exponents[..sin_theta.len()],
+    )? {
+        return Ok(Some(false));
+    }
+
+    let mut cos_theta_squared = [0.0; LATITUDE_BLOCK_SIZE];
+    for (squared, &cosine) in cos_theta_squared.iter_mut().zip(cos_theta) {
+        *squared = cosine * cosine;
+    }
+    let mut shared_range_check_was_exercised = false;
+    let recurrence_succeeded = if range_check_is_proven_safe {
+        dispatch_fused_scalar_analysis_pair_two_channels::<true, false>(
+            arch,
+            m,
+            lmax,
+            &mut shared_range_check_was_exercised,
+            cos_theta,
+            &cos_theta_squared[..sin_theta.len()],
+            coefficient_a,
+            coefficient_b,
+            same_real[0],
+            same_imag[0],
+            &q_opposite_real[..sin_theta.len()],
+            &q_opposite_imag[..sin_theta.len()],
+            same_real[1],
+            same_imag[1],
+            &u_opposite_real[..sin_theta.len()],
+            &u_opposite_imag[..sin_theta.len()],
+            staged_first,
+            staged_second,
+            &mut previous[..sin_theta.len()],
+            &mut current[..sin_theta.len()],
+            &mut next[..sin_theta.len()],
+        )
+    } else {
+        dispatch_fused_scalar_analysis_pair_two_channels::<
+            true,
+            { !cfg!(rustsht_unchecked_analysis_pair_range) },
+        >(
+            arch,
+            m,
+            lmax,
+            &mut shared_range_check_was_exercised,
+            cos_theta,
+            &cos_theta_squared[..sin_theta.len()],
+            coefficient_a,
+            coefficient_b,
+            same_real[0],
+            same_imag[0],
+            &q_opposite_real[..sin_theta.len()],
+            &q_opposite_imag[..sin_theta.len()],
+            same_real[1],
+            same_imag[1],
+            &u_opposite_real[..sin_theta.len()],
+            &u_opposite_imag[..sin_theta.len()],
+            staged_first,
+            staged_second,
+            &mut previous[..sin_theta.len()],
+            &mut current[..sin_theta.len()],
+            &mut next[..sin_theta.len()],
+        )
+    };
+    *range_check_was_exercised |= shared_range_check_was_exercised;
+
+    let pair_count = (lmax - m + 2) / 2;
+    let single_pair_tail_writes_next = !pair_count.saturating_sub(1).is_multiple_of(2);
+    let state_within_upper_bound = previous[..sin_theta.len()]
+        .iter()
+        .chain(&current[..sin_theta.len()])
+        .all(|value| value.is_finite() && value.abs() <= scalar::BIG)
+        && (!single_pair_tail_writes_next
+            || next[..sin_theta.len()]
+                .iter()
+                .all(|value| value.is_finite() && value.abs() <= scalar::BIG));
+    Ok(Some(recurrence_succeeded && state_within_upper_bound))
+}
+
+#[expect(
+    clippy::too_many_arguments,
     reason = "The two-channel analysis block receives lane spectra and worker-owned recurrence scratch explicitly."
 )]
 pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
     arch: Arch,
     sequential_channels: bool,
     opposite_preweighted: bool,
+    shared_recurrence_sequential_accumulation: bool,
     range_check_is_proven_safe: bool,
     range_check_was_exercised: &mut bool,
     m: usize,
@@ -4792,6 +5111,9 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
     *range_check_was_exercised = false;
     debug_assert!(m <= lmax);
     debug_assert!(!opposite_preweighted || sequential_channels);
+    debug_assert!(
+        !shared_recurrence_sequential_accumulation || (sequential_channels && opposite_preweighted)
+    );
     let coefficient_count = lmax - m + 1;
     debug_assert!(sin_theta.len() <= LATITUDE_BLOCK_SIZE);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
@@ -4810,6 +5132,33 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
 
     if sin_theta.is_empty() {
         return Ok(false);
+    }
+
+    if shared_recurrence_sequential_accumulation
+        && let Some(fused) = try_fused_scalar_analysis_pair_shared_recurrence(
+            arch,
+            range_check_is_proven_safe,
+            range_check_was_exercised,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            &mut staged_first[..coefficient_count],
+            &mut staged_second[..coefficient_count],
+            previous,
+            current,
+            next,
+            exponents,
+        )?
+    {
+        return Ok(fused);
     }
 
     if !sequential_channels {
@@ -5082,6 +5431,97 @@ struct AnalysisPairAccumulation<'a, const OPPOSITE_COSINE_WEIGHTED: bool = false
     opposite_imag: &'a [f64],
     basis: &'a [f64],
     cos_theta: &'a [f64],
+}
+
+struct AnalysisTwoBasisAccumulation<'a> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    first_basis: &'a [f64],
+    second_basis: &'a [f64],
+}
+
+impl WithSimd for AnalysisTwoBasisAccumulation<'_> {
+    type Output = [(Complex64, Complex64); 2];
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(self.same_real);
+        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(self.same_imag);
+        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(self.opposite_real);
+        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(self.opposite_imag);
+        let (first_basis_vectors, first_basis_tail) = S::as_simd_f64s(self.first_basis);
+        let (second_basis_vectors, second_basis_tail) = S::as_simd_f64s(self.second_basis);
+        debug_assert_eq!(same_real_vectors.len(), same_imag_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), opposite_real_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), opposite_imag_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), first_basis_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), second_basis_vectors.len());
+
+        let zero = simd.splat_f64s(0.0);
+        let mut first_sums = [zero; 4];
+        let mut second_sums = [zero; 4];
+        for (
+            ((((same_real, same_imag), opposite_real), opposite_imag), first_basis),
+            second_basis,
+        ) in same_real_vectors
+            .iter()
+            .zip(same_imag_vectors)
+            .zip(opposite_real_vectors)
+            .zip(opposite_imag_vectors)
+            .zip(first_basis_vectors)
+            .zip(second_basis_vectors)
+        {
+            first_sums[0] = simd.mul_add_f64s(*same_real, *first_basis, first_sums[0]);
+            first_sums[1] = simd.mul_add_f64s(*same_imag, *first_basis, first_sums[1]);
+            first_sums[2] = simd.mul_add_f64s(*opposite_real, *first_basis, first_sums[2]);
+            first_sums[3] = simd.mul_add_f64s(*opposite_imag, *first_basis, first_sums[3]);
+            second_sums[0] = simd.mul_add_f64s(*same_real, *second_basis, second_sums[0]);
+            second_sums[1] = simd.mul_add_f64s(*same_imag, *second_basis, second_sums[1]);
+            second_sums[2] = simd.mul_add_f64s(*opposite_real, *second_basis, second_sums[2]);
+            second_sums[3] = simd.mul_add_f64s(*opposite_imag, *second_basis, second_sums[3]);
+        }
+
+        let mut first = [
+            simd.reduce_sum_f64s(first_sums[0]),
+            simd.reduce_sum_f64s(first_sums[1]),
+            simd.reduce_sum_f64s(first_sums[2]),
+            simd.reduce_sum_f64s(first_sums[3]),
+        ];
+        let mut second = [
+            simd.reduce_sum_f64s(second_sums[0]),
+            simd.reduce_sum_f64s(second_sums[1]),
+            simd.reduce_sum_f64s(second_sums[2]),
+            simd.reduce_sum_f64s(second_sums[3]),
+        ];
+        debug_assert_eq!(same_real_tail.len(), same_imag_tail.len());
+        debug_assert_eq!(same_real_tail.len(), opposite_real_tail.len());
+        debug_assert_eq!(same_real_tail.len(), opposite_imag_tail.len());
+        debug_assert_eq!(same_real_tail.len(), first_basis_tail.len());
+        debug_assert_eq!(same_real_tail.len(), second_basis_tail.len());
+        for lane in 0..same_real_tail.len() {
+            first[0] = same_real_tail[lane].mul_add(first_basis_tail[lane], first[0]);
+            first[1] = same_imag_tail[lane].mul_add(first_basis_tail[lane], first[1]);
+            first[2] = opposite_real_tail[lane].mul_add(first_basis_tail[lane], first[2]);
+            first[3] = opposite_imag_tail[lane].mul_add(first_basis_tail[lane], first[3]);
+            second[0] = same_real_tail[lane].mul_add(second_basis_tail[lane], second[0]);
+            second[1] = same_imag_tail[lane].mul_add(second_basis_tail[lane], second[1]);
+            second[2] = opposite_real_tail[lane].mul_add(second_basis_tail[lane], second[2]);
+            second[3] = opposite_imag_tail[lane].mul_add(second_basis_tail[lane], second[3]);
+        }
+
+        [
+            (
+                Complex64::new(first[0], first[1]),
+                Complex64::new(first[2], first[3]),
+            ),
+            (
+                Complex64::new(second[0], second[1]),
+                Complex64::new(second[2], second[3]),
+            ),
+        ]
+    }
 }
 
 struct AnalysisPairChannelsAccumulation<'a> {
@@ -7523,6 +7963,7 @@ mod tests {
             true,
             false,
             false,
+            false,
             &mut range_check_was_exercised,
             m,
             lmax,
@@ -7554,6 +7995,7 @@ mod tests {
         let unchecked = fused_scalar_analysis_pair_channels_block_with_range_proof(
             arch,
             true,
+            false,
             false,
             true,
             &mut range_check_was_exercised,
