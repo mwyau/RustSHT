@@ -4,7 +4,7 @@
 
 | f64 spin-1 synthesis | RustSHT / DUCC | Rust / DUCC median (ms) | Parent → candidate (ms) |
 |---|---:|---:|---:|
-| CC T720 full q8 | 1.57× | 10.834 / 6.890 | 17.493 → 10.834 |
+| CC T720 full q8 | 1.24× | 7.534 / 6.091 | 7.845 → 7.534 |
 | CC T720 reduced (m180) q8 | 1.82× | 5.322 / 2.925 | 8.675 → 5.322 |
 | F1 T720 full q8 | 1.62× | 10.142 / 6.260 | 16.074 → 10.142 |
 | GL T720 full q8 | 1.63× | 11.131 / 6.830 | 16.888 → 11.131 |
@@ -29,4 +29,4 @@ The attempted serial prepared-component route for GL T1023 q1 was rejected and r
 
 Formatting, strict parallel Clippy, cached-versus-checked recurrence and GL/CC/F1 poisoned-workspace tests passed. The parallel release suite had 281 passes, 36 ignored and two existing reduced-T720 q1-vs-q8 tolerance failures: F1 `spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace` and CC `spin1_cc_grouped_synthesis_reuses_checked_coefficients`. Both fail at the unchanged `2e-11` tolerance on exact parent `d73c9217`. All no-default release tests passed (229 library, 4 extreme-value, 11 f32 and 1 workspace tests; 18 ignored). The GL T511 q8 selector remains intact.
 
-**Focused CC T720 q8 profile:** all 721 orders used the prepared route; 114 polar blocks used scalar fallback. Across workers, prepared passes summed to 42.7–47.8 ms, compared with 0.19–0.71 ms for row clearing, 2.36–5.00 ms for scattering, and 2.86–6.07 ms for fallback. These are test-instrumented worker sums, not wall latency; clear/scatter/fallback do not explain the remaining gap. A distinct organization of the prepared passes is the next useful mechanism to investigate.
+**CC T720 q8 suffix follow-up:** the native AVX2 two-vector suffix repeatedly indexed four independent coefficient streams. Pre-bounding those streams and iterating fixed two-pair chunks reduced `synthesize_batch::<V3>` from 125 to 114 conditional branches and 34 to 26 YMM stack references. Across 30 batches/backend and three interleaved process pairs, the candidate measured 7.534 ms versus 7.845 ms on exact parent `b04b9a39` (paired ratio `0.965×`) and 6.091 ms for pinned DUCC (`1.24×`). Outputs were byte-identical to parent and had `2.04e-13` relative L2 error to DUCC. Focused spin-1/scalar tests, strict parallel Clippy, formatting and the no-default release suite passed. The parallel release suite had the two previously confirmed reduced-order tolerance failures; one worker-participation assertion passed on isolated rerun.

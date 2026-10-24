@@ -1123,7 +1123,7 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
     lmax: usize,
     pair_count: usize,
     degree: usize,
-    mut pair: usize,
+    pair: usize,
     first_start: usize,
     second_start: usize,
 ) -> bool {
@@ -1133,10 +1133,22 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
     let lanes = S::F64_LANES;
     let first_end = first_start + lanes;
     let second_end = second_start + lanes;
-    let coefficient_a = &scratch.coefficient_a[..];
-    let coefficient_b = &scratch.coefficient_b[..];
-    let coefficient_even = &scratch.coefficient_even[..];
-    let coefficient_odd = &scratch.coefficient_odd[..];
+    let Some(coefficient_a) = scratch.coefficient_a.get(pair..pair_count) else {
+        return false;
+    };
+    let Some(coefficient_b) = scratch.coefficient_b.get(pair..pair_count) else {
+        return false;
+    };
+    let Some(coefficient_even) = scratch.coefficient_even.get(pair..pair_count) else {
+        return false;
+    };
+    let Some(coefficient_odd) = scratch.coefficient_odd.get(pair..pair_count) else {
+        return false;
+    };
+    let coefficient_a_pairs = coefficient_a.as_chunks::<2>().0;
+    let coefficient_b_pairs = coefficient_b.as_chunks::<2>().0;
+    let coefficient_even_pairs = coefficient_even.as_chunks::<2>().0;
+    let coefficient_odd_pairs = coefficient_odd.as_chunks::<2>().0;
 
     let Some(first_csq) = load_simd_vector::<S>(&scratch.packed_csq[first_start..first_end]) else {
         return false;
@@ -1202,26 +1214,23 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
         return false;
     };
 
-    while pair + 1 < pair_count {
-        let a1 = coefficient_a[pair];
-        let b1 = coefficient_b[pair];
-        let a2 = coefficient_a[pair + 1];
-        let b2 = coefficient_b[pair + 1];
-        let even1 = coefficient_even[pair];
-        let odd1 = coefficient_odd[pair];
-        let even2 = coefficient_even[pair + 1];
-        let odd2 = coefficient_odd[pair + 1];
+    for (((a, b), even), odd) in coefficient_a_pairs
+        .iter()
+        .zip(coefficient_b_pairs)
+        .zip(coefficient_even_pairs)
+        .zip(coefficient_odd_pairs)
+    {
         ordinary_two_pair_step(
             simd,
             first_csq,
-            a1,
-            b1,
-            a2,
-            b2,
-            even1,
-            odd1,
-            even2,
-            odd2,
+            a[0],
+            b[0],
+            a[1],
+            b[1],
+            even[0],
+            odd[0],
+            even[1],
+            odd[1],
             &mut first_previous,
             &mut first_current,
             &mut first_even_re,
@@ -1232,14 +1241,14 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
         ordinary_two_pair_step(
             simd,
             second_csq,
-            a1,
-            b1,
-            a2,
-            b2,
-            even1,
-            odd1,
-            even2,
-            odd2,
+            a[0],
+            b[0],
+            a[1],
+            b[1],
+            even[0],
+            odd[0],
+            even[1],
+            odd[1],
             &mut second_previous,
             &mut second_current,
             &mut second_even_re,
@@ -1247,16 +1256,29 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
             &mut second_odd_re,
             &mut second_odd_im,
         );
-        pair += 2;
     }
-    if pair < pair_count {
+
+    let tail_offset = coefficient_a_pairs.len() * 2;
+    if tail_offset < coefficient_a.len() {
+        let Some(a) = coefficient_a.get(tail_offset) else {
+            return false;
+        };
+        let Some(b) = coefficient_b.get(tail_offset) else {
+            return false;
+        };
+        let Some(even) = coefficient_even.get(tail_offset) else {
+            return false;
+        };
+        let Some(odd) = coefficient_odd.get(tail_offset) else {
+            return false;
+        };
         ordinary_one_pair_step(
             simd,
             first_csq,
-            coefficient_a[pair],
-            coefficient_b[pair],
-            coefficient_even[pair],
-            coefficient_odd[pair],
+            *a,
+            *b,
+            *even,
+            *odd,
             &mut first_previous,
             &mut first_current,
             &mut first_even_re,
@@ -1267,10 +1289,10 @@ fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
         ordinary_one_pair_step(
             simd,
             second_csq,
-            coefficient_a[pair],
-            coefficient_b[pair],
-            coefficient_even[pair],
-            coefficient_odd[pair],
+            *a,
+            *b,
+            *even,
+            *odd,
             &mut second_previous,
             &mut second_current,
             &mut second_even_re,
