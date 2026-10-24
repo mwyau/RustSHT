@@ -10,14 +10,14 @@
 | GL T720 full q8 | 1.63× | 11.131 / 6.830 | 16.888 → 11.131 |
 | CC T1023 full q8 | 1.13× | 24.634 / 21.724 | 47.095 → 24.634 |
 | GL T1023 full q8 | 0.97× | 22.468 / 23.097 | 23.442 → 22.468 |
-| GL T1023 full q1 | 2.23× | 279.589 / 125.115 | current parent `a889cf87` |
+| GL T1023 full q1 | 2.03× | 245.936 / 121.330 | current parent `a889cf87` |
 | GL T511 full q8 | 1.33× | 3.175 / 2.384 | 3.182 (`6633b3ec`) → 3.175 (`a889cf87`) |
 
 **M1 accepted:** reuse the scalar ordered prepared SIMD component inside the spin-1 order-major queue. The T720 q8 cases use 30 timed batches/backend across three interleaved processes; T1023 is near DUCC parity. Candidate-to-DUCC relative L2 error was ≤`7.6e-13`; outputs were finite and repeat/reset consistent. Full-order q1 showed no measurable gain.
 
 **M2 accepted:** skip the dense converted-coefficient cache for order-major q8 jobs when it exceeds 16 MB, converting each E/B order into the worker's existing scratch before the prepared-component recurrence. GL T1023 q8 used 30 timed batches/backend over three interleaved process pairs: 22.468 ms versus 23.442 ms on exact parent `08c1ba0e`, and 23.097 ms for pinned DUCC. It was bit-identical to parent, relative L2 to DUCC was `2.61e-13`, and reset/repeat checks passed. Smaller and non-order-major cache users remain enabled.
 
-The latest GL T511 q8 recheck used 30 timed batches/backend over three pairs: `a889cf87` 3.175 ms, exact parent `6633b3ec` 3.182 ms, DUCC 2.384 ms (1.33×); outputs matched parent bit-for-bit and DUCC relative L2 was `2.22e-13`. The earlier 2.95× result is stale. GL T1023 q1 remains 2.23×: the degree-major, two-vector tile (AVX2 spills), and corrected two-pair-unroll candidates were rejected; the last was 273.260 ms versus 279.589 ms parent with paired ratios spanning `0.888–1.036`, so it showed no stable gain. The serial prepared-component route was also rejected.
+The latest GL T511 q8 recheck used 30 timed batches/backend over three pairs: `a889cf87` 3.175 ms, exact parent `6633b3ec` 3.182 ms, DUCC 2.384 ms (1.33×); outputs matched parent bit-for-bit and DUCC relative L2 was `2.22e-13`. The earlier 2.95× result is stale. GL T1023 q1's current parent is 245.936 ms versus 121.330 ms DUCC (2.03×). A checked SIMD scaled-prefix candidate measured 265.530 ms (7.7% slower than parent; 2.18× DUCC) across 15 calls/backend and three interleaved process pairs; output was bit-identical to parent, relative L2 to DUCC was `3.79e-13`, and reset/repeat checks passed. Retire this candidate. Earlier degree-major, two-vector tile (AVX2 spills), corrected two-pair-unroll, and serial prepared-component candidates also remain rejected.
 
 **Bounded GL T720 q8 analysis follow-up:** preweight each opposite input once per lane before the existing checked per-channel recurrence. Across 30 batches/backend and three interleaved pairs, candidate was 10.090 ms versus 10.899 ms on exact parent `a889cf87` (paired median `0.934×`) and 4.553 ms for DUCC (paired `2.14×`). Output relative L2 was `1.91e-16` to parent and `4.76e-14` to DUCC; weighted/unweighted, reflected recurrence, fallback and no-default tests pass. This is a 6–7% gain, not parity.
 
