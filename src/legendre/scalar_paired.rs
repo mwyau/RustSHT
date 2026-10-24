@@ -3115,6 +3115,33 @@ unsafe fn analysis_mask_all_avx2(mask: std::arch::x86_64::__m256d) -> bool {
     _mm256_movemask_pd(mask) == 0b1111
 }
 
+#[allow(unexpected_cfgs)]
+#[inline(always)]
+fn analysis_mask_lane_bits<S: Simd>(mask: S::m64s) -> Option<u8> {
+    #[cfg(target_arch = "x86_64")]
+    if const {
+        S::F64_LANES == 4
+            && core::mem::size_of::<S::m64s>() == core::mem::size_of::<std::arch::x86_64::__m256d>()
+    } {
+        // SAFETY: the size/width guard identifies Pulp's four-lane AVX2 mask.
+        let mask = unsafe { core::mem::transmute_copy(&mask) };
+        // SAFETY: this V3 specialization is dispatched only when AVX2 is available.
+        return Some(unsafe { analysis_mask_bits_avx2(mask) });
+    }
+    None
+}
+
+#[allow(dead_code, unexpected_cfgs)]
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx2")]
+#[inline]
+unsafe fn analysis_mask_bits_avx2(mask: std::arch::x86_64::__m256d) -> u8 {
+    use std::arch::x86_64::_mm256_movemask_pd;
+
+    // Pulp comparison masks use an all-ones lane for true and zero for false.
+    _mm256_movemask_pd(mask) as u8
+}
+
 #[inline(always)]
 fn analysis_mask_any<S: Simd>(simd: S, mask: S::m64s) -> bool {
     simd.reduce_max_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
@@ -3859,6 +3886,8 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut opposite_re = zero;
         let mut opposite_im = zero;
         let mut vector_needs_scalar = false;
+        let mut normal_lane_bits = 0_u64;
+        let mut normal_lane_bits_available = true;
         for index in 0..current_vectors.len() {
             let magnitude = simd.abs_f64s(current_vectors[index]);
             let is_zero = simd.equal_f64s(magnitude, zero);
@@ -3868,7 +3897,13 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             );
             let exponent_zero = simd.equal_i64s(exponent_vectors[index], zero_exponent);
             let normal = simd.and_m64s(exponent_zero, simd.or_m64s(is_zero, is_normal));
-            vector_needs_scalar |= !analysis_mask_all(simd, normal);
+            if let Some(lane_bits) = analysis_mask_lane_bits::<S>(normal) {
+                normal_lane_bits |= (lane_bits as u64) << (index * S::F64_LANES);
+                vector_needs_scalar |= lane_bits != 0b1111;
+            } else {
+                normal_lane_bits_available = false;
+                vector_needs_scalar |= !analysis_mask_all(simd, normal);
+            }
             let basis = simd.select_f64s(normal, current_vectors[index], zero);
             same_re = simd.mul_add_f64s(
                 simd.select_f64s(normal, same_real_vectors[index], zero),
@@ -3908,11 +3943,16 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         );
         if vector_needs_scalar {
             let vector_lane_count = basis_current.len() - current_tail.len();
-            for lane in 0..vector_lane_count {
-                let magnitude = basis_current[lane].abs();
-                let normal = exponents[lane] == 0
-                    && (magnitude == 0.0 || (f64::MIN_POSITIVE..=scalar::BIG).contains(&magnitude));
-                if !normal {
+            if normal_lane_bits_available {
+                let active_lane_bits = if vector_lane_count == u64::BITS as usize {
+                    u64::MAX
+                } else {
+                    (1_u64 << vector_lane_count) - 1
+                };
+                let mut exceptional_lanes = active_lane_bits & !normal_lane_bits;
+                while exceptional_lanes != 0 {
+                    let lane = exceptional_lanes.trailing_zeros() as usize;
+                    exceptional_lanes &= exceptional_lanes - 1;
                     same += scalar::multiply_complex_scaled(
                         Complex64::new(same_real[lane], same_imag[lane]),
                         basis_current[lane],
@@ -3933,6 +3973,35 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
                             exponents[lane],
                         )
                     };
+                }
+            } else {
+                for lane in 0..vector_lane_count {
+                    let magnitude = basis_current[lane].abs();
+                    let normal = exponents[lane] == 0
+                        && (magnitude == 0.0
+                            || (f64::MIN_POSITIVE..=scalar::BIG).contains(&magnitude));
+                    if !normal {
+                        same += scalar::multiply_complex_scaled(
+                            Complex64::new(same_real[lane], same_imag[lane]),
+                            basis_current[lane],
+                            exponents[lane],
+                        );
+                        let coefficient = Complex64::new(opposite_real[lane], opposite_imag[lane]);
+                        opposite += if OPPOSITE_COSINE_WEIGHTED {
+                            scalar::multiply_complex_scaled(
+                                coefficient,
+                                basis_current[lane],
+                                exponents[lane],
+                            )
+                        } else {
+                            scalar::multiply_complex_scaled_product(
+                                coefficient,
+                                basis_current[lane],
+                                cos_theta[lane],
+                                exponents[lane],
+                            )
+                        };
+                    }
                 }
             }
         }
@@ -8094,7 +8163,7 @@ mod tests {
     struct AnalysisMaskAllProbe;
 
     impl WithSimd for AnalysisMaskAllProbe {
-        type Output = (bool, bool, bool);
+        type Output = (bool, bool, bool, Option<[u8; 16]>);
 
         fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
             let one = simd.splat_f64s(1.0);
@@ -8108,16 +8177,37 @@ mod tests {
             assert_eq!(vectors.len(), 1);
             assert!(tail.is_empty());
             let one_false_lane = analysis_mask_all(simd, simd.equal_f64s(vectors[0], one));
-            (all_true, all_false, one_false_lane)
+            let lane_bits = if cfg!(target_arch = "x86_64") && S::F64_LANES == 4 {
+                Some(std::array::from_fn(|pattern| {
+                    let values: [f64; 4] =
+                        std::array::from_fn(
+                            |lane| if pattern & (1 << lane) != 0 { 1.0 } else { 0.0 },
+                        );
+                    let (vectors, tail) = S::as_simd_f64s(&values);
+                    assert_eq!(vectors.len(), 1);
+                    assert!(tail.is_empty());
+                    analysis_mask_lane_bits::<S>(simd.greater_than_f64s(vectors[0], zero))
+                        .expect("the AVX2 lane-bit helper is available for V3")
+                }))
+            } else {
+                None
+            };
+            (all_true, all_false, one_false_lane, lane_bits)
         }
     }
 
     #[test]
     fn analysis_mask_all_handles_all_and_mixed_lanes() {
-        assert_eq!(
-            Arch::new().dispatch(AnalysisMaskAllProbe),
-            (true, false, false)
-        );
+        let (all_true, all_false, one_false_lane, lane_bits) =
+            Arch::new().dispatch(AnalysisMaskAllProbe);
+        assert!(all_true);
+        assert!(!all_false);
+        assert!(!one_false_lane);
+        if let Some(lane_bits) = lane_bits {
+            for (pattern, actual) in lane_bits.into_iter().enumerate() {
+                assert_eq!(actual, pattern as u8, "lane pattern={pattern:#06b}");
+            }
+        }
     }
 
     #[test]
