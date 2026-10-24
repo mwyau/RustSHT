@@ -3847,6 +3847,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let zero = simd.splat_f64s(0.0);
         let zero_exponent = simd.splat_i64s(0);
         let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
+        let maximum = simd.splat_f64s(scalar::BIG);
         let a = simd.splat_f64s(coefficient_a);
         let b = simd.splat_f64s(coefficient_b);
         let mut same_re = zero;
@@ -3857,11 +3858,10 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         for index in 0..current_vectors.len() {
             let magnitude = simd.abs_f64s(current_vectors[index]);
             let is_zero = simd.equal_f64s(magnitude, zero);
-            // The checked driver normalizes each recurrence pair before this
-            // step, so every lane is finite and its pair maximum is <= BIG.
-            // The current member can still be subnormal when the previous
-            // member is much larger, so retain the lower bound and zero case.
-            let is_normal = simd.greater_than_or_equal_f64s(magnitude, minimum);
+            let is_normal = simd.and_m64s(
+                simd.greater_than_or_equal_f64s(magnitude, minimum),
+                simd.less_than_or_equal_f64s(magnitude, maximum),
+            );
             let exponent_zero = simd.equal_i64s(exponent_vectors[index], zero_exponent);
             let normal = simd.and_m64s(exponent_zero, simd.or_m64s(is_zero, is_normal));
             vector_needs_scalar |= !analysis_mask_all(simd, normal);
@@ -3934,7 +3934,9 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         }
         for lane in 0..current_tail.len() {
             let magnitude = current_tail[lane].abs();
-            if exponent_tail[lane] == 0 && (magnitude == 0.0 || magnitude >= f64::MIN_POSITIVE) {
+            if exponent_tail[lane] == 0
+                && (magnitude == 0.0 || (f64::MIN_POSITIVE..=scalar::BIG).contains(&magnitude))
+            {
                 same.re = same_real_tail[lane].mul_add(current_tail[lane], same.re);
                 same.im = same_imag_tail[lane].mul_add(current_tail[lane], same.im);
                 if OPPOSITE_COSINE_WEIGHTED {
