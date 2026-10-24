@@ -1,9 +1,7 @@
-# Performance reports — selective guide
+# Performance evidence — not agent instructions
 
-**Current:** [short status](../PERFORMANCE_STATUS.md) · [active plan](../plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md) · [agent instructions](../AGENTS.md). [Full former reports index preserved](archive/context-2026-10-23/reports/README.md).
+**For current work:** [AGENTS](../AGENTS.md) → [PERFORMANCE_STATUS](../PERFORMANCE_STATUS.md) → [active parity plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md).
 
-**Recent spin-1:** [latest GL/CC/F1 q8 and reflected geometry](spin1-reflected-latitude-normalization-2026-10-23.md); [checked coefficient reuse](spin1-checked-pair-preparation-reuse-2026-10-23.md); [narrow GL tiled SIMD](spin1-hemisphere-pair-degree-tile-2026-10-23.md); [rejected independent reflected passes](spin1-reflected-scalar-row-adapter-negative-2026-10-23.md).
+For prior failed/neutral approaches, see [short tried-experiments index](NEGATIVE_EXPERIMENTS.md). Original dated Markdown reports have moved **unchanged** to [retired reports archive](archive/retired-active-docs-2026-10-24/README.md). Older material is already under [archive](archive/README.md).
 
-**Only for a specific bottleneck:** [Sol DUCC algorithm review](f64-ducc-independent-review-2026-10-22.md), [Plan 16 executed crosswalk](plan16-spin1-executed-path-crosswalk-2026-10-22.md); [Astra CC benchmark audit](repo-state-review-summary-2026-10-22.md). **Scalar controls:** [CC/F1 ordered synthesis](cc-scalar-ordered-synthesis-2026-10-23.md), [CC/F1 parallel analysis](cc-scalar-parallel-analysis-2026-10-23.md), [focused F1](ducc-scalar-f64-f1-performance-2026-10-23.md).
-
-All other detailed experiment reports under `reports/` and `reports/archive/`, and evidence under `reports/data/`, remain unchanged. Historical ratios are not a current-source parity claim.
+**Raw evidence remains at its original paths in `reports/data/`** to preserve benchmark provenance and links. These are data files, not mandatory startup reading. The non-report script `reports/torch_harmonics_bench.py` stays in place. Do not recreate a report catalog or run an exhaustive benchmark sweep until major source-level gaps are closed.
