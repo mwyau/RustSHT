@@ -6711,30 +6711,44 @@ fn spin1_t1023_order_major_cache_is_bounded_and_reused() {
         let mut first = vec![f64::NAN; plan.sample_count];
         let mut second = first.clone();
 
+        SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES.store(0, Ordering::Relaxed);
         pool.install(|| {
             plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
         })
         .unwrap();
 
         let expected_coefficient_values = 2 * (mmax + 1) * (lmax + 2);
-        assert_eq!(
-            workspace.spin1_scalar_coefficients.len(),
-            expected_coefficient_values
-        );
-        assert!(
-            expected_coefficient_values * std::mem::size_of::<Complex64>()
-                <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES
-        );
-        assert_eq!(
-            workspace.spin1_scalar_coefficient_finite_orders.len(),
-            mmax + 1
-        );
-        assert!(
-            workspace
-                .spin1_scalar_coefficient_finite_orders
-                .iter()
-                .all(|&finite| finite == 1)
-        );
+        if mmax == 1023 {
+            assert!(
+                expected_coefficient_values * std::mem::size_of::<Complex64>()
+                    >= SPIN1_ORDER_LOCAL_CONVERSION_MIN_BYTES
+            );
+            assert!(workspace.spin1_scalar_coefficients.is_empty());
+            assert!(workspace.spin1_scalar_coefficient_finite_orders.is_empty());
+            assert!(
+                SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES.load(Ordering::Relaxed) > 0,
+                "large-cache order-major path skipped the prepared component recurrence"
+            );
+        } else {
+            assert_eq!(
+                workspace.spin1_scalar_coefficients.len(),
+                expected_coefficient_values
+            );
+            assert!(
+                expected_coefficient_values * std::mem::size_of::<Complex64>()
+                    <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES
+            );
+            assert_eq!(
+                workspace.spin1_scalar_coefficient_finite_orders.len(),
+                mmax + 1
+            );
+            assert!(
+                workspace
+                    .spin1_scalar_coefficient_finite_orders
+                    .iter()
+                    .all(|&finite| finite == 1)
+            );
+        }
         assert_eq!(workspace.spin_order_output_scratch.len(), 8);
         assert!(first.iter().chain(&second).all(|value| value.is_finite()));
 
@@ -6754,7 +6768,9 @@ fn spin1_t1023_order_major_cache_is_bounded_and_reused() {
             )
         })
         .unwrap();
-        assert_eq!(workspace.spin1_scalar_coefficient_finite_orders[1], 0);
+        if !workspace.spin1_scalar_coefficient_finite_orders.is_empty() {
+            assert_eq!(workspace.spin1_scalar_coefficient_finite_orders[1], 0);
+        }
         let mut single_first = vec![f64::NAN; plan.sample_count];
         let mut single_second = single_first.clone();
         single_pool

@@ -50,6 +50,8 @@ const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 1023;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 34 * 1024 * 1024;
+#[cfg(feature = "parallel")]
+const SPIN1_ORDER_LOCAL_CONVERSION_MIN_BYTES: usize = 16_000_000;
 
 #[cfg(all(test, feature = "parallel"))]
 static SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES: AtomicUsize = AtomicUsize::new(0);
@@ -1286,28 +1288,48 @@ impl<T: ShtScalar> ShtPlan<T> {
                     group_count
                 };
                 debug_assert!(required_recurrence_workers <= workspace.recurrence_workers.len());
-                #[cfg(all(test, feature = "parallel"))]
-                let coefficient_prep_started = std::time::Instant::now();
-                let spin1_coefficients_ready = if use_spin1_coefficient_cache {
-                    self.prepare_spin1_scalar_coefficients(
-                        e_alm,
-                        b_alm.expect("the cache requires both spin-1 channels"),
-                        &mut workspace.spin1_scalar_coefficients,
-                        &mut workspace.spin1_scalar_coefficient_finite_orders,
-                        execution_threads,
-                    )
-                } else {
-                    false
-                };
                 let order_tile_count = (self.harmonics.mmax() + 1).div_ceil(SPIN1_ORDER_MAJOR_TILE);
-                let order_worker_count = (recurrence_spin == 1
+                let order_major_queue_eligible = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && !derivative_norm
                     && b_alm.is_some()
                     && execution_threads >= 8
                     && order_tile_count >= execution_threads.saturating_mul(2)
                     && use_dynamic_spin1_group_queue
-                    && spin1_coefficients_ready)
+                    && use_spin1_coefficient_cache;
+                let local_coefficient_cache_bytes = self
+                    .harmonics
+                    .lmax()
+                    .checked_add(2)
+                    .and_then(|row_len| row_len.checked_mul(2))
+                    .and_then(|row_stride| {
+                        self.harmonics
+                            .mmax()
+                            .checked_add(1)
+                            .and_then(|order_count| row_stride.checked_mul(order_count))
+                    })
+                    .and_then(|coefficient_count| {
+                        coefficient_count.checked_mul(std::mem::size_of::<Complex<T>>())
+                    });
+                let use_order_local_coefficients = order_major_queue_eligible
+                    && local_coefficient_cache_bytes
+                        .is_some_and(|bytes| bytes >= SPIN1_ORDER_LOCAL_CONVERSION_MIN_BYTES);
+                #[cfg(all(test, feature = "parallel"))]
+                let coefficient_prep_started = std::time::Instant::now();
+                let spin1_coefficients_ready =
+                    if use_spin1_coefficient_cache && !use_order_local_coefficients {
+                        self.prepare_spin1_scalar_coefficients(
+                            e_alm,
+                            b_alm.expect("the cache requires both spin-1 channels"),
+                            &mut workspace.spin1_scalar_coefficients,
+                            &mut workspace.spin1_scalar_coefficient_finite_orders,
+                            execution_threads,
+                        )
+                    } else {
+                        false
+                    };
+                let order_worker_count = (order_major_queue_eligible
+                    && (spin1_coefficients_ready || use_order_local_coefficients))
                     .then_some(
                         order_tile_count
                             .min(execution_threads)
@@ -2158,7 +2180,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     };
                     let prepared_component_attempted = can_prepare_shared_pair
                         && paired_factors_ready
-                        && spin1_scalar_coefficients.is_some()
                         && !allow_spin1_table
                         && ring_start + ring_end == self.grid.ntheta()
                         && order_start == m
@@ -2168,27 +2189,40 @@ impl<T: ShtScalar> ShtPlan<T> {
                         && q_spectra.len() == theta_sin.len()
                         && u_spectra.len() == theta_sin.len();
                     let prepared_component_safe_start = if prepared_component_attempted {
-                        let row_len = lmax + 2;
-                        let row_stride = row_len * 2;
-                        let row_start = m * row_stride;
-                        let coefficients = spin1_scalar_coefficients
-                            .expect("the prepared component route requires cached E/B conversion");
-                        let scalar_first = &coefficients[row_start..row_start + row_len];
-                        let scalar_second =
-                            &coefficients[row_start + row_len..row_start + row_stride];
-                        self.try_synthesize_spin1_prepared_component_order_to_order(
-                            m,
-                            scalar_lmax,
-                            &scalar_first[m..=scalar_lmax],
-                            &scalar_second[m..=scalar_lmax],
-                            theta_sin,
-                            theta_cos,
-                            &ring_order_limits[ring_start..ring_end],
-                            arch,
-                            recurrence,
-                            q_spectra,
-                            u_spectra,
-                        )
+                        if let Some(coefficients) = spin1_scalar_coefficients {
+                            let row_len = lmax + 2;
+                            let row_stride = row_len * 2;
+                            let row_start = m * row_stride;
+                            let scalar_first = &coefficients[row_start..row_start + row_len];
+                            let scalar_second =
+                                &coefficients[row_start + row_len..row_start + row_stride];
+                            self.try_synthesize_spin1_prepared_component_order_to_order(
+                                m,
+                                scalar_lmax,
+                                &scalar_first[m..=scalar_lmax],
+                                &scalar_second[m..=scalar_lmax],
+                                false,
+                                theta_sin,
+                                theta_cos,
+                                &ring_order_limits[ring_start..ring_end],
+                                arch,
+                                recurrence,
+                                q_spectra,
+                                u_spectra,
+                            )
+                        } else {
+                            self.try_synthesize_spin1_prepared_component_order_from_workspace(
+                                m,
+                                scalar_lmax,
+                                theta_sin,
+                                theta_cos,
+                                &ring_order_limits[ring_start..ring_end],
+                                arch,
+                                recurrence,
+                                q_spectra,
+                                u_spectra,
+                            )
+                        }
                     } else {
                         None
                     };
@@ -2997,6 +3031,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         scalar_lmax: usize,
         scalar_first: &[Complex<T>],
         scalar_second: &[Complex<T>],
+        pair_coefficients_prepared: bool,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
@@ -3051,40 +3086,42 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
 
-        // Keep the legacy spin route for exceptional and subnormal converted
-        // coefficients. The scalar ordered recurrence is used here only when
-        // both channels satisfy the existing conservative table-input bound.
-        let component_limit = crate::legendre::ScalarLegendreTable::<T>::input_scale_limit()
-            / T::from_f64(4.0).expect("four is representable");
-        let min_normal = T::from_f64(f64::MIN_POSITIVE).expect("f64 minimum normal converts");
-        if scalar_first
-            .iter()
-            .chain(scalar_second)
-            .flat_map(|coefficient| [coefficient.re, coefficient.im])
-            .any(|value| {
-                !crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
-                    value,
-                    component_limit,
-                ) || (value != T::zero() && value.abs() < min_normal)
-            })
-        {
-            return None;
-        }
+        if !pair_coefficients_prepared {
+            // Keep the legacy spin route for exceptional and subnormal
+            // converted coefficients. The scalar ordered recurrence is used
+            // only when both channels satisfy the existing input bound.
+            let component_limit = crate::legendre::ScalarLegendreTable::<T>::input_scale_limit()
+                / T::from_f64(4.0).expect("four is representable");
+            let min_normal = T::from_f64(f64::MIN_POSITIVE).expect("f64 minimum normal converts");
+            if scalar_first
+                .iter()
+                .chain(scalar_second)
+                .flat_map(|coefficient| [coefficient.re, coefficient.im])
+                .any(|value| {
+                    !crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                        value,
+                        component_limit,
+                    ) || (value != T::zero() && value.abs() < min_normal)
+                })
+            {
+                return None;
+            }
 
-        let pair_count = (scalar_lmax - m + 2) / 2;
-        if !T::prepare_paired_scalar_synthesis_coefficient_pair(
-            m,
-            scalar_lmax,
-            &recurrence.epsilon,
-            &recurrence.spin_alpha,
-            scalar_first,
-            scalar_second,
-            &mut recurrence.fast_spin_first[..pair_count],
-            &mut recurrence.fast_spin_second[..pair_count],
-            &mut recurrence.fast_spin_pair_first[..pair_count],
-            &mut recurrence.fast_spin_pair_second[..pair_count],
-        ) {
-            return None;
+            let pair_count = (scalar_lmax - m + 2) / 2;
+            if !T::prepare_paired_scalar_synthesis_coefficient_pair(
+                m,
+                scalar_lmax,
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                scalar_first,
+                scalar_second,
+                &mut recurrence.fast_spin_first[..pair_count],
+                &mut recurrence.fast_spin_second[..pair_count],
+                &mut recurrence.fast_spin_pair_first[..pair_count],
+                &mut recurrence.fast_spin_pair_second[..pair_count],
+            ) {
+                return None;
+            }
         }
         let simd_lanes = crate::legendre::scalar_ordered::f64_lane_count(arch);
         if simd_lanes == 0 {
@@ -3197,6 +3234,76 @@ impl<T: ShtScalar> ShtPlan<T> {
             pair_start += active_lanes;
         }
         Some(safe_start)
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The order-major queue converts one order into the worker's scalar coefficient rows."
+    )]
+    fn try_synthesize_spin1_prepared_component_order_from_workspace(
+        &self,
+        m: usize,
+        scalar_lmax: usize,
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+    ) -> Option<usize> {
+        let pair_count = scalar_lmax.checked_sub(m)?.checked_add(2)? / 2;
+        let first = recurrence.fast_scalar_first.get(m..=scalar_lmax)?;
+        let second = recurrence.fast_scalar_second.get(m..=scalar_lmax)?;
+        let component_limit = crate::legendre::ScalarLegendreTable::<T>::input_scale_limit()
+            / T::from_f64(4.0).expect("four is representable");
+        let min_normal = T::from_f64(f64::MIN_POSITIVE).expect("f64 minimum normal converts");
+        if first
+            .iter()
+            .chain(second)
+            .flat_map(|coefficient| [coefficient.re, coefficient.im])
+            .any(|value| {
+                !crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                    value,
+                    component_limit,
+                ) || (value != T::zero() && value.abs() < min_normal)
+            })
+        {
+            return None;
+        }
+        if pair_count > recurrence.fast_spin_first.len()
+            || pair_count > recurrence.fast_spin_second.len()
+            || pair_count > recurrence.fast_spin_pair_first.len()
+            || pair_count > recurrence.fast_spin_pair_second.len()
+            || !T::prepare_paired_scalar_synthesis_coefficient_pair(
+                m,
+                scalar_lmax,
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                first,
+                second,
+                &mut recurrence.fast_spin_first[..pair_count],
+                &mut recurrence.fast_spin_second[..pair_count],
+                &mut recurrence.fast_spin_pair_first[..pair_count],
+                &mut recurrence.fast_spin_pair_second[..pair_count],
+            )
+        {
+            return None;
+        }
+        self.try_synthesize_spin1_prepared_component_order_to_order(
+            m,
+            scalar_lmax,
+            &[],
+            &[],
+            true,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+            q_spectra,
+            u_spectra,
+        )
     }
 
     #[expect(
