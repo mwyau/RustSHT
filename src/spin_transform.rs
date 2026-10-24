@@ -3252,6 +3252,20 @@ impl<T: ShtScalar> ShtPlan<T> {
             return Ok(());
         }
 
+        // Polar synthesis falls back to one scalar recurrence per degree.
+        // For the paired f64 route, cache each lane's inverse sine once
+        // instead of recomputing the same division for every degree.
+        let inverse_sines = if T::supports_paired_scalar() {
+            for (inverse_sine, &sine) in recurrence.analysis_same_real[..fallback_len]
+                .iter_mut()
+                .zip(fallback_sin)
+            {
+                *inverse_sine = sine.recip();
+            }
+            Some(&recurrence.analysis_same_real[..fallback_len])
+        } else {
+            None
+        };
         T::for_each_y_lm_dispatched(
             arch,
             m,
@@ -3273,7 +3287,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     } else {
                         compact_ring_indices.map_or(fallback_ring, |indices| indices[fallback_ring])
                     };
-                    let inverse_sine = fallback_sin[fallback_ring].recip();
+                    let inverse_sine = match inverse_sines {
+                        Some(inverse_sines) => inverse_sines[fallback_ring],
+                        None => fallback_sin[fallback_ring].recip(),
+                    };
                     let first = T::multiply_complex_scaled_product(
                         recurrence.fast_scalar_first[l],
                         basis[lane],
