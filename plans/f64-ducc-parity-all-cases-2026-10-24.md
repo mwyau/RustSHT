@@ -23,4 +23,4 @@ Other measured work includes CC T720 reduced synthesis q1 (27.547 vs 18.684 ms, 
 
 Use `benchmark_ducc_spin1_native.py` for spin-1 and `benchmark_ducc_full_transform_parity.py` for spin-0. Match fixture, compiler/ISA, CPU affinity, thread count, warmup, and repeats. Use exact-parent/candidate/pinned-DUCC comparisons. Preserve existing checks and tolerances. Keep raw profiles and temporary diagnostics outside Git unless they reproduce a specific defect. Avoid broad sweeps, generic profiler infrastructure, unrelated FFT/Python work, and f32 or spin>1 tuning until the f64 parity matrix is complete.
 
-Follow [AGENTS.md](../AGENTS.md) for correctness, CI, Git, checkpoint, and agent-use rules.
+Follow [AGENTS.md](../AGENTS.md) for shared correctness and workflow rules.
