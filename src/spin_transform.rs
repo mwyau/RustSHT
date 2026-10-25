@@ -4735,7 +4735,15 @@ impl<T: ShtScalar> ShtPlan<T> {
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
         let fused_analysis_enabled = self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX;
-        let sequential_channels = fused_analysis_enabled && scalar_lmax < 1024;
+        // Compare the established pairwise two-channel kernel against the
+        // sequential shared-recurrence path on the exact GL T720 q1 target.
+        // This compile-time trial is removed after its matched measurement.
+        let pairwise_two_channel_trial = cfg!(rustsht_trial_pairwise_dual_analysis)
+            && self.harmonics.lmax() == 720
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && current_execution_thread_count() == 1;
+        let sequential_channels = fused_analysis_enabled && scalar_lmax < 1024
+            && !pairwise_two_channel_trial;
         let shared_recurrence_sequential_accumulation = sequential_channels
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && matches!(current_execution_thread_count(), 1 | 8);
