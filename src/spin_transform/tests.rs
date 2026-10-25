@@ -10384,7 +10384,6 @@ fn profile_spin1_standard_analysis_phases() {
         .unwrap();
         std::hint::black_box((&e_alm, &b_alm));
     }
-    crate::legendre::reset_mixed_analysis_exception_mask_counts();
     for repetition in 0..repetitions {
         probe.lock().unwrap().clear();
         let started = Instant::now();
@@ -10405,16 +10404,4 @@ fn profile_spin1_standard_analysis_phases() {
             );
         }
     }
-    eprintln!(
-        "PROFILE_MIXED_EXCEPTION_MASK_COUNTS,{:?}",
-        crate::legendre::mixed_analysis_exception_mask_counts()
-    );
-    eprintln!(
-        "PROFILE_MIXED_EXCEPTION_MASK_FAST_COUNTS,{:?}",
-        crate::legendre::mixed_analysis_exception_mask_fast_counts()
-    );
-    eprintln!(
-        "PROFILE_MIXED_EXCEPTION_MASK_DECLINE_COUNTS,{:?}",
-        crate::legendre::mixed_analysis_exception_mask_decline_counts()
-    );
 }
