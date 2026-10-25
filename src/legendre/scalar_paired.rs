@@ -6946,12 +6946,12 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             debug_assert_eq!(basis.len(), opposite_real[channel].len());
             debug_assert_eq!(basis.len(), opposite_imag[channel].len());
         }
-        let mut ordinary_basis = [0.0; LATITUDE_BLOCK_SIZE];
+        let mut ordinary_basis = [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE];
         let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
         let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
         let (ordinary_basis_vectors, ordinary_basis_tail) =
             S::as_mut_simd_f64s(&mut ordinary_basis[..basis.len()]);
-        debug_assert!(basis.len() <= LATITUDE_BLOCK_SIZE);
+        debug_assert!(basis.len() <= SCALAR_ANALYSIS_PAIR_TILE_SIZE);
         debug_assert_eq!(basis_vectors.len(), exponent_vectors.len());
         debug_assert_eq!(basis_vectors.len(), ordinary_basis_vectors.len());
         debug_assert_eq!(basis_tail.len(), exponent_tail.len());
