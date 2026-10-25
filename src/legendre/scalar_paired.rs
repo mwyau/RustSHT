@@ -7822,6 +7822,19 @@ struct ForEachPairedYlm<'a, F> {
     visit: F,
 }
 
+#[inline(always)]
+fn normalize_analysis_pair_lanes_simd_or_scalar<S: Simd>(
+    simd: S,
+    previous: &mut [f64],
+    current: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    match scalar::normalize_pair_lanes_simd(simd, previous, current, exponents) {
+        Some(normal_range) => Ok(normal_range),
+        None => scalar::normalize_pair_lanes(previous, current, exponents),
+    }
+}
+
 impl<F> WithSimd for ForEachPairedYlm<'_, F>
 where
     F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
@@ -7855,7 +7868,8 @@ where
             current[ring] = value;
             exponents[ring] = exponent;
         }
-        let mut normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
+        let mut normal_range =
+            normalize_analysis_pair_lanes_simd_or_scalar(simd, previous, current, exponents)?;
 
         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
             visit(l, ring_start, current, exponents, normal_range)?;
@@ -7886,10 +7900,14 @@ where
             std::mem::swap(&mut current, &mut next);
             if normal_range {
                 if scalar::pair_lanes_need_scaling(simd, previous, current) {
-                    normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
+                    normal_range = normalize_analysis_pair_lanes_simd_or_scalar(
+                        simd, previous, current, exponents,
+                    )?;
                 }
             } else {
-                normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
+                normal_range = normalize_analysis_pair_lanes_simd_or_scalar(
+                    simd, previous, current, exponents,
+                )?;
             }
         }
         Ok(())
