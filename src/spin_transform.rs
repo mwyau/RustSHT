@@ -2558,10 +2558,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         if prepared_component_attempted {
                             for ring in 0..theta_sin.len() {
                                 let spectrum_index = ring * spectrum_len + output_order;
-                                q_spectra[spectrum_index] =
-                                    Complex::new(T::zero(), T::zero());
-                                u_spectra[spectrum_index] =
-                                    Complex::new(T::zero(), T::zero());
+                                q_spectra[spectrum_index] = Complex::new(T::zero(), T::zero());
+                                u_spectra[spectrum_index] = Complex::new(T::zero(), T::zero());
                             }
                         }
                         [(0, theta_sin.len()), (0, 0)]
@@ -2932,7 +2930,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
 
         #[cfg(all(test, feature = "parallel"))]
-        let profile_bin = if m <= 255 { 0 } else if m <= 767 { 1 } else { 2 };
+        let profile_bin = if m <= 255 {
+            0
+        } else if m <= 767 {
+            1
+        } else {
+            2
+        };
         let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
         let mut prepared_pair_for_transition = false;
         let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
@@ -2997,8 +3001,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 recurrence.spin1_profile_pair_eligible_blocks += 1;
                 let profile = &mut recurrence.spin1_profile_route_bins[profile_bin];
                 profile.eligible_blocks += 1;
-                profile.eligible_lane_pair_work +=
-                    (block_len * coefficient_pair_count) as u128;
+                profile.eligible_lane_pair_work += (block_len * coefficient_pair_count) as u128;
             }
             let prepared_pair = if paired_channels_eligible {
                 #[cfg(all(test, feature = "parallel"))]
