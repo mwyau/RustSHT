@@ -616,6 +616,77 @@ pub(crate) fn multiply_complex_scaled_product(
     )
 }
 
+/// Scales two complex values with the same recurrence lane factor and exponent.
+/// Sharing these lane-invariant checks avoids repeating them for Q and U.
+#[inline]
+pub(crate) fn multiply_complex_pair_scaled(
+    values: [Complex64; 2],
+    factor: f64,
+    exponent: i64,
+) -> [Complex64; 2] {
+    let factor_is_normal = factor.is_normal();
+    let exponent_is_zero = exponent == 0;
+    let multiply_one = |value: Complex64| {
+        if factor_is_normal {
+            if value.re.is_normal() && value.im.is_normal() {
+                let product = Complex64::new(value.re * factor, value.im * factor);
+                if product.re.is_normal() && product.im.is_normal() {
+                    if exponent_is_zero {
+                        return product;
+                    }
+                    if let Some(scaled) = scale_complex_normal_binary(product, exponent) {
+                        return scaled;
+                    }
+                }
+            }
+            Complex64::new(
+                multiply_component_scaled_with_normal_factor(value.re, factor, exponent),
+                multiply_component_scaled_with_normal_factor(value.im, factor, exponent),
+            )
+        } else {
+            Complex64::new(
+                multiply_component_scaled(value.re, factor, exponent),
+                multiply_component_scaled(value.im, factor, exponent),
+            )
+        }
+    };
+    [multiply_one(values[0]), multiply_one(values[1])]
+}
+
+/// Scales two complex values by the same three factors and exponent, sharing
+/// the common factor and exponent checks while preserving each product order.
+#[inline]
+pub(crate) fn multiply_complex_pair_scaled_product(
+    values: [Complex64; 2],
+    factor: f64,
+    additional_factor: f64,
+    exponent: i64,
+) -> [Complex64; 2] {
+    let factors_are_normal = factor.is_normal() && additional_factor.is_normal();
+    let exponent_is_zero = exponent == 0;
+    let multiply_one = |value: Complex64| {
+        if factors_are_normal && value.re.is_normal() && value.im.is_normal() {
+            let product = Complex64::new(
+                (value.re * factor) * additional_factor,
+                (value.im * factor) * additional_factor,
+            );
+            if product.re.is_normal() && product.im.is_normal() {
+                if exponent_is_zero {
+                    return product;
+                }
+                if let Some(scaled) = scale_complex_normal_binary(product, exponent) {
+                    return scaled;
+                }
+            }
+        }
+        Complex64::new(
+            multiply_component_scaled_product(value.re, factor, additional_factor, exponent),
+            multiply_component_scaled_product(value.im, factor, additional_factor, exponent),
+        )
+    };
+    [multiply_one(values[0]), multiply_one(values[1])]
+}
+
 fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
     if exponent == 0 {
         return Some(value);
@@ -2361,6 +2432,78 @@ mod tests {
         let actual = multiply_complex_scaled_product(value, factor, additional_factor, 0);
         assert_eq!(actual.re.to_bits(), expected.re.to_bits());
         assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+    }
+
+    #[test]
+    fn paired_scaled_complex_products_match_scalar_helpers_bitwise() {
+        let value_pairs = [
+            [Complex64::new(0.75, -1.25), Complex64::new(-0.5, 2.0)],
+            [
+                Complex64::new(1.0e-200, -2.0e-200),
+                Complex64::new(1.0e300, -1.0e300),
+            ],
+            [
+                Complex64::new(f64::MIN_POSITIVE, f64::from_bits(1)),
+                Complex64::new(0.0, -0.0),
+            ],
+            [
+                Complex64::new(f64::INFINITY, f64::NEG_INFINITY),
+                Complex64::new(f64::NAN, 1.0),
+            ],
+        ];
+        let factors = [
+            1.125,
+            -1.0,
+            0.0,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            f64::INFINITY,
+            f64::NAN,
+            1.0e300,
+        ];
+        let additional_factors = [
+            1.25,
+            -0.0,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            f64::INFINITY,
+            f64::NAN,
+            1.0e300,
+        ];
+        let exponents = [0, 1, -1, -1024, 1024, -4096, 4096, 4097];
+
+        for values in value_pairs {
+            for factor in factors {
+                for exponent in exponents {
+                    let paired = multiply_complex_pair_scaled(values, factor, exponent);
+                    for index in 0..2 {
+                        let scalar = multiply_complex_scaled(values[index], factor, exponent);
+                        assert_eq!(paired[index].re.to_bits(), scalar.re.to_bits());
+                        assert_eq!(paired[index].im.to_bits(), scalar.im.to_bits());
+                    }
+                }
+                for additional_factor in additional_factors {
+                    for exponent in exponents {
+                        let paired = multiply_complex_pair_scaled_product(
+                            values,
+                            factor,
+                            additional_factor,
+                            exponent,
+                        );
+                        for index in 0..2 {
+                            let scalar = multiply_complex_scaled_product(
+                                values[index],
+                                factor,
+                                additional_factor,
+                                exponent,
+                            );
+                            assert_eq!(paired[index].re.to_bits(), scalar.re.to_bits());
+                            assert_eq!(paired[index].im.to_bits(), scalar.im.to_bits());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]
