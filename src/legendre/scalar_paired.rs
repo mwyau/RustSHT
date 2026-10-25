@@ -6942,20 +6942,15 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
         for index in 0..ordinary_basis_vectors.len() {
             let basis = ordinary_basis_vectors[index];
             let cosine = cosine_vectors[index];
-            // Match the ordinary recurrence's fused accumulation for normal
-            // lanes. Apply the opposite cosine weight before its FMA, as the
-            // ordinary path does during block preparation.
-            sums_0[0] = simd.mul_add_f64s(same_real_0[index], basis, sums_0[0]);
-            sums_0[1] = simd.mul_add_f64s(same_imag_0[index], basis, sums_0[1]);
-            sums_0[2] = simd.mul_add_f64s(
-                simd.mul_f64s(opposite_real_0[index], cosine),
-                basis,
+            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(same_real_0[index], basis));
+            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(same_imag_0[index], basis));
+            sums_0[2] = simd.add_f64s(
                 sums_0[2],
+                simd.mul_f64s(simd.mul_f64s(opposite_real_0[index], basis), cosine),
             );
-            sums_0[3] = simd.mul_add_f64s(
-                simd.mul_f64s(opposite_imag_0[index], cosine),
-                basis,
+            sums_0[3] = simd.add_f64s(
                 sums_0[3],
+                simd.mul_f64s(simd.mul_f64s(opposite_imag_0[index], basis), cosine),
             );
         }
         let mut results = [
@@ -6976,17 +6971,15 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
         for index in 0..ordinary_basis_vectors.len() {
             let basis = ordinary_basis_vectors[index];
             let cosine = cosine_vectors[index];
-            sums_1[0] = simd.mul_add_f64s(same_real_1[index], basis, sums_1[0]);
-            sums_1[1] = simd.mul_add_f64s(same_imag_1[index], basis, sums_1[1]);
-            sums_1[2] = simd.mul_add_f64s(
-                simd.mul_f64s(opposite_real_1[index], cosine),
-                basis,
+            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(same_real_1[index], basis));
+            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(same_imag_1[index], basis));
+            sums_1[2] = simd.add_f64s(
                 sums_1[2],
+                simd.mul_f64s(simd.mul_f64s(opposite_real_1[index], basis), cosine),
             );
-            sums_1[3] = simd.mul_add_f64s(
-                simd.mul_f64s(opposite_imag_1[index], cosine),
-                basis,
+            sums_1[3] = simd.add_f64s(
                 sums_1[3],
+                simd.mul_f64s(simd.mul_f64s(opposite_imag_1[index], basis), cosine),
             );
         }
         results[1] = (
@@ -7037,16 +7030,16 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
         for lane in 0..basis_tail.len() {
             if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
                 for channel in 0..2 {
-                    results[channel].0.re = same_real[channel][vector_lane_count + lane]
-                        .mul_add(basis_tail[lane], results[channel].0.re);
-                    results[channel].0.im = same_imag[channel][vector_lane_count + lane]
-                        .mul_add(basis_tail[lane], results[channel].0.im);
-                    results[channel].1.re = (opposite_real[channel][vector_lane_count + lane]
-                        * cosine_tail[lane])
-                        .mul_add(basis_tail[lane], results[channel].1.re);
-                    results[channel].1.im = (opposite_imag[channel][vector_lane_count + lane]
-                        * cosine_tail[lane])
-                        .mul_add(basis_tail[lane], results[channel].1.im);
+                    results[channel].0.re +=
+                        same_real[channel][vector_lane_count + lane] * basis_tail[lane];
+                    results[channel].0.im +=
+                        same_imag[channel][vector_lane_count + lane] * basis_tail[lane];
+                    results[channel].1.re += (opposite_real[channel][vector_lane_count + lane]
+                        * basis_tail[lane])
+                        * cosine_tail[lane];
+                    results[channel].1.im += (opposite_imag[channel][vector_lane_count + lane]
+                        * basis_tail[lane])
+                        * cosine_tail[lane];
                 }
             } else {
                 for channel in 0..2 {
