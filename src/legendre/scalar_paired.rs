@@ -4564,7 +4564,7 @@ struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     opposite_imag: &'a [f64],
     basis_previous: &'a mut [f64],
     basis_current: &'a mut [f64],
-    basis_snapshot: &'a mut [f64],
+    basis_rotation_scratch: &'a mut [f64],
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
     first_coefficient_a: f64,
@@ -4745,7 +4745,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     const CHECK_GROUP_RANGE: bool,
     const TRACK_STATE_RANGE: bool,
     const ACCUMULATE: bool,
-    const SNAPSHOT_CURRENT: bool,
+    const ROTATE_SEQUENTIAL_STATES: bool,
 >(
     simd: S,
     step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
@@ -4757,7 +4757,7 @@ fn fused_analysis_two_pair_steps_with_simd<
         opposite_imag,
         basis_previous,
         basis_current,
-        basis_snapshot,
+        basis_rotation_scratch,
         cos_theta,
         cos_theta_squared,
         first_coefficient_a,
@@ -4782,7 +4782,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
     let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(basis_previous);
     let (current_vectors, current_tail) = S::as_mut_simd_f64s(basis_current);
-    let (snapshot_vectors, snapshot_tail) = S::as_mut_simd_f64s(basis_snapshot);
+    let (snapshot_vectors, snapshot_tail) = S::as_mut_simd_f64s(basis_rotation_scratch);
     let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
     let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
     if same_real_vectors.len() != current_vectors.len()
@@ -4790,8 +4790,8 @@ fn fused_analysis_two_pair_steps_with_simd<
         || opposite_real_vectors.len() != current_vectors.len()
         || opposite_imag_vectors.len() != current_vectors.len()
         || previous_vectors.len() != current_vectors.len()
-        || (SNAPSHOT_CURRENT && snapshot_vectors.len() != current_vectors.len())
-        || (!SNAPSHOT_CURRENT && !snapshot_vectors.is_empty())
+        || (ROTATE_SEQUENTIAL_STATES && snapshot_vectors.len() != current_vectors.len())
+        || (!ROTATE_SEQUENTIAL_STATES && !snapshot_vectors.is_empty())
         || cosine_vectors.len() != current_vectors.len()
         || cosine_squared_vectors.len() != current_vectors.len()
         || same_real_tail.len() != current_tail.len()
@@ -4799,8 +4799,8 @@ fn fused_analysis_two_pair_steps_with_simd<
         || opposite_real_tail.len() != current_tail.len()
         || opposite_imag_tail.len() != current_tail.len()
         || previous_tail.len() != current_tail.len()
-        || (SNAPSHOT_CURRENT && snapshot_tail.len() != current_tail.len())
-        || (!SNAPSHOT_CURRENT && !snapshot_tail.is_empty())
+        || (ROTATE_SEQUENTIAL_STATES && snapshot_tail.len() != current_tail.len())
+        || (!ROTATE_SEQUENTIAL_STATES && !snapshot_tail.is_empty())
         || cosine_tail.len() != current_tail.len()
         || cosine_squared_tail.len() != current_tail.len()
     {
@@ -4830,6 +4830,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut vector_states_in_range = simd.equal_f64s(zero, zero);
     let mut scalar_states_in_range = true;
     let mut tails_in_range = true;
+    let mut snapshot_vectors = snapshot_vectors.iter_mut();
 
     macro_rules! update_analysis_pair_vector {
         ($previous:expr, $current:expr, $same_real:expr, $same_imag:expr,
@@ -4916,12 +4917,17 @@ fn fused_analysis_two_pair_steps_with_simd<
                     vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
                 }
             }
-            *($previous) = first_next;
-            *($current) = second_next;
+            if ROTATE_SEQUENTIAL_STATES {
+                let snapshot = snapshot_vectors.next()?;
+                *snapshot = first_next;
+                *($previous) = second_next;
+            } else {
+                *($previous) = first_next;
+                *($current) = second_next;
+            }
         }};
     }
 
-    let mut snapshot_vectors = snapshot_vectors.iter_mut();
     for (
         ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
         cosine_squared,
@@ -4935,10 +4941,6 @@ fn fused_analysis_two_pair_steps_with_simd<
         .zip(cosine_vectors.iter())
         .zip(cosine_squared_vectors.iter())
     {
-        if SNAPSHOT_CURRENT {
-            let snapshot = snapshot_vectors.next()?;
-            *snapshot = *current;
-        }
         update_analysis_pair_vector!(
             previous,
             current,
@@ -4987,10 +4989,6 @@ fn fused_analysis_two_pair_steps_with_simd<
     {
         let previous_value = *previous;
         let current_value = *current;
-        if SNAPSHOT_CURRENT {
-            let snapshot = snapshot_tail.next()?;
-            *snapshot = current_value;
-        }
         if ACCUMULATE {
             first_same_re_sum = (*same_real).mul_add(current_value, first_same_re_sum);
             first_same_im_sum = (*same_imag).mul_add(current_value, first_same_im_sum);
@@ -5030,8 +5028,14 @@ fn fused_analysis_two_pair_steps_with_simd<
             .mul_add(first_next, current_value);
         let second_magnitude = second_next.abs();
         tails_in_range &= second_magnitude == 0.0 || second_magnitude >= f64::MIN_POSITIVE;
-        *previous = first_next;
-        *current = second_next;
+        if ROTATE_SEQUENTIAL_STATES {
+            let snapshot = snapshot_tail.next()?;
+            *snapshot = first_next;
+            *previous = second_next;
+        } else {
+            *previous = first_next;
+            *current = second_next;
+        }
     }
 
     let states_in_range = if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
@@ -5040,12 +5044,16 @@ fn fused_analysis_two_pair_steps_with_simd<
         } else {
             analysis_mask_all(simd, vector_states_in_range)
         };
-        let tails_in_range = previous_tail.iter().zip(current_tail.iter()).all(
-            |(&previous_value, &current_value)| {
-                (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)
-                    && (current_value == 0.0 || current_value.abs() >= f64::MIN_POSITIVE)
-            },
-        );
+        let tails_in_range = if ROTATE_SEQUENTIAL_STATES {
+            tails_in_range
+        } else {
+            previous_tail.iter().zip(current_tail.iter()).all(
+                |(&previous_value, &current_value)| {
+                    (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)
+                        && (current_value == 0.0 || current_value.abs() >= f64::MIN_POSITIVE)
+                },
+            )
+        };
         vectors_in_range && tails_in_range
     } else {
         true
@@ -5277,7 +5285,7 @@ impl<
                     opposite_imag,
                     basis_previous: previous,
                     basis_current: current,
-                    basis_snapshot: if SEQUENTIAL_SECOND_CHANNEL {
+                    basis_rotation_scratch: if SEQUENTIAL_SECOND_CHANNEL {
                         &mut next[..]
                     } else {
                         &mut []
@@ -5292,6 +5300,16 @@ impl<
             ) else {
                 return false;
             };
+            if SEQUENTIAL_SECOND_CHANNEL {
+                // The sequential Q/U pass needs both pre-step basis values.
+                // Rotate the three recurrence buffers so the old current basis
+                // remains available in `next`, while the two next states become
+                // `previous` and `current`. The SIMD step writes its first next
+                // state to `next` and its second next state to the old `previous`,
+                // avoiding a separate per-lane copy of the old current state.
+                std::mem::swap(&mut previous, &mut next);
+                std::mem::swap(&mut current, &mut next);
+            }
             if CHECK_PAIR_GROUP_RANGE {
                 let group_in_range = if FUSE_PAIR_GROUP_RANGE_CHECK {
                     group.states_in_range
