@@ -2416,6 +2416,38 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
     )
     .unwrap();
     assert!(exceptional_q[0].re.is_nan() || exceptional_u[0].re.is_nan());
+
+    let mut subnormal_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    subnormal_e[plan.harmonics().index(2, 2).unwrap()].re = f64::from_bits(1);
+    subnormal_e[plan.harmonics().index(3, 2).unwrap()].re = 0.25;
+    let mut subnormal_q = vec![Complex64::new(0.0, 0.0)];
+    let mut subnormal_u = vec![Complex64::new(0.0, 0.0)];
+    plan.synthesize_spin_ring_group_mode_orders(
+        &subnormal_e,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        false,
+        None,
+        None,
+        nphi,
+        1,
+        plan.grid.phi0(),
+        0,
+        1,
+        2,
+        3,
+        &mut subnormal_q,
+        &mut subnormal_u,
+        &workspace.theta_sin[..1],
+        &workspace.theta_cos[..1],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert!(subnormal_q[0].norm() > 0.0 || subnormal_u[0].norm() > 0.0);
 }
 
 #[test]
