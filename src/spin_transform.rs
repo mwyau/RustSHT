@@ -4742,8 +4742,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             && self.harmonics.lmax() == 720
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && current_execution_thread_count() == 1;
-        let sequential_channels = fused_analysis_enabled && scalar_lmax < 1024
-            && !pairwise_two_channel_trial;
+        let sequential_channels =
+            fused_analysis_enabled && scalar_lmax < 1024 && !pairwise_two_channel_trial;
         let shared_recurrence_sequential_accumulation = sequential_channels
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && matches!(current_execution_thread_count(), 1 | 8);

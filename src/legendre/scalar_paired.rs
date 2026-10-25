@@ -9384,6 +9384,42 @@ mod tests {
 
         let baseline_first = staged_first.clone();
         let baseline_second = staged_second.clone();
+        let mut pairwise_first = vec![Complex64::new(17.0, -9.0); coefficient_count];
+        let mut pairwise_second = vec![Complex64::new(-13.0, 7.0); coefficient_count];
+        next.fill(0.0);
+        let pairwise = fused_scalar_analysis_pair_channels_block_with_range_proof(
+            arch,
+            false,
+            false,
+            false,
+            false,
+            &mut range_check_was_exercised,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            [&same_real[0], &same_real[1]],
+            [&same_imag[0], &same_imag[1]],
+            [&opposite_real[0], &opposite_real[1]],
+            [&opposite_imag[0], &opposite_imag[1]],
+            &mut pairwise_first,
+            &mut pairwise_second,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+        )
+        .unwrap();
+        assert!(pairwise);
+        for (channel, staged) in [&pairwise_first, &pairwise_second].into_iter().enumerate() {
+            for (actual, expected) in staged.iter().zip(&reference[channel]) {
+                assert!((*actual - *expected).norm() <= 2.0e-14);
+            }
+        }
+
         let mut weighted_first = vec![Complex64::new(17.0, -9.0); coefficient_count];
         let mut weighted_second = vec![Complex64::new(-13.0, 7.0); coefficient_count];
         next.fill(0.0);
