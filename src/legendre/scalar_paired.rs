@@ -78,7 +78,6 @@ static SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsiz
 #[cfg(all(test, feature = "parallel"))]
 static SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
-
 #[cfg(all(test, feature = "parallel"))]
 pub(crate) fn begin_scalar_analysis_route_profile() {
     use std::sync::atomic::Ordering;
@@ -6837,6 +6836,81 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
+#[inline(always)]
+fn try_accumulate_scaled_exception_vector<S: Simd>(
+    simd: S,
+    same_real: [S::f64s; 2],
+    same_imag: [S::f64s; 2],
+    opposite_real: [S::f64s; 2],
+    opposite_imag: [S::f64s; 2],
+    basis: S::f64s,
+    exponents: &[i64],
+    cosine: S::f64s,
+    results: &mut [(Complex64, Complex64); 2],
+) -> bool {
+    if S::F64_LANES != 4 || exponents.len() != 4 {
+        return false;
+    }
+
+    let mut same_products = [simd.splat_f64s(0.0); 4];
+    let mut opposite_products = [simd.splat_f64s(0.0); 4];
+    for channel in 0..2 {
+        let offset = channel * 2;
+        same_products[offset] = simd.mul_f64s(same_real[channel], basis);
+        same_products[offset + 1] = simd.mul_f64s(same_imag[channel], basis);
+        opposite_products[offset] =
+            simd.mul_f64s(simd.mul_f64s(opposite_real[channel], basis), cosine);
+        opposite_products[offset + 1] =
+            simd.mul_f64s(simd.mul_f64s(opposite_imag[channel], basis), cosine);
+    }
+
+    let zero = simd.splat_f64s(0.0);
+    let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
+    let maximum = simd.splat_f64s(f64::MAX);
+    let mut all_products_normal = simd.equal_f64s(zero, zero);
+    for &product in same_products.iter().chain(&opposite_products) {
+        let magnitude = simd.abs_f64s(product);
+        let normal = simd.and_m64s(
+            simd.greater_than_or_equal_f64s(magnitude, minimum),
+            simd.less_than_or_equal_f64s(magnitude, maximum),
+        );
+        all_products_normal = simd.and_m64s(all_products_normal, normal);
+    }
+    if !analysis_mask_all(simd, all_products_normal) {
+        return false;
+    }
+
+    let Some(scaled_same) = scale_normal_prefix_products_simd::<S>(same_products, exponents) else {
+        return false;
+    };
+    let Some(scaled_opposite) =
+        scale_normal_prefix_products_simd::<S>(opposite_products, exponents)
+    else {
+        return false;
+    };
+    let mut same_values = [[0.0; 4]; 4];
+    let mut opposite_values = [[0.0; 4]; 4];
+    for component in 0..4 {
+        simd.partial_store_f64s(&mut same_values[component], scaled_same[component]);
+        simd.partial_store_f64s(&mut opposite_values[component], scaled_opposite[component]);
+    }
+
+    for lane in 0..4 {
+        for channel in 0..2 {
+            let component = channel * 2;
+            results[channel].0 += Complex64::new(
+                same_values[component][lane],
+                same_values[component + 1][lane],
+            );
+            results[channel].1 += Complex64::new(
+                opposite_values[component][lane],
+                opposite_values[component + 1][lane],
+            );
+        }
+    }
+    true
+}
+
 /// Accumulates mixed scaled lanes for Q and U while computing the ordinary
 /// lane mask once. Each channel uses four live SIMD sums, keeping AVX2
 /// register pressure bounded.
@@ -7012,12 +7086,37 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             }
         };
         if has_avx2_lane_masks {
-            let mut exceptional = exceptional_vector_lanes;
-            while exceptional != 0 {
-                let lane = exceptional.trailing_zeros() as usize;
-                exceptional &= exceptional - 1;
-                debug_assert!(lane < vector_lane_count);
-                accumulate_scaled_lane(lane, &mut results);
+            for vector_index in 0..basis_vectors.len() {
+                let vector_lane_start = vector_index * 4;
+                let mut vector_exception_mask =
+                    ((exceptional_vector_lanes >> (vector_lane_start)) & 0b1111) as u8;
+                if vector_exception_mask == 0b1111 {
+                    let completed = try_accumulate_scaled_exception_vector(
+                        simd,
+                        [same_real_0[vector_index], same_real_1[vector_index]],
+                        [same_imag_0[vector_index], same_imag_1[vector_index]],
+                        [opposite_real_0[vector_index], opposite_real_1[vector_index]],
+                        [opposite_imag_0[vector_index], opposite_imag_1[vector_index]],
+                        basis_vectors[vector_index],
+                        &exponents[vector_lane_start..vector_lane_start + 4],
+                        cosine_vectors[vector_index],
+                        &mut results,
+                    );
+                    if !completed {
+                        for lane in vector_lane_start..vector_lane_start + 4 {
+                            debug_assert!(lane < vector_lane_count);
+                            accumulate_scaled_lane(lane, &mut results);
+                        }
+                    }
+                } else {
+                    while vector_exception_mask != 0 {
+                        let lane_offset = vector_exception_mask.trailing_zeros() as usize;
+                        vector_exception_mask &= vector_exception_mask - 1;
+                        let lane = vector_lane_start + lane_offset;
+                        debug_assert!(lane < vector_lane_count);
+                        accumulate_scaled_lane(lane, &mut results);
+                    }
+                }
             }
         } else {
             for lane in 0..vector_lane_count {
