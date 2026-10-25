@@ -6844,7 +6844,6 @@ struct ScaledAnalysisExceptionVector<'a, S: Simd> {
     basis: S::f64s,
     exponents: &'a [i64],
     cosine: S::f64s,
-    exception_mask: u8,
 }
 
 #[inline(always)]
@@ -6861,31 +6860,9 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
         basis,
         exponents,
         cosine,
-        exception_mask,
     } = vector;
 
     if S::F64_LANES != 4 || exponents.len() != 4 {
-        return false;
-    }
-
-    let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
-    if exponent_vectors.len() != 1 || !exponent_tail.is_empty() {
-        return false;
-    }
-    let zero = simd.splat_f64s(0.0);
-    let magnitude = simd.abs_f64s(basis);
-    let ordinary = simd.and_m64s(
-        simd.equal_i64s(exponent_vectors[0], simd.splat_i64s(0)),
-        simd.and_m64s(
-            simd.less_than_or_equal_f64s(magnitude, simd.splat_f64s(scalar::BIG)),
-            simd.or_m64s(
-                simd.equal_f64s(magnitude, zero),
-                simd.greater_than_or_equal_f64s(magnitude, simd.splat_f64s(scalar::SMALL)),
-            ),
-        ),
-    );
-    let exceptional = simd.not_m64s(ordinary);
-    if analysis_mask_lane_bits::<S>(exceptional) != Some(exception_mask) {
         return false;
     }
 
@@ -6893,30 +6870,15 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
     let mut opposite_products = [simd.splat_f64s(0.0); 4];
     for channel in 0..2 {
         let offset = channel * 2;
-        same_products[offset] = simd.mul_f64s(
-            simd.select_f64s(exceptional, same_real[channel], zero),
-            basis,
-        );
-        same_products[offset + 1] = simd.mul_f64s(
-            simd.select_f64s(exceptional, same_imag[channel], zero),
-            basis,
-        );
-        opposite_products[offset] = simd.mul_f64s(
-            simd.mul_f64s(
-                simd.select_f64s(exceptional, opposite_real[channel], zero),
-                basis,
-            ),
-            cosine,
-        );
-        opposite_products[offset + 1] = simd.mul_f64s(
-            simd.mul_f64s(
-                simd.select_f64s(exceptional, opposite_imag[channel], zero),
-                basis,
-            ),
-            cosine,
-        );
+        same_products[offset] = simd.mul_f64s(same_real[channel], basis);
+        same_products[offset + 1] = simd.mul_f64s(same_imag[channel], basis);
+        opposite_products[offset] =
+            simd.mul_f64s(simd.mul_f64s(opposite_real[channel], basis), cosine);
+        opposite_products[offset + 1] =
+            simd.mul_f64s(simd.mul_f64s(opposite_imag[channel], basis), cosine);
     }
 
+    let zero = simd.splat_f64s(0.0);
     let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
     let maximum = simd.splat_f64s(f64::MAX);
     let mut all_products_normal = simd.equal_f64s(zero, zero);
@@ -6926,10 +6888,7 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
             simd.greater_than_or_equal_f64s(magnitude, minimum),
             simd.less_than_or_equal_f64s(magnitude, maximum),
         );
-        all_products_normal = simd.and_m64s(
-            all_products_normal,
-            simd.or_m64s(simd.not_m64s(exceptional), normal),
-        );
+        all_products_normal = simd.and_m64s(all_products_normal, normal);
     }
     if !analysis_mask_all(simd, all_products_normal) {
         return false;
@@ -6951,9 +6910,6 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
     }
 
     for lane in 0..4 {
-        if exception_mask & (1 << lane) == 0 {
-            continue;
-        }
         for (channel, result) in results.iter_mut().enumerate() {
             let component = channel * 2;
             result.0 += Complex64::new(
@@ -7148,7 +7104,7 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                 let vector_lane_start = vector_index * 4;
                 let mut vector_exception_mask =
                     ((exceptional_vector_lanes >> (vector_lane_start)) & 0b1111) as u8;
-                if vector_exception_mask != 0 {
+                if vector_exception_mask == 0b1111 {
                     let completed = try_accumulate_scaled_exception_vector(
                         simd,
                         ScaledAnalysisExceptionVector {
@@ -7165,18 +7121,22 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                             basis: basis_vectors[vector_index],
                             exponents: &exponents[vector_lane_start..vector_lane_start + 4],
                             cosine: cosine_vectors[vector_index],
-                            exception_mask: vector_exception_mask,
                         },
                         &mut results,
                     );
                     if !completed {
-                        while vector_exception_mask != 0 {
-                            let lane_offset = vector_exception_mask.trailing_zeros() as usize;
-                            vector_exception_mask &= vector_exception_mask - 1;
-                            let lane = vector_lane_start + lane_offset;
+                        for lane in vector_lane_start..vector_lane_start + 4 {
                             debug_assert!(lane < vector_lane_count);
                             accumulate_scaled_lane(lane, &mut results);
                         }
+                    }
+                } else {
+                    while vector_exception_mask != 0 {
+                        let lane_offset = vector_exception_mask.trailing_zeros() as usize;
+                        vector_exception_mask &= vector_exception_mask - 1;
+                        let lane = vector_lane_start + lane_offset;
+                        debug_assert!(lane < vector_lane_count);
+                        accumulate_scaled_lane(lane, &mut results);
                     }
                 }
             }
