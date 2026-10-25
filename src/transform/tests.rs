@@ -3492,8 +3492,9 @@ fn scalar_ordered_parallel_sparse_tails_reuse_odd_and_even_latitude_workspaces()
         .build()
         .unwrap();
 
-    // Keep more short order blocks than workers so the worker-ownership check
-    // remains meaningful on slower or differently scheduled CI hosts.
+    // Exercise sparse odd/even latitude tails with surplus order jobs.
+    // Rayon does not guarantee that multiple workers run these short jobs:
+    // even with an eight-thread pool, one worker may claim every block.
     for (ntheta, nphi) in [(65, 129), (66, 130)] {
         let plan = make_plan(64, 64, ntheta, nphi, 0.23);
         assert!(plan.scalar_legendre_table.set(None).is_ok());
@@ -3534,7 +3535,12 @@ fn scalar_ordered_parallel_sparse_tails_reuse_odd_and_even_latitude_workspaces()
             assert!(workspace.spectra.iter().all(|value| *value != stale));
         }
 
-        assert!(worker_probe.lock().unwrap().len() > 1);
+        // The successful parallel-only call above verifies eligible dispatch.
+        // Check actual Rayon-worker ownership without assuming work stealing:
+        // Windows CI can legitimately complete every short job on one worker.
+        let active_workers = worker_probe.lock().unwrap();
+        assert!(!active_workers.is_empty());
+        assert!(active_workers.iter().all(|&index| index < 8));
     }
 }
 
