@@ -2306,6 +2306,119 @@ fn spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment() {
 }
 
 #[test]
+fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
+    let (lmax, mmax) = (4, 2);
+    let ntheta = lmax + 2;
+    let nphi = 2 * lmax + 3;
+    let plan = make_cc_plan(1, lmax, mmax, ntheta, nphi);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    assert_eq!(workspace.theta_sin[0], 0.0);
+    assert_eq!(workspace.theta_cos[0], 1.0);
+    assert!(workspace.ring_order_limits[0] >= 2);
+
+    let sentinel_q = Complex64::new(0.5, -0.25);
+    let sentinel_u = Complex64::new(-0.125, 0.75);
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = e_alm.clone();
+    for degree in 2..=lmax {
+        e_alm[plan.harmonics().index(degree, 2).unwrap()] = Complex64::new(0.25, -0.5);
+        b_alm[plan.harmonics().index(degree, 2).unwrap()] = Complex64::new(-0.75, 0.125);
+    }
+    let mut q = vec![sentinel_q];
+    let mut u = vec![sentinel_u];
+    plan.synthesize_spin_ring_group_mode_orders(
+        &e_alm,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        false,
+        None,
+        None,
+        nphi,
+        1,
+        plan.grid.phi0(),
+        0,
+        1,
+        2,
+        3,
+        &mut q,
+        &mut u,
+        &workspace.theta_sin[..1],
+        &workspace.theta_cos[..1],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert_eq!(q[0], sentinel_q);
+    assert_eq!(u[0], sentinel_u);
+
+    let mut sectoral_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    sectoral_e[plan.harmonics().index(1, 1).unwrap()] = Complex64::new(1.0, 0.0);
+    let mut sectoral_q = vec![Complex64::new(0.0, 0.0)];
+    let mut sectoral_u = vec![Complex64::new(0.0, 0.0)];
+    plan.synthesize_spin_ring_group_mode_orders(
+        &sectoral_e,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        false,
+        None,
+        None,
+        nphi,
+        1,
+        plan.grid.phi0(),
+        0,
+        1,
+        1,
+        2,
+        &mut sectoral_q,
+        &mut sectoral_u,
+        &workspace.theta_sin[..1],
+        &workspace.theta_cos[..1],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert!(sectoral_q[0].norm() > 0.0 || sectoral_u[0].norm() > 0.0);
+
+    let mut exceptional_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    exceptional_e[plan.harmonics().index(2, 2).unwrap()].re = f64::NAN;
+    let mut exceptional_q = vec![Complex64::new(0.0, 0.0)];
+    let mut exceptional_u = vec![Complex64::new(0.0, 0.0)];
+    plan.synthesize_spin_ring_group_mode_orders(
+        &exceptional_e,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        false,
+        None,
+        None,
+        nphi,
+        1,
+        plan.grid.phi0(),
+        0,
+        1,
+        2,
+        3,
+        &mut exceptional_q,
+        &mut exceptional_u,
+        &workspace.theta_sin[..1],
+        &workspace.theta_cos[..1],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert!(exceptional_q[0].re.is_nan() || exceptional_u[0].re.is_nan());
+}
+
+#[test]
 fn spin1_paired_coefficient_overflow_falls_back_without_partial_commit() {
     let (lmax, m, nphi) = (15, 1, 3);
     let plan = make_plan(1, lmax, m, lmax + 1, nphi);

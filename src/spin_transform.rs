@@ -2246,12 +2246,49 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .max()
                 .unwrap_or(0)
         });
+        let exact_cc_spin1_pole = spin == 1
+            && self.harmonics.spin() == 1
+            && !derivative_norm
+            && T::supports_paired_scalar()
+            && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis
+            && theta_sin.len() == 1
+            && theta_sin[0] == T::zero()
+            && theta_cos[0].abs() == T::one();
         for m in order_start..order_end {
             let output_order = m - order_start;
             // Synthesis cleared these spectra, and the polar cutoff excludes this
             // order from every ring in the segment.
             if maximum_ring_order.is_some_and(|limit| m > limit) {
                 continue;
+            }
+            // At an exact pole, a spin-1 harmonic has support only at |m|=1.
+            // The general recurrence clamps half-angle powers away from zero,
+            // which otherwise makes 0*m artifacts for finite coefficients.
+            // Keep exceptional rows on the checked recurrence path.
+            if exact_cc_spin1_pole && m != 1 {
+                let coefficient_start = self
+                    .harmonics
+                    .index(m, m)
+                    .expect("every packed order starts at its diagonal degree");
+                let coefficient_count = lmax - m + 1;
+                let coefficient_limit =
+                    T::from_f64(16.0).expect("pole fast-path coefficient limit converts");
+                let min_normal =
+                    T::from_f64(f64::MIN_POSITIVE).expect("f64 minimum normal converts");
+                let row_is_safe = e_alm[coefficient_start..coefficient_start + coefficient_count]
+                    .iter()
+                    .chain(b_alm.into_iter().flat_map(|values| {
+                        values[coefficient_start..coefficient_start + coefficient_count].iter()
+                    }))
+                    .flat_map(|coefficient| [coefficient.re, coefficient.im])
+                    .all(|value| {
+                        value.is_finite()
+                            && value.abs() <= coefficient_limit
+                            && (value == T::zero() || value.abs() >= min_normal)
+                    });
+                if row_is_safe {
+                    continue;
+                }
             }
             let phase = longitude_phase::<T>(m, phi0, false);
             let mut fast_scalar_order = fast_scalar;
