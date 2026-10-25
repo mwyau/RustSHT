@@ -10103,8 +10103,7 @@ fn profile_spin1_standard_synthesis_phases() {
                 total.polar_split_attempts += source.polar_split_attempts;
                 total.polar_split_successes += source.polar_split_successes;
                 total.polar_split_declines += source.polar_split_declines;
-                total.polar_split_safe_lane_pair_work +=
-                    source.polar_split_safe_lane_pair_work;
+                total.polar_split_safe_lane_pair_work += source.polar_split_safe_lane_pair_work;
             }
             eprintln!(
                 "PROFILE_ROUTE_BIN,{lmax},{mmax},{thread_count},{repetition},{label},eligible_blocks={},eligible_lane_pair_work={},coefficient_prep_declines={},regular_kernel_attempts={},ordinary_fused_successes={},ordinary_fused_lane_pair_work={},fallback_entries={},transition_successes={},generic_per_degree_blocks={},generic_lane_pair_work={},polar_split_attempts={},polar_split_successes={},polar_split_declines={},polar_split_safe_lane_pair_work={}",

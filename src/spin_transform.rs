@@ -2521,10 +2521,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         if prepared_component_attempted {
                             for ring in 0..theta_sin.len() {
                                 let spectrum_index = ring * spectrum_len + output_order;
-                                q_spectra[spectrum_index] =
-                                    Complex::new(T::zero(), T::zero());
-                                u_spectra[spectrum_index] =
-                                    Complex::new(T::zero(), T::zero());
+                                q_spectra[spectrum_index] = Complex::new(T::zero(), T::zero());
+                                u_spectra[spectrum_index] = Complex::new(T::zero(), T::zero());
                             }
                         }
                         [(0, theta_sin.len()), (0, 0)]
@@ -2895,7 +2893,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
 
         #[cfg(all(test, feature = "parallel"))]
-        let profile_bin = if m <= 255 { 0 } else if m <= 767 { 1 } else { 2 };
+        let profile_bin = if m <= 255 {
+            0
+        } else if m <= 767 {
+            1
+        } else {
+            2
+        };
         let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
         let mut prepared_pair_for_transition = false;
         let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
@@ -2960,8 +2964,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 recurrence.spin1_profile_pair_eligible_blocks += 1;
                 let profile = &mut recurrence.spin1_profile_route_bins[profile_bin];
                 profile.eligible_blocks += 1;
-                profile.eligible_lane_pair_work +=
-                    (block_len * coefficient_pair_count) as u128;
+                profile.eligible_lane_pair_work += (block_len * coefficient_pair_count) as u128;
             }
             let prepared_pair = if paired_channels_eligible {
                 #[cfg(all(test, feature = "parallel"))]
@@ -4499,6 +4502,46 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Result<bool, ShtError> {
         #[cfg(all(test, feature = "parallel"))]
         let mut profile_range_status = profile_range_status;
+        let mut weighted_q_odd_real = [T::zero(); LATITUDE_BLOCK_SIZE];
+        let mut weighted_q_odd_imag = [T::zero(); LATITUDE_BLOCK_SIZE];
+        let mut weighted_u_odd_real = [T::zero(); LATITUDE_BLOCK_SIZE];
+        let mut weighted_u_odd_imag = [T::zero(); LATITUDE_BLOCK_SIZE];
+        let mut opposite_preweighted = false;
+        if T::supports_paired_scalar() && q_products_safe && u_products_safe {
+            weighted_q_odd_real[..q_odd_real.len()].copy_from_slice(q_odd_real);
+            weighted_q_odd_imag[..q_odd_imag.len()].copy_from_slice(q_odd_imag);
+            weighted_u_odd_real[..u_odd_real.len()].copy_from_slice(u_odd_real);
+            weighted_u_odd_imag[..u_odd_imag.len()].copy_from_slice(u_odd_imag);
+            opposite_preweighted = T::prepare_scalar_analysis_opposite_values(
+                &mut weighted_q_odd_real[..q_odd_real.len()],
+                &mut weighted_q_odd_imag[..q_odd_imag.len()],
+                block_cosine,
+            ) && T::prepare_scalar_analysis_opposite_values(
+                &mut weighted_u_odd_real[..u_odd_real.len()],
+                &mut weighted_u_odd_imag[..u_odd_imag.len()],
+                block_cosine,
+            );
+        }
+        let q_odd_real = if opposite_preweighted {
+            &weighted_q_odd_real[..q_odd_real.len()]
+        } else {
+            q_odd_real
+        };
+        let q_odd_imag = if opposite_preweighted {
+            &weighted_q_odd_imag[..q_odd_imag.len()]
+        } else {
+            q_odd_imag
+        };
+        let u_odd_real = if opposite_preweighted {
+            &weighted_u_odd_real[..u_odd_real.len()]
+        } else {
+            u_odd_real
+        };
+        let u_odd_imag = if opposite_preweighted {
+            &weighted_u_odd_imag[..u_odd_imag.len()]
+        } else {
+            u_odd_imag
+        };
         let paired_used = T::for_each_y_lm_paired_status_dispatched(
             arch,
             m,
@@ -4541,6 +4584,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         arch,
                         [q_products_safe, u_products_safe],
                         normal_range,
+                        opposite_preweighted,
                         [&q_even_real[lanes.clone()], &u_even_real[lanes.clone()]],
                         [&q_even_imag[lanes.clone()], &u_even_imag[lanes.clone()]],
                         [&q_odd_real[lanes.clone()], &u_odd_real[lanes.clone()]],

@@ -134,6 +134,14 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    fn prepare_scalar_analysis_opposite_values(
+        _opposite_real: &mut [Self],
+        _opposite_imag: &mut [Self],
+        _cos_theta: &[Self],
+    ) -> bool {
+        false
+    }
+
     fn supports_precomputed_scalar() -> bool {
         false
     }
@@ -736,6 +744,7 @@ pub(crate) trait ShtScalar:
         arch: Arch,
         products_safe: [bool; 2],
         normal_range: bool,
+        _opposite_preweighted: bool,
         same_real: [&[Self]; 2],
         same_imag: [&[Self]; 2],
         opposite_real: [&[Self]; 2],
@@ -875,6 +884,14 @@ impl ShtScalar for f64 {
 
     fn supports_paired_scalar() -> bool {
         true
+    }
+
+    fn prepare_scalar_analysis_opposite_values(
+        opposite_real: &mut [Self],
+        opposite_imag: &mut [Self],
+        cos_theta: &[Self],
+    ) -> bool {
+        scalar_paired::prepare_analysis_opposite(opposite_real, opposite_imag, cos_theta)
     }
 
     fn supports_precomputed_scalar() -> bool {
@@ -1749,6 +1766,7 @@ impl ShtScalar for f64 {
         arch: Arch,
         products_safe: [bool; 2],
         normal_range: bool,
+        opposite_preweighted: bool,
         same_real: [&[Self]; 2],
         same_imag: [&[Self]; 2],
         opposite_real: [&[Self]; 2],
@@ -1761,6 +1779,7 @@ impl ShtScalar for f64 {
             arch,
             products_safe,
             normal_range,
+            opposite_preweighted,
             same_real,
             same_imag,
             opposite_real,
