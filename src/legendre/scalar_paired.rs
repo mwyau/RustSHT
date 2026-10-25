@@ -4593,6 +4593,7 @@ struct FusedAnalysisPairStep<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
 pub(crate) enum AnalysisPairReductionMode {
     Immediate,
     RetainFirst,
+    #[cfg(rustsht_analysis_retain_pair_partials)]
     MergeRetained,
 }
 
@@ -4638,6 +4639,7 @@ fn reduce_or_retain_analysis_vectors<S: Simd>(
             debug_assert!(partials.len() >= 8);
             partials[..8].copy_from_slice(&vectors);
         }
+        #[cfg(rustsht_analysis_retain_pair_partials)]
         AnalysisPairReductionMode::MergeRetained => {
             debug_assert!(partials.len() >= 8);
             for index in 0..8 {
@@ -4652,6 +4654,7 @@ fn reduce_or_retain_analysis_vectors<S: Simd>(
     output
 }
 
+#[cfg(rustsht_analysis_retain_pair_partials)]
 struct FlushAnalysisPairReductionPartials<'a> {
     m: usize,
     lmax: usize,
@@ -4660,6 +4663,7 @@ struct FlushAnalysisPairReductionPartials<'a> {
     second: &'a mut [Complex64],
 }
 
+#[cfg(rustsht_analysis_retain_pair_partials)]
 impl WithSimd for FlushAnalysisPairReductionPartials<'_> {
     type Output = bool;
 
@@ -4715,6 +4719,7 @@ impl WithSimd for FlushAnalysisPairReductionPartials<'_> {
     }
 }
 
+#[cfg(rustsht_analysis_retain_pair_partials)]
 pub(crate) fn flush_analysis_pair_reduction_partials(
     arch: Arch,
     m: usize,
@@ -6188,7 +6193,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
     current: &mut [f64],
     next: &mut [f64],
     exponents: &mut [i64],
-    mut reduction_partials: Option<&mut [f64]>,
+    reduction_partials: Option<&mut [f64]>,
     reduction_mode: AnalysisPairReductionMode,
 ) -> Result<bool, ShtError> {
     *range_check_was_exercised = false;
@@ -6244,7 +6249,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
             current,
             next,
             exponents,
-            reduction_partials.as_deref_mut(),
+            reduction_partials,
             reduction_mode,
         )? {
             Some(fused) => return Ok(fused),

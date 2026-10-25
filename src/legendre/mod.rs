@@ -732,6 +732,7 @@ pub(crate) trait ShtScalar:
     ) -> Result<bool, ShtError> {
         Ok(false)
     }
+    #[cfg(rustsht_analysis_retain_pair_partials)]
     fn flush_analysis_pair_reduction_partials(
         _arch: Arch,
         _m: usize,
@@ -1763,6 +1764,7 @@ impl ShtScalar for f64 {
         )
     }
 
+    #[cfg(rustsht_analysis_retain_pair_partials)]
     fn flush_analysis_pair_reduction_partials(
         arch: Arch,
         m: usize,
