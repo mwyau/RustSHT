@@ -3492,8 +3492,10 @@ fn scalar_ordered_parallel_sparse_tails_reuse_odd_and_even_latitude_workspaces()
         .build()
         .unwrap();
 
-    for (ntheta, nphi) in [(33, 33), (34, 36)] {
-        let plan = make_plan(32, 16, ntheta, nphi, 0.23);
+    // Keep more short order blocks than workers so the worker-ownership check
+    // remains meaningful on slower or differently scheduled CI hosts.
+    for (ntheta, nphi) in [(65, 129), (66, 130)] {
+        let plan = make_plan(64, 64, ntheta, nphi, 0.23);
         assert!(plan.scalar_legendre_table.set(None).is_ok());
         let mut workspace = eight_threads.install(|| plan.workspace()).unwrap();
         eight_threads
