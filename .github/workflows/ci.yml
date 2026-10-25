@@ -15,9 +15,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-24.04, windows-2025-vs2026, macos-26]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           toolchain: 1.99.1
@@ -29,17 +29,17 @@ jobs:
       - name: Lint
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Test
-        if: matrix.os == 'ubuntu-latest' || github.ref_name == 'main' || github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
+        if: matrix.os == 'ubuntu-24.04' || github.ref_name == 'main' || github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
         run: cargo test --workspace --all-features
 
   python:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           toolchain: 1.99.1
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.2
       - name: Build Python extension and install development dependencies
         run: uv sync --python 3.11
       - name: Test compiled extension import
