@@ -6836,18 +6836,32 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
-#[inline(always)]
-fn try_accumulate_scaled_exception_vector<S: Simd>(
-    simd: S,
+struct ScaledAnalysisExceptionVector<'a, S: Simd> {
     same_real: [S::f64s; 2],
     same_imag: [S::f64s; 2],
     opposite_real: [S::f64s; 2],
     opposite_imag: [S::f64s; 2],
     basis: S::f64s,
-    exponents: &[i64],
+    exponents: &'a [i64],
     cosine: S::f64s,
+}
+
+#[inline(always)]
+fn try_accumulate_scaled_exception_vector<S: Simd>(
+    simd: S,
+    vector: ScaledAnalysisExceptionVector<'_, S>,
     results: &mut [(Complex64, Complex64); 2],
 ) -> bool {
+    let ScaledAnalysisExceptionVector {
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        basis,
+        exponents,
+        cosine,
+    } = vector;
+
     if S::F64_LANES != 4 || exponents.len() != 4 {
         return false;
     }
@@ -6896,13 +6910,13 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
     }
 
     for lane in 0..4 {
-        for channel in 0..2 {
+        for (channel, result) in results.iter_mut().enumerate() {
             let component = channel * 2;
-            results[channel].0 += Complex64::new(
+            result.0 += Complex64::new(
                 same_values[component][lane],
                 same_values[component + 1][lane],
             );
-            results[channel].1 += Complex64::new(
+            result.1 += Complex64::new(
                 opposite_values[component][lane],
                 opposite_values[component + 1][lane],
             );
@@ -7093,13 +7107,21 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                 if vector_exception_mask == 0b1111 {
                     let completed = try_accumulate_scaled_exception_vector(
                         simd,
-                        [same_real_0[vector_index], same_real_1[vector_index]],
-                        [same_imag_0[vector_index], same_imag_1[vector_index]],
-                        [opposite_real_0[vector_index], opposite_real_1[vector_index]],
-                        [opposite_imag_0[vector_index], opposite_imag_1[vector_index]],
-                        basis_vectors[vector_index],
-                        &exponents[vector_lane_start..vector_lane_start + 4],
-                        cosine_vectors[vector_index],
+                        ScaledAnalysisExceptionVector {
+                            same_real: [same_real_0[vector_index], same_real_1[vector_index]],
+                            same_imag: [same_imag_0[vector_index], same_imag_1[vector_index]],
+                            opposite_real: [
+                                opposite_real_0[vector_index],
+                                opposite_real_1[vector_index],
+                            ],
+                            opposite_imag: [
+                                opposite_imag_0[vector_index],
+                                opposite_imag_1[vector_index],
+                            ],
+                            basis: basis_vectors[vector_index],
+                            exponents: &exponents[vector_lane_start..vector_lane_start + 4],
+                            cosine: cosine_vectors[vector_index],
+                        },
                         &mut results,
                     );
                     if !completed {
