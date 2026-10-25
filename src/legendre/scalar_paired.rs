@@ -6819,6 +6819,140 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
+#[inline(always)]
+fn normal_product_exponent_sum(left: f64, right: f64) -> Option<i64> {
+    if !left.is_normal() || !right.is_normal() {
+        return None;
+    }
+    let left_exponent = ((left.to_bits() >> 52) & 0x7ff) as i64 - 1023;
+    let right_exponent = ((right.to_bits() >> 52) & 0x7ff) as i64 - 1023;
+    left_exponent.checked_add(right_exponent)
+}
+
+#[inline(always)]
+fn normal_product_exponent_is_safe(exponent_sum: i64) -> bool {
+    (-1022..=1021).contains(&exponent_sum)
+}
+
+#[inline(always)]
+fn normal_product_after_scale_is_safe(left: f64, right: f64, scale: i64) -> bool {
+    let Some(exponent_sum) = normal_product_exponent_sum(left, right) else {
+        return false;
+    };
+    normal_product_exponent_is_safe(exponent_sum)
+        && exponent_sum
+            .checked_add(scale)
+            .is_some_and(normal_product_exponent_is_safe)
+}
+
+#[inline(always)]
+fn normal_product_cosine_after_scale_is_safe(
+    value: f64,
+    basis: f64,
+    cosine: f64,
+    scale: i64,
+) -> bool {
+    let (Some(first_product_sum), Some(cosine_exponent)) = (
+        normal_product_exponent_sum(value, basis),
+        normal_product_exponent_sum(cosine, 1.0),
+    ) else {
+        return false;
+    };
+    if !normal_product_exponent_is_safe(first_product_sum) {
+        return false;
+    }
+    let Some(scaled_first_product_sum) = first_product_sum.checked_add(scale) else {
+        return false;
+    };
+    if !normal_product_exponent_is_safe(scaled_first_product_sum) {
+        return false;
+    }
+
+    let Some(cosine_product_sum) = first_product_sum.checked_add(cosine_exponent) else {
+        return false;
+    };
+    let Some(scaled_cosine_product_sum) = cosine_product_sum.checked_add(scale) else {
+        return false;
+    };
+    (-1022..=1020).contains(&cosine_product_sum)
+        && (-1022..=1020).contains(&scaled_cosine_product_sum)
+}
+
+/// Computes four Q/U contributions using one exact power-of-two basis scale.
+/// The exponent bounds guarantee the same rounded products as the scalar
+/// helpers; every uncertain, subnormal, or extreme case stays on those helpers.
+#[inline(always)]
+fn try_pre_scaled_analysis_lane_contributions(
+    basis: f64,
+    exponent: i64,
+    cosine: f64,
+    same_real: [f64; 2],
+    same_imag: [f64; 2],
+    opposite_real: [f64; 2],
+    opposite_imag: [f64; 2],
+) -> Option<[(Complex64, Complex64); 2]> {
+    if exponent == 0 || !basis.is_normal() {
+        return None;
+    }
+    let raw_exponent = ((basis.to_bits() >> 52) & 0x7ff) as i64;
+    let scaled_exponent = raw_exponent.checked_add(exponent)?;
+    if !(1..0x7ff).contains(&scaled_exponent) {
+        return None;
+    }
+    let scaled_basis = scalar::scale_binary(basis, exponent);
+    if !scaled_basis.is_normal() || !cosine.is_normal() {
+        return None;
+    }
+
+    for channel in 0..2 {
+        if !normal_product_after_scale_is_safe(same_real[channel], basis, exponent)
+            || !normal_product_after_scale_is_safe(same_imag[channel], basis, exponent)
+            || !normal_product_cosine_after_scale_is_safe(
+                opposite_real[channel],
+                basis,
+                cosine,
+                exponent,
+            )
+            || !normal_product_cosine_after_scale_is_safe(
+                opposite_imag[channel],
+                basis,
+                cosine,
+                exponent,
+            )
+        {
+            return None;
+        }
+    }
+
+    let mut contributions = [
+        (Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0)),
+        (Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0)),
+    ];
+    for channel in 0..2 {
+        let same = Complex64::new(
+            same_real[channel] * scaled_basis,
+            same_imag[channel] * scaled_basis,
+        );
+        let opposite_first = Complex64::new(
+            opposite_real[channel] * scaled_basis,
+            opposite_imag[channel] * scaled_basis,
+        );
+        if !same.re.is_normal()
+            || !same.im.is_normal()
+            || !opposite_first.re.is_normal()
+            || !opposite_first.im.is_normal()
+        {
+            return None;
+        }
+        let opposite = Complex64::new(opposite_first.re * cosine, opposite_first.im * cosine);
+        if !opposite.re.is_normal() || !opposite.im.is_normal() {
+            return None;
+        }
+        contributions[channel] = (same, opposite);
+    }
+    Some(contributions)
+}
+
 /// Accumulates mixed scaled lanes for Q and U while computing the ordinary
 /// lane mask once. Each channel uses four live SIMD sums, keeping AVX2
 /// register pressure bounded.
@@ -6977,20 +7111,37 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
 
         let vector_lane_count = basis.len() - basis_tail.len();
         let accumulate_scaled_lane = |lane: usize, results: &mut [(Complex64, Complex64); 2]| {
-            for channel in 0..2 {
-                results[channel].0 += scalar::multiply_complex_scaled(
-                    Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
-                    basis[lane],
-                    exponents[lane],
-                );
-                let opposite =
-                    Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]);
-                results[channel].1 += scalar::multiply_complex_scaled_product(
-                    opposite,
-                    basis[lane],
-                    cos_theta[lane],
-                    exponents[lane],
-                );
+            let same_real_lane = [same_real[0][lane], same_real[1][lane]];
+            let same_imag_lane = [same_imag[0][lane], same_imag[1][lane]];
+            let opposite_real_lane = [opposite_real[0][lane], opposite_real[1][lane]];
+            let opposite_imag_lane = [opposite_imag[0][lane], opposite_imag[1][lane]];
+            if let Some(contributions) = try_pre_scaled_analysis_lane_contributions(
+                basis[lane],
+                exponents[lane],
+                cos_theta[lane],
+                same_real_lane,
+                same_imag_lane,
+                opposite_real_lane,
+                opposite_imag_lane,
+            ) {
+                for channel in 0..2 {
+                    results[channel].0 += contributions[channel].0;
+                    results[channel].1 += contributions[channel].1;
+                }
+            } else {
+                for channel in 0..2 {
+                    results[channel].0 += scalar::multiply_complex_scaled(
+                        Complex64::new(same_real_lane[channel], same_imag_lane[channel]),
+                        basis[lane],
+                        exponents[lane],
+                    );
+                    results[channel].1 += scalar::multiply_complex_scaled_product(
+                        Complex64::new(opposite_real_lane[channel], opposite_imag_lane[channel]),
+                        basis[lane],
+                        cos_theta[lane],
+                        exponents[lane],
+                    );
+                }
             }
         };
         if has_avx2_lane_masks {
@@ -7024,25 +7175,7 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         * cosine_tail[lane];
                 }
             } else {
-                for channel in 0..2 {
-                    results[channel].0 += scalar::multiply_complex_scaled(
-                        Complex64::new(
-                            same_real[channel][vector_lane_count + lane],
-                            same_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        exponent_tail[lane],
-                    );
-                    results[channel].1 += scalar::multiply_complex_scaled_product(
-                        Complex64::new(
-                            opposite_real[channel][vector_lane_count + lane],
-                            opposite_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        cosine_tail[lane],
-                        exponent_tail[lane],
-                    );
-                }
+                accumulate_scaled_lane(vector_lane_count + lane, &mut results);
             }
         }
         results
@@ -10274,6 +10407,20 @@ mod tests {
                     &cosine,
                 ));
             }
+
+            let lane = 1;
+            assert!(
+                try_pre_scaled_analysis_lane_contributions(
+                    basis[lane],
+                    exponents[lane],
+                    cosine[lane],
+                    [same_real[0][lane], same_real[1][lane]],
+                    [same_imag[0][lane], same_imag[1][lane]],
+                    [opposite_real[0][lane], opposite_real[1][lane]],
+                    [opposite_imag[0][lane], opposite_imag[1][lane]],
+                )
+                .is_some()
+            );
 
             let actual = accumulate_analysis_pair_channels_dispatched(
                 Arch::new(),
