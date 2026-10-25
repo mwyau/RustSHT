@@ -4766,69 +4766,47 @@ impl<T: ShtScalar> ShtPlan<T> {
             let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_count);
             let block_len = block_end - block_start;
             let mut active_lanes = 0;
-            {
-                let (
-                    analysis_same_real,
-                    analysis_same_imag,
-                    analysis_opposite_real,
-                    analysis_opposite_imag,
-                    spin_previous_plus,
-                    spin_current_plus,
-                    spin_previous_minus,
-                    spin_current_minus,
-                ) = (
-                    &mut recurrence.analysis_same_real[..block_len],
-                    &mut recurrence.analysis_same_imag[..block_len],
-                    &mut recurrence.analysis_opposite_real[..block_len],
-                    &mut recurrence.analysis_opposite_imag[..block_len],
-                    &mut recurrence.spin_previous_plus[..block_len],
-                    &mut recurrence.spin_current_plus[..block_len],
-                    &mut recurrence.spin_previous_minus[..block_len],
-                    &mut recurrence.spin_current_minus[..block_len],
-                );
-                for lane in 0..block_len {
-                    let pair_index = block_start + lane;
-                    let north_ring = ring_start + pair_index;
-                    let south_ring = ring_end - 1 - pair_index;
-                    let north_active = m <= ring_order_limits[north_ring];
-                    let south_active =
-                        south_ring != north_ring && m <= ring_order_limits[south_ring];
-                    if north_active || south_active {
-                        active_lanes += 1;
-                    }
-
-                    let north_spectrum_start = north_ring * spectrum_len + m;
-                    let south_spectrum_start = south_ring * spectrum_len + m;
-                    let north_q = if north_active {
-                        q_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let south_q = if south_active {
-                        q_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let north_u = if north_active {
-                        u_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let south_u = if south_active {
-                        u_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-
-                    analysis_same_real[lane] = north_q.re;
-                    analysis_same_imag[lane] = north_q.im;
-                    analysis_opposite_real[lane] = south_q.re;
-                    analysis_opposite_imag[lane] = south_q.im;
-                    spin_previous_plus[lane] = north_u.re;
-                    spin_current_plus[lane] = north_u.im;
-                    spin_previous_minus[lane] = south_u.re;
-                    spin_current_minus[lane] = south_u.im;
+            for lane in 0..block_len {
+                let pair_index = block_start + lane;
+                let north_ring = ring_start + pair_index;
+                let south_ring = ring_end - 1 - pair_index;
+                let north_active = m <= ring_order_limits[north_ring];
+                let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
+                if north_active || south_active {
+                    active_lanes += 1;
                 }
+
+                let north_spectrum_start = north_ring * spectrum_len + m;
+                let south_spectrum_start = south_ring * spectrum_len + m;
+                let north_q = if north_active {
+                    q_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let south_q = if south_active {
+                    q_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let north_u = if north_active {
+                    u_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let south_u = if south_active {
+                    u_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+
+                recurrence.analysis_same_real[lane] = north_q.re;
+                recurrence.analysis_same_imag[lane] = north_q.im;
+                recurrence.analysis_opposite_real[lane] = south_q.re;
+                recurrence.analysis_opposite_imag[lane] = south_q.im;
+                recurrence.spin_previous_plus[lane] = north_u.re;
+                recurrence.spin_current_plus[lane] = north_u.im;
+                recurrence.spin_previous_minus[lane] = south_u.re;
+                recurrence.spin_current_minus[lane] = south_u.im;
             }
             if active_lanes == 0 {
                 continue;
@@ -4867,59 +4845,38 @@ impl<T: ShtScalar> ShtPlan<T> {
 
             let compact = compaction_enabled && active_lanes < block_len;
             let mut compact_len = 0;
-            {
-                let (
-                    analysis_same_real,
-                    analysis_same_imag,
-                    analysis_opposite_real,
-                    analysis_opposite_imag,
-                    spin_previous_plus,
-                    spin_current_plus,
-                    spin_previous_minus,
-                    spin_current_minus,
-                ) = (
-                    &mut recurrence.analysis_same_real[..block_len],
-                    &mut recurrence.analysis_same_imag[..block_len],
-                    &mut recurrence.analysis_opposite_real[..block_len],
-                    &mut recurrence.analysis_opposite_imag[..block_len],
-                    &mut recurrence.spin_previous_plus[..block_len],
-                    &mut recurrence.spin_current_plus[..block_len],
-                    &mut recurrence.spin_previous_minus[..block_len],
-                    &mut recurrence.spin_current_minus[..block_len],
-                );
-                for lane in 0..block_len {
-                    let pair_index = block_start + lane;
-                    let north_ring = ring_start + pair_index;
-                    let south_ring = ring_end - 1 - pair_index;
-                    let active = m <= ring_order_limits[north_ring]
-                        || (south_ring != north_ring && m <= ring_order_limits[south_ring]);
-                    if compact && !active {
-                        continue;
-                    }
-                    let output_lane = if compact { compact_len } else { lane };
-                    let north_q_re = analysis_same_real[lane];
-                    let north_q_im = analysis_same_imag[lane];
-                    let south_q_re = analysis_opposite_real[lane];
-                    let south_q_im = analysis_opposite_imag[lane];
-                    let north_u_re = spin_previous_plus[lane];
-                    let north_u_im = spin_current_plus[lane];
-                    let south_u_re = spin_previous_minus[lane];
-                    let south_u_im = spin_current_minus[lane];
-
-                    analysis_same_real[output_lane] = north_q_re + south_q_re;
-                    analysis_same_imag[output_lane] = north_q_im + south_q_im;
-                    analysis_opposite_real[output_lane] = north_q_re - south_q_re;
-                    analysis_opposite_imag[output_lane] = north_q_im - south_q_im;
-                    spin_previous_plus[output_lane] = north_u_re + south_u_re;
-                    spin_current_plus[output_lane] = north_u_im + south_u_im;
-                    spin_previous_minus[output_lane] = north_u_re - south_u_re;
-                    spin_current_minus[output_lane] = north_u_im - south_u_im;
-                    if compact {
-                        recurrence.compact_theta_sin[output_lane] = theta_sin[north_ring];
-                        recurrence.compact_theta_cos[output_lane] = theta_cos[north_ring];
-                    }
-                    compact_len += 1;
+            for lane in 0..block_len {
+                let pair_index = block_start + lane;
+                let north_ring = ring_start + pair_index;
+                let south_ring = ring_end - 1 - pair_index;
+                let active = m <= ring_order_limits[north_ring]
+                    || (south_ring != north_ring && m <= ring_order_limits[south_ring]);
+                if compact && !active {
+                    continue;
                 }
+                let output_lane = if compact { compact_len } else { lane };
+                let north_q_re = recurrence.analysis_same_real[lane];
+                let north_q_im = recurrence.analysis_same_imag[lane];
+                let south_q_re = recurrence.analysis_opposite_real[lane];
+                let south_q_im = recurrence.analysis_opposite_imag[lane];
+                let north_u_re = recurrence.spin_previous_plus[lane];
+                let north_u_im = recurrence.spin_current_plus[lane];
+                let south_u_re = recurrence.spin_previous_minus[lane];
+                let south_u_im = recurrence.spin_current_minus[lane];
+
+                recurrence.analysis_same_real[output_lane] = north_q_re + south_q_re;
+                recurrence.analysis_same_imag[output_lane] = north_q_im + south_q_im;
+                recurrence.analysis_opposite_real[output_lane] = north_q_re - south_q_re;
+                recurrence.analysis_opposite_imag[output_lane] = north_q_im - south_q_im;
+                recurrence.spin_previous_plus[output_lane] = north_u_re + south_u_re;
+                recurrence.spin_current_plus[output_lane] = north_u_im + south_u_im;
+                recurrence.spin_previous_minus[output_lane] = north_u_re - south_u_re;
+                recurrence.spin_current_minus[output_lane] = north_u_im - south_u_im;
+                if compact {
+                    recurrence.compact_theta_sin[output_lane] = theta_sin[north_ring];
+                    recurrence.compact_theta_cos[output_lane] = theta_cos[north_ring];
+                }
+                compact_len += 1;
             }
 
             let lane_count = if compact { compact_len } else { block_len };
