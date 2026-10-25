@@ -1647,7 +1647,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                     if workspace.theta_sin[ring] >= transition_sine
                         && m <= workspace.ring_order_limits[ring]
                     {
-                        for (component, split, expected) in [
+                        for (_component, split, expected) in [
                             ("Q safe", split_q[index], expected_q),
                             ("U safe", split_u[index], expected_u),
                         ] {
@@ -1658,7 +1658,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                             );
                         }
                     }
-                    for (component, split, expected) in [
+                    for (_component, split, expected) in [
                         ("Q full block", block_q[index], expected_q),
                         ("U full block", block_u[index], expected_u),
                     ] {
