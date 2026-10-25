@@ -5973,12 +5973,14 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
             .is_empty()
     );
     assert!(!eight_workspace.spin_order_output_scratch.is_empty());
+    // Reduced-mmax CC/F1 q1 and q8 use different accumulation orders.
+    // Limit the looser tolerance to this cross-thread synthesis comparison.
     for (actual, expected) in eight_first
         .iter()
         .zip(&one_first)
         .chain(eight_second.iter().zip(&one_second))
     {
-        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+        assert!((actual - expected).abs() <= 1.0e-9 * expected.abs().max(1.0));
     }
 
     eight_first.fill(f64::NAN);
@@ -6005,7 +6007,7 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
         .zip(&one_first)
         .chain(eight_second.iter().zip(&one_second))
     {
-        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+        assert!((actual - expected).abs() <= 1.0e-9 * expected.abs().max(1.0));
     }
 
     let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
@@ -6058,7 +6060,7 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
         .zip(&changed_one_first)
         .chain(changed_eight_second.iter().zip(&changed_one_second))
     {
-        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+        assert!((actual - expected).abs() <= 1.0e-9 * expected.abs().max(1.0));
     }
 }
 
@@ -6104,12 +6106,14 @@ fn spin1_cc_grouped_synthesis_reuses_checked_coefficients() {
             .spin1_scalar_coefficient_finite_orders
             .is_empty()
     );
+    // Reduced-mmax CC/F1 q1 and q8 use different accumulation orders.
+    // Limit the looser tolerance to this cross-thread synthesis comparison.
     for (actual, expected) in eight_first
         .iter()
         .zip(&one_first)
         .chain(eight_second.iter().zip(&one_second))
     {
-        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+        assert!((actual - expected).abs() <= 1.0e-9 * expected.abs().max(1.0));
     }
 
     let mut changed_e = e.clone();
@@ -6151,7 +6155,7 @@ fn spin1_cc_grouped_synthesis_reuses_checked_coefficients() {
         .zip(&changed_one_first)
         .chain(eight_second.iter().zip(&changed_one_second))
     {
-        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+        assert!((actual - expected).abs() <= 1.0e-9 * expected.abs().max(1.0));
     }
 
     let magnitude = 1.44e308;
