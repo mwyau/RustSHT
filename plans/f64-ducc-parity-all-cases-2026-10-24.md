@@ -6,11 +6,9 @@ Match or beat pinned native DUCC 0.42.0 (`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e
 
 ## Current position
 
-The active development branch is `dev`; keep CI green for future source changes. The most recent full cross-platform run, [Rust CI #252](https://github.com/mwyau/RustSHT/actions/runs/40160229462), passed on checkpoint `dc5a7b4` before this documentation refresh.
-
 GL T1023 full spin-1 synthesis q1 is closed at its measured candidate: 90.402 ms Rust vs 124.899 ms DUCC. The existing [root-cause report](../reports/T1023_Q1_ROOT_CAUSE.md) documents its route, instruction attribution, and validated improvement. Do not spend more work there without evidence of a regression.
 
-The next open high-priority cells are GL T720 full spin-1 analysis q1 (45.416 vs 29.522 ms) and q8 (6.589 vs 4.259 ms). Current profiling places recurrence/accumulation at the center of the gap. The current-source q1 Callgrind run and pinned DUCC comparison are in local scratch; next inspect the optimized AVX2 loop and quantify ordinary versus checked/scaled work before selecting a mechanism.
+The next open high-priority cells are GL T720 full spin-1 analysis q1 (40.746 vs 29.405 ms, 1.386×) and q8 (5.798 vs 4.223 ms, 1.373×). Candidate `70c92d9c` combines two SIMD finite-mask reductions into one; it improves q1 by 3.0% over exact parent `669d13f0` across five paired runs and q8 by 2.9% across three pairs, while preserving parent output bits. The remaining gap is recurrence/accumulation. Profile the current source and inspect its optimized AVX2 loop before choosing another mechanism.
 
 Other measured work includes CC T720 reduced synthesis q1 (27.547 vs 18.684 ms, preliminary), while measured CC T720 full/reduced q8 and CC T1023 full q8 are below DUCC. Use [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md) as the short accepted-results snapshot; do not infer parity for unmeasured cells.
 
