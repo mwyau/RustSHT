@@ -2137,7 +2137,7 @@ pub(crate) fn accumulate_analysis_pair_channels_dispatched(
     }
 
     if products_safe == [true, true] && !normal_range && exponents.contains(&0) {
-        return arch.dispatch(MixedAnalysisPairChannelsAccumulation {
+        return arch.dispatch(MixedAnalysisPairChannelsAccumulation::<false> {
             same_real,
             same_imag,
             opposite_real,
@@ -3915,8 +3915,6 @@ struct FusedCheckedScaledAnalysisPairChannels<'a, const CHECK_PAIR_GROUP_RANGE: 
     coefficient_b: &'a [f64],
     same_real: [&'a [f64]; 2],
     same_imag: [&'a [f64]; 2],
-    opposite_real: [&'a [f64]; 2],
-    opposite_imag: [&'a [f64]; 2],
     ordinary_opposite_real: [&'a [f64]; 2],
     ordinary_opposite_imag: [&'a [f64]; 2],
     staged_first: &'a mut [Complex64],
@@ -3945,8 +3943,6 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
             coefficient_b,
             same_real,
             same_imag,
-            opposite_real,
-            opposite_imag,
             ordinary_opposite_real,
             ordinary_opposite_imag,
             staged_first,
@@ -4002,11 +3998,11 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
             let l = m + 2 * pair_index;
             let offset = l - m;
             if pair_index + 1 == pair_count {
-                let channel_sums = MixedAnalysisPairChannelsAccumulation {
+                let channel_sums = MixedAnalysisPairChannelsAccumulation::<true> {
                     same_real,
                     same_imag,
-                    opposite_real,
-                    opposite_imag,
+                    opposite_real: ordinary_opposite_real,
+                    opposite_imag: ordinary_opposite_imag,
                     basis: current,
                     exponents,
                     cos_theta,
@@ -4024,8 +4020,8 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
             let Some((channel_sums, ready)) = FusedCheckedMixedAnalysisPairChannelsStep {
                 same_real,
                 same_imag,
-                opposite_real,
-                opposite_imag,
+                opposite_real: ordinary_opposite_real,
+                opposite_imag: ordinary_opposite_imag,
                 basis_previous: previous,
                 basis_current: current,
                 exponents,
@@ -4096,7 +4092,7 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
         {
             return None;
         }
-        let channel_sums = MixedAnalysisPairChannelsAccumulation {
+        let channel_sums = MixedAnalysisPairChannelsAccumulation::<true> {
             same_real,
             same_imag,
             opposite_real,
@@ -5825,8 +5821,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
                 coefficient_b,
                 same_real,
                 same_imag,
-                opposite_real,
-                opposite_imag,
                 ordinary_opposite_real: [
                     &q_opposite_real[..sin_theta.len()],
                     &u_opposite_real[..sin_theta.len()],
@@ -5853,8 +5847,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
                 coefficient_b,
                 same_real,
                 same_imag,
-                opposite_real,
-                opposite_imag,
                 ordinary_opposite_real: [
                     &q_opposite_real[..sin_theta.len()],
                     &u_opposite_real[..sin_theta.len()],
@@ -6868,7 +6860,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
-struct ScaledAnalysisExceptionVector<'a, S: Simd> {
+struct ScaledAnalysisExceptionVector<'a, S: Simd, const OPPOSITE_COSINE_WEIGHTED: bool> {
     same_real: [S::f64s; 2],
     same_imag: [S::f64s; 2],
     opposite_real: [S::f64s; 2],
@@ -6879,9 +6871,9 @@ struct ScaledAnalysisExceptionVector<'a, S: Simd> {
 }
 
 #[inline(always)]
-fn try_accumulate_scaled_exception_vector<S: Simd>(
+fn try_accumulate_scaled_exception_vector<S: Simd, const OPPOSITE_COSINE_WEIGHTED: bool>(
     simd: S,
-    vector: ScaledAnalysisExceptionVector<'_, S>,
+    vector: ScaledAnalysisExceptionVector<'_, S, OPPOSITE_COSINE_WEIGHTED>,
     results: &mut [(Complex64, Complex64); 2],
 ) -> bool {
     let ScaledAnalysisExceptionVector {
@@ -6904,10 +6896,15 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
         let offset = channel * 2;
         same_products[offset] = simd.mul_f64s(same_real[channel], basis);
         same_products[offset + 1] = simd.mul_f64s(same_imag[channel], basis);
-        opposite_products[offset] =
-            simd.mul_f64s(simd.mul_f64s(opposite_real[channel], basis), cosine);
-        opposite_products[offset + 1] =
-            simd.mul_f64s(simd.mul_f64s(opposite_imag[channel], basis), cosine);
+        let opposite_real_product = simd.mul_f64s(opposite_real[channel], basis);
+        let opposite_imag_product = simd.mul_f64s(opposite_imag[channel], basis);
+        if OPPOSITE_COSINE_WEIGHTED {
+            opposite_products[offset] = opposite_real_product;
+            opposite_products[offset + 1] = opposite_imag_product;
+        } else {
+            opposite_products[offset] = simd.mul_f64s(opposite_real_product, cosine);
+            opposite_products[offset + 1] = simd.mul_f64s(opposite_imag_product, cosine);
+        }
     }
 
     let zero = simd.splat_f64s(0.0);
@@ -6958,9 +6955,11 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
 }
 
 /// Accumulates mixed scaled lanes for Q and U while computing the ordinary
-/// lane mask once. Each channel uses four live SIMD sums, keeping AVX2
-/// register pressure bounded.
-struct MixedAnalysisPairChannelsAccumulation<'a> {
+/// lane mask once. When `OPPOSITE_COSINE_WEIGHTED` is true, callers pass spectra
+/// already weighted and checked by `prepare_analysis_opposite`, matching the
+/// ordinary suffix operation. Each channel uses four live SIMD sums, keeping
+/// AVX2 register pressure bounded.
+struct MixedAnalysisPairChannelsAccumulation<'a, const OPPOSITE_COSINE_WEIGHTED: bool = false> {
     same_real: [&'a [f64]; 2],
     same_imag: [&'a [f64]; 2],
     opposite_real: [&'a [f64]; 2],
@@ -6970,7 +6969,9 @@ struct MixedAnalysisPairChannelsAccumulation<'a> {
     cos_theta: &'a [f64],
 }
 
-impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
+impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
+    for MixedAnalysisPairChannelsAccumulation<'_, OPPOSITE_COSINE_WEIGHTED>
+{
     type Output = [(Complex64, Complex64); 2];
 
     #[inline(always)]
@@ -7064,14 +7065,18 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             let cosine = cosine_vectors[index];
             sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(same_real_0[index], basis));
             sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(same_imag_0[index], basis));
-            sums_0[2] = simd.add_f64s(
-                sums_0[2],
-                simd.mul_f64s(simd.mul_f64s(opposite_real_0[index], basis), cosine),
-            );
-            sums_0[3] = simd.add_f64s(
-                sums_0[3],
-                simd.mul_f64s(simd.mul_f64s(opposite_imag_0[index], basis), cosine),
-            );
+            let opposite_real_product = simd.mul_f64s(opposite_real_0[index], basis);
+            let opposite_imag_product = simd.mul_f64s(opposite_imag_0[index], basis);
+            let (opposite_real_product, opposite_imag_product) = if OPPOSITE_COSINE_WEIGHTED {
+                (opposite_real_product, opposite_imag_product)
+            } else {
+                (
+                    simd.mul_f64s(opposite_real_product, cosine),
+                    simd.mul_f64s(opposite_imag_product, cosine),
+                )
+            };
+            sums_0[2] = simd.add_f64s(sums_0[2], opposite_real_product);
+            sums_0[3] = simd.add_f64s(sums_0[3], opposite_imag_product);
         }
         let mut results = [
             (
@@ -7093,14 +7098,18 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             let cosine = cosine_vectors[index];
             sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(same_real_1[index], basis));
             sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(same_imag_1[index], basis));
-            sums_1[2] = simd.add_f64s(
-                sums_1[2],
-                simd.mul_f64s(simd.mul_f64s(opposite_real_1[index], basis), cosine),
-            );
-            sums_1[3] = simd.add_f64s(
-                sums_1[3],
-                simd.mul_f64s(simd.mul_f64s(opposite_imag_1[index], basis), cosine),
-            );
+            let opposite_real_product = simd.mul_f64s(opposite_real_1[index], basis);
+            let opposite_imag_product = simd.mul_f64s(opposite_imag_1[index], basis);
+            let (opposite_real_product, opposite_imag_product) = if OPPOSITE_COSINE_WEIGHTED {
+                (opposite_real_product, opposite_imag_product)
+            } else {
+                (
+                    simd.mul_f64s(opposite_real_product, cosine),
+                    simd.mul_f64s(opposite_imag_product, cosine),
+                )
+            };
+            sums_1[2] = simd.add_f64s(sums_1[2], opposite_real_product);
+            sums_1[3] = simd.add_f64s(sums_1[3], opposite_imag_product);
         }
         results[1] = (
             Complex64::new(
@@ -7123,12 +7132,16 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                 );
                 let opposite =
                     Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]);
-                results[channel].1 += scalar::multiply_complex_scaled_product(
-                    opposite,
-                    basis[lane],
-                    cos_theta[lane],
-                    exponents[lane],
-                );
+                results[channel].1 += if OPPOSITE_COSINE_WEIGHTED {
+                    scalar::multiply_complex_scaled(opposite, basis[lane], exponents[lane])
+                } else {
+                    scalar::multiply_complex_scaled_product(
+                        opposite,
+                        basis[lane],
+                        cos_theta[lane],
+                        exponents[lane],
+                    )
+                };
             }
         };
         if has_avx2_lane_masks {
@@ -7137,25 +7150,26 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                 let mut vector_exception_mask =
                     ((exceptional_vector_lanes >> (vector_lane_start)) & 0b1111) as u8;
                 if vector_exception_mask == 0b1111 {
-                    let completed = try_accumulate_scaled_exception_vector(
-                        simd,
-                        ScaledAnalysisExceptionVector {
-                            same_real: [same_real_0[vector_index], same_real_1[vector_index]],
-                            same_imag: [same_imag_0[vector_index], same_imag_1[vector_index]],
-                            opposite_real: [
-                                opposite_real_0[vector_index],
-                                opposite_real_1[vector_index],
-                            ],
-                            opposite_imag: [
-                                opposite_imag_0[vector_index],
-                                opposite_imag_1[vector_index],
-                            ],
-                            basis: basis_vectors[vector_index],
-                            exponents: &exponents[vector_lane_start..vector_lane_start + 4],
-                            cosine: cosine_vectors[vector_index],
-                        },
-                        &mut results,
-                    );
+                    let completed =
+                        try_accumulate_scaled_exception_vector::<S, OPPOSITE_COSINE_WEIGHTED>(
+                            simd,
+                            ScaledAnalysisExceptionVector::<S, OPPOSITE_COSINE_WEIGHTED> {
+                                same_real: [same_real_0[vector_index], same_real_1[vector_index]],
+                                same_imag: [same_imag_0[vector_index], same_imag_1[vector_index]],
+                                opposite_real: [
+                                    opposite_real_0[vector_index],
+                                    opposite_real_1[vector_index],
+                                ],
+                                opposite_imag: [
+                                    opposite_imag_0[vector_index],
+                                    opposite_imag_1[vector_index],
+                                ],
+                                basis: basis_vectors[vector_index],
+                                exponents: &exponents[vector_lane_start..vector_lane_start + 4],
+                                cosine: cosine_vectors[vector_index],
+                            },
+                            &mut results,
+                        );
                     if !completed {
                         for lane in vector_lane_start..vector_lane_start + 4 {
                             debug_assert!(lane < vector_lane_count);
@@ -7187,12 +7201,19 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         same_real[channel][vector_lane_count + lane] * basis_tail[lane];
                     results[channel].0.im +=
                         same_imag[channel][vector_lane_count + lane] * basis_tail[lane];
-                    results[channel].1.re += (opposite_real[channel][vector_lane_count + lane]
-                        * basis_tail[lane])
-                        * cosine_tail[lane];
-                    results[channel].1.im += (opposite_imag[channel][vector_lane_count + lane]
-                        * basis_tail[lane])
-                        * cosine_tail[lane];
+                    if OPPOSITE_COSINE_WEIGHTED {
+                        results[channel].1.re +=
+                            opposite_real[channel][vector_lane_count + lane] * basis_tail[lane];
+                        results[channel].1.im +=
+                            opposite_imag[channel][vector_lane_count + lane] * basis_tail[lane];
+                    } else {
+                        results[channel].1.re += (opposite_real[channel][vector_lane_count + lane]
+                            * basis_tail[lane])
+                            * cosine_tail[lane];
+                        results[channel].1.im += (opposite_imag[channel][vector_lane_count + lane]
+                            * basis_tail[lane])
+                            * cosine_tail[lane];
+                    }
                 }
             } else {
                 for channel in 0..2 {
@@ -7204,15 +7225,24 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         basis_tail[lane],
                         exponent_tail[lane],
                     );
-                    results[channel].1 += scalar::multiply_complex_scaled_product(
-                        Complex64::new(
-                            opposite_real[channel][vector_lane_count + lane],
-                            opposite_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        cosine_tail[lane],
-                        exponent_tail[lane],
+                    let opposite = Complex64::new(
+                        opposite_real[channel][vector_lane_count + lane],
+                        opposite_imag[channel][vector_lane_count + lane],
                     );
+                    results[channel].1 += if OPPOSITE_COSINE_WEIGHTED {
+                        scalar::multiply_complex_scaled(
+                            opposite,
+                            basis_tail[lane],
+                            exponent_tail[lane],
+                        )
+                    } else {
+                        scalar::multiply_complex_scaled_product(
+                            opposite,
+                            basis_tail[lane],
+                            cosine_tail[lane],
+                            exponent_tail[lane],
+                        )
+                    };
                 }
             }
         }
