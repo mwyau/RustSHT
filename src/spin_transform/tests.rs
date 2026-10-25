@@ -3057,7 +3057,7 @@ fn spin1_reflected_analysis_subranges_fall_back_for_extreme_inputs_on_all_grids(
             .grid
             .ring_weights()
             .iter()
-            .zip(&workspace.theta_sin)
+            .zip(&workspace.theta_sin[..ntheta])
             .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
             .collect();
         let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
@@ -3078,9 +3078,9 @@ fn spin1_reflected_analysis_subranges_fall_back_for_extreme_inputs_on_all_grids(
                 0,
                 ring_start,
                 ring_end,
-                &workspace.theta_sin,
-                &workspace.theta_cos,
-                &workspace.ring_order_limits,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
                 &[],
                 pulp::Arch::new(),
                 &mut paired_e,
@@ -3108,9 +3108,9 @@ fn spin1_reflected_analysis_subranges_fall_back_for_extreme_inputs_on_all_grids(
             0,
             ring_start,
             ring_end,
-            &workspace.theta_sin,
-            &workspace.theta_cos,
-            &workspace.ring_order_limits,
+            &workspace.theta_sin[..ntheta],
+            &workspace.theta_cos[..ntheta],
+            &workspace.ring_order_limits[..ntheta],
             pulp::Arch::new(),
             &mut fallback_e,
             Some(&mut fallback_b[..]),
