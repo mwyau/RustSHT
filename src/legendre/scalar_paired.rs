@@ -4126,16 +4126,12 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
             let mut current_value =
                 simd.mul_add_f64s(leading, previous_value, previous_vectors[index]);
             let mut exponent = exponent_vectors[index];
-            let vector_is_normal = scalar::normalize_pair_vector_simd(
+            all_normal &= scalar::normalize_pair_vector_simd(
                 simd,
                 &mut previous_value,
                 &mut current_value,
                 &mut exponent,
-                all_normal,
             )?;
-            if all_normal {
-                all_normal = vector_is_normal;
-            }
             current_vectors[index] = previous_value;
             next_vectors[index] = current_value;
             exponent_vectors[index] = exponent;

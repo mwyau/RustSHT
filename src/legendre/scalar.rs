@@ -351,16 +351,12 @@ pub(super) fn normalize_pair_lanes_simd<S: Simd>(
         let mut previous_value = previous_vectors[index];
         let mut current_value = current_vectors[index];
         let mut exponent = exponent_vectors[index];
-        let vector_is_normal = normalize_pair_vector_simd(
+        all_normal &= normalize_pair_vector_simd(
             simd,
             &mut previous_value,
             &mut current_value,
             &mut exponent,
-            all_normal,
         )?;
-        if all_normal {
-            all_normal = vector_is_normal;
-        }
         previous_vectors[index] = previous_value;
         current_vectors[index] = current_value;
         exponent_vectors[index] = exponent;
@@ -390,11 +386,7 @@ pub(super) fn normalize_pair_vector_simd<S: Simd>(
     previous_value: &mut S::f64s,
     current_value: &mut S::f64s,
     exponent: &mut S::i64s,
-    check_normal_status: bool,
 ) -> Option<bool> {
-    // A caller with an already-false aggregate still needs finite checks and
-    // exact exponent normalization, but later normality reductions cannot
-    // change its result.
     let maximum = simd.splat_f64s(BIG);
     let minimum = simd.splat_f64s(SMALL);
     let zero_f64 = simd.splat_f64s(0.0);
@@ -417,9 +409,7 @@ pub(super) fn normalize_pair_vector_simd<S: Simd>(
     let mut magnitude = simd.max_f64s(previous_magnitude, current_magnitude);
     let in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
     if mask_all_f64(simd, in_range) {
-        return Some(
-            check_normal_status && mask_all_i64(simd, simd.equal_i64s(*exponent, zero_i64)),
-        );
+        return Some(mask_all_i64(simd, simd.equal_i64s(*exponent, zero_i64)));
     }
 
     loop {
@@ -477,9 +467,6 @@ pub(super) fn normalize_pair_vector_simd<S: Simd>(
         );
     }
 
-    if !check_normal_status {
-        return Some(false);
-    }
     let in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
     Some(mask_all_i64(simd, simd.equal_i64s(*exponent, zero_i64)) && mask_all_f64(simd, in_range))
 }
