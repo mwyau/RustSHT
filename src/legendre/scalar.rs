@@ -618,6 +618,61 @@ pub(crate) fn multiply_complex_scaled_product(
     )
 }
 
+/// Multiplies two complex values by a shared scaled recurrence value.
+///
+/// The normal path shares the exponent-range decision and binary adjustment
+/// across both outputs. If any value needs the exceptional arithmetic path,
+/// each result is delegated to the same component helpers used by the
+/// single-output operations above.
+pub(crate) fn multiply_complex_scaled_pair<const OPPOSITE_COSINE_WEIGHTED: bool>(
+    same: Complex64,
+    opposite: Complex64,
+    factor: f64,
+    additional_factor: f64,
+    exponent: i64,
+) -> (Complex64, Complex64) {
+    if factor.is_normal()
+        && same.re.is_normal()
+        && same.im.is_normal()
+        && opposite.re.is_normal()
+        && opposite.im.is_normal()
+        && (OPPOSITE_COSINE_WEIGHTED || additional_factor.is_normal())
+    {
+        let same_product = Complex64::new(same.re * factor, same.im * factor);
+        let opposite_product = if OPPOSITE_COSINE_WEIGHTED {
+            Complex64::new(opposite.re * factor, opposite.im * factor)
+        } else {
+            Complex64::new(
+                (opposite.re * factor) * additional_factor,
+                (opposite.im * factor) * additional_factor,
+            )
+        };
+        if same_product.re.is_normal()
+            && same_product.im.is_normal()
+            && opposite_product.re.is_normal()
+            && opposite_product.im.is_normal()
+        {
+            if exponent == 0 {
+                return (same_product, opposite_product);
+            }
+            if let Some(products) =
+                scale_complex_pair_normal_binary(same_product, opposite_product, exponent)
+            {
+                return products;
+            }
+        }
+    }
+
+    (
+        multiply_complex_scaled(same, factor, exponent),
+        if OPPOSITE_COSINE_WEIGHTED {
+            multiply_complex_scaled(opposite, factor, exponent)
+        } else {
+            multiply_complex_scaled_product(opposite, factor, additional_factor, exponent)
+        },
+    )
+}
+
 fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
     if exponent == 0 {
         return Some(value);
@@ -638,6 +693,47 @@ fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Comple
     Some(Complex64::new(
         f64::from_bits((real_bits & !exponent_mask) | ((real_exponent as u64) << 52)),
         f64::from_bits((imag_bits & !exponent_mask) | ((imag_exponent as u64) << 52)),
+    ))
+}
+
+fn scale_complex_pair_normal_binary(
+    first: Complex64,
+    second: Complex64,
+    exponent: i64,
+) -> Option<(Complex64, Complex64)> {
+    if !(-4096..=4096).contains(&exponent) {
+        return None;
+    }
+
+    let first_re_bits = first.re.to_bits();
+    let first_im_bits = first.im.to_bits();
+    let second_re_bits = second.re.to_bits();
+    let second_im_bits = second.im.to_bits();
+    let first_re_exponent = ((first_re_bits >> 52) & 0x7ff) as i64 + exponent;
+    let first_im_exponent = ((first_im_bits >> 52) & 0x7ff) as i64 + exponent;
+    let second_re_exponent = ((second_re_bits >> 52) & 0x7ff) as i64 + exponent;
+    let second_im_exponent = ((second_im_bits >> 52) & 0x7ff) as i64 + exponent;
+    if !(1..0x7ff).contains(&first_re_exponent)
+        || !(1..0x7ff).contains(&first_im_exponent)
+        || !(1..0x7ff).contains(&second_re_exponent)
+        || !(1..0x7ff).contains(&second_im_exponent)
+    {
+        return None;
+    }
+
+    let exponent_mask = 0x7ff_u64 << 52;
+    let scale = |bits: u64, scaled_exponent: i64| {
+        f64::from_bits((bits & !exponent_mask) | ((scaled_exponent as u64) << 52))
+    };
+    Some((
+        Complex64::new(
+            scale(first_re_bits, first_re_exponent),
+            scale(first_im_bits, first_im_exponent),
+        ),
+        Complex64::new(
+            scale(second_re_bits, second_re_exponent),
+            scale(second_im_bits, second_im_exponent),
+        ),
     ))
 }
 
@@ -2348,6 +2444,104 @@ mod tests {
         let expected_scale = 2.0_f64.powi(-400);
         assert!((actual.re / expected_scale - 1.0e300).abs() / 1.0e300 < 2e-15);
         assert!((actual.im / expected_scale + 1.0e300).abs() / 1.0e300 < 2e-15);
+    }
+
+    #[test]
+    fn paired_scaled_complex_products_match_separate_helpers_bitwise() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.5,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            f64::MAX,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            f64::NAN,
+        ];
+        let complexes: Vec<_> = values
+            .iter()
+            .enumerate()
+            .map(|(index, &real)| Complex64::new(real, values[(index + 3) % values.len()]))
+            .collect();
+        let factors = [
+            0.0,
+            -0.0,
+            0.75,
+            -1.25,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            f64::MAX,
+            f64::INFINITY,
+            f64::NAN,
+        ];
+        let additional_factors = [
+            0.0,
+            -0.5,
+            1.25,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            f64::MAX,
+            f64::INFINITY,
+            f64::NAN,
+        ];
+        let exponents = [
+            -4097,
+            -1024,
+            -800,
+            -1,
+            0,
+            1,
+            800,
+            1023,
+            4097,
+            i64::MIN,
+            i64::MAX,
+        ];
+
+        for (index, &same) in complexes.iter().enumerate() {
+            let opposite = complexes[(index + 5) % complexes.len()];
+            for &factor in &factors {
+                for &additional_factor in &additional_factors {
+                    for &exponent in &exponents {
+                        let (actual_same, actual_opposite) = multiply_complex_scaled_pair::<false>(
+                            same,
+                            opposite,
+                            factor,
+                            additional_factor,
+                            exponent,
+                        );
+                        let expected_same = multiply_complex_scaled(same, factor, exponent);
+                        let expected_opposite = multiply_complex_scaled_product(
+                            opposite,
+                            factor,
+                            additional_factor,
+                            exponent,
+                        );
+                        assert_eq!(actual_same.re.to_bits(), expected_same.re.to_bits());
+                        assert_eq!(actual_same.im.to_bits(), expected_same.im.to_bits());
+                        assert_eq!(actual_opposite.re.to_bits(), expected_opposite.re.to_bits());
+                        assert_eq!(actual_opposite.im.to_bits(), expected_opposite.im.to_bits());
+
+                        let (actual_same, actual_opposite) = multiply_complex_scaled_pair::<true>(
+                            same,
+                            opposite,
+                            factor,
+                            additional_factor,
+                            exponent,
+                        );
+                        let expected_same = multiply_complex_scaled(same, factor, exponent);
+                        let expected_opposite = multiply_complex_scaled(opposite, factor, exponent);
+                        assert_eq!(actual_same.re.to_bits(), expected_same.re.to_bits());
+                        assert_eq!(actual_same.im.to_bits(), expected_same.im.to_bits());
+                        assert_eq!(actual_opposite.re.to_bits(), expected_opposite.re.to_bits());
+                        assert_eq!(actual_opposite.im.to_bits(), expected_opposite.im.to_bits());
+                    }
+                }
+            }
+        }
     }
 
     #[test]

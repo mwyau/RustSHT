@@ -3987,26 +3987,16 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
                 let normal = exponents[lane] == 0
                     && (magnitude == 0.0 || (f64::MIN_POSITIVE..=scalar::BIG).contains(&magnitude));
                 if !normal {
-                    same += scalar::multiply_complex_scaled(
-                        Complex64::new(same_real[lane], same_imag[lane]),
-                        basis_current[lane],
-                        exponents[lane],
-                    );
-                    let coefficient = Complex64::new(opposite_real[lane], opposite_imag[lane]);
-                    opposite += if OPPOSITE_COSINE_WEIGHTED {
-                        scalar::multiply_complex_scaled(
-                            coefficient,
-                            basis_current[lane],
-                            exponents[lane],
-                        )
-                    } else {
-                        scalar::multiply_complex_scaled_product(
-                            coefficient,
+                    let (same_contribution, opposite_contribution) =
+                        scalar::multiply_complex_scaled_pair::<OPPOSITE_COSINE_WEIGHTED>(
+                            Complex64::new(same_real[lane], same_imag[lane]),
+                            Complex64::new(opposite_real[lane], opposite_imag[lane]),
                             basis_current[lane],
                             cos_theta[lane],
                             exponents[lane],
-                        )
-                    };
+                        );
+                    same += same_contribution;
+                    opposite += opposite_contribution;
                 }
             }
         }
@@ -4027,24 +4017,16 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
                         .mul_add(current_tail[lane], opposite.im);
                 }
             } else {
-                let exponent = exponent_tail[lane];
-                same += scalar::multiply_complex_scaled(
-                    Complex64::new(same_real_tail[lane], same_imag_tail[lane]),
-                    current_tail[lane],
-                    exponent,
-                );
-                let coefficient =
-                    Complex64::new(opposite_real_tail[lane], opposite_imag_tail[lane]);
-                opposite += if OPPOSITE_COSINE_WEIGHTED {
-                    scalar::multiply_complex_scaled(coefficient, current_tail[lane], exponent)
-                } else {
-                    scalar::multiply_complex_scaled_product(
-                        coefficient,
+                let (same_contribution, opposite_contribution) =
+                    scalar::multiply_complex_scaled_pair::<OPPOSITE_COSINE_WEIGHTED>(
+                        Complex64::new(same_real_tail[lane], same_imag_tail[lane]),
+                        Complex64::new(opposite_real_tail[lane], opposite_imag_tail[lane]),
                         current_tail[lane],
                         cosine_tail[lane],
-                        exponent,
-                    )
-                };
+                        exponent_tail[lane],
+                    );
+                same += same_contribution;
+                opposite += opposite_contribution;
             }
             let leading = coefficient_a.mul_add(cosine_squared_tail[lane], coefficient_b);
             next_tail[lane] = leading.mul_add(current_tail[lane], previous_tail[lane]);
