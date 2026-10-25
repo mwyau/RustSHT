@@ -89,6 +89,7 @@ pub(crate) struct SpinOrderOutputScratch<T: ShtScalar> {
 }
 
 #[repr(C)]
+#[allow(unexpected_cfgs)]
 pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     // `repr(C)` keeps these seven 256-entry scratch arrays contiguous. Their
     // inline representation preserves the existing payload and removes seven
@@ -172,6 +173,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin1_profile_group_ns: u128,
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) spin1_profile_group_worker_id: usize,
+    #[cfg(rustsht_analysis_retain_pair_partials)]
+    pub(crate) analysis_pair_reduction_partials: Vec<f64>,
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -307,6 +310,7 @@ pub(crate) fn record_transform_phase(
         .push(observation);
 }
 
+#[allow(unexpected_cfgs)]
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
     fn new(
         recurrence_factor_count: usize,
@@ -315,6 +319,13 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
         spin_pair_fast_coefficient_count: usize,
         recurrence_scratch_len: usize,
     ) -> Result<Self, ShtError> {
+        #[cfg(rustsht_analysis_retain_pair_partials)]
+        let analysis_pair_reduction_partial_count = spin_pair_fast_coefficient_count
+            .div_ceil(4)
+            .checked_mul(64)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis SIMD reduction partial scratch",
+            })?;
         Ok(Self {
             epsilon: allocate_real(recurrence_factor_count, "scalar recurrence factors")?,
             previous: allocate_analysis_vector_buffer(
@@ -492,6 +503,11 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             spin1_profile_group_ns: 0,
             #[cfg(all(test, feature = "parallel"))]
             spin1_profile_group_worker_id: usize::MAX,
+            #[cfg(rustsht_analysis_retain_pair_partials)]
+            analysis_pair_reduction_partials: allocate_real(
+                analysis_pair_reduction_partial_count,
+                "analysis SIMD reduction partials",
+            )?,
         })
     }
 
