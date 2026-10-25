@@ -6995,27 +6995,21 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
 
         let vector_lane_count = basis.len() - basis_tail.len();
         let accumulate_scaled_lane = |lane: usize, results: &mut [(Complex64, Complex64); 2]| {
-            let same = scalar::multiply_complex_pair_scaled(
-                [
-                    Complex64::new(same_real[0][lane], same_imag[0][lane]),
-                    Complex64::new(same_real[1][lane], same_imag[1][lane]),
-                ],
-                basis[lane],
-                exponents[lane],
-            );
-            let opposite = scalar::multiply_complex_pair_scaled_product(
-                [
-                    Complex64::new(opposite_real[0][lane], opposite_imag[0][lane]),
-                    Complex64::new(opposite_real[1][lane], opposite_imag[1][lane]),
-                ],
-                basis[lane],
-                cos_theta[lane],
-                exponents[lane],
-            );
-            results[0].0 += same[0];
-            results[0].1 += opposite[0];
-            results[1].0 += same[1];
-            results[1].1 += opposite[1];
+            for channel in 0..2 {
+                results[channel].0 += scalar::multiply_complex_scaled(
+                    Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
+                    basis[lane],
+                    exponents[lane],
+                );
+                let opposite =
+                    Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]);
+                results[channel].1 += scalar::multiply_complex_scaled_product(
+                    opposite,
+                    basis[lane],
+                    cos_theta[lane],
+                    exponents[lane],
+                );
+            }
         };
         if has_avx2_lane_masks {
             let mut exceptional = exceptional_vector_lanes;
@@ -7048,28 +7042,25 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         * cosine_tail[lane];
                 }
             } else {
-                let index = vector_lane_count + lane;
-                let same = scalar::multiply_complex_pair_scaled(
-                    [
-                        Complex64::new(same_real[0][index], same_imag[0][index]),
-                        Complex64::new(same_real[1][index], same_imag[1][index]),
-                    ],
-                    basis_tail[lane],
-                    exponent_tail[lane],
-                );
-                let opposite = scalar::multiply_complex_pair_scaled_product(
-                    [
-                        Complex64::new(opposite_real[0][index], opposite_imag[0][index]),
-                        Complex64::new(opposite_real[1][index], opposite_imag[1][index]),
-                    ],
-                    basis_tail[lane],
-                    cosine_tail[lane],
-                    exponent_tail[lane],
-                );
-                results[0].0 += same[0];
-                results[0].1 += opposite[0];
-                results[1].0 += same[1];
-                results[1].1 += opposite[1];
+                for channel in 0..2 {
+                    results[channel].0 += scalar::multiply_complex_scaled(
+                        Complex64::new(
+                            same_real[channel][vector_lane_count + lane],
+                            same_imag[channel][vector_lane_count + lane],
+                        ),
+                        basis_tail[lane],
+                        exponent_tail[lane],
+                    );
+                    results[channel].1 += scalar::multiply_complex_scaled_product(
+                        Complex64::new(
+                            opposite_real[channel][vector_lane_count + lane],
+                            opposite_imag[channel][vector_lane_count + lane],
+                        ),
+                        basis_tail[lane],
+                        cosine_tail[lane],
+                        exponent_tail[lane],
+                    );
+                }
             }
         }
         results
