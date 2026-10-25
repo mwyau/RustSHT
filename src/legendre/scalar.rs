@@ -361,13 +361,11 @@ pub(super) fn normalize_pair_lanes_simd<S: Simd>(
         let mut exponent = exponent_vectors[index];
         let previous_magnitude = simd.abs_f64s(previous_value);
         let current_magnitude = simd.abs_f64s(current_value);
-        if !mask_all_f64(
-            simd,
+        let finite = simd.and_m64s(
             simd.less_than_or_equal_f64s(previous_magnitude, maximum_finite),
-        ) || !mask_all_f64(
-            simd,
             simd.less_than_or_equal_f64s(current_magnitude, maximum_finite),
-        ) {
+        );
+        if !mask_all_f64(simd, finite) {
             return None;
         }
 
