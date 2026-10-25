@@ -5945,6 +5945,8 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         current,
         next,
         exponents,
+        None,
+        AnalysisPairReductionMode::Immediate,
     )
 }
 
@@ -9221,8 +9223,6 @@ mod tests {
             &mut current,
             &mut next,
             &mut exponents,
-            None,
-            AnalysisPairReductionMode::Immediate,
         )
         .unwrap();
         assert!(fused);
@@ -9714,6 +9714,8 @@ mod tests {
             &mut current,
             &mut next,
             &mut exponents,
+            None,
+            AnalysisPairReductionMode::Immediate,
         )
         .unwrap();
         assert!(fused);
