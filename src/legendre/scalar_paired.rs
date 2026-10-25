@@ -3178,6 +3178,23 @@ fn analysis_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
     simd.reduce_min_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
 }
 
+#[inline(always)]
+fn analysis_mask_lane_bits<S: Simd>(mask: S::m64s) -> Option<u8> {
+    #[cfg(target_arch = "x86_64")]
+    if const {
+        S::F64_LANES == 4
+            && core::mem::size_of::<S::m64s>() == core::mem::size_of::<std::arch::x86_64::__m256d>()
+    } {
+        // SAFETY: the size test permits a bitwise copy of the four-lane comparison mask.
+        let mask = unsafe { core::mem::transmute_copy(&mask) };
+        // SAFETY: the caller obtains this four-lane mask through SIMD dispatch.
+        return Some(unsafe { analysis_mask_lane_bits_avx(mask) });
+    }
+
+    let _ = mask;
+    None
+}
+
 #[allow(dead_code, unexpected_cfgs)]
 #[cfg(all(target_arch = "x86_64", rustsht_avx2_mask_all))]
 #[target_feature(enable = "avx2")]
@@ -3187,6 +3204,17 @@ unsafe fn analysis_mask_all_avx2(mask: std::arch::x86_64::__m256d) -> bool {
 
     // Pulp comparison masks use an all-ones lane for true and zero for false.
     _mm256_movemask_pd(mask) == 0b1111
+}
+
+#[allow(dead_code)]
+#[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx")]
+#[inline]
+unsafe fn analysis_mask_lane_bits_avx(mask: std::arch::x86_64::__m256d) -> u8 {
+    use std::arch::x86_64::_mm256_movemask_pd;
+
+    // Pulp comparison masks use an all-ones lane for true and zero for false.
+    _mm256_movemask_pd(mask) as u8
 }
 
 #[inline(always)]
@@ -6841,6 +6869,8 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
         let minimum = simd.splat_f64s(scalar::SMALL);
         let maximum = simd.splat_f64s(scalar::BIG);
         let zero_i64 = simd.splat_i64s(0);
+        let mut exceptional_vector_lanes = 0_u64;
+        let mut has_avx2_lane_masks = true;
         for index in 0..basis_vectors.len() {
             let magnitude = simd.abs_f64s(basis_vectors[index]);
             let in_range = simd.and_m64s(
@@ -6852,6 +6882,11 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             );
             let ordinary =
                 simd.and_m64s(simd.equal_i64s(exponent_vectors[index], zero_i64), in_range);
+            if let Some(ordinary_lanes) = analysis_mask_lane_bits::<S>(ordinary) {
+                exceptional_vector_lanes |= u64::from(!ordinary_lanes & 0b1111) << (index * 4);
+            } else {
+                has_avx2_lane_masks = false;
+            }
             ordinary_basis_vectors[index] =
                 simd.select_f64s(ordinary, basis_vectors[index], zero_f64);
         }
@@ -6941,10 +6976,7 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
         );
 
         let vector_lane_count = basis.len() - basis_tail.len();
-        for lane in 0..vector_lane_count {
-            if exponents[lane] == 0 && scalar_value_in_normal_range(basis[lane]) {
-                continue;
-            }
+        let accumulate_scaled_lane = |lane: usize, results: &mut [(Complex64, Complex64); 2]| {
             for channel in 0..2 {
                 results[channel].0 += scalar::multiply_complex_scaled(
                     Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
@@ -6959,6 +6991,22 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                     cos_theta[lane],
                     exponents[lane],
                 );
+            }
+        };
+        if has_avx2_lane_masks {
+            let mut exceptional = exceptional_vector_lanes;
+            while exceptional != 0 {
+                let lane = exceptional.trailing_zeros() as usize;
+                exceptional &= exceptional - 1;
+                debug_assert!(lane < vector_lane_count);
+                accumulate_scaled_lane(lane, &mut results);
+            }
+        } else {
+            for lane in 0..vector_lane_count {
+                if exponents[lane] == 0 && scalar_value_in_normal_range(basis[lane]) {
+                    continue;
+                }
+                accumulate_scaled_lane(lane, &mut results);
             }
         }
         for lane in 0..basis_tail.len() {
