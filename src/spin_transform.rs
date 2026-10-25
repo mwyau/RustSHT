@@ -4745,9 +4745,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         let range_cache_block_count = theta_sin.len().div_ceil(2).div_ceil(LATITUDE_BLOCK_SIZE);
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
-        recurrence.fast_scalar_first[..scalar_coefficient_count]
+        // This order only reads and accumulates degrees `m..=scalar_lmax`.
+        // Clear that suffix instead of memset-ing the unused lower-order
+        // prefix again for every reflected order.
+        recurrence.fast_scalar_first[m..scalar_coefficient_count]
             .fill(Complex::new(T::zero(), T::zero()));
-        recurrence.fast_scalar_second[..scalar_coefficient_count]
+        recurrence.fast_scalar_second[m..scalar_coefficient_count]
             .fill(Complex::new(T::zero(), T::zero()));
         T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
         let paired_factors_ready = T::fill_paired_scalar_factors(
