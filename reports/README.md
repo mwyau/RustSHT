@@ -1,5 +1,7 @@
 # Performance evidence
 
-Active instructions: [AGENTS.md](../AGENTS.md) and [the f64 parity plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md). [Current accepted-results ledger](../PERFORMANCE_STATUS.md), [rolling progress](PROGRESS.md) and [negative experiments](NEGATIVE_EXPERIMENTS.md) are the only routine evidence to read.
+**For current work:** [AGENTS.md](../AGENTS.md) · [active f64 parity plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md) · [accepted-results status](../PERFORMANCE_STATUS.md) · [rolling checkpoints](PROGRESS.md).
 
-Older reports and reviews are historical evidence under [archive](archive/README.md). Original benchmark records remain under `reports/data/` for provenance; do not bulk-load or recreate them as active plans. The `torch_harmonics_bench.py` script remains available.
+**For optimization selection and avoiding lost work:** [recoverable candidate backlog](PERFORMANCE_CANDIDATES.md) · [retired implementation notes](NEGATIVE_EXPERIMENTS.md) · [2026-10-25 historical audit and file coverage](ARCHIVE_METHOD_AUDIT_2026-10-25.md).
+
+Historical reports and reviews are under [archive](archive/README.md). Raw benchmark records and preserved patches remain in `reports/data/`; inspect only relevant provenance. Archival **production** labels refer to the historical source revision and are not current-HEAD acceptance. A reverted patch can still be an instruction-efficient or near-neutral candidate; consult the candidate ledger before discarding its idea. The `torch_harmonics_bench.py` script remains available.
