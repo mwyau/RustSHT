@@ -10076,7 +10076,9 @@ fn profile_spin1_standard_synthesis_phases() {
         for (name, coefficients) in [("e.bin", &mut e_alm), ("b.bin", &mut b_alm)] {
             let bytes = std::fs::read(fixture_dir.join(name)).unwrap();
             assert_eq!(bytes.len(), coefficients.len() * 16);
-            for (coefficient, pair) in coefficients.iter_mut().zip(bytes.chunks_exact(16)) {
+            let (pairs, remainder) = bytes.as_chunks::<16>();
+            assert!(remainder.is_empty());
+            for (coefficient, pair) in coefficients.iter_mut().zip(pairs) {
                 coefficient.re = f64::from_le_bytes(pair[..8].try_into().unwrap());
                 coefficient.im = f64::from_le_bytes(pair[8..].try_into().unwrap());
             }
