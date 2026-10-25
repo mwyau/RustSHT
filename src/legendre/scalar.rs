@@ -372,7 +372,9 @@ pub(super) fn normalize_pair_lanes_simd<S: Simd>(
         let mut magnitude = simd.max_f64s(previous_magnitude, current_magnitude);
         let mut in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
         if mask_all_f64(simd, in_range) {
-            all_normal &= mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64));
+            if all_normal {
+                all_normal = mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64));
+            }
             continue;
         }
 
@@ -430,8 +432,10 @@ pub(super) fn normalize_pair_lanes_simd<S: Simd>(
         current_vectors[index] = current_value;
         exponent_vectors[index] = exponent;
         in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
-        all_normal &=
-            mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64)) && mask_all_f64(simd, in_range);
+        if all_normal {
+            all_normal = mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64))
+                && mask_all_f64(simd, in_range);
+        }
     }
 
     for lane in 0..previous_tail.len() {
