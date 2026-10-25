@@ -25,7 +25,7 @@ use crate::error::ShtError;
 use crate::legendre::scalar::{
     lane_values_in_normal_range, scalar_value_in_normal_range, simd_values_in_normal_range,
 };
-use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, scalar};
 
 #[cfg(test)]
 #[path = "scalar_paired_kernel_bench.rs"]
@@ -2781,7 +2781,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
     next: &mut [f64],
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
-    let mut cos_theta_squared = [0.0; LATITUDE_BLOCK_SIZE];
+    let mut cos_theta_squared = [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE];
     for ((squared, &sine), &cosine) in cos_theta_squared.iter_mut().zip(sin_theta).zip(cos_theta) {
         *squared = if cosine.abs() > 0.99 {
             (1.0 - sine) * (1.0 + sine)
@@ -2944,7 +2944,7 @@ fn fused_scalar_analysis_pair_block_impl<
 ) -> Result<bool, ShtError> {
     debug_assert!(m <= lmax);
     let coefficient_count = lmax - m + 1;
-    debug_assert!(sin_theta.len() <= LATITUDE_BLOCK_SIZE);
+    debug_assert!(sin_theta.len() <= SCALAR_ANALYSIS_PAIR_TILE_SIZE);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
     debug_assert_eq!(sin_theta.len(), cos_theta_squared.len());
     debug_assert_eq!(sin_theta.len(), same_real.len());
@@ -6460,12 +6460,12 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             debug_assert_eq!(basis.len(), opposite_real[channel].len());
             debug_assert_eq!(basis.len(), opposite_imag[channel].len());
         }
-        let mut ordinary_basis = [0.0; LATITUDE_BLOCK_SIZE];
+        let mut ordinary_basis = [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE];
         let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
         let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
         let (ordinary_basis_vectors, ordinary_basis_tail) =
             S::as_mut_simd_f64s(&mut ordinary_basis[..basis.len()]);
-        debug_assert!(basis.len() <= LATITUDE_BLOCK_SIZE);
+        debug_assert!(basis.len() <= SCALAR_ANALYSIS_PAIR_TILE_SIZE);
         debug_assert_eq!(basis_vectors.len(), exponent_vectors.len());
         debug_assert_eq!(basis_vectors.len(), ordinary_basis_vectors.len());
         debug_assert_eq!(basis_tail.len(), exponent_tail.len());
