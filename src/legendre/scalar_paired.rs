@@ -6653,20 +6653,39 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             if exponents[lane] == 0 && scalar_value_in_normal_range(basis[lane]) {
                 continue;
             }
-            for channel in 0..2 {
-                results[channel].0 += scalar::multiply_complex_scaled(
-                    Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
-                    basis[lane],
-                    exponents[lane],
-                );
-                let opposite =
-                    Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]);
-                results[channel].1 += scalar::multiply_complex_scaled_product(
-                    opposite,
-                    basis[lane],
-                    cos_theta[lane],
-                    exponents[lane],
-                );
+            let same_values = [
+                Complex64::new(same_real[0][lane], same_imag[0][lane]),
+                Complex64::new(same_real[1][lane], same_imag[1][lane]),
+            ];
+            let opposite_values = [
+                Complex64::new(opposite_real[0][lane], opposite_imag[0][lane]),
+                Complex64::new(opposite_real[1][lane], opposite_imag[1][lane]),
+            ];
+            if let Some(contributions) = scalar::multiply_analysis_pair_channels_scaled(
+                same_values,
+                opposite_values,
+                basis[lane],
+                cos_theta[lane],
+                exponents[lane],
+            ) {
+                for channel in 0..2 {
+                    results[channel].0 += contributions[channel].0;
+                    results[channel].1 += contributions[channel].1;
+                }
+            } else {
+                for channel in 0..2 {
+                    results[channel].0 += scalar::multiply_complex_scaled(
+                        same_values[channel],
+                        basis[lane],
+                        exponents[lane],
+                    );
+                    results[channel].1 += scalar::multiply_complex_scaled_product(
+                        opposite_values[channel],
+                        basis[lane],
+                        cos_theta[lane],
+                        exponents[lane],
+                    );
+                }
             }
         }
         for lane in 0..basis_tail.len() {
@@ -6684,24 +6703,40 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         * cosine_tail[lane];
                 }
             } else {
-                for channel in 0..2 {
-                    results[channel].0 += scalar::multiply_complex_scaled(
-                        Complex64::new(
-                            same_real[channel][vector_lane_count + lane],
-                            same_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        exponent_tail[lane],
-                    );
-                    results[channel].1 += scalar::multiply_complex_scaled_product(
-                        Complex64::new(
-                            opposite_real[channel][vector_lane_count + lane],
-                            opposite_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        cosine_tail[lane],
-                        exponent_tail[lane],
-                    );
+                let tail_index = vector_lane_count + lane;
+                let same_values = [
+                    Complex64::new(same_real[0][tail_index], same_imag[0][tail_index]),
+                    Complex64::new(same_real[1][tail_index], same_imag[1][tail_index]),
+                ];
+                let opposite_values = [
+                    Complex64::new(opposite_real[0][tail_index], opposite_imag[0][tail_index]),
+                    Complex64::new(opposite_real[1][tail_index], opposite_imag[1][tail_index]),
+                ];
+                if let Some(contributions) = scalar::multiply_analysis_pair_channels_scaled(
+                    same_values,
+                    opposite_values,
+                    basis_tail[lane],
+                    cosine_tail[lane],
+                    exponent_tail[lane],
+                ) {
+                    for channel in 0..2 {
+                        results[channel].0 += contributions[channel].0;
+                        results[channel].1 += contributions[channel].1;
+                    }
+                } else {
+                    for channel in 0..2 {
+                        results[channel].0 += scalar::multiply_complex_scaled(
+                            same_values[channel],
+                            basis_tail[lane],
+                            exponent_tail[lane],
+                        );
+                        results[channel].1 += scalar::multiply_complex_scaled_product(
+                            opposite_values[channel],
+                            basis_tail[lane],
+                            cosine_tail[lane],
+                            exponent_tail[lane],
+                        );
+                    }
                 }
             }
         }

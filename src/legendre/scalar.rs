@@ -618,6 +618,64 @@ pub(crate) fn multiply_complex_scaled_product(
     )
 }
 
+/// Computes the same and opposite contributions for both reflected analysis
+/// channels while sharing the checks that depend only on their common factors
+/// and binary exponent. `None` leaves exceptional values to the scalar helpers.
+#[inline]
+pub(crate) fn multiply_analysis_pair_channels_scaled(
+    same: [Complex64; 2],
+    opposite: [Complex64; 2],
+    factor: f64,
+    additional_factor: f64,
+    exponent: i64,
+) -> Option<[(Complex64, Complex64); 2]> {
+    if !factor.is_normal()
+        || !additional_factor.is_normal()
+        || !(-4096..=4096).contains(&exponent)
+        || !same
+            .iter()
+            .chain(&opposite)
+            .flat_map(|value| [value.re, value.im])
+            .all(f64::is_normal)
+    {
+        return None;
+    }
+
+    let same_products = same.map(|value| Complex64::new(value.re * factor, value.im * factor));
+    let opposite_products = opposite.map(|value| {
+        Complex64::new(
+            (value.re * factor) * additional_factor,
+            (value.im * factor) * additional_factor,
+        )
+    });
+    if !same_products
+        .iter()
+        .chain(&opposite_products)
+        .flat_map(|value| [value.re, value.im])
+        .all(f64::is_normal)
+    {
+        return None;
+    }
+
+    if exponent == 0 {
+        return Some([
+            (same_products[0], opposite_products[0]),
+            (same_products[1], opposite_products[1]),
+        ]);
+    }
+
+    Some([
+        (
+            scale_complex_normal_binary_in_range(same_products[0], exponent)?,
+            scale_complex_normal_binary_in_range(opposite_products[0], exponent)?,
+        ),
+        (
+            scale_complex_normal_binary_in_range(same_products[1], exponent)?,
+            scale_complex_normal_binary_in_range(opposite_products[1], exponent)?,
+        ),
+    ])
+}
+
 fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
     if exponent == 0 {
         return Some(value);
@@ -626,6 +684,11 @@ fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Comple
         return None;
     }
 
+    scale_complex_normal_binary_in_range(value, exponent)
+}
+
+#[inline]
+fn scale_complex_normal_binary_in_range(value: Complex64, exponent: i64) -> Option<Complex64> {
     let real_bits = value.re.to_bits();
     let imag_bits = value.im.to_bits();
     let real_exponent = ((real_bits >> 52) & 0x7ff) as i64 + exponent;
@@ -2363,6 +2426,52 @@ mod tests {
         let actual = multiply_complex_scaled_product(value, factor, additional_factor, 0);
         assert_eq!(actual.re.to_bits(), expected.re.to_bits());
         assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+    }
+
+    #[test]
+    fn paired_channel_scaled_products_match_individual_helpers_bitwise() {
+        let same = [Complex64::new(0.75, -1.25), Complex64::new(-0.375, 1.5)];
+        let opposite = [Complex64::new(-1.125, 0.625), Complex64::new(0.25, -0.875)];
+        for exponent in [-900, -1, 0, 1, 900] {
+            let actual =
+                multiply_analysis_pair_channels_scaled(same, opposite, 1.125, -0.625, exponent)
+                    .expect("normal products with representable binary scales take the fast path");
+            for channel in 0..2 {
+                let expected_same = multiply_complex_scaled(same[channel], 1.125, exponent);
+                let expected_opposite =
+                    multiply_complex_scaled_product(opposite[channel], 1.125, -0.625, exponent);
+                assert_eq!(actual[channel].0.re.to_bits(), expected_same.re.to_bits());
+                assert_eq!(actual[channel].0.im.to_bits(), expected_same.im.to_bits());
+                assert_eq!(
+                    actual[channel].1.re.to_bits(),
+                    expected_opposite.re.to_bits()
+                );
+                assert_eq!(
+                    actual[channel].1.im.to_bits(),
+                    expected_opposite.im.to_bits()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn paired_channel_scaled_products_decline_to_exceptional_fallback() {
+        let same = [Complex64::new(0.75, -1.25), Complex64::new(-0.375, 1.5)];
+        let opposite = [Complex64::new(-1.125, 0.625), Complex64::new(0.25, -0.875)];
+        assert!(multiply_analysis_pair_channels_scaled(same, opposite, 1.125, 0.0, 1,).is_none());
+        assert!(
+            multiply_analysis_pair_channels_scaled(
+                [same[0], Complex64::new(f64::from_bits(1), 1.0)],
+                opposite,
+                1.125,
+                -0.625,
+                1,
+            )
+            .is_none()
+        );
+        assert!(
+            multiply_analysis_pair_channels_scaled(same, opposite, 1.125, -0.625, 2048,).is_none()
+        );
     }
 
     #[test]
