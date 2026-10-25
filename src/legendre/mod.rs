@@ -45,7 +45,9 @@ pub(crate) use scalar_paired::prepare_synthesis_coefficient_pair_values;
 #[cfg(all(test, feature = "parallel"))]
 pub(crate) use scalar_paired::{
     ScalarAnalysisRouteCounts, begin_scalar_analysis_route_profile,
-    finish_scalar_analysis_route_profile,
+    finish_scalar_analysis_route_profile, mixed_analysis_exception_mask_counts,
+    mixed_analysis_exception_mask_decline_counts, mixed_analysis_exception_mask_fast_counts,
+    reset_mixed_analysis_exception_mask_counts,
 };
 
 use num_complex::Complex;

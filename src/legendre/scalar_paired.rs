@@ -47,6 +47,51 @@ pub(crate) static ANALYSIS_PAIR_GROUP_RANGE_DECLINES: std::sync::atomic::AtomicU
     std::sync::atomic::AtomicUsize::new(0);
 
 #[cfg(all(test, feature = "parallel"))]
+static MIXED_ANALYSIS_EXCEPTION_MASK_COUNTS: [std::sync::atomic::AtomicUsize; 16] =
+    [const { std::sync::atomic::AtomicUsize::new(0) }; 16];
+#[cfg(all(test, feature = "parallel"))]
+static MIXED_ANALYSIS_EXCEPTION_MASK_FAST_COUNTS: [std::sync::atomic::AtomicUsize; 16] =
+    [const { std::sync::atomic::AtomicUsize::new(0) }; 16];
+#[cfg(all(test, feature = "parallel"))]
+static MIXED_ANALYSIS_EXCEPTION_MASK_DECLINE_COUNTS: [std::sync::atomic::AtomicUsize; 16] =
+    [const { std::sync::atomic::AtomicUsize::new(0) }; 16];
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn reset_mixed_analysis_exception_mask_counts() {
+    for count in &MIXED_ANALYSIS_EXCEPTION_MASK_COUNTS {
+        count.store(0, std::sync::atomic::Ordering::Relaxed);
+    }
+    for count in &MIXED_ANALYSIS_EXCEPTION_MASK_FAST_COUNTS {
+        count.store(0, std::sync::atomic::Ordering::Relaxed);
+    }
+    for count in &MIXED_ANALYSIS_EXCEPTION_MASK_DECLINE_COUNTS {
+        count.store(0, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn mixed_analysis_exception_mask_counts() -> [usize; 16] {
+    std::array::from_fn(|index| {
+        MIXED_ANALYSIS_EXCEPTION_MASK_COUNTS[index].load(std::sync::atomic::Ordering::Relaxed)
+    })
+}
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn mixed_analysis_exception_mask_fast_counts() -> [usize; 16] {
+    std::array::from_fn(|index| {
+        MIXED_ANALYSIS_EXCEPTION_MASK_FAST_COUNTS[index].load(std::sync::atomic::Ordering::Relaxed)
+    })
+}
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn mixed_analysis_exception_mask_decline_counts() -> [usize; 16] {
+    std::array::from_fn(|index| {
+        MIXED_ANALYSIS_EXCEPTION_MASK_DECLINE_COUNTS[index]
+            .load(std::sync::atomic::Ordering::Relaxed)
+    })
+}
+
+#[cfg(all(test, feature = "parallel"))]
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct ScalarAnalysisRouteCounts {
     pub(crate) normal_seed_blocks: usize,
@@ -6839,6 +6884,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
 #[inline(always)]
 fn try_accumulate_scaled_exception_vector<S: Simd>(
     simd: S,
+    exception_mask: u8,
     same_real: [S::f64s; 2],
     same_imag: [S::f64s; 2],
     opposite_real: [S::f64s; 2],
@@ -6848,9 +6894,26 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
     cosine: S::f64s,
     results: &mut [(Complex64, Complex64); 2],
 ) -> bool {
-    if S::F64_LANES != 4 || exponents.len() != 4 {
+    if S::F64_LANES != 4 || exponents.len() != 4 || exception_mask == 0 {
         return false;
     }
+
+    let active_exception_mask = if exception_mask == 0b1111 {
+        None
+    } else {
+        let lane_bits = std::array::from_fn::<_, 4, _>(|lane| {
+            if exception_mask & (1 << lane) != 0 {
+                -1_i64
+            } else {
+                0_i64
+            }
+        });
+        let (vectors, tail) = S::as_simd_i64s(&lane_bits);
+        if vectors.len() != 1 || !tail.is_empty() {
+            return false;
+        }
+        Some(simd.equal_i64s(vectors[0], simd.splat_i64s(-1)))
+    };
 
     let mut same_products = [simd.splat_f64s(0.0); 4];
     let mut opposite_products = [simd.splat_f64s(0.0); 4];
@@ -6867,16 +6930,24 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
     let zero = simd.splat_f64s(0.0);
     let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
     let maximum = simd.splat_f64s(f64::MAX);
-    let mut all_products_normal = simd.equal_f64s(zero, zero);
+    if let Some(active) = active_exception_mask {
+        for product in same_products.iter_mut().chain(&mut opposite_products) {
+            *product = simd.select_f64s(active, *product, zero);
+        }
+    }
+    let mut all_products_safe = simd.equal_f64s(zero, zero);
     for &product in same_products.iter().chain(&opposite_products) {
         let magnitude = simd.abs_f64s(product);
         let normal = simd.and_m64s(
             simd.greater_than_or_equal_f64s(magnitude, minimum),
             simd.less_than_or_equal_f64s(magnitude, maximum),
         );
-        all_products_normal = simd.and_m64s(all_products_normal, normal);
+        let active_or_normal = active_exception_mask
+            .map(|active| simd.or_m64s(simd.not_m64s(active), normal))
+            .unwrap_or(normal);
+        all_products_safe = simd.and_m64s(all_products_safe, active_or_normal);
     }
-    if !analysis_mask_all(simd, all_products_normal) {
+    if !analysis_mask_all(simd, all_products_safe) {
         return false;
     }
 
@@ -6896,6 +6967,9 @@ fn try_accumulate_scaled_exception_vector<S: Simd>(
     }
 
     for lane in 0..4 {
+        if exception_mask & (1 << lane) == 0 {
+            continue;
+        }
         for channel in 0..2 {
             let component = channel * 2;
             results[channel].0 += Complex64::new(
@@ -6975,7 +7049,11 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             let ordinary =
                 simd.and_m64s(simd.equal_i64s(exponent_vectors[index], zero_i64), in_range);
             if let Some(ordinary_lanes) = analysis_mask_lane_bits::<S>(ordinary) {
-                exceptional_vector_lanes |= u64::from(!ordinary_lanes & 0b1111) << (index * 4);
+                let exception_mask = !ordinary_lanes & 0b1111;
+                exceptional_vector_lanes |= u64::from(exception_mask) << (index * 4);
+                #[cfg(all(test, feature = "parallel"))]
+                MIXED_ANALYSIS_EXCEPTION_MASK_COUNTS[usize::from(exception_mask)]
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             } else {
                 has_avx2_lane_masks = false;
             }
@@ -7090,9 +7168,10 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                 let vector_lane_start = vector_index * 4;
                 let mut vector_exception_mask =
                     ((exceptional_vector_lanes >> (vector_lane_start)) & 0b1111) as u8;
-                if vector_exception_mask == 0b1111 {
+                if vector_exception_mask != 0 {
                     let completed = try_accumulate_scaled_exception_vector(
                         simd,
+                        vector_exception_mask,
                         [same_real_0[vector_index], same_real_1[vector_index]],
                         [same_imag_0[vector_index], same_imag_1[vector_index]],
                         [opposite_real_0[vector_index], opposite_real_1[vector_index]],
@@ -7102,19 +7181,24 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         cosine_vectors[vector_index],
                         &mut results,
                     );
+                    #[cfg(all(test, feature = "parallel"))]
+                    {
+                        let counts = if completed {
+                            &MIXED_ANALYSIS_EXCEPTION_MASK_FAST_COUNTS
+                        } else {
+                            &MIXED_ANALYSIS_EXCEPTION_MASK_DECLINE_COUNTS
+                        };
+                        counts[usize::from(vector_exception_mask)]
+                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    }
                     if !completed {
-                        for lane in vector_lane_start..vector_lane_start + 4 {
+                        while vector_exception_mask != 0 {
+                            let lane_offset = vector_exception_mask.trailing_zeros() as usize;
+                            vector_exception_mask &= vector_exception_mask - 1;
+                            let lane = vector_lane_start + lane_offset;
                             debug_assert!(lane < vector_lane_count);
                             accumulate_scaled_lane(lane, &mut results);
                         }
-                    }
-                } else {
-                    while vector_exception_mask != 0 {
-                        let lane_offset = vector_exception_mask.trailing_zeros() as usize;
-                        vector_exception_mask &= vector_exception_mask - 1;
-                        let lane = vector_lane_start + lane_offset;
-                        debug_assert!(lane < vector_lane_count);
-                        accumulate_scaled_lane(lane, &mut results);
                     }
                 }
             }
