@@ -2127,7 +2127,7 @@ pub(crate) fn accumulate_analysis_pair_channels_dispatched(
 ) -> [(Complex64, Complex64); 2] {
     if products_safe == [true, true] && normal_range {
         debug_assert!(exponents.iter().all(|&exponent| exponent == 0));
-        return arch.dispatch(AnalysisPairChannelsAccumulation::<false> {
+        return arch.dispatch(AnalysisPairChannelsAccumulation {
             same_real,
             same_imag,
             opposite_real,
@@ -2222,7 +2222,6 @@ impl WithSimd for AnalysisProductsSafe<'_> {
         let minimum_normal = simd.splat_f64s(f64::MIN_POSITIVE);
         let maximum_input = simd.splat_f64s(self.max_input);
         let one = simd.splat_f64s(1.0);
-        let minimum_safe_cosine = simd.splat_f64s(f64::MIN_POSITIVE / scalar::SMALL);
         for index in 0..same_real_vectors.len() {
             let mut normal_inputs = simd.equal_f64s(zeros, zeros);
             for value in [
@@ -2240,16 +2239,8 @@ impl WithSimd for AnalysisProductsSafe<'_> {
                 normal_inputs =
                     simd.and_m64s(normal_inputs, simd.and_m64s(normal_or_zero, bounded));
             }
-            let cosine_magnitude = simd.abs_f64s(cosine_vectors[index]);
-            let cosine_is_zero = simd.equal_f64s(cosine_magnitude, zeros);
-            let cosine_can_scale_basis = simd.or_m64s(
-                cosine_is_zero,
-                simd.greater_than_or_equal_f64s(cosine_magnitude, minimum_safe_cosine),
-            );
-            let cosine_in_range = simd.and_m64s(
-                simd.less_than_or_equal_f64s(cosine_magnitude, one),
-                cosine_can_scale_basis,
-            );
+            let cosine_in_range =
+                simd.less_than_or_equal_f64s(simd.abs_f64s(cosine_vectors[index]), one);
             if !analysis_mask_all(simd, simd.and_m64s(normal_inputs, cosine_in_range)) {
                 return false;
             }
@@ -2266,11 +2257,7 @@ impl WithSimd for AnalysisProductsSafe<'_> {
                     return false;
                 }
             }
-            let cosine_magnitude = cosine_tail[lane].abs();
-            if !cosine_tail[lane].is_finite()
-                || cosine_magnitude > 1.0
-                || (cosine_magnitude != 0.0 && cosine_magnitude < f64::MIN_POSITIVE / scalar::SMALL)
-            {
+            if !cosine_tail[lane].is_finite() || cosine_tail[lane].abs() > 1.0 {
                 return false;
             }
         }
@@ -6190,7 +6177,7 @@ impl WithSimd for FusedScalarAnalysisPairChannels<'_> {
 
         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
             let offset = l - m;
-            let channel_sums = AnalysisPairChannelsAccumulation::<true> {
+            let channel_sums = AnalysisPairChannelsAccumulation {
                 same_real,
                 same_imag,
                 opposite_real,
@@ -6361,7 +6348,7 @@ impl WithSimd for AnalysisTwoBasisAccumulation<'_> {
     }
 }
 
-struct AnalysisPairChannelsAccumulation<'a, const SHARE_BASIS_COSINE: bool = false> {
+struct AnalysisPairChannelsAccumulation<'a> {
     same_real: [&'a [f64]; 2],
     same_imag: [&'a [f64]; 2],
     opposite_real: [&'a [f64]; 2],
@@ -6370,9 +6357,7 @@ struct AnalysisPairChannelsAccumulation<'a, const SHARE_BASIS_COSINE: bool = fal
     cos_theta: &'a [f64],
 }
 
-impl<const SHARE_BASIS_COSINE: bool> WithSimd
-    for AnalysisPairChannelsAccumulation<'_, SHARE_BASIS_COSINE>
-{
+impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
     type Output = [(Complex64, Complex64); 2];
 
     #[inline(always)]
@@ -6427,29 +6412,18 @@ impl<const SHARE_BASIS_COSINE: bool> WithSimd
         {
             let basis = *basis;
             let cosine = *cosine;
+            let opposite_real_scaled = simd.mul_f64s(*opposite_real, basis);
+            let opposite_imag_scaled = simd.mul_f64s(*opposite_imag, basis);
+            let opposite_real_1_scaled = simd.mul_f64s(*opposite_real_1, basis);
+            let opposite_imag_1_scaled = simd.mul_f64s(*opposite_imag_1, basis);
             sums_0[0] = simd.mul_add_f64s(*same_real, basis, sums_0[0]);
             sums_0[1] = simd.mul_add_f64s(*same_imag, basis, sums_0[1]);
+            sums_0[2] = simd.mul_add_f64s(opposite_real_scaled, cosine, sums_0[2]);
+            sums_0[3] = simd.mul_add_f64s(opposite_imag_scaled, cosine, sums_0[3]);
             sums_1[0] = simd.mul_add_f64s(*same_real_1, basis, sums_1[0]);
             sums_1[1] = simd.mul_add_f64s(*same_imag_1, basis, sums_1[1]);
-            if SHARE_BASIS_COSINE {
-                // The production fused route preflights cosine magnitudes so
-                // this shared geometry product stays normal or is exactly
-                // zero. This removes three repeated vector multiplies.
-                let opposite_basis_cosine = simd.mul_f64s(basis, cosine);
-                sums_0[2] = simd.mul_add_f64s(*opposite_real, opposite_basis_cosine, sums_0[2]);
-                sums_0[3] = simd.mul_add_f64s(*opposite_imag, opposite_basis_cosine, sums_0[3]);
-                sums_1[2] = simd.mul_add_f64s(*opposite_real_1, opposite_basis_cosine, sums_1[2]);
-                sums_1[3] = simd.mul_add_f64s(*opposite_imag_1, opposite_basis_cosine, sums_1[3]);
-            } else {
-                let opposite_real_scaled = simd.mul_f64s(*opposite_real, basis);
-                let opposite_imag_scaled = simd.mul_f64s(*opposite_imag, basis);
-                let opposite_real_1_scaled = simd.mul_f64s(*opposite_real_1, basis);
-                let opposite_imag_1_scaled = simd.mul_f64s(*opposite_imag_1, basis);
-                sums_0[2] = simd.mul_add_f64s(opposite_real_scaled, cosine, sums_0[2]);
-                sums_0[3] = simd.mul_add_f64s(opposite_imag_scaled, cosine, sums_0[3]);
-                sums_1[2] = simd.mul_add_f64s(opposite_real_1_scaled, cosine, sums_1[2]);
-                sums_1[3] = simd.mul_add_f64s(opposite_imag_1_scaled, cosine, sums_1[3]);
-            }
+            sums_1[2] = simd.mul_add_f64s(opposite_real_1_scaled, cosine, sums_1[2]);
+            sums_1[3] = simd.mul_add_f64s(opposite_imag_1_scaled, cosine, sums_1[3]);
         }
 
         let mut results = [
@@ -6501,24 +6475,16 @@ impl<const SHARE_BASIS_COSINE: bool> WithSimd
                     opposite_imag_tail_1,
                 ),
             ] {
+                let opposite_real_scaled = opposite_real[lane] * basis_tail[lane];
+                let opposite_imag_scaled = opposite_imag[lane] * basis_tail[lane];
                 results[channel].0.re =
                     same_real[lane].mul_add(basis_tail[lane], results[channel].0.re);
                 results[channel].0.im =
                     same_imag[lane].mul_add(basis_tail[lane], results[channel].0.im);
-                if SHARE_BASIS_COSINE {
-                    let opposite_basis_cosine = basis_tail[lane] * cosine_tail[lane];
-                    results[channel].1.re =
-                        opposite_real[lane].mul_add(opposite_basis_cosine, results[channel].1.re);
-                    results[channel].1.im =
-                        opposite_imag[lane].mul_add(opposite_basis_cosine, results[channel].1.im);
-                } else {
-                    let opposite_real_scaled = opposite_real[lane] * basis_tail[lane];
-                    let opposite_imag_scaled = opposite_imag[lane] * basis_tail[lane];
-                    results[channel].1.re =
-                        opposite_real_scaled.mul_add(cosine_tail[lane], results[channel].1.re);
-                    results[channel].1.im =
-                        opposite_imag_scaled.mul_add(cosine_tail[lane], results[channel].1.im);
-                }
+                results[channel].1.re =
+                    opposite_real_scaled.mul_add(cosine_tail[lane], results[channel].1.re);
+                results[channel].1.im =
+                    opposite_imag_scaled.mul_add(cosine_tail[lane], results[channel].1.im);
             }
         }
         results
@@ -9089,7 +9055,6 @@ mod tests {
     fn analysis_products_safe_simd_matches_ieee_boundaries() {
         for lane_count in [0, 1, 3, 4, 5, 8, 9, LATITUDE_BLOCK_SIZE] {
             let max_input = f64::MAX / scalar::BIG / (2.0 * lane_count.max(1) as f64);
-            let min_safe_cosine = f64::MIN_POSITIVE / scalar::SMALL;
             let same_real = vec![0.5; lane_count];
             let same_imag = vec![-0.25; lane_count];
             let opposite_real = vec![f64::MIN_POSITIVE; lane_count];
@@ -9106,11 +9071,9 @@ mod tests {
                     .chain(opposite_real)
                     .chain(opposite_imag)
                     .all(|value| (value.is_normal() || *value == 0.0) && value.abs() <= max_input)
-                    && cosine.iter().all(|value| {
-                        value.is_finite()
-                            && value.abs() <= 1.0
-                            && (value.abs() == 0.0 || value.abs() >= min_safe_cosine)
-                    });
+                    && cosine
+                        .iter()
+                        .all(|value| value.is_finite() && value.abs() <= 1.0);
                 assert_eq!(
                     analysis_products_safe(
                         same_real,
@@ -9171,23 +9134,9 @@ mod tests {
                     -f64::INFINITY,
                     1.0 + f64::EPSILON,
                     -1.0 - f64::EPSILON,
-                    min_safe_cosine * 0.5,
-                    -min_safe_cosine * 0.5,
                 ] {
                     let mut changed = cosine.clone();
                     changed[index] = invalid;
-                    check(
-                        &same_real,
-                        &same_imag,
-                        &opposite_real,
-                        &opposite_imag,
-                        &changed,
-                    );
-                }
-
-                for boundary in [0.0, min_safe_cosine, -min_safe_cosine] {
-                    let mut changed = cosine.clone();
-                    changed[index] = boundary;
                     check(
                         &same_real,
                         &same_imag,
