@@ -2180,15 +2180,89 @@ pub(crate) fn analysis_products_safe(
     // Bound the absolute sum as well as each product. This keeps both the
     // vector reduction and accumulation across previous latitude tiles finite.
     let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
-    same_real
-        .iter()
-        .chain(same_imag)
-        .chain(opposite_real)
-        .chain(opposite_imag)
-        .all(|value| (value.is_normal() || *value == 0.0) && value.abs() <= max_input)
-        && cos_theta
-            .iter()
-            .all(|value| value.is_finite() && value.abs() <= 1.0)
+    Arch::new().dispatch(AnalysisProductsSafe {
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        cos_theta,
+        max_input,
+    })
+}
+
+struct AnalysisProductsSafe<'a> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    cos_theta: &'a [f64],
+    max_input: f64,
+}
+
+impl WithSimd for AnalysisProductsSafe<'_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(self.same_real);
+        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(self.same_imag);
+        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(self.opposite_real);
+        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(self.opposite_imag);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(self.cos_theta);
+        debug_assert_eq!(same_real_vectors.len(), same_imag_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), opposite_real_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), opposite_imag_vectors.len());
+        debug_assert_eq!(same_real_vectors.len(), cosine_vectors.len());
+        debug_assert_eq!(same_real_tail.len(), same_imag_tail.len());
+        debug_assert_eq!(same_real_tail.len(), opposite_real_tail.len());
+        debug_assert_eq!(same_real_tail.len(), opposite_imag_tail.len());
+        debug_assert_eq!(same_real_tail.len(), cosine_tail.len());
+
+        let zeros = simd.splat_f64s(0.0);
+        let minimum_normal = simd.splat_f64s(f64::MIN_POSITIVE);
+        let maximum_input = simd.splat_f64s(self.max_input);
+        let one = simd.splat_f64s(1.0);
+        for index in 0..same_real_vectors.len() {
+            let mut normal_inputs = simd.equal_f64s(zeros, zeros);
+            for value in [
+                same_real_vectors[index],
+                same_imag_vectors[index],
+                opposite_real_vectors[index],
+                opposite_imag_vectors[index],
+            ] {
+                let magnitude = simd.abs_f64s(value);
+                let normal_or_zero = simd.or_m64s(
+                    simd.equal_f64s(magnitude, zeros),
+                    simd.greater_than_or_equal_f64s(magnitude, minimum_normal),
+                );
+                let bounded = simd.less_than_or_equal_f64s(magnitude, maximum_input);
+                normal_inputs =
+                    simd.and_m64s(normal_inputs, simd.and_m64s(normal_or_zero, bounded));
+            }
+            let cosine_in_range =
+                simd.less_than_or_equal_f64s(simd.abs_f64s(cosine_vectors[index]), one);
+            if !analysis_mask_all(simd, simd.and_m64s(normal_inputs, cosine_in_range)) {
+                return false;
+            }
+        }
+
+        for lane in 0..same_real_tail.len() {
+            for value in [
+                same_real_tail[lane],
+                same_imag_tail[lane],
+                opposite_real_tail[lane],
+                opposite_imag_tail[lane],
+            ] {
+                if !(value.is_normal() || value == 0.0) || value.abs() > self.max_input {
+                    return false;
+                }
+            }
+            if !cosine_tail[lane].is_finite() || cosine_tail[lane].abs() > 1.0 {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 /// Checks the ordinary-range accumulation bound while applying the opposite
@@ -8635,6 +8709,104 @@ mod tests {
             ),
             (false, false)
         );
+    }
+
+    #[test]
+    fn analysis_products_safe_simd_matches_ieee_boundaries() {
+        for lane_count in [0, 1, 3, 4, 5, 8, 9, LATITUDE_BLOCK_SIZE] {
+            let max_input = f64::MAX / scalar::BIG / (2.0 * lane_count.max(1) as f64);
+            let same_real = vec![0.5; lane_count];
+            let same_imag = vec![-0.25; lane_count];
+            let opposite_real = vec![f64::MIN_POSITIVE; lane_count];
+            let opposite_imag = vec![-0.0; lane_count];
+            let cosine = vec![1.0; lane_count];
+            let check = |same_real: &[f64],
+                         same_imag: &[f64],
+                         opposite_real: &[f64],
+                         opposite_imag: &[f64],
+                         cosine: &[f64]| {
+                let expected = same_real
+                    .iter()
+                    .chain(same_imag)
+                    .chain(opposite_real)
+                    .chain(opposite_imag)
+                    .all(|value| (value.is_normal() || *value == 0.0) && value.abs() <= max_input)
+                    && cosine
+                        .iter()
+                        .all(|value| value.is_finite() && value.abs() <= 1.0);
+                assert_eq!(
+                    analysis_products_safe(
+                        same_real,
+                        same_imag,
+                        opposite_real,
+                        opposite_imag,
+                        cosine,
+                    ),
+                    expected,
+                    "lane_count={lane_count}"
+                );
+            };
+
+            check(
+                &same_real,
+                &same_imag,
+                &opposite_real,
+                &opposite_imag,
+                &cosine,
+            );
+            for index in 0..lane_count {
+                for invalid in [
+                    f64::NAN,
+                    f64::INFINITY,
+                    -f64::INFINITY,
+                    f64::MIN_POSITIVE * 0.5,
+                    f64::from_bits(max_input.to_bits() + 1),
+                ] {
+                    let mut changed = same_real.clone();
+                    changed[index] = invalid;
+                    check(
+                        &changed,
+                        &same_imag,
+                        &opposite_real,
+                        &opposite_imag,
+                        &cosine,
+                    );
+                    let mut changed = same_imag.clone();
+                    changed[index] = invalid;
+                    check(
+                        &same_real,
+                        &changed,
+                        &opposite_real,
+                        &opposite_imag,
+                        &cosine,
+                    );
+                    let mut changed = opposite_real.clone();
+                    changed[index] = invalid;
+                    check(&same_real, &same_imag, &changed, &opposite_imag, &cosine);
+                    let mut changed = opposite_imag.clone();
+                    changed[index] = invalid;
+                    check(&same_real, &same_imag, &opposite_real, &changed, &cosine);
+                }
+
+                for invalid in [
+                    f64::NAN,
+                    f64::INFINITY,
+                    -f64::INFINITY,
+                    1.0 + f64::EPSILON,
+                    -1.0 - f64::EPSILON,
+                ] {
+                    let mut changed = cosine.clone();
+                    changed[index] = invalid;
+                    check(
+                        &same_real,
+                        &same_imag,
+                        &opposite_real,
+                        &opposite_imag,
+                        &changed,
+                    );
+                }
+            }
+        }
     }
 
     #[test]
