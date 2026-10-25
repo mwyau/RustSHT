@@ -231,14 +231,7 @@ def main() -> None:
                             )
                         ],
                     }
-                    print(
-                        f"done {case['case_id']} {operation} q{threads}: "
-                        + ", ".join(
-                            f"{backend}={lookup[backend]['latency']['median']:.3f} ms"
-                            for backend in binaries
-                        ),
-                        flush=True,
-                    )
+                    print("Completed spin-1 coefficient-cache benchmark case", flush=True)
 
     metadata = {
         "baseline_source": args.baseline_source,

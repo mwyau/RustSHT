@@ -1318,9 +1318,9 @@ def run_matrix(
                             "process_pair": -1,
                             "backend": "fixture",
                             "failure_class": "fixture_error",
-                            "reason": str(error)[:16000],
+                            "reason": type(error).__name__,
                         })
-                print(f"FAIL fixture {case['case_id']}: {error}", flush=True)
+                print("FAIL: benchmark fixture generation", flush=True)
                 continue
             for threads in threads_to_run:
                 cpus = physical[:threads]
@@ -1364,13 +1364,13 @@ def run_matrix(
                         completed_pairs.add(pair_index)
                     progress += 1
                     print(
-                        f"CASE {progress}/{total} {case['case_id']} {operation} q{threads}",
+                        "CASE: starting benchmark",
                         flush=True,
                     )
                     for pair in range(pairs):
                         validate = operation == "analysis" and pair == 0
                         if pair in completed_pairs:
-                            print(f"RESUME {case['case_id']} {operation} q{threads} pair={pair} complete", flush=True)
+                            print("RESUME: completed benchmark pair", flush=True)
                             continue
                         pair_raw_start = len(raw)
                         pair_errors_start = len(errors)
@@ -1431,11 +1431,10 @@ def run_matrix(
                                     "process_pair": pair,
                                     "backend": backend,
                                     "failure_class": failure_class,
-                                    "reason": reason[:16000],
+                                    "reason": failure_class,
                                 })
                                 print(
-                                    f"FAIL {case['case_id']} {operation} q{threads} "
-                                    f"pair={pair} backend={backend}: {reason[:500]}",
+                                    "FAIL: benchmark worker",
                                     flush=True,
                                 )
                                 continue
@@ -1488,7 +1487,7 @@ def run_matrix(
                                 "process_pair": pair,
                                 "backend": "comparison",
                                 "failure_class": "output_read_error",
-                                "reason": str(error)[:16000],
+                                "reason": type(error).__name__,
                             })
                             save_pair_checkpoint(False, validation_status)
                             continue
@@ -1573,7 +1572,7 @@ def run_matrix(
                                     "process_pair": pair,
                                     "backend": "validation",
                                     "failure_class": "validation_error",
-                                    "reason": str(error)[:16000],
+                                    "reason": type(error).__name__,
                                 })
                                 save_pair_checkpoint(False, "error")
                                 continue
@@ -1605,7 +1604,7 @@ def run_matrix(
                                     "acceptance_failures": validation["acceptance_failures"],
                                 })
                                 print(
-                                    f"VALIDATION WARNING {case['case_id']} finite={validation['finite_outputs']} reset={validation['reset_consistent']}",
+                                    "VALIDATION WARNING: benchmark validation failed",
                                     flush=True,
                                 )
                         save_pair_checkpoint(True, validation_status)

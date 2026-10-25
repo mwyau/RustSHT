@@ -173,7 +173,7 @@ def main() -> None:
                         "sample_index": index,
                         "latency_ms": value,
                     })
-            print(json.dumps({"case": case_id, "comparison": "rust-before-after", **pair_result}), flush=True)
+            print("Completed Rust baseline/candidate benchmark pair", flush=True)
 
         ducc_pairs = []
         for pair in range(1, args.process_pairs + 1):
@@ -209,7 +209,7 @@ def main() -> None:
                         "sample_index": index,
                         "latency_ms": value,
                     })
-            print(json.dumps({"case": case_id, "comparison": "candidate-vs-DUCC", **pair_result}), flush=True)
+            print("Completed Rust/DUCC benchmark pair", flush=True)
 
         full_results.append({"case": case, "case_id": case_id, "rust_ab": ab_results, "candidate_ducc": ducc_pairs})
         (args.outdir / "results.json").write_text(json.dumps({"metadata": metadata(args), "cases": full_results}, indent=2) + "\n")

@@ -1654,7 +1654,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                             let error = (split - expected).norm();
                             assert!(
                                 error <= 3e-11 * expected.norm().max(1.0),
-                                "grid={grid_kind:?} component={component} ring={ring} split={split:?} general={expected:?} error={error:.3e}"
+                                "reflected spin-1 result differs from general recurrence"
                             );
                         }
                     }
@@ -1665,7 +1665,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                         let error = (split - expected).norm();
                         assert!(
                             error <= 3e-11 * expected.norm().max(1.0),
-                            "grid={grid_kind:?} component={component} ring={ring} split={split:?} general={expected:?} error={error:.3e}"
+                            "reflected spin-1 result differs from general recurrence"
                         );
                     }
                 }
@@ -4462,7 +4462,7 @@ fn spin1_scalar_table_analysis_preserves_small_reflected_differences() {
     assert!(expected != 0.0);
     assert!(
         (actual - expected).abs() <= expected.abs() * 1.0e-10,
-        "odd reflected contribution lost: actual={actual:.3e}, expected={expected:.3e}"
+        "odd reflected contribution differs from reference"
     );
 }
 

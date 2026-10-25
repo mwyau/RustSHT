@@ -232,7 +232,7 @@ def main() -> None:
                 "rust": timing_details(outputs["rust"]),
                 "ducc": timing_details(outputs["ducc"]),
             })
-            print(json.dumps({"case": case_id, **process_rows[-1]}), flush=True)
+            print("Completed f32 benchmark process pair", flush=True)
         rust_samples = [v for pair in range(1, args.process_pairs + 1)
                         for v in json.loads((case_dir / f"pair-{pair}-rust.json").read_text())["batch_ms"]]
         ducc_samples = [v for pair in range(1, args.process_pairs + 1)
@@ -258,7 +258,7 @@ def main() -> None:
             "process_pair_details": process_rows,
         }
         all_rows.append(row)
-        print(f"[{index}/{len(cases)}] {case_id} done", flush=True)
+        print("Completed f32 benchmark case", flush=True)
     (args.outdir / "results.json").write_text(json.dumps({
         "metadata": {
             "ducc_sha": DUCC_SHA, "rust_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),

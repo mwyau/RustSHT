@@ -252,7 +252,7 @@ def main() -> int:
                 cpus = physical[:threads]
                 for operation in ("analysis", "synthesis"):
                     progress += 1
-                    print(f"CASE {progress}/{total} {case['case_id']} {operation} q{threads}", flush=True)
+                    print("CASE: starting spin-1 benchmark", flush=True)
                     pair_workers = []
                     for pair in range(args.process_pairs):
                         records = {}
@@ -267,8 +267,8 @@ def main() -> int:
                             except Exception as error:
                                 failures.append({**case, "operation": operation, "threads": threads,
                                                  "process_pair": pair, "backend": backend,
-                                                 "failure_class": "worker_error", "reason": str(error)[:12000]})
-                                print(f"FAIL {case['case_id']} {operation} q{threads} p{pair} {backend}: {error}", flush=True)
+                                                 "failure_class": "worker_error", "reason": type(error).__name__})
+                                print("FAIL: spin-1 benchmark worker", flush=True)
                                 continue
                             result.update({**case, "operation": operation, "threads": threads,
                                            "process_pair": pair, "host_diagnostics": diagnostics,
