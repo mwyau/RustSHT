@@ -1478,7 +1478,10 @@ fn normal_or_zero_mask<S: Simd>(simd: S, value: S::f64s) -> S::m64s {
     simd.or_m64s(normal, simd.equal_f64s(value, simd.splat_f64s(0.0)))
 }
 
-#[expect(clippy::too_many_arguments, reason = "SIMD helper carries separate lane accumulators")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "SIMD helper carries separate lane accumulators"
+)]
 #[inline(always)]
 fn try_accumulate_scaled_pair_vector<S: Simd>(
     simd: S,
