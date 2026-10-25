@@ -8,6 +8,8 @@ The audit **individually fetched the full Markdown contents** of **84 archived e
 
 The >500 KB [milestone history](archive/plans/05-validation-and-milestones-history.md) (2,653 lines, 220 headings), three [ASTRA SHT](archive/reviews/ASTRA_SHT_REVIEW.md), [FFT](archive/reviews/ASTRA_FFT_REVIEW.md), [integrated](archive/reviews/ASTRA_INTEGRATED_REVIEW.md) review documents, and older profiling/performance plans were fetched and indexed at heading/method level, **not manually audited line by line**.
 
+The early [milestone-history record](archive/plans/05-validation-and-milestones-history.md) alone contains **220 indexed headings**, including Oct 12 experiments that are not separate items in the 84-file archived-experiment directory. Examples include Fourier-weight and spin-phase hoisting, scalar order-major spectra, inactive polar-block skipping, normal-range/scaled-prefix transitions, early SIMD eligibility tests, spin-factor ordering, and the later FFT radix/Rader work. The accepted paths are historical production examples; B27–B29 preserve the most relevant mixed-result alternatives from this heading audit.
+
 **Important boundary:** This does not prove that every method in the repository's **3,931** tracked paths, every historical Git commit, all `reports/data/` raw CSV/JSON/patch files or local/untracked experiment captures has been examined. Nor does it validate old benchmarks under today's Rust compiler or accepted source. Missing raw files or external branches must be marked `source-not-recovered`, not silently reconstructed.
 
 ## Previously overlooked method families now represented
@@ -16,6 +18,7 @@ The >500 KB [milestone history](archive/plans/05-validation-and-milestones-histo
 - CC active-ring compaction and q1 paired coefficient preparation reuse — **B20–B21**; separate from already accepted ring-group scheduling and bounded checked preparation reuse
 - scalar-only 16-ring scheduling, spin-1 coefficient direct reads, one-base dispatch and M6 isolated high-band scaled-prefix/epoch routes — **B22–B25**
 - degree-pair-outer CC spin-1 synthesis as a design-negative with neutral q8 reduced control and substantial q1 regressions — **B26**
+- additional **Oct 12–13** methods found only in the extensive 2,653-line milestone history: scalar polar-block skipping, lowered scalar synthesis continuation threshold, and spin-factor preparation reordering — **B27–B29**. These predate today's sources; their favorable cells coexist with material regressions and do not justify unrestricted restoration.
 - f32 conditional normal-range skipping, incomplete T2047 controls, force-inline codegen, already accepted f32 SIMD prechecks and q8 task granularity — **F01–F06**, explicitly not current f64 optimization targets
 - odd-length paired real FFT production route, the slower standalone N=361 C2R alternative, FFT prime/radix ideas, cache-informed Legendre choice and batched SHT — **F07–F09**, distinguishing accepted, negative, and merely proposed work
 - [Plan 14 accepted cutoffs, CC/F1 resampling, GL/F1/CC dynamic scheduling and Legendre-table decisions](archive/retired-active-docs-2026-10-24/README.md) cross-checked to avoid falsely classifying production implementations as rejected.
