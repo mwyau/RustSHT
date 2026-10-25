@@ -2660,16 +2660,15 @@ fn spin1_order_major_synthesis_reuses_workspace_across_changed_coefficients() {
                 label,
                 "extreme finite coefficients" | "unsafe converted coefficients"
             );
-            if label == "unsafe converted coefficients" {
-                if !parallel_workspace
+            if label == "unsafe converted coefficients"
+                && !parallel_workspace
                     .spin1_scalar_coefficient_finite_orders
                     .is_empty()
-                {
-                    assert_eq!(
-                        parallel_workspace.spin1_scalar_coefficient_finite_orders[1],
-                        0
-                    );
-                }
+            {
+                assert_eq!(
+                    parallel_workspace.spin1_scalar_coefficient_finite_orders[1],
+                    0
+                );
             }
             if !preserves_exceptional_outputs {
                 assert!(
