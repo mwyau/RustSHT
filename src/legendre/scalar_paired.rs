@@ -4505,10 +4505,6 @@ struct FusedScalarAnalysisPair<
     // Optional second channel is reduced from basis states saved by the first
     // channel's fused recurrence pass.
     const SEQUENTIAL_SECOND_CHANNEL: bool = false,
-    // A prior complete checked traversal may prove this exact order/block's
-    // recurrence states safe, allowing the cached specialization to skip
-    // redundant per-degree range checks.
-    const TRACK_RANGE: bool = true,
 > {
     m: usize,
     lmax: usize,
@@ -4583,11 +4579,7 @@ fn reduce_analysis_complex_pair<S: Simd>(simd: S, real: S::f64s, imag: S::f64s) 
 }
 
 #[inline(always)]
-fn fused_analysis_pair_step_with_simd<
-    S: Simd,
-    const OPPOSITE_COSINE_WEIGHTED: bool,
-    const TRACK_RANGE: bool,
->(
+fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: bool>(
     simd: S,
     step: FusedAnalysisPairStep<'_, OPPOSITE_COSINE_WEIGHTED>,
 ) -> (Complex64, Complex64, S::m64s, bool) {
@@ -4689,13 +4681,11 @@ fn fused_analysis_pair_step_with_simd<
         let leading = simd.mul_add_f64s(a, *cosine_squared, b);
         let next_value = simd.mul_add_f64s(leading, basis, *previous);
         *next = next_value;
-        if TRACK_RANGE {
-            let magnitude = simd.abs_f64s(next_value);
-            let is_zero = simd.equal_f64s(magnitude, zero);
-            let above_minimum = simd.greater_than_or_equal_f64s(magnitude, minimum);
-            let in_range = simd.or_m64s(is_zero, above_minimum);
-            all_vectors_in_range = simd.and_m64s(all_vectors_in_range, in_range);
-        }
+        let magnitude = simd.abs_f64s(next_value);
+        let is_zero = simd.equal_f64s(magnitude, zero);
+        let above_minimum = simd.greater_than_or_equal_f64s(magnitude, minimum);
+        let in_range = simd.or_m64s(is_zero, above_minimum);
+        all_vectors_in_range = simd.and_m64s(all_vectors_in_range, in_range);
     }
 
     let mut same_re_sum = simd.reduce_sum_f64s(same_re);
@@ -4734,10 +4724,8 @@ fn fused_analysis_pair_step_with_simd<
         let leading = coefficient_a.mul_add(*cosine_squared, coefficient_b);
         let next_value = leading.mul_add(basis, *previous);
         *next = next_value;
-        if TRACK_RANGE {
-            let magnitude = next_value.abs();
-            all_tails_in_range &= magnitude == 0.0 || magnitude >= f64::MIN_POSITIVE;
-        }
+        let magnitude = next_value.abs();
+        all_tails_in_range &= magnitude == 0.0 || magnitude >= f64::MIN_POSITIVE;
     }
 
     (
@@ -4757,7 +4745,6 @@ fn fused_analysis_two_pair_steps_with_simd<
     const TRACK_STATE_RANGE: bool,
     const ACCUMULATE: bool,
     const ROTATE_SEQUENTIAL_STATES: bool,
-    const TRACK_RANGE: bool,
 >(
     simd: S,
     step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
@@ -5018,10 +5005,8 @@ fn fused_analysis_two_pair_steps_with_simd<
         let first_next = first_coefficient_a
             .mul_add(*cosine_squared, first_coefficient_b)
             .mul_add(current_value, previous_value);
-        if TRACK_RANGE {
-            let first_magnitude = first_next.abs();
-            tails_in_range &= first_magnitude == 0.0 || first_magnitude >= f64::MIN_POSITIVE;
-        }
+        let first_magnitude = first_next.abs();
+        tails_in_range &= first_magnitude == 0.0 || first_magnitude >= f64::MIN_POSITIVE;
 
         if ACCUMULATE {
             second_same_re_sum = (*same_real).mul_add(first_next, second_same_re_sum);
@@ -5040,10 +5025,8 @@ fn fused_analysis_two_pair_steps_with_simd<
         let second_next = second_coefficient_a
             .mul_add(*cosine_squared, second_coefficient_b)
             .mul_add(first_next, current_value);
-        if TRACK_RANGE {
-            let second_magnitude = second_next.abs();
-            tails_in_range &= second_magnitude == 0.0 || second_magnitude >= f64::MIN_POSITIVE;
-        }
+        let second_magnitude = second_next.abs();
+        tails_in_range &= second_magnitude == 0.0 || second_magnitude >= f64::MIN_POSITIVE;
         if ROTATE_SEQUENTIAL_STATES {
             let snapshot = snapshot_tail.next()?;
             *snapshot = first_next;
@@ -5213,7 +5196,6 @@ impl<
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
     const ACCUMULATE: bool,
     const SEQUENTIAL_SECOND_CHANNEL: bool,
-    const TRACK_RANGE: bool,
 > WithSimd
     for FusedScalarAnalysisPair<
         '_,
@@ -5222,7 +5204,6 @@ impl<
         FUSE_PAIR_GROUP_RANGE_CHECK,
         ACCUMULATE,
         SEQUENTIAL_SECOND_CHANNEL,
-        TRACK_RANGE,
     >
 {
     type Output = bool;
@@ -5294,7 +5275,6 @@ impl<
                 FUSE_PAIR_GROUP_RANGE_CHECK,
                 ACCUMULATE,
                 SEQUENTIAL_SECOND_CHANNEL,
-                TRACK_RANGE,
             >(
                 simd,
                 FusedAnalysisTwoPairSteps {
@@ -5415,7 +5395,7 @@ impl<
                 );
             }
             let (same_sum, opposite_sum, pair_vectors_in_range, pair_tails_in_range) =
-                fused_analysis_pair_step_with_simd::<S, OPPOSITE_COSINE_WEIGHTED, TRACK_RANGE>(
+                fused_analysis_pair_step_with_simd::<S, OPPOSITE_COSINE_WEIGHTED>(
                     simd,
                     FusedAnalysisPairStep {
                         same_real,
@@ -5497,7 +5477,7 @@ impl<
             same_sum,
             opposite_sum,
         );
-        !TRACK_RANGE || (analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range)
+        analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
     }
 }
 
@@ -5624,7 +5604,6 @@ fn dispatch_fused_scalar_analysis_pair_weighted<
 fn dispatch_fused_scalar_analysis_pair_two_channels<
     const OPPOSITE_COSINE_WEIGHTED: bool,
     const CHECK_PAIR_GROUP_RANGE: bool,
-    const TRACK_RANGE: bool,
 >(
     arch: Arch,
     m: usize,
@@ -5654,7 +5633,6 @@ fn dispatch_fused_scalar_analysis_pair_two_channels<
         { cfg!(rustsht_fused_analysis_pair_range_check) },
         true,
         true,
-        TRACK_RANGE,
     > {
         m,
         lmax,
@@ -5876,7 +5854,7 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
 
     let mut shared_range_check_was_exercised = false;
     let recurrence_succeeded = if range_check_is_proven_safe {
-        dispatch_fused_scalar_analysis_pair_two_channels::<true, false, false>(
+        dispatch_fused_scalar_analysis_pair_two_channels::<true, false>(
             arch,
             m,
             lmax,
@@ -5903,7 +5881,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
         dispatch_fused_scalar_analysis_pair_two_channels::<
             true,
             { !cfg!(rustsht_unchecked_analysis_pair_range) },
-            true,
         >(
             arch,
             m,
