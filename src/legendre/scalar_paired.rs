@@ -4021,7 +4021,7 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
                 return Ok(true);
             }
 
-            let channel_sums = FusedCheckedMixedAnalysisPairChannelsStep {
+            let Some((channel_sums, ready)) = FusedCheckedMixedAnalysisPairChannelsStep {
                 same_real,
                 same_imag,
                 opposite_real,
@@ -4035,7 +4035,9 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
                 coefficient_b: coefficient_b[pair_index],
                 basis_next: next,
             }
-            .with_simd(simd);
+            .with_simd(simd) else {
+                return Ok(false);
+            };
             staged_first[offset] = channel_sums[0].0;
             staged_second[offset] = channel_sums[1].0;
             if l < lmax {
@@ -4045,10 +4047,6 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
 
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
-            let Some(ready) = scalar::normalize_pair_lanes_simd(simd, previous, current, exponents)
-            else {
-                return Ok(false);
-            };
             normal_range = ready;
         }
 
@@ -4062,8 +4060,8 @@ struct FusedCheckedMixedAnalysisPairChannelsStep<'a> {
     opposite_real: [&'a [f64]; 2],
     opposite_imag: [&'a [f64]; 2],
     basis_previous: &'a [f64],
-    basis_current: &'a [f64],
-    exponents: &'a [i64],
+    basis_current: &'a mut [f64],
+    exponents: &'a mut [i64],
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
     coefficient_a: f64,
@@ -4072,7 +4070,7 @@ struct FusedCheckedMixedAnalysisPairChannelsStep<'a> {
 }
 
 impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
-    type Output = [(Complex64, Complex64); 2];
+    type Output = Option<([(Complex64, Complex64); 2], bool)>;
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
@@ -4090,6 +4088,14 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
             coefficient_b,
             basis_next,
         } = self;
+        if basis_previous.len() != basis_current.len()
+            || basis_current.len() != exponents.len()
+            || basis_current.len() != basis_next.len()
+            || basis_current.len() != cos_theta.len()
+            || basis_current.len() != cos_theta_squared.len()
+        {
+            return None;
+        }
         let channel_sums = MixedAnalysisPairChannelsAccumulation {
             same_real,
             same_imag,
@@ -4102,28 +4108,54 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
         .with_simd(simd);
 
         let (previous_vectors, previous_tail) = S::as_simd_f64s(basis_previous);
-        let (current_vectors, current_tail) = S::as_simd_f64s(basis_current);
+        let (current_vectors, current_tail) = S::as_mut_simd_f64s(basis_current);
+        let (exponent_vectors, exponent_tail) = S::as_mut_simd_i64s(exponents);
         let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
         let (next_vectors, next_tail) = S::as_mut_simd_f64s(basis_next);
         debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+        debug_assert_eq!(current_vectors.len(), exponent_vectors.len());
         debug_assert_eq!(current_vectors.len(), cosine_squared_vectors.len());
         debug_assert_eq!(current_vectors.len(), next_vectors.len());
         debug_assert_eq!(previous_tail.len(), current_tail.len());
+        debug_assert_eq!(current_tail.len(), exponent_tail.len());
         debug_assert_eq!(current_tail.len(), cosine_squared_tail.len());
         debug_assert_eq!(current_tail.len(), next_tail.len());
 
         let a = simd.splat_f64s(coefficient_a);
         let b = simd.splat_f64s(coefficient_b);
+        let mut all_normal = true;
         for index in 0..current_vectors.len() {
             let leading = simd.mul_add_f64s(a, cosine_squared_vectors[index], b);
-            next_vectors[index] =
-                simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+            let mut previous_value = current_vectors[index];
+            let mut current_value =
+                simd.mul_add_f64s(leading, previous_value, previous_vectors[index]);
+            let mut exponent = exponent_vectors[index];
+            all_normal &= scalar::normalize_pair_vector_simd(
+                simd,
+                &mut previous_value,
+                &mut current_value,
+                &mut exponent,
+            )?;
+            current_vectors[index] = previous_value;
+            next_vectors[index] = current_value;
+            exponent_vectors[index] = exponent;
         }
         for lane in 0..current_tail.len() {
             let leading = coefficient_a.mul_add(cosine_squared_tail[lane], coefficient_b);
-            next_tail[lane] = leading.mul_add(current_tail[lane], previous_tail[lane]);
+            let next_value = leading.mul_add(current_tail[lane], previous_tail[lane]);
+            if !current_tail[lane].is_finite() || !next_value.is_finite() {
+                return None;
+            }
+            next_tail[lane] = next_value;
+            let normalized = scalar::normalize_pair_lanes(
+                &mut current_tail[lane..lane + 1],
+                &mut next_tail[lane..lane + 1],
+                &mut exponent_tail[lane..lane + 1],
+            )
+            .ok()?;
+            all_normal &= normalized;
         }
-        channel_sums
+        Some((channel_sums, all_normal))
     }
 }
 

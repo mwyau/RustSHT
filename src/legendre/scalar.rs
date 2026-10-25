@@ -345,93 +345,21 @@ pub(super) fn normalize_pair_lanes_simd<S: Simd>(
     let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
     let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
     let (exponent_vectors, exponent_tail) = S::as_mut_simd_i64s(exponents);
-    let maximum = simd.splat_f64s(BIG);
-    let minimum = simd.splat_f64s(SMALL);
-    let zero_f64 = simd.splat_f64s(0.0);
-    let maximum_finite = simd.splat_f64s(f64::MAX);
-    let scale_up = simd.splat_f64s(SCALE_UP);
-    let scale_down = simd.splat_f64s(SCALE_DOWN);
-    let exponent_step = simd.splat_i64s(800);
-    let zero_i64 = simd.splat_i64s(0);
     let mut all_normal = true;
 
     for index in 0..previous_vectors.len() {
         let mut previous_value = previous_vectors[index];
         let mut current_value = current_vectors[index];
         let mut exponent = exponent_vectors[index];
-        let previous_magnitude = simd.abs_f64s(previous_value);
-        let current_magnitude = simd.abs_f64s(current_value);
-        let finite = simd.and_m64s(
-            simd.less_than_or_equal_f64s(previous_magnitude, maximum_finite),
-            simd.less_than_or_equal_f64s(current_magnitude, maximum_finite),
-        );
-        if !mask_all_f64(simd, finite) {
-            return None;
-        }
-
-        let mut magnitude = simd.max_f64s(previous_magnitude, current_magnitude);
-        let mut in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
-        if mask_all_f64(simd, in_range) {
-            all_normal &= mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64));
-            continue;
-        }
-
-        loop {
-            let too_large = simd.greater_than_f64s(magnitude, maximum);
-            if !mask_any_f64(simd, too_large) {
-                break;
-            }
-            let next_exponent = simd.add_i64s(exponent, exponent_step);
-            let overflow = simd.and_m64s(too_large, simd.less_than_i64s(next_exponent, exponent));
-            if mask_any_f64(simd, overflow) {
-                return None;
-            }
-            previous_value = simd.select_f64s(
-                too_large,
-                simd.mul_f64s(previous_value, scale_down),
-                previous_value,
-            );
-            current_value = simd.select_f64s(
-                too_large,
-                simd.mul_f64s(current_value, scale_down),
-                current_value,
-            );
-            exponent = simd.select_i64s(too_large, next_exponent, exponent);
-            magnitude = simd.max_f64s(simd.abs_f64s(previous_value), simd.abs_f64s(current_value));
-        }
-
-        loop {
-            let nonzero = simd.not_m64s(simd.equal_f64s(magnitude, zero_f64));
-            let too_small = simd.and_m64s(nonzero, simd.less_than_f64s(magnitude, minimum));
-            if !mask_any_f64(simd, too_small) {
-                break;
-            }
-            let next_exponent = simd.sub_i64s(exponent, exponent_step);
-            let overflow =
-                simd.and_m64s(too_small, simd.greater_than_i64s(next_exponent, exponent));
-            if mask_any_f64(simd, overflow) {
-                return None;
-            }
-            previous_value = simd.select_f64s(
-                too_small,
-                simd.mul_f64s(previous_value, scale_up),
-                previous_value,
-            );
-            current_value = simd.select_f64s(
-                too_small,
-                simd.mul_f64s(current_value, scale_up),
-                current_value,
-            );
-            exponent = simd.select_i64s(too_small, next_exponent, exponent);
-            magnitude = simd.max_f64s(simd.abs_f64s(previous_value), simd.abs_f64s(current_value));
-        }
-
+        all_normal &= normalize_pair_vector_simd(
+            simd,
+            &mut previous_value,
+            &mut current_value,
+            &mut exponent,
+        )?;
         previous_vectors[index] = previous_value;
         current_vectors[index] = current_value;
         exponent_vectors[index] = exponent;
-        in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
-        all_normal &=
-            mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64)) && mask_all_f64(simd, in_range);
     }
 
     for lane in 0..previous_tail.len() {
@@ -447,6 +375,100 @@ pub(super) fn normalize_pair_lanes_simd<S: Simd>(
         all_normal &= normalized;
     }
     Some(all_normal)
+}
+
+/// Applies the checked exponent normalization for one SIMD vector. Keeping
+/// this operation separate lets recurrence kernels fuse it into their vector
+/// update loop without changing the checks or scaling order.
+#[inline(always)]
+pub(super) fn normalize_pair_vector_simd<S: Simd>(
+    simd: S,
+    previous_value: &mut S::f64s,
+    current_value: &mut S::f64s,
+    exponent: &mut S::i64s,
+) -> Option<bool> {
+    let maximum = simd.splat_f64s(BIG);
+    let minimum = simd.splat_f64s(SMALL);
+    let zero_f64 = simd.splat_f64s(0.0);
+    let maximum_finite = simd.splat_f64s(f64::MAX);
+    let scale_up = simd.splat_f64s(SCALE_UP);
+    let scale_down = simd.splat_f64s(SCALE_DOWN);
+    let exponent_step = simd.splat_i64s(800);
+    let zero_i64 = simd.splat_i64s(0);
+
+    let previous_magnitude = simd.abs_f64s(*previous_value);
+    let current_magnitude = simd.abs_f64s(*current_value);
+    let finite = simd.and_m64s(
+        simd.less_than_or_equal_f64s(previous_magnitude, maximum_finite),
+        simd.less_than_or_equal_f64s(current_magnitude, maximum_finite),
+    );
+    if !mask_all_f64(simd, finite) {
+        return None;
+    }
+
+    let mut magnitude = simd.max_f64s(previous_magnitude, current_magnitude);
+    let in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
+    if mask_all_f64(simd, in_range) {
+        return Some(mask_all_i64(simd, simd.equal_i64s(*exponent, zero_i64)));
+    }
+
+    loop {
+        let too_large = simd.greater_than_f64s(magnitude, maximum);
+        if !mask_any_f64(simd, too_large) {
+            break;
+        }
+        let next_exponent = simd.add_i64s(*exponent, exponent_step);
+        let overflow = simd.and_m64s(too_large, simd.less_than_i64s(next_exponent, *exponent));
+        if mask_any_f64(simd, overflow) {
+            return None;
+        }
+        *previous_value = simd.select_f64s(
+            too_large,
+            simd.mul_f64s(*previous_value, scale_down),
+            *previous_value,
+        );
+        *current_value = simd.select_f64s(
+            too_large,
+            simd.mul_f64s(*current_value, scale_down),
+            *current_value,
+        );
+        *exponent = simd.select_i64s(too_large, next_exponent, *exponent);
+        magnitude = simd.max_f64s(
+            simd.abs_f64s(*previous_value),
+            simd.abs_f64s(*current_value),
+        );
+    }
+
+    loop {
+        let nonzero = simd.not_m64s(simd.equal_f64s(magnitude, zero_f64));
+        let too_small = simd.and_m64s(nonzero, simd.less_than_f64s(magnitude, minimum));
+        if !mask_any_f64(simd, too_small) {
+            break;
+        }
+        let next_exponent = simd.sub_i64s(*exponent, exponent_step);
+        let overflow = simd.and_m64s(too_small, simd.greater_than_i64s(next_exponent, *exponent));
+        if mask_any_f64(simd, overflow) {
+            return None;
+        }
+        *previous_value = simd.select_f64s(
+            too_small,
+            simd.mul_f64s(*previous_value, scale_up),
+            *previous_value,
+        );
+        *current_value = simd.select_f64s(
+            too_small,
+            simd.mul_f64s(*current_value, scale_up),
+            *current_value,
+        );
+        *exponent = simd.select_i64s(too_small, next_exponent, *exponent);
+        magnitude = simd.max_f64s(
+            simd.abs_f64s(*previous_value),
+            simd.abs_f64s(*current_value),
+        );
+    }
+
+    let in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
+    Some(mask_all_i64(simd, simd.equal_i64s(*exponent, zero_i64)) && mask_all_f64(simd, in_range))
 }
 
 #[inline(always)]
