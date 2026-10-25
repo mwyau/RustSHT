@@ -1,13 +1,13 @@
 # RustSHT f64 performance — tried approaches to avoid repeating unchanged
 
-**Reference only; not an active plan.** Source-relative results may change with CPU/ISA/compiler, DUCC version or new kernels. **Revisit a hypothesis when its implementation fundamentally changes or a fresh profile contradicts its previous failure**, not by re-running the same mapping. See [active plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md). Original detailed Markdown evidence is preserved in [dated archive](archive/retired-active-docs-2026-10-24/README.md) and older archives, raw files in `reports/data/`.
+**Reference only; not an active plan or a permanent blacklist.** This file records why implementations were removed from the production fast path. **A revert is not the same as a failed hypothesis**: when numerical checks passed and matched instructions fell, or timings were noisy/near-neutral, preserve the source and evidence in [PERFORMANCE_CANDIDATES.md](PERFORMANCE_CANDIDATES.md). Reevaluate with new source, compiler or a fresh profile instead of repeating an unchanged regression. See [active plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md). Original detailed evidence is preserved in [dated archive](archive/retired-active-docs-2026-10-24/README.md), older archives and `reports/data/`.
 
 ## Recent trials and clarified boundaries (2026-10-25)
 
 - **Accepted, not a negative:** GL T720 spin-1 analysis `0961586a` vectorized the *standalone paired-product safety scan*: q1 49.615→45.416 ms, q8 7.390→6.589 ms. This is distinct from older rejected *scan-fusion* variants; **preserve it**.
 - **Rejected:** GL T720 exceptional AVX2 lane-bit enumeration `55fff331`: dedicated spin-1 q1/q8 native candidates 49.109/7.136 ms against parents 48.808/7.034 ms. Reverted; no whole-transform gain.
 - **Rejected:** shared mixed Q/U scale-check helper `8dc9bc9d`: q1 47.506 versus 45.763 ms parent, q8 6.874 versus 6.684 ms parent. Reverted by `6673a344`.
-- **Rejected:** transactional cosine preweight for mixed analysis `97629027`: q1 median parent-relative 0.9899 but q8 six paired median 1.0053 (four slower). Reverted `3448a4a8`; no shared-path gain. Do not clone the variant for a marginal q1-only win absent a new measured root cause.
+- **Reverted production patch; retained as candidate B03:** transactional cosine preweight for mixed analysis `97629027`: q1 median parent-relative 0.9899 but q8 six paired median 1.0053 (four slower). Reverted `3448a4a8`. A selective q1 path may be worth reconsidering only with new hot-loop evidence and q8 regression protection; see [candidate ledger](PERFORMANCE_CANDIDATES.md).
 - **Accepted, not a negative:** GL T1023 synthesis `7ef6d6e1` fixed an *over-restrictive one-column dispatch gate* on the existing reflected per-component adapter. Validated 173.557→90.402 ms vs DUCC 124.899 ms. This is not the historical rejected *two full transforms* or earlier serial q1 adapter experiment.
 
 | Previously tested mechanism | Outcome / why not retained |
