@@ -5964,14 +5964,11 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
             )
         })
         .unwrap();
-    assert_eq!(
-        eight_workspace.spin1_scalar_coefficients.len(),
-        (plan.harmonics.lmax() + 2) * 2 * (plan.harmonics.mmax() + 1)
-    );
-    assert_eq!(
-        eight_workspace.spin1_scalar_coefficient_finite_orders.len(),
-        plan.harmonics.mmax() + 1
-    );
+    // Order-major q8 synthesis converts coefficients in each worker, rather
+    // than allocating the older transform-wide prepared-coefficient cache.
+    assert!(eight_workspace.spin1_scalar_coefficients.is_empty());
+    assert!(eight_workspace.spin1_scalar_coefficient_finite_orders.is_empty());
+    assert!(!eight_workspace.spin_order_output_scratch.is_empty());
     for (actual, expected) in eight_first
         .iter()
         .zip(&one_first)
