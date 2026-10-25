@@ -754,7 +754,7 @@ fn paired_scalar_fft_end_to_end_exhaustive_t0_to_t256() {
                         analysis_max_scaled_error.max(error / reference.max(1.0));
                     assert!(
                         error <= 4e-13 * reference.max(1.0),
-                        "analysis mismatch T{lmax} q{threads} {longitude_mode}: {paired:?} vs {independent:?}"
+                        "paired odd-FFT analysis mismatch"
                     );
                 }
                 let mut synthesis_error_sq = 0.0;
@@ -768,7 +768,7 @@ fn paired_scalar_fft_end_to_end_exhaustive_t0_to_t256() {
                         synthesis_max_scaled_error.max(error.abs() / independent.abs().max(1.0));
                     assert!(
                         error.abs() <= 4e-13 * independent.abs().max(1.0),
-                        "synthesis mismatch T{lmax} q{threads} {longitude_mode}: {paired} vs {independent}"
+                        "paired odd-FFT synthesis mismatch"
                     );
                 }
                 let analysis_relative_l2 =
@@ -2857,7 +2857,7 @@ fn scalar_t1023_transition_fallback_matches_scaled_reference_for_extreme_coeffic
                 let relative_error = (actual - expected).norm() / expected.norm().max(1.0);
                 assert!(
                     actual.re.is_finite() && actual.im.is_finite() && relative_error <= 2e-13,
-                    "lane={lane}, actual={actual:?}, expected={expected:?}, relative_error={relative_error:.3e}"
+                    "scalar spectrum differs from reference beyond tolerance"
                 );
             }
         }

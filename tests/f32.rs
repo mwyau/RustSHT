@@ -1042,7 +1042,7 @@ fn f32_longitude_phase_handles_large_finite_phi0_for_scalar_and_spin() {
             let actual = sectoral_map[ring * 5 + longitude];
             assert!(
                 (actual - expected).abs() <= 3.0e-6,
-                "sample ({ring}, {longitude}): actual {actual:.9e}, expected {expected:.9e}"
+                "f32 scalar synthesis sample differs from reference"
             );
         }
     }

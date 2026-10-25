@@ -637,8 +637,7 @@ mod tests {
     fn close(actual: f64, expected: f64, tolerance: f64) {
         assert!(
             (actual - expected).abs() <= tolerance,
-            "actual={actual:.17e}, expected={expected:.17e}, error={:.3e}",
-            (actual - expected).abs()
+            "grid value differs from reference beyond tolerance"
         );
     }
 
