@@ -4707,7 +4707,7 @@ impl WithSimd for FlushAnalysisPairReductionPartials<'_> {
                 second[first_l + 1] += Complex64::new(values[10], values[11]);
             }
             second[first_l + 2] += Complex64::new(values[12], values[13]);
-            if first_l + 4 < lmax {
+            if first_l + 2 < lmax {
                 second[first_l + 3] += Complex64::new(values[14], values[15]);
             }
         }
@@ -11320,5 +11320,375 @@ mod tests {
         assert_eq!(prepared_first_sum_im, original_first_sum_im);
         assert_eq!(prepared_second_sum_re, original_second_sum_re);
         assert_eq!(prepared_second_sum_im, original_second_sum_im);
+    }
+
+    #[cfg(rustsht_analysis_retain_pair_partials)]
+    #[test]
+    fn retained_analysis_partials_cover_block_shapes_and_checked_declines() {
+        struct Block {
+            sin: Vec<f64>,
+            cos: Vec<f64>,
+            same_re: [Vec<f64>; 2],
+            same_im: [Vec<f64>; 2],
+            opposite_re: [Vec<f64>; 2],
+            opposite_im: [Vec<f64>; 2],
+        }
+
+        fn add(target: &mut [Complex64], source: &[Complex64]) {
+            for (target, source) in target.iter_mut().zip(source) {
+                *target += *source;
+            }
+        }
+
+        fn add_at(target: &mut [Complex64], offset: usize, source: &[Complex64]) {
+            add(&mut target[offset..offset + source.len()], source);
+        }
+
+        fn assert_close(actual: &[Complex64], expected: &[Complex64]) {
+            for (index, (actual, expected)) in actual.iter().zip(expected).enumerate() {
+                let error = (*actual - *expected).norm();
+                let tolerance = 3.0e-14 * (1.0 + expected.norm());
+                assert!(
+                    error <= tolerance,
+                    "index {index}, actual={actual:?}, expected={expected:?}, error={error:e}, tolerance={tolerance:e}"
+                );
+            }
+        }
+
+        let m = 49;
+        let lmax = 97;
+        let coefficient_count = lmax - m + 1;
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax + 3, &mut epsilon);
+        let mut alpha = vec![0.0; lmax / 2 + 2];
+        let mut coefficient_a = vec![0.0; lmax / 2 + 2];
+        let mut coefficient_b = vec![0.0; lmax / 2 + 2];
+        fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let make_block = |theta_start: f64, lanes: usize, seed: usize| {
+            let angles: Vec<_> = (0..lanes)
+                .map(|lane| theta_start + lane as f64 * 0.035)
+                .collect();
+            let values = |channel: usize, stream: usize| {
+                (0..lanes)
+                    .map(|lane| {
+                        (lane + 1 + seed * 3 + channel * 5 + stream * 7) as f64
+                            * (0.0007 + stream as f64 * 0.0001)
+                    })
+                    .collect::<Vec<_>>()
+            };
+            Block {
+                sin: angles.iter().map(|angle| angle.sin()).collect(),
+                cos: angles.iter().map(|angle| angle.cos()).collect(),
+                same_re: std::array::from_fn(|channel| values(channel, 0)),
+                same_im: std::array::from_fn(|channel| {
+                    values(channel, 1).into_iter().map(|value| -value).collect()
+                }),
+                opposite_re: std::array::from_fn(|channel| values(channel, 2)),
+                opposite_im: std::array::from_fn(|channel| {
+                    values(channel, 3).into_iter().map(|value| -value).collect()
+                }),
+            }
+        };
+        let run_block = |block: &Block,
+                         factors_a: &[f64],
+                         mode: AnalysisPairReductionMode,
+                         partials: Option<&mut [f64]>| {
+            let mut first = vec![Complex64::new(0.0, 0.0); coefficient_count];
+            let mut second = vec![Complex64::new(0.0, 0.0); coefficient_count];
+            let mut previous = vec![0.0; block.sin.len()];
+            let mut current = vec![0.0; block.sin.len()];
+            let mut next = vec![0.0; block.sin.len()];
+            let mut exponents = vec![0; block.sin.len()];
+            let mut range_checked = false;
+            let succeeded = fused_scalar_analysis_pair_channels_block_with_range_proof(
+                Arch::new(),
+                true,
+                true,
+                true,
+                false,
+                &mut range_checked,
+                m,
+                lmax,
+                &block.sin,
+                &block.cos,
+                sectoral_norm,
+                factors_a,
+                &coefficient_b,
+                [&block.same_re[0], &block.same_re[1]],
+                [&block.same_im[0], &block.same_im[1]],
+                [&block.opposite_re[0], &block.opposite_re[1]],
+                [&block.opposite_im[0], &block.opposite_im[1]],
+                &mut first,
+                &mut second,
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+                partials,
+                mode,
+            )
+            .unwrap();
+            (succeeded, first, second, range_checked)
+        };
+        let immediate_sum = |blocks: &[&Block]| {
+            let mut first = vec![Complex64::new(0.0, 0.0); coefficient_count];
+            let mut second = vec![Complex64::new(0.0, 0.0); coefficient_count];
+            for block in blocks {
+                let (succeeded, staged_first, staged_second, _) = run_block(
+                    block,
+                    &coefficient_a,
+                    AnalysisPairReductionMode::Immediate,
+                    None,
+                );
+                assert!(succeeded);
+                add(&mut first, &staged_first);
+                add(&mut second, &staged_second);
+            }
+            (first, second)
+        };
+        let normal_a = make_block(1.02, 5, 0);
+        let skipped = make_block(1.19, 2, 1);
+        let normal_b = make_block(1.23, 7, 2);
+        let normal_c = make_block(1.37, 3, 3);
+        let polar = make_block(0.002, 5, 4);
+        let mut scratch = vec![0.0; coefficient_count.div_ceil(4) * 64];
+
+        let expected_single = immediate_sum(&[&normal_a]);
+        let mut single_first = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut single_second = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let (ok, staged_first, staged_second, _) = run_block(
+            &normal_a,
+            &coefficient_a,
+            AnalysisPairReductionMode::RetainFirst,
+            Some(&mut scratch),
+        );
+        assert!(ok);
+        add_at(&mut single_first, m, &staged_first);
+        add_at(&mut single_second, m, &staged_second);
+        assert!(flush_analysis_pair_reduction_partials(
+            Arch::new(),
+            m,
+            lmax,
+            &scratch,
+            &mut single_first,
+            &mut single_second,
+        ));
+        assert_close(&single_first[m..m + coefficient_count], &expected_single.0);
+        assert_close(&single_second[m..m + coefficient_count], &expected_single.1);
+
+        // Four block positions with one skipped block; Q/U sums include SIMD tails.
+        let expected_even = immediate_sum(&[&normal_a, &normal_b, &normal_c]);
+        let mut even_first = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut even_second = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let (ok, first, second, _) = run_block(
+            &normal_a,
+            &coefficient_a,
+            AnalysisPairReductionMode::RetainFirst,
+            Some(&mut scratch),
+        );
+        assert!(ok);
+        add(&mut even_first, &first);
+        add(&mut even_second, &second);
+        assert_eq!(skipped.sin.len(), 2);
+        let (ok, first, second, _) = run_block(
+            &normal_b,
+            &coefficient_a,
+            AnalysisPairReductionMode::MergeRetained,
+            Some(&mut scratch),
+        );
+        assert!(ok);
+        add(&mut even_first, &first);
+        add(&mut even_second, &second);
+        let (ok, first, second, _) = run_block(
+            &normal_c,
+            &coefficient_a,
+            AnalysisPairReductionMode::Immediate,
+            None,
+        );
+        assert!(ok);
+        add(&mut even_first, &first);
+        add(&mut even_second, &second);
+        assert_close(&even_first, &expected_even.0);
+        assert_close(&even_second, &expected_even.1);
+        let even_result = (even_first, even_second);
+
+        // Three blocks retain the final partial and flush it once at the order boundary.
+        let expected_odd = immediate_sum(&[&normal_a, &normal_b, &normal_c]);
+        let mut odd_first = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut odd_second = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        for (block, mode) in [
+            (&normal_a, AnalysisPairReductionMode::RetainFirst),
+            (&normal_b, AnalysisPairReductionMode::MergeRetained),
+            (&normal_c, AnalysisPairReductionMode::RetainFirst),
+        ] {
+            let (ok, first, second, _) = run_block(block, &coefficient_a, mode, Some(&mut scratch));
+            assert!(ok);
+            add_at(&mut odd_first, m, &first);
+            add_at(&mut odd_second, m, &second);
+        }
+        assert!(flush_analysis_pair_reduction_partials(
+            Arch::new(),
+            m,
+            lmax,
+            &scratch,
+            &mut odd_first,
+            &mut odd_second,
+        ));
+        assert_close(&odd_first[m..m + coefficient_count], &expected_odd.0);
+        assert_close(&odd_second[m..m + coefficient_count], &expected_odd.1);
+
+        // Scratch reuse after the odd sequence must match the earlier even result.
+        let mut reused_first = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut reused_second = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        for (block, mode) in [
+            (&normal_a, AnalysisPairReductionMode::RetainFirst),
+            (&normal_b, AnalysisPairReductionMode::MergeRetained),
+            (&normal_c, AnalysisPairReductionMode::Immediate),
+        ] {
+            let (ok, first, second, _) = run_block(block, &coefficient_a, mode, Some(&mut scratch));
+            assert!(ok);
+            add(&mut reused_first, &first);
+            add(&mut reused_second, &second);
+        }
+        assert_eq!(reused_first, even_result.0);
+        assert_eq!(reused_second, even_result.1);
+
+        // A polar first block declines retention and uses the ordinary checked/scaled route.
+        let expected_first_decline = immediate_sum(&[&polar, &normal_a, &normal_b]);
+        let mut first_decline_q = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut first_decline_u = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let (ok, _, _, _) = run_block(
+            &polar,
+            &coefficient_a,
+            AnalysisPairReductionMode::RetainFirst,
+            Some(&mut scratch),
+        );
+        assert!(!ok);
+        let (ok, first, second, _) = run_block(
+            &polar,
+            &coefficient_a,
+            AnalysisPairReductionMode::Immediate,
+            None,
+        );
+        assert!(ok);
+        add(&mut first_decline_q, &first);
+        add(&mut first_decline_u, &second);
+        for (block, mode) in [
+            (&normal_a, AnalysisPairReductionMode::RetainFirst),
+            (&normal_b, AnalysisPairReductionMode::MergeRetained),
+        ] {
+            let (ok, first, second, _) = run_block(block, &coefficient_a, mode, Some(&mut scratch));
+            assert!(ok);
+            add(&mut first_decline_q, &first);
+            add(&mut first_decline_u, &second);
+        }
+        assert_close(&first_decline_q, &expected_first_decline.0);
+        assert_close(&first_decline_u, &expected_first_decline.1);
+
+        // A polar second block declines merge: flush the prior block, then commit fallback once.
+        let expected_second_decline = immediate_sum(&[&normal_a, &polar]);
+        let mut second_decline_q = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut second_decline_u = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let (ok, first, second, _) = run_block(
+            &normal_a,
+            &coefficient_a,
+            AnalysisPairReductionMode::RetainFirst,
+            Some(&mut scratch),
+        );
+        assert!(ok);
+        add_at(&mut second_decline_q, m, &first);
+        add_at(&mut second_decline_u, m, &second);
+        let (ok, _, _, _) = run_block(
+            &polar,
+            &coefficient_a,
+            AnalysisPairReductionMode::MergeRetained,
+            Some(&mut scratch),
+        );
+        assert!(!ok);
+        assert!(flush_analysis_pair_reduction_partials(
+            Arch::new(),
+            m,
+            lmax,
+            &scratch,
+            &mut second_decline_q,
+            &mut second_decline_u,
+        ));
+        let (ok, first, second, _) = run_block(
+            &polar,
+            &coefficient_a,
+            AnalysisPairReductionMode::Immediate,
+            None,
+        );
+        assert!(ok);
+        add_at(&mut second_decline_q, m, &first);
+        add_at(&mut second_decline_u, m, &second);
+        assert_close(
+            &second_decline_q[m..m + coefficient_count],
+            &expected_second_decline.0,
+        );
+        assert_close(
+            &second_decline_u[m..m + coefficient_count],
+            &expected_second_decline.1,
+        );
+
+        // A late checked-range decline in either retained stage cannot commit partial scratch.
+        let mut bad_a = coefficient_a.clone();
+        bad_a[2] = f64::INFINITY;
+        let (ok, _, _, exercised) = run_block(
+            &normal_a,
+            &bad_a,
+            AnalysisPairReductionMode::RetainFirst,
+            Some(&mut scratch),
+        );
+        assert!(!ok);
+        assert!(exercised);
+        let (ok, first, second, _) = run_block(
+            &normal_a,
+            &coefficient_a,
+            AnalysisPairReductionMode::Immediate,
+            None,
+        );
+        assert!(ok);
+        assert_close(&first, &immediate_sum(&[&normal_a]).0);
+        assert_close(&second, &immediate_sum(&[&normal_a]).1);
+
+        let mut retained_q = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let mut retained_u = vec![Complex64::new(0.0, 0.0); lmax + 1];
+        let (ok, first, second, _) = run_block(
+            &normal_a,
+            &coefficient_a,
+            AnalysisPairReductionMode::RetainFirst,
+            Some(&mut scratch),
+        );
+        assert!(ok);
+        add_at(&mut retained_q, m, &first);
+        add_at(&mut retained_u, m, &second);
+        let (ok, _, _, exercised) = run_block(
+            &normal_b,
+            &bad_a,
+            AnalysisPairReductionMode::MergeRetained,
+            Some(&mut scratch),
+        );
+        assert!(!ok);
+        assert!(exercised);
+        assert!(flush_analysis_pair_reduction_partials(
+            Arch::new(),
+            m,
+            lmax,
+            &scratch,
+            &mut retained_q,
+            &mut retained_u,
+        ));
+        let expected_first = immediate_sum(&[&normal_a]);
+        assert_close(&retained_q[m..m + coefficient_count], &expected_first.0);
+        assert_close(&retained_u[m..m + coefficient_count], &expected_first.1);
     }
 }
