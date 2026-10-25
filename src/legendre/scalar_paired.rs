@@ -6945,20 +6945,26 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
             if exponents[lane] == 0 && scalar_value_in_normal_range(basis[lane]) {
                 continue;
             }
+            let same = scalar::multiply_complex_scaled_channels(
+                [
+                    Complex64::new(same_real[0][lane], same_imag[0][lane]),
+                    Complex64::new(same_real[1][lane], same_imag[1][lane]),
+                ],
+                basis[lane],
+                exponents[lane],
+            );
+            let opposite = scalar::multiply_complex_scaled_product_channels(
+                [
+                    Complex64::new(opposite_real[0][lane], opposite_imag[0][lane]),
+                    Complex64::new(opposite_real[1][lane], opposite_imag[1][lane]),
+                ],
+                basis[lane],
+                cos_theta[lane],
+                exponents[lane],
+            );
             for channel in 0..2 {
-                results[channel].0 += scalar::multiply_complex_scaled(
-                    Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
-                    basis[lane],
-                    exponents[lane],
-                );
-                let opposite =
-                    Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]);
-                results[channel].1 += scalar::multiply_complex_scaled_product(
-                    opposite,
-                    basis[lane],
-                    cos_theta[lane],
-                    exponents[lane],
-                );
+                results[channel].0 += same[channel];
+                results[channel].1 += opposite[channel];
             }
         }
         for lane in 0..basis_tail.len() {
@@ -6976,24 +6982,38 @@ impl WithSimd for MixedAnalysisPairChannelsAccumulation<'_> {
                         * cosine_tail[lane];
                 }
             } else {
+                let same = scalar::multiply_complex_scaled_channels(
+                    [
+                        Complex64::new(
+                            same_real[0][vector_lane_count + lane],
+                            same_imag[0][vector_lane_count + lane],
+                        ),
+                        Complex64::new(
+                            same_real[1][vector_lane_count + lane],
+                            same_imag[1][vector_lane_count + lane],
+                        ),
+                    ],
+                    basis_tail[lane],
+                    exponent_tail[lane],
+                );
+                let opposite = scalar::multiply_complex_scaled_product_channels(
+                    [
+                        Complex64::new(
+                            opposite_real[0][vector_lane_count + lane],
+                            opposite_imag[0][vector_lane_count + lane],
+                        ),
+                        Complex64::new(
+                            opposite_real[1][vector_lane_count + lane],
+                            opposite_imag[1][vector_lane_count + lane],
+                        ),
+                    ],
+                    basis_tail[lane],
+                    cosine_tail[lane],
+                    exponent_tail[lane],
+                );
                 for channel in 0..2 {
-                    results[channel].0 += scalar::multiply_complex_scaled(
-                        Complex64::new(
-                            same_real[channel][vector_lane_count + lane],
-                            same_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        exponent_tail[lane],
-                    );
-                    results[channel].1 += scalar::multiply_complex_scaled_product(
-                        Complex64::new(
-                            opposite_real[channel][vector_lane_count + lane],
-                            opposite_imag[channel][vector_lane_count + lane],
-                        ),
-                        basis_tail[lane],
-                        cosine_tail[lane],
-                        exponent_tail[lane],
-                    );
+                    results[channel].0 += same[channel];
+                    results[channel].1 += opposite[channel];
                 }
             }
         }

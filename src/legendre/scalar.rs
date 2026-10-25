@@ -616,6 +616,92 @@ pub(crate) fn multiply_complex_scaled_product(
     )
 }
 
+/// Applies one scaled recurrence value to both scalar-analysis channels.
+/// The ordinary products and the two checked fallbacks retain the same
+/// operation order as `multiply_complex_scaled`.
+#[inline]
+pub(crate) fn multiply_complex_scaled_channels(
+    values: [Complex64; 2],
+    factor: f64,
+    exponent: i64,
+) -> [Complex64; 2] {
+    if factor.is_normal()
+        && values
+            .iter()
+            .all(|value| value.re.is_normal() && value.im.is_normal())
+    {
+        let products = [
+            Complex64::new(values[0].re * factor, values[0].im * factor),
+            Complex64::new(values[1].re * factor, values[1].im * factor),
+        ];
+        if products
+            .iter()
+            .all(|product| product.re.is_normal() && product.im.is_normal())
+        {
+            if exponent == 0 {
+                return products;
+            }
+            if let (Some(first), Some(second)) = (
+                scale_complex_normal_binary(products[0], exponent),
+                scale_complex_normal_binary(products[1], exponent),
+            ) {
+                return [first, second];
+            }
+        }
+    }
+    [
+        multiply_complex_scaled(values[0], factor, exponent),
+        multiply_complex_scaled(values[1], factor, exponent),
+    ]
+}
+
+/// Applies one scaled recurrence and cosine product to both analysis channels.
+/// On the normal path it shares only classification; each channel keeps the
+/// same multiply order and uses the established scalar fallback otherwise.
+#[inline]
+pub(crate) fn multiply_complex_scaled_product_channels(
+    values: [Complex64; 2],
+    factor: f64,
+    additional_factor: f64,
+    exponent: i64,
+) -> [Complex64; 2] {
+    if factor.is_normal()
+        && additional_factor.is_normal()
+        && values
+            .iter()
+            .all(|value| value.re.is_normal() && value.im.is_normal())
+    {
+        let products = [
+            Complex64::new(
+                (values[0].re * factor) * additional_factor,
+                (values[0].im * factor) * additional_factor,
+            ),
+            Complex64::new(
+                (values[1].re * factor) * additional_factor,
+                (values[1].im * factor) * additional_factor,
+            ),
+        ];
+        if products
+            .iter()
+            .all(|product| product.re.is_normal() && product.im.is_normal())
+        {
+            if exponent == 0 {
+                return products;
+            }
+            if let (Some(first), Some(second)) = (
+                scale_complex_normal_binary(products[0], exponent),
+                scale_complex_normal_binary(products[1], exponent),
+            ) {
+                return [first, second];
+            }
+        }
+    }
+    [
+        multiply_complex_scaled_product(values[0], factor, additional_factor, exponent),
+        multiply_complex_scaled_product(values[1], factor, additional_factor, exponent),
+    ]
+}
+
 fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
     if exponent == 0 {
         return Some(value);
