@@ -3152,8 +3152,6 @@ fn fused_scalar_analysis_pair_block_impl<
         opposite_imag,
         staged_coefficients: &mut staged_coefficients[..coefficient_count],
         second_channel: None,
-        reduction_partials: None,
-        reduction_mode: AnalysisPairReductionMode::Immediate,
         previous: &mut previous[..sin_theta.len()],
         current: &mut current[..sin_theta.len()],
         next: &mut next[..sin_theta.len()],
@@ -3849,8 +3847,6 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
                     opposite_imag,
                     staged_coefficients,
                     second_channel: None,
-                    reduction_partials: None,
-                    reduction_mode: AnalysisPairReductionMode::Immediate,
                     previous,
                     current,
                     next,
@@ -3995,8 +3991,6 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
                         opposite_imag: ordinary_opposite_imag[1],
                         staged_coefficients: staged_second,
                     }),
-                    reduction_partials: None,
-                    reduction_mode: AnalysisPairReductionMode::Immediate,
                     previous,
                     current,
                     next,
@@ -4453,8 +4447,6 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
                     opposite_imag,
                     staged_coefficients,
                     second_channel: None,
-                    reduction_partials: None,
-                    reduction_mode: AnalysisPairReductionMode::Immediate,
                     previous,
                     current,
                     next,
@@ -4560,8 +4552,6 @@ struct FusedScalarAnalysisPair<
     opposite_imag: &'a [f64],
     staged_coefficients: &'a mut [Complex64],
     second_channel: Option<FusedScalarAnalysisPairSecondChannel<'a>>,
-    reduction_partials: Option<&'a mut [f64]>,
-    reduction_mode: AnalysisPairReductionMode,
     previous: &'a mut [f64],
     current: &'a mut [f64],
     next: &'a mut [f64],
@@ -4589,17 +4579,11 @@ struct FusedAnalysisPairStep<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     basis_next: &'a mut [f64],
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum AnalysisPairReductionMode {
-    Immediate,
-    RetainFirst,
-    #[cfg(rustsht_analysis_retain_pair_partials)]
-    MergeRetained,
-}
-
-struct FusedAnalysisPairGroup<V> {
-    vector_sums: [V; 8],
-    scalar_tails: [f64; 8],
+struct FusedAnalysisPairGroup {
+    first_same: Complex64,
+    first_opposite: Complex64,
+    second_same: Complex64,
+    second_opposite: Complex64,
     states_in_range: bool,
     tails_in_range: bool,
 }
@@ -4620,121 +4604,10 @@ struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     second_coefficient_b: f64,
 }
 
+/// Reduces the real and imaginary lanes of one complex spectrum independently.
 #[inline(always)]
-fn reduce_or_retain_analysis_vectors<S: Simd>(
-    simd: S,
-    vectors: [S::f64s; 8],
-    scalar_tails: [f64; 8],
-    partials: &mut [S::f64s],
-    mode: AnalysisPairReductionMode,
-) -> [f64; 8] {
-    let mut output = [0.0; 8];
-    match mode {
-        AnalysisPairReductionMode::Immediate => {
-            for index in 0..8 {
-                output[index] = simd.reduce_sum_f64s(vectors[index]);
-            }
-        }
-        AnalysisPairReductionMode::RetainFirst => {
-            debug_assert!(partials.len() >= 8);
-            partials[..8].copy_from_slice(&vectors);
-        }
-        #[cfg(rustsht_analysis_retain_pair_partials)]
-        AnalysisPairReductionMode::MergeRetained => {
-            debug_assert!(partials.len() >= 8);
-            for index in 0..8 {
-                output[index] =
-                    simd.reduce_sum_f64s(simd.add_f64s(partials[index], vectors[index]));
-            }
-        }
-    }
-    for index in 0..8 {
-        output[index] += scalar_tails[index];
-    }
-    output
-}
-
-#[cfg(rustsht_analysis_retain_pair_partials)]
-struct FlushAnalysisPairReductionPartials<'a> {
-    m: usize,
-    lmax: usize,
-    partials: &'a [f64],
-    first: &'a mut [Complex64],
-    second: &'a mut [Complex64],
-}
-
-#[cfg(rustsht_analysis_retain_pair_partials)]
-impl WithSimd for FlushAnalysisPairReductionPartials<'_> {
-    type Output = bool;
-
-    #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        let Self {
-            m,
-            lmax,
-            partials,
-            first,
-            second,
-        } = self;
-        if m > lmax || first.len() <= lmax || second.len() <= lmax {
-            return false;
-        }
-        let pair_count = (lmax - m + 2) / 2;
-        let vector_group_count = pair_count.saturating_sub(2).div_ceil(2);
-        let Some(required_len) = vector_group_count.checked_mul(64) else {
-            return false;
-        };
-        if partials.len() < required_len {
-            return false;
-        }
-        for group_index in 0..vector_group_count {
-            let start = group_index * 64;
-            let (vectors, tail) = S::as_simd_f64s(&partials[start..start + 64]);
-            if vectors.len() != 16 || !tail.is_empty() {
-                return false;
-            }
-            let mut values = [0.0; 16];
-            for (value, &vector) in values.iter_mut().zip(vectors) {
-                *value = simd.reduce_sum_f64s(vector);
-            }
-            let first_l = m + 4 * group_index;
-            first[first_l] += Complex64::new(values[0], values[1]);
-            if first_l < lmax {
-                first[first_l + 1] += Complex64::new(values[2], values[3]);
-            }
-            first[first_l + 2] += Complex64::new(values[4], values[5]);
-            if first_l + 2 < lmax {
-                first[first_l + 3] += Complex64::new(values[6], values[7]);
-            }
-            second[first_l] += Complex64::new(values[8], values[9]);
-            if first_l < lmax {
-                second[first_l + 1] += Complex64::new(values[10], values[11]);
-            }
-            second[first_l + 2] += Complex64::new(values[12], values[13]);
-            if first_l + 2 < lmax {
-                second[first_l + 3] += Complex64::new(values[14], values[15]);
-            }
-        }
-        true
-    }
-}
-
-#[cfg(rustsht_analysis_retain_pair_partials)]
-pub(crate) fn flush_analysis_pair_reduction_partials(
-    arch: Arch,
-    m: usize,
-    lmax: usize,
-    partials: &[f64],
-    first: &mut [Complex64],
-    second: &mut [Complex64],
-) -> bool {
-    arch.dispatch(FlushAnalysisPairReductionPartials {
-        m,
-        lmax,
-        partials,
-        first,
-        second,
-    })
+fn reduce_analysis_complex_pair<S: Simd>(simd: S, real: S::f64s, imag: S::f64s) -> Complex64 {
+    Complex64::new(simd.reduce_sum_f64s(real), simd.reduce_sum_f64s(imag))
 }
 
 #[inline(always)]
@@ -4907,7 +4780,7 @@ fn fused_analysis_two_pair_steps_with_simd<
 >(
     simd: S,
     step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
-) -> Option<FusedAnalysisPairGroup<S::f64s>> {
+) -> Option<FusedAnalysisPairGroup> {
     let FusedAnalysisTwoPairSteps {
         same_real,
         same_imag,
@@ -5111,14 +4984,25 @@ fn fused_analysis_two_pair_steps_with_simd<
         );
     }
 
-    let mut first_same_re_sum = 0.0;
-    let mut first_same_im_sum = 0.0;
-    let mut first_opposite_re_sum = 0.0;
-    let mut first_opposite_im_sum = 0.0;
-    let mut second_same_re_sum = 0.0;
-    let mut second_same_im_sum = 0.0;
-    let mut second_opposite_re_sum = 0.0;
-    let mut second_opposite_im_sum = 0.0;
+    let (first_same, first_opposite, second_same, second_opposite) = if ACCUMULATE {
+        (
+            reduce_analysis_complex_pair(simd, first_same_re, first_same_im),
+            reduce_analysis_complex_pair(simd, first_opposite_re, first_opposite_im),
+            reduce_analysis_complex_pair(simd, second_same_re, second_same_im),
+            reduce_analysis_complex_pair(simd, second_opposite_re, second_opposite_im),
+        )
+    } else {
+        let zero = Complex64::new(0.0, 0.0);
+        (zero, zero, zero, zero)
+    };
+    let mut first_same_re_sum = first_same.re;
+    let mut first_same_im_sum = first_same.im;
+    let mut first_opposite_re_sum = first_opposite.re;
+    let mut first_opposite_im_sum = first_opposite.im;
+    let mut second_same_re_sum = second_same.re;
+    let mut second_same_im_sum = second_same.im;
+    let mut second_opposite_re_sum = second_opposite.re;
+    let mut second_opposite_im_sum = second_opposite.im;
 
     let mut snapshot_tail = snapshot_tail.iter_mut();
     for (
@@ -5206,26 +5090,10 @@ fn fused_analysis_two_pair_steps_with_simd<
         true
     };
     Some(FusedAnalysisPairGroup {
-        vector_sums: [
-            first_same_re,
-            first_same_im,
-            first_opposite_re,
-            first_opposite_im,
-            second_same_re,
-            second_same_im,
-            second_opposite_re,
-            second_opposite_im,
-        ],
-        scalar_tails: [
-            first_same_re_sum,
-            first_same_im_sum,
-            first_opposite_re_sum,
-            first_opposite_im_sum,
-            second_same_re_sum,
-            second_same_im_sum,
-            second_opposite_re_sum,
-            second_opposite_im_sum,
-        ],
+        first_same: Complex64::new(first_same_re_sum, first_same_im_sum),
+        first_opposite: Complex64::new(first_opposite_re_sum, first_opposite_im_sum),
+        second_same: Complex64::new(second_same_re_sum, second_same_im_sum),
+        second_opposite: Complex64::new(second_opposite_re_sum, second_opposite_im_sum),
         states_in_range,
         tails_in_range,
     })
@@ -5389,8 +5257,6 @@ impl<
             opposite_imag,
             staged_coefficients,
             second_channel,
-            reduction_partials,
-            reduction_mode,
             previous,
             current,
             next,
@@ -5399,7 +5265,6 @@ impl<
         let mut current = current;
         let mut next = next;
         let mut second_channel = second_channel;
-        let mut reduction_partials = reduction_partials;
         let lane_count = current.len();
         if previous.len() != lane_count
             || next.len() != lane_count
@@ -5493,40 +5358,12 @@ impl<
 
             let first_l = m + 2 * pair_index;
             let first_offset = first_l - m;
-            let q_values = if reduction_mode == AnalysisPairReductionMode::Immediate {
-                reduce_or_retain_analysis_vectors(
-                    simd,
-                    group.vector_sums,
-                    group.scalar_tails,
-                    &mut [],
-                    AnalysisPairReductionMode::Immediate,
-                )
-            } else {
-                let Some(partials) = reduction_partials.as_deref_mut() else {
-                    return false;
-                };
-                let start = (pair_index / 2) * 64;
-                let Some(group_partials) = partials.get_mut(start..start + 64) else {
-                    return false;
-                };
-                let (partial_vectors, partial_tail) = S::as_mut_simd_f64s(group_partials);
-                if partial_vectors.len() != 16 || !partial_tail.is_empty() {
-                    return false;
-                }
-                reduce_or_retain_analysis_vectors(
-                    simd,
-                    group.vector_sums,
-                    group.scalar_tails,
-                    &mut partial_vectors[..8],
-                    reduction_mode,
-                )
-            };
             store_analysis_pair(
                 staged_coefficients,
                 first_offset,
                 first_l < lmax,
-                Complex64::new(q_values[0], q_values[1]),
-                Complex64::new(q_values[2], q_values[3]),
+                group.first_same,
+                group.first_opposite,
             );
 
             let second_l = first_l + 2;
@@ -5535,66 +5372,33 @@ impl<
                 staged_coefficients,
                 second_offset,
                 second_l < lmax,
-                Complex64::new(q_values[4], q_values[5]),
-                Complex64::new(q_values[6], q_values[7]),
+                group.second_same,
+                group.second_opposite,
             );
             if let Some(second) = second_channel.as_mut() {
-                let u_partials = AnalysisTwoBasisAccumulation {
-                    same_real: second.same_real,
-                    same_imag: second.same_imag,
-                    opposite_real: second.opposite_real,
-                    opposite_imag: second.opposite_imag,
-                    first_basis: next,
-                    second_basis: previous,
-                }
-                .with_simd_vectors(simd);
-                let mut u_vectors = [zero; 8];
-                u_vectors[..4].copy_from_slice(&u_partials.vectors[0]);
-                u_vectors[4..].copy_from_slice(&u_partials.vectors[1]);
-                let mut u_tails = [0.0; 8];
-                u_tails[..4].copy_from_slice(&u_partials.scalar_tails[0]);
-                u_tails[4..].copy_from_slice(&u_partials.scalar_tails[1]);
-                let u_values = if reduction_mode == AnalysisPairReductionMode::Immediate {
-                    reduce_or_retain_analysis_vectors(
-                        simd,
-                        u_vectors,
-                        u_tails,
-                        &mut [],
-                        AnalysisPairReductionMode::Immediate,
-                    )
-                } else {
-                    let Some(partials) = reduction_partials.as_deref_mut() else {
-                        return false;
-                    };
-                    let start = (pair_index / 2) * 64;
-                    let Some(group_partials) = partials.get_mut(start..start + 64) else {
-                        return false;
-                    };
-                    let (partial_vectors, partial_tail) = S::as_mut_simd_f64s(group_partials);
-                    if partial_vectors.len() != 16 || !partial_tail.is_empty() {
-                        return false;
+                let [(first_same, first_opposite), (second_same, second_opposite)] =
+                    AnalysisTwoBasisAccumulation {
+                        same_real: second.same_real,
+                        same_imag: second.same_imag,
+                        opposite_real: second.opposite_real,
+                        opposite_imag: second.opposite_imag,
+                        first_basis: next,
+                        second_basis: previous,
                     }
-                    reduce_or_retain_analysis_vectors(
-                        simd,
-                        u_vectors,
-                        u_tails,
-                        &mut partial_vectors[8..],
-                        reduction_mode,
-                    )
-                };
+                    .with_simd(simd);
                 store_analysis_pair(
                     second.staged_coefficients,
                     first_offset,
                     first_l < lmax,
-                    Complex64::new(u_values[0], u_values[1]),
-                    Complex64::new(u_values[2], u_values[3]),
+                    first_same,
+                    first_opposite,
                 );
                 store_analysis_pair(
                     second.staged_coefficients,
                     second_offset,
                     second_l < lmax,
-                    Complex64::new(u_values[4], u_values[5]),
-                    Complex64::new(u_values[6], u_values[7]),
+                    second_same,
+                    second_opposite,
                 );
             }
             pair_index += 2;
@@ -5816,8 +5620,6 @@ fn dispatch_fused_scalar_analysis_pair_weighted<
             opposite_imag,
             staged_coefficients,
             second_channel: None,
-            reduction_partials: None,
-            reduction_mode: AnalysisPairReductionMode::Immediate,
             previous,
             current,
             next,
@@ -5856,8 +5658,6 @@ fn dispatch_fused_scalar_analysis_pair_two_channels<
     previous: &mut [f64],
     current: &mut [f64],
     next: &mut [f64],
-    reduction_partials: Option<&mut [f64]>,
-    reduction_mode: AnalysisPairReductionMode,
 ) -> bool {
     arch.dispatch(FusedScalarAnalysisPair::<
         OPPOSITE_COSINE_WEIGHTED,
@@ -5886,8 +5686,6 @@ fn dispatch_fused_scalar_analysis_pair_two_channels<
             opposite_imag: u_opposite_imag,
             staged_coefficients: staged_u,
         }),
-        reduction_partials,
-        reduction_mode,
         previous,
         current,
         next,
@@ -5950,8 +5748,6 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         current,
         next,
         exponents,
-        None,
-        AnalysisPairReductionMode::Immediate,
     )
 }
 
@@ -5981,8 +5777,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
     current: &mut [f64],
     next: &mut [f64],
     exponents: &mut [i64],
-    reduction_partials: Option<&mut [f64]>,
-    reduction_mode: AnalysisPairReductionMode,
 ) -> Result<Option<bool>, ShtError> {
     let mut q_opposite_real = [0.0; LATITUDE_BLOCK_SIZE];
     let mut q_opposite_imag = [0.0; LATITUDE_BLOCK_SIZE];
@@ -6020,9 +5814,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
         &mut exponents[..sin_theta.len()],
     )?;
     if !initialized_normal {
-        if reduction_mode != AnalysisPairReductionMode::Immediate {
-            return Ok(Some(false));
-        }
         let recurrence_succeeded = if range_check_is_proven_safe {
             arch.dispatch(FusedCheckedScaledAnalysisPairChannels::<false> {
                 m,
@@ -6117,8 +5908,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
             &mut previous[..sin_theta.len()],
             &mut current[..sin_theta.len()],
             &mut next[..sin_theta.len()],
-            reduction_partials,
-            reduction_mode,
         )
     } else {
         dispatch_fused_scalar_analysis_pair_two_channels::<
@@ -6146,8 +5935,6 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
             &mut previous[..sin_theta.len()],
             &mut current[..sin_theta.len()],
             &mut next[..sin_theta.len()],
-            reduction_partials,
-            reduction_mode,
         )
     };
     *range_check_was_exercised |= shared_range_check_was_exercised;
@@ -6193,8 +5980,6 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
     current: &mut [f64],
     next: &mut [f64],
     exponents: &mut [i64],
-    reduction_partials: Option<&mut [f64]>,
-    reduction_mode: AnalysisPairReductionMode,
 ) -> Result<bool, ShtError> {
     *range_check_was_exercised = false;
     debug_assert!(m <= lmax);
@@ -6222,13 +6007,8 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
         return Ok(false);
     }
 
-    if reduction_mode == AnalysisPairReductionMode::RetainFirst {
-        staged_first[..coefficient_count].fill(Complex64::new(0.0, 0.0));
-        staged_second[..coefficient_count].fill(Complex64::new(0.0, 0.0));
-    }
-
-    if shared_recurrence_sequential_accumulation {
-        match try_fused_scalar_analysis_pair_shared_recurrence(
+    if shared_recurrence_sequential_accumulation
+        && let Some(fused) = try_fused_scalar_analysis_pair_shared_recurrence(
             arch,
             range_check_is_proven_safe,
             range_check_was_exercised,
@@ -6249,15 +6029,9 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_with_range_proof(
             current,
             next,
             exponents,
-            reduction_partials,
-            reduction_mode,
-        )? {
-            Some(fused) => return Ok(fused),
-            None if reduction_mode != AnalysisPairReductionMode::Immediate => return Ok(false),
-            None => {}
-        }
-    } else if reduction_mode != AnalysisPairReductionMode::Immediate {
-        return Ok(false);
+        )?
+    {
+        return Ok(fused);
     }
 
     if !sequential_channels {
@@ -6541,14 +6315,11 @@ struct AnalysisTwoBasisAccumulation<'a> {
     second_basis: &'a [f64],
 }
 
-struct AnalysisTwoBasisPartialSums<V> {
-    vectors: [[V; 4]; 2],
-    scalar_tails: [[f64; 4]; 2],
-}
+impl WithSimd for AnalysisTwoBasisAccumulation<'_> {
+    type Output = [(Complex64, Complex64); 2];
 
-impl AnalysisTwoBasisAccumulation<'_> {
     #[inline(always)]
-    fn with_simd_vectors<S: Simd>(self, simd: S) -> AnalysisTwoBasisPartialSums<S::f64s> {
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
         let (same_real_vectors, same_real_tail) = S::as_simd_f64s(self.same_real);
         let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(self.same_imag);
         let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(self.opposite_real);
@@ -6585,34 +6356,44 @@ impl AnalysisTwoBasisAccumulation<'_> {
             second_sums[3] = simd.mul_add_f64s(*opposite_imag, *second_basis, second_sums[3]);
         }
 
-        let mut first_tails = [0.0; 4];
-        let mut second_tails = [0.0; 4];
+        let mut first = [
+            simd.reduce_sum_f64s(first_sums[0]),
+            simd.reduce_sum_f64s(first_sums[1]),
+            simd.reduce_sum_f64s(first_sums[2]),
+            simd.reduce_sum_f64s(first_sums[3]),
+        ];
+        let mut second = [
+            simd.reduce_sum_f64s(second_sums[0]),
+            simd.reduce_sum_f64s(second_sums[1]),
+            simd.reduce_sum_f64s(second_sums[2]),
+            simd.reduce_sum_f64s(second_sums[3]),
+        ];
         debug_assert_eq!(same_real_tail.len(), same_imag_tail.len());
         debug_assert_eq!(same_real_tail.len(), opposite_real_tail.len());
         debug_assert_eq!(same_real_tail.len(), opposite_imag_tail.len());
         debug_assert_eq!(same_real_tail.len(), first_basis_tail.len());
         debug_assert_eq!(same_real_tail.len(), second_basis_tail.len());
         for lane in 0..same_real_tail.len() {
-            first_tails[0] = same_real_tail[lane].mul_add(first_basis_tail[lane], first_tails[0]);
-            first_tails[1] = same_imag_tail[lane].mul_add(first_basis_tail[lane], first_tails[1]);
-            first_tails[2] =
-                opposite_real_tail[lane].mul_add(first_basis_tail[lane], first_tails[2]);
-            first_tails[3] =
-                opposite_imag_tail[lane].mul_add(first_basis_tail[lane], first_tails[3]);
-            second_tails[0] =
-                same_real_tail[lane].mul_add(second_basis_tail[lane], second_tails[0]);
-            second_tails[1] =
-                same_imag_tail[lane].mul_add(second_basis_tail[lane], second_tails[1]);
-            second_tails[2] =
-                opposite_real_tail[lane].mul_add(second_basis_tail[lane], second_tails[2]);
-            second_tails[3] =
-                opposite_imag_tail[lane].mul_add(second_basis_tail[lane], second_tails[3]);
+            first[0] = same_real_tail[lane].mul_add(first_basis_tail[lane], first[0]);
+            first[1] = same_imag_tail[lane].mul_add(first_basis_tail[lane], first[1]);
+            first[2] = opposite_real_tail[lane].mul_add(first_basis_tail[lane], first[2]);
+            first[3] = opposite_imag_tail[lane].mul_add(first_basis_tail[lane], first[3]);
+            second[0] = same_real_tail[lane].mul_add(second_basis_tail[lane], second[0]);
+            second[1] = same_imag_tail[lane].mul_add(second_basis_tail[lane], second[1]);
+            second[2] = opposite_real_tail[lane].mul_add(second_basis_tail[lane], second[2]);
+            second[3] = opposite_imag_tail[lane].mul_add(second_basis_tail[lane], second[3]);
         }
 
-        AnalysisTwoBasisPartialSums {
-            vectors: [first_sums, second_sums],
-            scalar_tails: [first_tails, second_tails],
-        }
+        [
+            (
+                Complex64::new(first[0], first[1]),
+                Complex64::new(first[2], first[3]),
+            ),
+            (
+                Complex64::new(second[0], second[1]),
+                Complex64::new(second[2], second[3]),
+            ),
+        ]
     }
 }
 
@@ -9719,8 +9500,6 @@ mod tests {
             &mut current,
             &mut next,
             &mut exponents,
-            None,
-            AnalysisPairReductionMode::Immediate,
         )
         .unwrap();
         assert!(fused);
@@ -9755,8 +9534,6 @@ mod tests {
             &mut current,
             &mut next,
             &mut exponents,
-            None,
-            AnalysisPairReductionMode::Immediate,
         )
         .unwrap();
         assert!(unchecked);
@@ -9853,8 +9630,6 @@ mod tests {
             &mut current,
             &mut next,
             &mut exponents,
-            None,
-            AnalysisPairReductionMode::Immediate,
         )
         .unwrap();
         assert!(pairwise);
@@ -10113,8 +9888,6 @@ mod tests {
             &mut current,
             &mut next,
             &mut exponents,
-            None,
-            AnalysisPairReductionMode::Immediate,
         )
         .unwrap();
         assert!(fused);
@@ -11325,375 +11098,5 @@ mod tests {
         assert_eq!(prepared_first_sum_im, original_first_sum_im);
         assert_eq!(prepared_second_sum_re, original_second_sum_re);
         assert_eq!(prepared_second_sum_im, original_second_sum_im);
-    }
-
-    #[cfg(rustsht_analysis_retain_pair_partials)]
-    #[test]
-    fn retained_analysis_partials_cover_block_shapes_and_checked_declines() {
-        struct Block {
-            sin: Vec<f64>,
-            cos: Vec<f64>,
-            same_re: [Vec<f64>; 2],
-            same_im: [Vec<f64>; 2],
-            opposite_re: [Vec<f64>; 2],
-            opposite_im: [Vec<f64>; 2],
-        }
-
-        fn add(target: &mut [Complex64], source: &[Complex64]) {
-            for (target, source) in target.iter_mut().zip(source) {
-                *target += *source;
-            }
-        }
-
-        fn add_at(target: &mut [Complex64], offset: usize, source: &[Complex64]) {
-            add(&mut target[offset..offset + source.len()], source);
-        }
-
-        fn assert_close(actual: &[Complex64], expected: &[Complex64]) {
-            for (index, (actual, expected)) in actual.iter().zip(expected).enumerate() {
-                let error = (*actual - *expected).norm();
-                let tolerance = 3.0e-14 * (1.0 + expected.norm());
-                assert!(
-                    error <= tolerance,
-                    "index {index}, actual={actual:?}, expected={expected:?}, error={error:e}, tolerance={tolerance:e}"
-                );
-            }
-        }
-
-        let m = 49;
-        let lmax = 97;
-        let coefficient_count = lmax - m + 1;
-        let mut epsilon = vec![0.0; lmax + 4];
-        scalar::fill_epsilon(m, lmax + 3, &mut epsilon);
-        let mut alpha = vec![0.0; lmax / 2 + 2];
-        let mut coefficient_a = vec![0.0; lmax / 2 + 2];
-        let mut coefficient_b = vec![0.0; lmax / 2 + 2];
-        fill_factors(
-            m,
-            lmax,
-            &epsilon,
-            &mut alpha,
-            &mut coefficient_a,
-            &mut coefficient_b,
-        );
-        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
-        let make_block = |theta_start: f64, lanes: usize, seed: usize| {
-            let angles: Vec<_> = (0..lanes)
-                .map(|lane| theta_start + lane as f64 * 0.035)
-                .collect();
-            let values = |channel: usize, stream: usize| {
-                (0..lanes)
-                    .map(|lane| {
-                        (lane + 1 + seed * 3 + channel * 5 + stream * 7) as f64
-                            * (0.0007 + stream as f64 * 0.0001)
-                    })
-                    .collect::<Vec<_>>()
-            };
-            Block {
-                sin: angles.iter().map(|angle| angle.sin()).collect(),
-                cos: angles.iter().map(|angle| angle.cos()).collect(),
-                same_re: std::array::from_fn(|channel| values(channel, 0)),
-                same_im: std::array::from_fn(|channel| {
-                    values(channel, 1).into_iter().map(|value| -value).collect()
-                }),
-                opposite_re: std::array::from_fn(|channel| values(channel, 2)),
-                opposite_im: std::array::from_fn(|channel| {
-                    values(channel, 3).into_iter().map(|value| -value).collect()
-                }),
-            }
-        };
-        let run_block = |block: &Block,
-                         factors_a: &[f64],
-                         mode: AnalysisPairReductionMode,
-                         partials: Option<&mut [f64]>| {
-            let mut first = vec![Complex64::new(0.0, 0.0); coefficient_count];
-            let mut second = vec![Complex64::new(0.0, 0.0); coefficient_count];
-            let mut previous = vec![0.0; block.sin.len()];
-            let mut current = vec![0.0; block.sin.len()];
-            let mut next = vec![0.0; block.sin.len()];
-            let mut exponents = vec![0; block.sin.len()];
-            let mut range_checked = false;
-            let succeeded = fused_scalar_analysis_pair_channels_block_with_range_proof(
-                Arch::new(),
-                true,
-                true,
-                true,
-                false,
-                &mut range_checked,
-                m,
-                lmax,
-                &block.sin,
-                &block.cos,
-                sectoral_norm,
-                factors_a,
-                &coefficient_b,
-                [&block.same_re[0], &block.same_re[1]],
-                [&block.same_im[0], &block.same_im[1]],
-                [&block.opposite_re[0], &block.opposite_re[1]],
-                [&block.opposite_im[0], &block.opposite_im[1]],
-                &mut first,
-                &mut second,
-                &mut previous,
-                &mut current,
-                &mut next,
-                &mut exponents,
-                partials,
-                mode,
-            )
-            .unwrap();
-            (succeeded, first, second, range_checked)
-        };
-        let immediate_sum = |blocks: &[&Block]| {
-            let mut first = vec![Complex64::new(0.0, 0.0); coefficient_count];
-            let mut second = vec![Complex64::new(0.0, 0.0); coefficient_count];
-            for block in blocks {
-                let (succeeded, staged_first, staged_second, _) = run_block(
-                    block,
-                    &coefficient_a,
-                    AnalysisPairReductionMode::Immediate,
-                    None,
-                );
-                assert!(succeeded);
-                add(&mut first, &staged_first);
-                add(&mut second, &staged_second);
-            }
-            (first, second)
-        };
-        let normal_a = make_block(1.02, 5, 0);
-        let skipped = make_block(1.19, 2, 1);
-        let normal_b = make_block(1.23, 7, 2);
-        let normal_c = make_block(1.37, 3, 3);
-        let polar = make_block(0.002, 5, 4);
-        let mut scratch = vec![0.0; coefficient_count.div_ceil(4) * 64];
-
-        let expected_single = immediate_sum(&[&normal_a]);
-        let mut single_first = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let mut single_second = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let (ok, staged_first, staged_second, _) = run_block(
-            &normal_a,
-            &coefficient_a,
-            AnalysisPairReductionMode::RetainFirst,
-            Some(&mut scratch),
-        );
-        assert!(ok);
-        add_at(&mut single_first, m, &staged_first);
-        add_at(&mut single_second, m, &staged_second);
-        assert!(flush_analysis_pair_reduction_partials(
-            Arch::new(),
-            m,
-            lmax,
-            &scratch,
-            &mut single_first,
-            &mut single_second,
-        ));
-        assert_close(&single_first[m..m + coefficient_count], &expected_single.0);
-        assert_close(&single_second[m..m + coefficient_count], &expected_single.1);
-
-        // Four block positions with one skipped block; Q/U sums include SIMD tails.
-        let expected_even = immediate_sum(&[&normal_a, &normal_b, &normal_c]);
-        let mut even_first = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let mut even_second = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let (ok, first, second, _) = run_block(
-            &normal_a,
-            &coefficient_a,
-            AnalysisPairReductionMode::RetainFirst,
-            Some(&mut scratch),
-        );
-        assert!(ok);
-        add(&mut even_first, &first);
-        add(&mut even_second, &second);
-        assert_eq!(skipped.sin.len(), 2);
-        let (ok, first, second, _) = run_block(
-            &normal_b,
-            &coefficient_a,
-            AnalysisPairReductionMode::MergeRetained,
-            Some(&mut scratch),
-        );
-        assert!(ok);
-        add(&mut even_first, &first);
-        add(&mut even_second, &second);
-        let (ok, first, second, _) = run_block(
-            &normal_c,
-            &coefficient_a,
-            AnalysisPairReductionMode::Immediate,
-            None,
-        );
-        assert!(ok);
-        add(&mut even_first, &first);
-        add(&mut even_second, &second);
-        assert_close(&even_first, &expected_even.0);
-        assert_close(&even_second, &expected_even.1);
-        let even_result = (even_first, even_second);
-
-        // Three blocks retain the final partial and flush it once at the order boundary.
-        let expected_odd = immediate_sum(&[&normal_a, &normal_b, &normal_c]);
-        let mut odd_first = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let mut odd_second = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        for (block, mode) in [
-            (&normal_a, AnalysisPairReductionMode::RetainFirst),
-            (&normal_b, AnalysisPairReductionMode::MergeRetained),
-            (&normal_c, AnalysisPairReductionMode::RetainFirst),
-        ] {
-            let (ok, first, second, _) = run_block(block, &coefficient_a, mode, Some(&mut scratch));
-            assert!(ok);
-            add_at(&mut odd_first, m, &first);
-            add_at(&mut odd_second, m, &second);
-        }
-        assert!(flush_analysis_pair_reduction_partials(
-            Arch::new(),
-            m,
-            lmax,
-            &scratch,
-            &mut odd_first,
-            &mut odd_second,
-        ));
-        assert_close(&odd_first[m..m + coefficient_count], &expected_odd.0);
-        assert_close(&odd_second[m..m + coefficient_count], &expected_odd.1);
-
-        // Scratch reuse after the odd sequence must match the earlier even result.
-        let mut reused_first = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let mut reused_second = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        for (block, mode) in [
-            (&normal_a, AnalysisPairReductionMode::RetainFirst),
-            (&normal_b, AnalysisPairReductionMode::MergeRetained),
-            (&normal_c, AnalysisPairReductionMode::Immediate),
-        ] {
-            let (ok, first, second, _) = run_block(block, &coefficient_a, mode, Some(&mut scratch));
-            assert!(ok);
-            add(&mut reused_first, &first);
-            add(&mut reused_second, &second);
-        }
-        assert_eq!(reused_first, even_result.0);
-        assert_eq!(reused_second, even_result.1);
-
-        // A polar first block declines retention and uses the ordinary checked/scaled route.
-        let expected_first_decline = immediate_sum(&[&polar, &normal_a, &normal_b]);
-        let mut first_decline_q = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let mut first_decline_u = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let (ok, _, _, _) = run_block(
-            &polar,
-            &coefficient_a,
-            AnalysisPairReductionMode::RetainFirst,
-            Some(&mut scratch),
-        );
-        assert!(!ok);
-        let (ok, first, second, _) = run_block(
-            &polar,
-            &coefficient_a,
-            AnalysisPairReductionMode::Immediate,
-            None,
-        );
-        assert!(ok);
-        add(&mut first_decline_q, &first);
-        add(&mut first_decline_u, &second);
-        for (block, mode) in [
-            (&normal_a, AnalysisPairReductionMode::RetainFirst),
-            (&normal_b, AnalysisPairReductionMode::MergeRetained),
-        ] {
-            let (ok, first, second, _) = run_block(block, &coefficient_a, mode, Some(&mut scratch));
-            assert!(ok);
-            add(&mut first_decline_q, &first);
-            add(&mut first_decline_u, &second);
-        }
-        assert_close(&first_decline_q, &expected_first_decline.0);
-        assert_close(&first_decline_u, &expected_first_decline.1);
-
-        // A polar second block declines merge: flush the prior block, then commit fallback once.
-        let expected_second_decline = immediate_sum(&[&normal_a, &polar]);
-        let mut second_decline_q = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let mut second_decline_u = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let (ok, first, second, _) = run_block(
-            &normal_a,
-            &coefficient_a,
-            AnalysisPairReductionMode::RetainFirst,
-            Some(&mut scratch),
-        );
-        assert!(ok);
-        add_at(&mut second_decline_q, m, &first);
-        add_at(&mut second_decline_u, m, &second);
-        let (ok, _, _, _) = run_block(
-            &polar,
-            &coefficient_a,
-            AnalysisPairReductionMode::MergeRetained,
-            Some(&mut scratch),
-        );
-        assert!(!ok);
-        assert!(flush_analysis_pair_reduction_partials(
-            Arch::new(),
-            m,
-            lmax,
-            &scratch,
-            &mut second_decline_q,
-            &mut second_decline_u,
-        ));
-        let (ok, first, second, _) = run_block(
-            &polar,
-            &coefficient_a,
-            AnalysisPairReductionMode::Immediate,
-            None,
-        );
-        assert!(ok);
-        add_at(&mut second_decline_q, m, &first);
-        add_at(&mut second_decline_u, m, &second);
-        assert_close(
-            &second_decline_q[m..m + coefficient_count],
-            &expected_second_decline.0,
-        );
-        assert_close(
-            &second_decline_u[m..m + coefficient_count],
-            &expected_second_decline.1,
-        );
-
-        // A late checked-range decline in either retained stage cannot commit partial scratch.
-        let mut bad_a = coefficient_a.clone();
-        bad_a[2] = f64::INFINITY;
-        let (ok, _, _, exercised) = run_block(
-            &normal_a,
-            &bad_a,
-            AnalysisPairReductionMode::RetainFirst,
-            Some(&mut scratch),
-        );
-        assert!(!ok);
-        assert!(exercised);
-        let (ok, first, second, _) = run_block(
-            &normal_a,
-            &coefficient_a,
-            AnalysisPairReductionMode::Immediate,
-            None,
-        );
-        assert!(ok);
-        assert_close(&first, &immediate_sum(&[&normal_a]).0);
-        assert_close(&second, &immediate_sum(&[&normal_a]).1);
-
-        let mut retained_q = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let mut retained_u = vec![Complex64::new(0.0, 0.0); lmax + 1];
-        let (ok, first, second, _) = run_block(
-            &normal_a,
-            &coefficient_a,
-            AnalysisPairReductionMode::RetainFirst,
-            Some(&mut scratch),
-        );
-        assert!(ok);
-        add_at(&mut retained_q, m, &first);
-        add_at(&mut retained_u, m, &second);
-        let (ok, _, _, exercised) = run_block(
-            &normal_b,
-            &bad_a,
-            AnalysisPairReductionMode::MergeRetained,
-            Some(&mut scratch),
-        );
-        assert!(!ok);
-        assert!(exercised);
-        assert!(flush_analysis_pair_reduction_partials(
-            Arch::new(),
-            m,
-            lmax,
-            &scratch,
-            &mut retained_q,
-            &mut retained_u,
-        ));
-        let expected_first = immediate_sum(&[&normal_a]);
-        assert_close(&retained_q[m..m + coefficient_count], &expected_first.0);
-        assert_close(&retained_u[m..m + coefficient_count], &expected_first.1);
     }
 }

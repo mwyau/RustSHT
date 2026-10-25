@@ -4644,8 +4644,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         current: &mut [T],
         next: &mut [T],
         exponents: &mut [i64],
-        reduction_partials: Option<&mut [f64]>,
-        reduction_mode: crate::legendre::AnalysisPairReductionMode,
     ) -> Result<bool, ShtError> {
         if !T::supports_paired_scalar() || !products_safe[0] || !products_safe[1] || m > scalar_lmax
         {
@@ -4689,8 +4687,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             current,
             next,
             exponents,
-            reduction_partials,
-            reduction_mode,
         )?;
         if fused {
             for offset in 0..staged_count {
@@ -4766,31 +4762,9 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         let pair_count = (ring_end - ring_start).div_ceil(2);
         let compaction_enabled = self.harmonics.lmax() >= 127;
-        #[cfg(rustsht_analysis_retain_pair_partials)]
-        let mut reduction_partials_pending = false;
-        #[cfg(rustsht_analysis_retain_pair_partials)]
-        let reduction_partials_enabled = sequential_channels
-            && shared_recurrence_sequential_accumulation
-            && fused_analysis_enabled
-            && T::supports_paired_scalar()
-            && (scalar_lmax - m + 2) / 2 >= 3;
         for block_start in (0..pair_count).step_by(LATITUDE_BLOCK_SIZE) {
             let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_count);
             let block_len = block_end - block_start;
-            #[cfg(rustsht_analysis_retain_pair_partials)]
-            let reduction_mode = if reduction_partials_enabled {
-                if reduction_partials_pending {
-                    crate::legendre::AnalysisPairReductionMode::MergeRetained
-                } else if block_end < pair_count {
-                    crate::legendre::AnalysisPairReductionMode::RetainFirst
-                } else {
-                    crate::legendre::AnalysisPairReductionMode::Immediate
-                }
-            } else {
-                crate::legendre::AnalysisPairReductionMode::Immediate
-            };
-            #[cfg(not(rustsht_analysis_retain_pair_partials))]
-            let reduction_mode = crate::legendre::AnalysisPairReductionMode::Immediate;
             let mut active_lanes = 0;
             for lane in 0..block_len {
                 let pair_index = block_start + lane;
@@ -4977,36 +4951,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.current,
                     &mut recurrence.next,
                     &mut recurrence.exponents,
-                    {
-                        #[cfg(rustsht_analysis_retain_pair_partials)]
-                        {
-                            if reduction_mode
-                                == crate::legendre::AnalysisPairReductionMode::Immediate
-                            {
-                                None
-                            } else {
-                                Some(&mut recurrence.analysis_pair_reduction_partials[..])
-                            }
-                        }
-                        #[cfg(not(rustsht_analysis_retain_pair_partials))]
-                        {
-                            None
-                        }
-                    },
-                    reduction_mode,
                 )?;
-            #[cfg(rustsht_analysis_retain_pair_partials)]
-            if fused_block {
-                match reduction_mode {
-                    crate::legendre::AnalysisPairReductionMode::RetainFirst => {
-                        reduction_partials_pending = true;
-                    }
-                    crate::legendre::AnalysisPairReductionMode::MergeRetained => {
-                        reduction_partials_pending = false;
-                    }
-                    crate::legendre::AnalysisPairReductionMode::Immediate => {}
-                }
-            }
             if fused_block
                 && range_cache_enabled
                 && !range_check_is_proven_safe
@@ -5021,20 +4966,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 block_range_status.0 = true;
             }
             if !fused_block {
-                #[cfg(rustsht_analysis_retain_pair_partials)]
-                if reduction_partials_pending {
-                    if !T::flush_analysis_pair_reduction_partials(
-                        arch,
-                        m,
-                        scalar_lmax,
-                        &recurrence.analysis_pair_reduction_partials,
-                        &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
-                        &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
-                    ) {
-                        return Ok(false);
-                    }
-                    reduction_partials_pending = false;
-                }
                 #[cfg(all(test, feature = "parallel"))]
                 let profile_range_status = profiling.then_some(&mut block_range_status);
                 let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
@@ -5078,20 +5009,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             if profiling {
                 recurrence.record_analysis_leaf_block(block_range_status.0, block_range_status.1);
             }
-        }
-
-        #[cfg(rustsht_analysis_retain_pair_partials)]
-        if reduction_partials_pending
-            && !T::flush_analysis_pair_reduction_partials(
-                arch,
-                m,
-                scalar_lmax,
-                &recurrence.analysis_pair_reduction_partials,
-                &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
-                &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
-            )
-        {
-            return Ok(false);
         }
 
         let mut previous_even_first = Complex::new(T::zero(), T::zero());
@@ -5543,8 +5460,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.current,
                     &mut recurrence.next,
                     &mut recurrence.exponents,
-                    None,
-                    crate::legendre::AnalysisPairReductionMode::Immediate,
                 )?;
             if !fused_block {
                 let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
@@ -5746,8 +5661,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.current,
                     &mut recurrence.next,
                     &mut recurrence.exponents,
-                    None,
-                    crate::legendre::AnalysisPairReductionMode::Immediate,
                 )?
             } else {
                 false

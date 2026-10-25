@@ -3646,8 +3646,6 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
         &mut recurrence.current,
         &mut recurrence.next,
         &mut recurrence.exponents,
-        None,
-        crate::legendre::AnalysisPairReductionMode::Immediate,
     )
     .unwrap();
     assert!(!fused, "the second recurrence pair enters the scaled range");

@@ -10,8 +10,6 @@ mod spin;
 mod spin_f32;
 mod spin_fast;
 
-pub(crate) use scalar_paired::AnalysisPairReductionMode;
-
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 pub(crate) use spin_f32::{normalizer_profile, reset_normalizer_profile};
 
@@ -727,21 +725,8 @@ pub(crate) trait ShtScalar:
         _current: &mut [Self],
         _next: &mut [Self],
         _exponents: &mut [i64],
-        _reduction_partials: Option<&mut [f64]>,
-        _reduction_mode: scalar_paired::AnalysisPairReductionMode,
     ) -> Result<bool, ShtError> {
         Ok(false)
-    }
-    #[cfg(rustsht_analysis_retain_pair_partials)]
-    fn flush_analysis_pair_reduction_partials(
-        _arch: Arch,
-        _m: usize,
-        _lmax: usize,
-        _partials: &[f64],
-        _first: &mut [Complex<Self>],
-        _second: &mut [Complex<Self>],
-    ) -> bool {
-        false
     }
     #[expect(
         clippy::too_many_arguments,
@@ -1732,8 +1717,6 @@ impl ShtScalar for f64 {
         current: &mut [Self],
         next: &mut [Self],
         exponents: &mut [i64],
-        reduction_partials: Option<&mut [f64]>,
-        reduction_mode: scalar_paired::AnalysisPairReductionMode,
     ) -> Result<bool, ShtError> {
         scalar_paired::fused_scalar_analysis_pair_channels_block_with_range_proof(
             arch,
@@ -1759,22 +1742,6 @@ impl ShtScalar for f64 {
             current,
             next,
             exponents,
-            reduction_partials,
-            reduction_mode,
-        )
-    }
-
-    #[cfg(rustsht_analysis_retain_pair_partials)]
-    fn flush_analysis_pair_reduction_partials(
-        arch: Arch,
-        m: usize,
-        lmax: usize,
-        partials: &[f64],
-        first: &mut [Complex<Self>],
-        second: &mut [Complex<Self>],
-    ) -> bool {
-        scalar_paired::flush_analysis_pair_reduction_partials(
-            arch, m, lmax, partials, first, second,
         )
     }
 
