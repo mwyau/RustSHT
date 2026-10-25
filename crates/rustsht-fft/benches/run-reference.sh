@@ -1,1 +1,0 @@
-Load-average telemetry was retained only in local diagnostics.

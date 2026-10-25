@@ -7,6 +7,8 @@
 - **Raw benchmark records** under `reports/data/` (more than 2,100 files) remain **at original paths**, not moved or copied, preserving existing provenance, scripts and large artifacts.
 - Historical Markdown files' **relative links refer to their original locations**. For navigation use this manifest, the repo's Git history, and raw data in their unchanged paths. Archival is not endorsement of old performance claims.
 
+**Cleanup note (2026-10-24):** Ten identical obsolete 509-byte archival redirect stubs listed below were removed from the live tree. This table records the historical Git blobs; the original evidence and Git history remain available. The old root review redirect and FFT review redirect were also removed.
+
 ## Original blobs preserved
 
 | Original path | Size (bytes) | Original SHA |
