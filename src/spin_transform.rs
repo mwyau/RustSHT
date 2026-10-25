@@ -2480,11 +2480,17 @@ impl<T: ShtScalar> ShtPlan<T> {
                         && output_order == 0
                         && spectrum_len == 1
                         && q_spectra.len() == theta_sin.len();
+                    // Reduced CC/F1 q8 cross-thread checks exceed the existing
+                    // tolerance with the reflected component route. Keep those
+                    // orders on the established paired-latitude recurrence.
                     let prepared_component_attempted = can_prepare_shared_pair
                         && paired_factors_ready
                         && !allow_spin1_table
                         && ring_start + ring_end == self.grid.ntheta()
-                        && (contiguous_component_order || q1_full_spectrum_component)
+                        && (q1_full_spectrum_component
+                            || (contiguous_component_order
+                                && (self.harmonics.mmax() == lmax
+                                    || self.grid.kind() == crate::grid::GridKind::GaussLegendre)))
                         && u_spectra.len() == q_spectra.len();
                     let prepared_component_safe_start = if prepared_component_attempted {
                         if let Some(coefficients) = spin1_scalar_coefficients {
