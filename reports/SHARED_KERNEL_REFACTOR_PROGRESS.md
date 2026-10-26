@@ -386,3 +386,16 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - No performance benchmark ran because this was a pure relocation. The existing spin performance paths and B36 source are unchanged.
 
 The owned scratch measured 857,586,187 bytes across 1,893 files before cleanup; `/tmp` had 45 GiB available and 946,749 free inodes after compilation. After verifying the source and result report on `origin/dev`, the exact scratch label was removed and its absence verified at 2026-10-26 20:10 UTC. This reclaimed 857,586,187 bytes; `/tmp` returned to 46 GiB available and 949,018 free inodes. No experiment build artifacts remain.
+
+## Scalar transform orchestration module split — 2026-10-26 20:14 UTC
+
+Source commit `6a8a7f7a4bf1a69451809f2f7c00fef7c908cc1f` follows parent `45e4026af458920cd4b41b787e0d8d208aff44b3`. Moved the 2,545-line scalar `ShtPlan` implementation from `transform/mod.rs` into `transform/scalar.rs`; the former is now 793 lines and retains shared workspace/sampling checks, route counters, and test helpers. The combined two files grew by 8 lines for module wiring and visibility annotations. Seven internal helpers used by sibling modules or parent tests are now `pub(super)`; public transform methods, numerical code, route gates, and dispatch behavior are unchanged. This clarifies scalar-versus-shared orchestration ownership without claiming reduced arithmetic duplication or a runtime change.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, with Cargo home and target isolated in scratch label `rustsht-exp-transform-scalar-move.f3hguufl`:
+
+- `cargo check --locked --all-targets --all-features` passed after fixing cross-module visibility; `cargo clippy --locked --all-targets --all-features -- -D warnings` passed cleanly.
+- `cargo test --locked --all-features --lib transform::tests`: 78 passed, 0 failed, 17 ignored, 240 filtered. This covers scalar synthesis/analysis, distinct adjoints, GL/CC/F1, exact/reduced/oversampled shapes, exceptional fallbacks, routing, and workspace reuse.
+- `cargo fmt --all -- --check` and `git diff --check` passed.
+- No benchmark ran; this was a source organization change with no hot-loop edits.
+
+Before cleanup, the owned scratch measured 858,999,325 bytes across 1,895 files; `/tmp` had 45 GiB available and 946,747 free inodes. Source and validation results are durable; immediate cleanup and reclaimed-space verification are pending.
