@@ -1,0 +1,64 @@
+{
+  "status": "VALIDATED matched 15-triplet timing confirmation",
+  "source_sha_parent": "f38037c01c45cccf0d9435576043498052360b5d",
+  "source_sha_candidate": "da4f93563ebd65eb3d3f26d6fb70be5db802e299",
+  "current_dev_source_matches_candidate_for_spin1_analysis": true,
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "rust_build": "cargo build --release --example ducc_spin1_full_transform_parity --features parallel",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rust_parent_binary_sha256": "8d6ef6f4aa07986511a87b677a18a2258def059732d5f5c3caf8c987c61f9364",
+  "rust_candidate_binary_sha256": "acac34c7c6f810dbfcae749ed63aab1d0dc167726dbb593b2dcabfa4d7488e18",
+  "ducc_binary_sha256": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5",
+  "hardware": "AMD Ryzen 9 5950X 16-Core Processor",
+  "architecture": "x86_64, x86-64-v3 / AVX2+FMA",
+  "physical_cpus_available": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "q1_affinity": [
+    0
+  ],
+  "q8_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "pre_screen_loadavg_1_5_15m": [
+    0.99,
+    0.79,
+    0.89
+  ],
+  "protocol": "repo native spin-1 full-transform worker; reused Rust ShtPlan/ShtWorkspace per process; 10 timed batches per process, target_ms=25; 15 parent/candidate/DUCC interleaved process triplets per q; q1 and q8 analyzed separately",
+  "triplets_per_thread_count": 15,
+  "fixture_sha256": {
+    "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+    "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+    "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+    "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+  },
+  "output_validation": "parent/candidate byte-identical for all q1/q8 pairs; all workers repeat/reset-consistent; candidate-vs-DUCC relative-L2 4.760590461219097e-14",
+  "notes": "One q8 DUCC process showed 8.1% runqueue wait and remains included. Rust q1 wait was about 6.6% for both sources; per-process wait and frequency samples are retained.",
+  "ducc_compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "ducc_sht_flags": "-O3 -DNDEBUG -ffast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_driver_flags": "-O3 -DNDEBUG -ffast-math -fno-fast-math -ffp-contract=fast -march=x86-64-v3"
+}
