@@ -91,6 +91,8 @@ Spin-1 q8 is a separate route and does not share this gain: GL T320 parent/candi
 
 The first full GL T1023 spin-1 q1 Callgrind profile (parent `39dde511`, source-matrix geometry 2046×4096) completed after about two minutes of instrumentation. It records **22.030B Ir**; `scalar_ordered::synthesize_batch` is the largest exclusive source region at **14.170B Ir (64.3%)**, with **658.731M** calls to `_mm256_fmadd_pd` and **351.991M** calls to `_mm256_set1_pd`. The matched wall-time screen was 1298.178 ms parent versus 1283.110 ms candidate, so these static counts alone do not predict elapsed benefit. Candidate and DUCC T1023 profiles are pending; do not extrapolate their costs from T320.
 
+The candidate profile records **4.215B Ir**, an 80.9% whole-transform reduction from that parent profile. `PreparedComponentBatch` contributes **1.378B exclusive Ir (32.7%)**. FMA-wrapper calls fall to **10.649M** (−98.4%) and `set1_pd` calls to **27.388M** (−92.2%). Yet the matched uninstrumented timing improves only 1.2%. This sharply separates Callgrind instruction reduction from wall-time savings on this spin-1 path. The generated candidate function also has repeated YMM stack traffic in its degree loop; whether those accesses are register spills or intentional stack-resident values remains unresolved. DUCC T1023 attribution is still pending.
+
 Interleaved whole-transform screen: three rounds per cell, each sample averaging three calls, same fixture and CPU affinity for parent/candidate/source-matrix DUCC. Times are medians in ms; host load/runqueue data was not captured, so these remain a focused screen rather than quiet-host acceptance data.
 
 | Workload | q | Spin | Parent | Candidate | DUCC |
@@ -117,7 +119,7 @@ Parent/candidate output arrays are bitwise identical for GL T320 and CC T360 at 
 
 - Finish normalizing the hot loop counts by active latitude × degree × channel updates, and capture the matched q8 profile/route where it changes.
 - Add only a low-overhead test-only phase probe for the exact-q8 hemisphere route, then compare with oversampled q8. Capture CC T360 spin-1 q8 worker balance before attributing its poor scaling to recurrence.
-- Complete candidate and source-matrix DUCC GL T1023 spin-1 q1 profiles, then normalize their exclusive PCs against active latitude/degree/channel updates. Investigate why the candidate remains about 2.4× slower than this DUCC binary despite near-equal T320 q1 whole-program Ir; the matched benchmark is not the pinned-DUCC parity result. Avoid extrapolating the T320 route or time decomposition.
+- Complete the source-matrix DUCC GL T1023 spin-1 q1 profile, then normalize parent/candidate/DUCC exclusive PCs against active latitude/degree/channel updates. Explain why an 80.9% Callgrind Ir drop yields only 1.2% wall-time improvement and why the candidate remains about 2.4× slower than this DUCC binary. The matched benchmark is not the pinned-DUCC parity result; avoid extrapolating from T320.
 
 `perf stat` failed because hardware events are unavailable to this process. Callgrind and disassembly are still available. Any percentages reported here are wall-time phase shares or explicit route counters, never Callgrind-cycle estimates.
 
