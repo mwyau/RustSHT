@@ -13,11 +13,11 @@
 - Preserve separately maintained code where the actual mathematics differs (spin versus scalar, positive versus negative spin where appropriate, GL vs CC/F1 resampling, S/A/S*/A*, direct versus paired where not equivalent), but place it under the correct mathematical owner.
 - The existing `scalar_paired::{analysis,synthesis}`, `scalar_ordered::kernel` and `transform::{scalar,spin,...}` splits are useful boundaries; do not mechanically undo them.
 
-## Immediate next decision: scalar seed initializer
+## Completed f64 seed decision (do not repeat)
 
 - Latest source `66145f872442` generalized **all three** scalar seed loops (ordinary f64, ordinary f32, paired f32). The targeted f64 GL T720 scalar-analysis q8 screen found all three paired candidate/parent ratios above parity (**1.0045–1.0273**, median **1.008734**). q1 is mixed/host-wait affected, synthesis near parity; all outputs bitwise identical. The existing source record `fd8ee5cb` recommends a **selective f64 restoration**.
-- **First, implement and validate that decision:** retain the original optimized f64 seed initialization at its previous call site while using the shared initializer for both f32 callers. Keep f64 behavior and branch layout stable; avoid another major benchmark campaign after reverting this clearly implicated f64 call site. Run compile and focused scalar numerical checks; benchmark only a short f64 q8 sanity control if the candidate changes f64 codegen unexpectedly.
-- Do **not** count the temporary three-way seed sharing as an accepted f64 optimization. Preserve the saved 3-pair evidence and exact SHAs, state whether the f64 loop restoration happened, and keep f32 sharing.
+- **Done on current `dev`:** `f44821350d172539f89fad9faf02abfff618c726` restored the exact original f64 seed loop in `scalar.rs` and retained the shared f32 ordinary/paired initializer. Focused correctness checks, all-target warning-denied Clippy, formatting and diff checks passed; `git diff 2475a809 -- src/legendre/scalar.rs` was empty. Durable report `a2eaae68` and cleanup `01aab1f0` confirm the owned scratch was removed. **Do not recreate or rebench the completed restoration.**
+- Do **not** count temporary three-way seed sharing as an accepted f64 optimization. Preserve its saved 3-pair evidence and exact SHAs. The f64 selective restoration is already complete; proceed directly to the precision-module inventory.
 
 ## Finish by algorithm family, not a growing series of disconnected helpers
 
@@ -45,4 +45,4 @@ A final report should explicitly establish:
 - A before/after inventory quantifies independently maintained algorithm bodies and duplicated source logic, new abstractions, trait methods, dispatch branches, build/dependency/code-size impact where measured; distinguish line movement from genuine deduplication.
 - Correctness gates (Rust and relevant Python) pass, important f64 performance paths are protected by matched evidence, f32 trade-offs are explicit, and experimental scratch was cleaned after durable evidence capture.
 
-**Execution instruction:** Start with the selective scalar-f64 seed restoration, then converge `scalar_f32.rs` and `spin_f32.rs` into the responsibility-based scalar/spin modules. Keep implementing, testing at appropriate boundaries, and pushing coherent source commits. **The end state is not merely new folders; it is fewer separately maintained algorithms with intact f64 performance.**
+**Execution instruction:** The selective scalar-f64 seed restoration is already complete in `f44821350`. **Start now with the remaining precision-module inventory and convergence of `scalar_f32.rs` and `spin_f32.rs` into responsibility-based scalar/spin modules.** Keep implementing, testing at appropriate boundaries, and pushing coherent source commits. **The end state is not merely new folders; it is fewer separately maintained algorithms with intact f64 performance.**
