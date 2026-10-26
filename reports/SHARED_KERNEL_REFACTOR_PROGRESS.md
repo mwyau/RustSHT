@@ -236,3 +236,18 @@ Extension data: [scalar q8 12-pair extension CSV](data/dynamic-order-runner-scal
 **Decision:** Keep candidate `1bd565b3` as the shared scalar/spin order-job runner. The f64 scalar q8 result is time-inconclusive rather than a demonstrated slowdown; the prioritized spin-1 q8 screen showed no repeatable slowdown, and q1 controls bypass the helper. The helper centralizes queue draining, the stop flag and first-error policy while each operator keeps its coefficient slices and numerical call. It adds 39 net production lines, so this is a targeted shared-scheduling maintenance improvement rather than an LOC or performance win. No whole-program Ir was measured. The accepted source and its evidence were pushed to `dev` in `fab15dd5`.
 
 Next: compare scalar/spin FFT staging and scratch-reset boundaries; extract only an exact shared operation with a one-way dependency. Do not remove route conditions until a specific measured gate is proved redundant. The next source slice should add focused correctness coverage and avoid a broad benchmark unless it changes a protected f64 route.
+
+## Grid quadrature module extraction — 2026-10-26 18:32 UTC
+
+Source commit `e69af1e5d2df60610b2d5c68fc4f1a82f260ff88` follows parent `e1f841907b647d72eeedfc2ff9d6bf5265d8d7ae`. Moved GL, CC, and F1 node/weight setup from `grid/mod.rs` to `grid/quadrature.rs`; `GridSpec` continues to own grid metadata/construction, and `grid/resampling.rs` imports the shared CC weights from the quadrature module. The original 423 quadrature implementation lines compare exactly after normalizing visibility. `grid/mod.rs` fell from 925 to 480 lines; `quadrature.rs` is 456 lines. This is a responsibility split, not a reduction in total source size or a numerical change.
+
+Validation used rustc 1.99.1 / Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and an isolated `CARGO_TARGET_DIR`:
+
+- `cargo fmt --all -- --check` and `git diff --check` passed after formatting. The first format check caught one extra blank line, which was fixed.
+- `cargo check --lib` passed.
+- `cargo test --lib grid::tests`: 9 passed.
+- `cargo test --lib clenshaw_curtis_scalar_operations_match_ducc_and_adjoint_identities`: 1 passed.
+- `cargo test --lib fejer1_scalar_operations_match_ducc_and_adjoint_identities`: 1 passed.
+- No benchmark or full suite ran.
+
+Experiment scratch was the unique tmpfs directory labeled `rustsht-exp-grid-quadrature.QSlp6xao`, containing only the isolated Cargo target. It measured 763,528,680 bytes across 680 files before cleanup; the tmpfs had 46 GiB free and 949,018 free inodes before this check. Cleanup verification is pending and will be recorded immediately after removal.
