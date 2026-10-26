@@ -334,3 +334,16 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - This setup code is outside the recurrence/SIMD leaves and preserves operation order for f64. No f64 timing claim is made; there was no route or scheduling change.
 
 The experiment scratch contained only its manifest and isolated Cargo target; before cleanup it measured 988,337,984 bytes across 1,125 files. After the source and results commits were verified on `origin/dev`, the owned scratch label was removed and absence verified. This reclaimed 988,337,984 bytes; `/tmp` returned to 46 GiB free and 949,018 free inodes. The test target is transient, not retained benchmark evidence.
+
+## Native-f32 paired scalar recurrence leaf — 2026-10-26 19:58 UTC
+
+Source commit `eeb462b4e5fe5eab56fdc596d140263c5e040f40` follows parent `c0ee4e7f1d585ff70185838273d265d114dec452`. Added a native-f32 Pulp recurrence visitor for the paired-degree scalar synthesis basis. It uses f32 vector operations plus a scalar tail, the shared generic paired factors/coefficient setup, and existing native-f32 scaled-state helpers. The optimized f64 SIMD visitor remains untouched. The new f32 leaf is deliberately unrouted: `supports_paired_scalar()` is still false, and no `ShtScalar` paired capability or transform dispatch gate changed. This is the typed recurrence foundation, not a completed f32 transform route or a source-duplication reduction; the broader f32 paired synthesis and safe eligibility/fallback work remains.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and the isolated target under scratch label `rustsht-exp-f32-paired-step.KzYNcJy8`:
+
+- `cargo fmt --all`, `git diff --check`, and `cargo clippy --all-targets --all-features -- -D warnings` passed.
+- `cargo test --lib legendre::scalar_f32::tests`: 6 passed. The new paired synthesis comparison covers `m=0,1,2,4,15,31`, even and odd degree spans, 81 latitudes crossing the 64-lane block boundary, SIMD tails under both scalar and runtime dispatch, poles, subnormal/tiny sine values, both cosine signs, and synthesized complex coefficients against the one-degree f32 recurrence.
+- The paired setup test from the preceding commit passed again (1 test). The test explicitly asserts that f32 paired routing remains disabled. No whole-transform GL test, full suite or benchmark ran; do not turn the capability on from this slice alone.
+- The first test version compared the transformed paired basis directly with ordinary single-degree basis values and failed at `m=0,l=2`; that was an invalid reference assumption, not a recurrence failure. The test now compares the resulting coefficient-weighted paired sum against direct one-degree synthesis. A borrow-check error and test-only Clippy warnings were also fixed; final focused tests and all-target Clippy pass cleanly.
+
+The experiment scratch contained only its manifest and isolated Cargo target; before cleanup it measured 989,552,921 bytes across 1,125 files. No timing data was generated. Persist the source and correctness record, then immediately remove this experiment-owned build environment and verify the reclaimed space. Next: complete typed factor safety and the f32 synthesis accumulation contract, then validate exact/oversampled GL full/reduced cases before considering any f32 route gate.
