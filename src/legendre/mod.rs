@@ -818,25 +818,35 @@ pub(crate) trait ShtScalar:
         ring_order_limits: &[usize],
         include_b: bool,
     ) -> (Complex<Self>, Complex<Self>) {
-        let mut e_sum = Complex::new(Self::zero(), Self::zero());
-        let mut b_sum = Complex::new(Self::zero(), Self::zero());
-        for lane in 0..plus.len() {
-            if m > ring_order_limits[lane] {
-                continue;
-            }
-            let plus_value = Self::scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
-            let minus_value =
-                Self::scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
-            let even_basis = plus_value + minus_value;
-            let odd_basis = plus_value - minus_value;
-            let q = Complex::new(q_real[lane], q_imag[lane]);
-            let u = Complex::new(u_real[lane], u_imag[lane]);
-            e_sum += q * even_basis + Complex::new(Self::zero(), -Self::one()) * u * odd_basis;
-            if include_b {
-                b_sum += Complex::new(Self::zero(), Self::one()) * q * odd_basis + u * even_basis;
-            }
+        accumulate_spin_analysis_scalar_fallback::<Self>(
+            m,
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            plus_exponents,
+            minus,
+            minus_exponents,
+            alpha_norm,
+            ring_order_limits,
+            include_b,
+        )
+    }
+    #[inline(always)]
+    fn accumulate_spin_analysis_lane(
+        e_sum: &mut Complex<Self>,
+        b_sum: &mut Complex<Self>,
+        q: Complex<Self>,
+        u: Complex<Self>,
+        even_basis: Self,
+        odd_basis: Self,
+        include_b: bool,
+    ) {
+        *e_sum += q * even_basis + Complex::new(Self::zero(), -Self::one()) * u * odd_basis;
+        if include_b {
+            *b_sum += Complex::new(Self::zero(), Self::one()) * q * odd_basis + u * even_basis;
         }
-        (e_sum, b_sum)
     }
     fn multiply_complex_scaled_product(
         value: Complex<Self>,
@@ -880,6 +890,51 @@ pub(crate) trait ShtScalar:
         F: FnMut(usize, usize, &[Self], &[i64], &[Self], &[i64]) -> Result<(), ShtError>;
     fn scaled_basis_value(value: Self, exponent: i64, alpha_norm: Self) -> Self;
     fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> Self;
+}
+
+/// Runs the shared native-spin scalar fallback over scaled and inactive lanes.
+/// SIMD accumulation and precision-specific lane arithmetic remain outside
+/// this loop, so unusual inputs retain each scalar type's established path.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The shared scalar fallback receives lane arrays and basis scale metadata."
+)]
+#[inline(always)]
+pub(crate) fn accumulate_spin_analysis_scalar_fallback<T: ShtScalar>(
+    m: usize,
+    q_real: &[T],
+    q_imag: &[T],
+    u_real: &[T],
+    u_imag: &[T],
+    plus: &[T],
+    plus_exponents: &[i64],
+    minus: &[T],
+    minus_exponents: &[i64],
+    alpha_norm: T,
+    ring_order_limits: &[usize],
+    include_b: bool,
+) -> (Complex<T>, Complex<T>) {
+    let mut e_sum = Complex::new(T::zero(), T::zero());
+    let mut b_sum = Complex::new(T::zero(), T::zero());
+    for lane in 0..plus.len() {
+        if m > ring_order_limits[lane] {
+            continue;
+        }
+        let plus_value = T::scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
+        let minus_value = T::scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
+        let even_basis = plus_value + minus_value;
+        let odd_basis = plus_value - minus_value;
+        T::accumulate_spin_analysis_lane(
+            &mut e_sum,
+            &mut b_sum,
+            Complex::new(q_real[lane], q_imag[lane]),
+            Complex::new(u_real[lane], u_imag[lane]),
+            even_basis,
+            odd_basis,
+            include_b,
+        );
+    }
+    (e_sum, b_sum)
 }
 
 impl ShtScalar for f64 {
@@ -1975,6 +2030,24 @@ impl ShtScalar for f32 {
             ring_order_limits,
             include_b,
         )
+    }
+
+    #[inline(always)]
+    fn accumulate_spin_analysis_lane(
+        e_sum: &mut Complex<Self>,
+        b_sum: &mut Complex<Self>,
+        q: Complex<Self>,
+        u: Complex<Self>,
+        even_basis: Self,
+        odd_basis: Self,
+        include_b: bool,
+    ) {
+        e_sum.re += q.re * even_basis + u.im * odd_basis;
+        e_sum.im += q.im * even_basis - u.re * odd_basis;
+        if include_b {
+            b_sum.re += u.re * even_basis - q.im * odd_basis;
+            b_sum.im += u.im * even_basis + q.re * odd_basis;
+        }
     }
 
     fn sectoral_normalizations(mmax: usize) -> Result<Vec<Self>, ShtError> {

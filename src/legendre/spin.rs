@@ -364,24 +364,20 @@ pub(crate) fn accumulate_analysis_dispatched(
         });
     }
 
-    let mut e_sum = Complex64::new(0.0, 0.0);
-    let mut b_sum = Complex64::new(0.0, 0.0);
-    for lane in 0..plus.len() {
-        if m > ring_order_limits[lane] {
-            continue;
-        }
-        let plus_value = scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
-        let minus_value = scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
-        let even_basis = plus_value + minus_value;
-        let odd_basis = plus_value - minus_value;
-        let q = Complex64::new(q_real[lane], q_imag[lane]);
-        let u = Complex64::new(u_real[lane], u_imag[lane]);
-        e_sum += q * even_basis + Complex64::new(0.0, -1.0) * u * odd_basis;
-        if include_b {
-            b_sum += Complex64::new(0.0, 1.0) * q * odd_basis + u * even_basis;
-        }
-    }
-    (e_sum, b_sum)
+    super::accumulate_spin_analysis_scalar_fallback::<f64>(
+        m,
+        q_real,
+        q_imag,
+        u_real,
+        u_imag,
+        plus,
+        plus_exponents,
+        minus,
+        minus_exponents,
+        alpha_norm,
+        ring_order_limits,
+        include_b,
+    )
 }
 
 pub(crate) fn analysis_inputs_vectorizable(

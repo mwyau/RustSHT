@@ -1,5 +1,17 @@
 # Shared kernel refactor progress
 
+- **2026-10-26 21:26 UTC — next implementation slices:** (1) share the native-spin scalar fallback traversal while retaining each precision's accumulation arithmetic and both SIMD leaves; (2) audit paired ± recurrence state rotation for one-way shared control flow without changing the optimized f64 step; (3) consolidate the exact scalar/spin order-job queue and error propagation after the numerical slice. Benchmark only if a change reaches a protected f64 hot path.
+
+- **2026-10-26 21:30 UTC — shared native-spin analysis fallback traversal (f64 screen pending).** Source candidate follows parent `e617b5ce9f407541a48e026ccbcd863fc00b5307`; immutable performance baseline remains `062218639bc2f097f004c617da0ce46a3a4d2941`. The generic trait fallback, f64 dispatcher, and f32 dispatcher now share one scaled-basis and polar-lane traversal. The f64 complex-expression policy and f32 explicit component policy remain separate, and both precision-specific SIMD accumulators and eligibility checks are unchanged. This removes three independently maintained fallback loops without changing the E/B formulas or adjoint paths.
+
+  Validation used rustc/Cargo 1.99.1, default profiles, no explicit `RUSTFLAGS`, and isolated `CARGO_HOME` / `CARGO_TARGET_DIR` under scratch label `rustsht-exp-spin-analysis-fallback.ksC9ei5Y` in `/tmp`:
+  - `cargo test --locked --all-features --lib legendre::spin::tests`: 4 passed, including scaled/inactive-lane fallback, SIMD tails, and comparison with the independent f64 scalar reference.
+  - `cargo test --locked --all-features --lib legendre::spin_f32::tests`: 6 passed, including scaled fallback, SIMD partial-overflow recovery, tails, and scalar-reference comparison.
+  - `cargo check --locked --workspace --all-targets --all-features`, final `cargo clippy --locked --workspace --all-targets --all-features -- -D warnings`, `cargo fmt --all -- --check`, and `git diff --check` passed. Clippy's first pass found one unnecessary `too_many_arguments` expectation; it was removed before final validation.
+  - No benchmark ran yet. Because polar/scaled fallback blocks are part of spin analysis, a focused f64 GL T720 spin-1 analysis q1/q8 regression screen is pending; no whole-transform performance claim is made.
+
+  The experiment scratch measured 1,140,852,929 bytes. Keep it until this report and source are committed and remote-verified, then delete this exact scratch and verify reclamation before starting the benchmark experiment.
+
 - **2026-10-26 20:52 UTC — shared scalar binary scaling fallback:** Source commit `6dd36c208642d9ce92aa515d62facd0a6923eea6` follows parent `d9c644443090dcfafaffb6ca3a2e459dc695f235`. Replaced the independently maintained f64 and f32 binary exponent-restoration bodies with one compile-time parameterized body in `legendre/numeric.rs` and typed invocations in `scalar.rs` / `scalar_f32.rs`. The source now maintains one fallback algorithm body instead of two; generated f32/f64 functions still use their own mantissa widths, exponent masks, and scaling chunks. The local normal-value scaling leaves and recurrence routing are unchanged. The abstraction adds 15 net source lines, so this is a reduction in separately maintained numeric logic, not in source LOC.
 
   Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and `CARGO_HOME` / `CARGO_TARGET_DIR` inside the experiment-owned scratch:

@@ -169,24 +169,20 @@ pub(crate) fn accumulate_analysis_dispatched(
 
     // SIMD lane partials can overflow even when each input and basis value is
     // finite. Recompute nonfinite results in the scalar accumulation order.
-    let mut e_sum = Complex32::new(0.0, 0.0);
-    let mut b_sum = Complex32::new(0.0, 0.0);
-    for lane in 0..plus.len() {
-        if m > ring_order_limits[lane] {
-            continue;
-        }
-        let plus_value = scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
-        let minus_value = scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
-        let even_basis = plus_value + minus_value;
-        let odd_basis = plus_value - minus_value;
-        e_sum.re += q_real[lane] * even_basis + u_imag[lane] * odd_basis;
-        e_sum.im += q_imag[lane] * even_basis - u_real[lane] * odd_basis;
-        if include_b {
-            b_sum.re += u_real[lane] * even_basis - q_imag[lane] * odd_basis;
-            b_sum.im += u_imag[lane] * even_basis + q_real[lane] * odd_basis;
-        }
-    }
-    (e_sum, b_sum)
+    super::accumulate_spin_analysis_scalar_fallback::<f32>(
+        m,
+        q_real,
+        q_imag,
+        u_real,
+        u_imag,
+        plus,
+        plus_exponents,
+        minus,
+        minus_exponents,
+        alpha_norm,
+        ring_order_limits,
+        include_b,
+    )
 }
 
 struct SpinAnalysisAccumulation32<'a> {
