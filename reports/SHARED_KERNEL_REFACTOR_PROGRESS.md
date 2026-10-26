@@ -308,3 +308,16 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 Test scratch for the correctness experiment measured 778,027,008 bytes/685 files and was removed after its report commit. The benchmark worker's owned scratch and two exact worktrees measured 1,636,384,768 bytes/9,091 inodes and were removed after the durable evidence commit. Both absences were verified; no worker/process remains. The temp filesystem returned to 949,018 free inodes and approximately 46 GiB free.
 
 **Next code changes after this candidate gate:** (1) implement the typed f32 paired scalar synthesis leaf while keeping its routing capability disabled; (2) validate exact/oversampled GL, full/reduced-order, q1/q8 numerical and reset behavior; (3) enable only a measured geometry/work-shape gate, then broaden to CC/F1 after their resampling/adjoint tests. Keep the optimized f64 paired/order-major leaves unchanged.
+
+## Shared polar order cutoff geometry — 2026-10-26 19:42 UTC
+
+Source candidate `ad1b7771ac08b7791a2b8a5dfeb417fa64df9129` follows `164e15787defe393b2271ca92a334f228ca6651f`. It moves the equivalent f32/f64 polar-order cutoff formulas from `legendre/scalar.rs` and `scalar_f32.rs` into one native-precision helper owned by `grid`. Both `ShtScalar` implementations delegate to it. The refactor removes two separately maintained formula bodies (33 source lines); their recurrence and SIMD paths are unchanged.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and `CARGO_TARGET_DIR=$TMPDIR/rustsht-exp-polar-order.1kCGkU5C/target`:
+
+- `cargo fmt --all -- --check`, `git diff --check`, and `cargo check --lib` passed.
+- `cargo test --lib grid::tests::shared_polar_order_limit_matches_native_precision_formulas` passed. It checks both trait entry points against the old precision-specific formulas for spins 0/1/2/4, representative `lmax` values, sampled poles/interior angles, and every latitude from GL/CC/F1 grids at T255/511/720/1023.
+- The first test compile found a stale test-only reference in `scalar_paired_kernel_bench.rs`; it was redirected to the grid helper and the focused test then passed. No numerical assertion failed.
+- No benchmark ran: only per-ring geometry planning was consolidated, and exhaustive representative-grid checks return exactly the prior integer cutoffs. No transform recurrence or SIMD route changed.
+
+The isolated target measured 906,035,200 bytes across 940 files. After this report is committed and verified, remove the uniquely labeled scratch root, verify absence, and record reclaimed space/inodes. Keep the f64 leaves and route gates unchanged.
