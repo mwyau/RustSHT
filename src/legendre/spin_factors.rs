@@ -85,9 +85,10 @@ pub(crate) fn fill_spin_factors<T: LegendrePrecision>(
             })?;
         let numerator = T::from_usize(numerator).expect("spin factor is representable");
         let denominator = T::from_usize(i).expect("spin factor is representable");
-        prefactor = normalize_prefactor(
+        prefactor = super::numeric::normalize_scaled_value(
             prefactor.mantissa * (numerator / denominator).sqrt(),
             prefactor.exponent,
+            "spin recurrence exponent",
         )?;
     }
 
@@ -129,30 +130,4 @@ fn parity_sign<T: Float>(value: usize) -> T {
     } else {
         -T::one()
     }
-}
-
-fn normalize_prefactor<T: LegendrePrecision>(
-    mut value: T,
-    mut exponent: i64,
-) -> Result<ScaledValue<T>, ShtError> {
-    while value.abs() > T::BIG {
-        value = value * T::SCALE_DOWN;
-        exponent = exponent
-            .checked_add(T::SCALE_EXPONENT)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "spin recurrence exponent",
-            })?;
-    }
-    while value != T::zero() && value.abs() < T::SMALL {
-        value = value * T::SCALE_UP;
-        exponent = exponent
-            .checked_sub(T::SCALE_EXPONENT)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "spin recurrence exponent",
-            })?;
-    }
-    Ok(ScaledValue {
-        mantissa: value,
-        exponent,
-    })
 }
