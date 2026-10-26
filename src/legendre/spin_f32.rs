@@ -489,16 +489,48 @@ where
     }
 }
 
-super::spin::define_spin_recurrence_step!(
-    #[inline(always)]
-    recurrence_step,
-    f32,
-    as_simd_f32s,
-    as_mut_simd_f32s,
-    splat_f32s,
-    mul_add_f32s,
-    neg_f32s
-);
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The recurrence step receives lane vectors and independent spin coefficients explicitly."
+)]
+#[inline(always)]
+fn recurrence_step<S: Simd>(
+    simd: S,
+    cosine: &[f32],
+    coefficient_a: f32,
+    coefficient_b: f32,
+    current: &[f32],
+    previous: &[f32],
+    next: &mut [f32],
+    add_coupling: bool,
+) {
+    let coefficient_b = if add_coupling {
+        -coefficient_b
+    } else {
+        coefficient_b
+    };
+    let (current_vectors, current_tail) = S::as_simd_f32s(current);
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (cosine_vectors, cosine_tail) = S::as_simd_f32s(cosine);
+    let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+    let coupling = simd.splat_f32s(-coefficient_b);
+    for index in 0..current_vectors.len() {
+        let leading = simd.mul_add_f32s(
+            simd.splat_f32s(coefficient_a),
+            cosine_vectors[index],
+            coupling,
+        );
+        next_vectors[index] = simd.mul_add_f32s(
+            leading,
+            current_vectors[index],
+            simd.neg_f32s(previous_vectors[index]),
+        );
+    }
+    for index in 0..current_tail.len() {
+        let leading = coefficient_a.mul_add(cosine_tail[index], -coefficient_b);
+        next_tail[index] = leading.mul_add(current_tail[index], -previous_tail[index]);
+    }
+}
 
 fn normalize_pair_lanes(
     previous: &mut [f32],
