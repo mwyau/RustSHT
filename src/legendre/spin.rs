@@ -38,6 +38,64 @@ const SCALE_UP: f64 = <f64 as LegendrePrecision>::SCALE_UP;
 const SCALE_DOWN: f64 = <f64 as LegendrePrecision>::SCALE_DOWN;
 const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
 
+macro_rules! define_spin_recurrence_step {
+    (
+        $(#[$attribute:meta])*
+        $name:ident,
+        $value:ty,
+        $as_simd:ident,
+        $as_mut_simd:ident,
+        $splat:ident,
+        $mul_add:ident,
+        $neg:ident
+    ) => {
+        #[expect(
+            clippy::too_many_arguments,
+            reason = "The SIMD recurrence step receives lane vectors and independent spin coefficients."
+        )]
+        $(#[$attribute])*
+        fn $name<S: Simd>(
+            simd: S,
+            cosine: &[$value],
+            coefficient_a: $value,
+            coefficient_b: $value,
+            current: &[$value],
+            previous: &[$value],
+            next: &mut [$value],
+            add_coupling: bool,
+        ) {
+            let coefficient_b = if add_coupling {
+                -coefficient_b
+            } else {
+                coefficient_b
+            };
+            let (current_vectors, current_tail) = S::$as_simd(current);
+            let (previous_vectors, previous_tail) = S::$as_simd(previous);
+            let (cosine_vectors, cosine_tail) = S::$as_simd(cosine);
+            let (next_vectors, next_tail) = S::$as_mut_simd(next);
+            let coupling = simd.$splat(-coefficient_b);
+            for index in 0..current_vectors.len() {
+                let leading = simd.$mul_add(
+                    simd.$splat(coefficient_a),
+                    cosine_vectors[index],
+                    coupling,
+                );
+                next_vectors[index] = simd.$mul_add(
+                    leading,
+                    current_vectors[index],
+                    simd.$neg(previous_vectors[index]),
+                );
+            }
+            for index in 0..current_tail.len() {
+                let leading = coefficient_a.mul_add(cosine_tail[index], -coefficient_b);
+                next_tail[index] = leading.mul_add(current_tail[index], -previous_tail[index]);
+            }
+        }
+    };
+}
+
+pub(crate) use define_spin_recurrence_step;
+
 pub(crate) type SpinInitial = super::spin_factors::SpinInitial<f64>;
 
 /// Fills DUCC's order-dependent spin recurrence coefficients.
@@ -237,47 +295,15 @@ where
     }
 }
 
-#[expect(
-    clippy::too_many_arguments,
-    reason = "The SIMD recurrence step receives vector lanes and independent positive/negative spin coefficients."
-)]
-fn recurrence_step<S: Simd>(
-    simd: S,
-    cosine: &[f64],
-    coefficient_a: f64,
-    coefficient_b: f64,
-    current: &[f64],
-    previous: &[f64],
-    next: &mut [f64],
-    add_coupling: bool,
-) {
-    let coefficient_b = if add_coupling {
-        -coefficient_b
-    } else {
-        coefficient_b
-    };
-    let (current_vectors, current_tail) = S::as_simd_f64s(current);
-    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
-    let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cosine);
-    let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
-    let coupling = simd.splat_f64s(-coefficient_b);
-    for index in 0..current_vectors.len() {
-        let leading = simd.mul_add_f64s(
-            simd.splat_f64s(coefficient_a),
-            cosine_vectors[index],
-            coupling,
-        );
-        next_vectors[index] = simd.mul_add_f64s(
-            leading,
-            current_vectors[index],
-            simd.neg_f64s(previous_vectors[index]),
-        );
-    }
-    for index in 0..current_tail.len() {
-        let leading = coefficient_a.mul_add(cosine_tail[index], -coefficient_b);
-        next_tail[index] = leading.mul_add(current_tail[index], -previous_tail[index]);
-    }
-}
+define_spin_recurrence_step!(
+    recurrence_step,
+    f64,
+    as_simd_f64s,
+    as_mut_simd_f64s,
+    splat_f64s,
+    mul_add_f64s,
+    neg_f64s
+);
 
 fn normalize_pair_lanes(
     previous: &mut [f64],
