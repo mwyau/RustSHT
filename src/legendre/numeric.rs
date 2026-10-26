@@ -191,6 +191,53 @@ macro_rules! define_scale_binary {
 
 pub(crate) use define_scale_binary;
 
+/// Generates exponent-bit restoration for each native complex precision,
+/// keeping the mantissa width and finite exponent range typed.
+macro_rules! define_scale_complex_normal_binary {
+    (
+        $name:ident,
+        $complex:ty,
+        $float:ty,
+        $bits:ty,
+        $mantissa_bits:expr,
+        $exponent_mask:expr,
+        $exponent_limit:literal $(,)?
+    ) => {
+        fn $name(value: $complex, exponent: i64) -> Option<$complex> {
+            if exponent == 0 {
+                return Some(value);
+            }
+            if !(-$exponent_limit..=$exponent_limit).contains(&exponent) {
+                return None;
+            }
+
+            let real_bits = value.re.to_bits();
+            let imag_bits = value.im.to_bits();
+            let real_exponent =
+                ((real_bits >> $mantissa_bits) & ($exponent_mask as $bits)) as i64 + exponent;
+            let imag_exponent =
+                ((imag_bits >> $mantissa_bits) & ($exponent_mask as $bits)) as i64 + exponent;
+            if !(1..($exponent_mask as i64)).contains(&real_exponent)
+                || !(1..($exponent_mask as i64)).contains(&imag_exponent)
+            {
+                return None;
+            }
+
+            let exponent_mask = ($exponent_mask as $bits) << $mantissa_bits;
+            Some(<$complex>::new(
+                <$float>::from_bits(
+                    (real_bits & !exponent_mask) | ((real_exponent as $bits) << $mantissa_bits),
+                ),
+                <$float>::from_bits(
+                    (imag_bits & !exponent_mask) | ((imag_exponent as $bits) << $mantissa_bits),
+                ),
+            ))
+        }
+    };
+}
+
+pub(crate) use define_scale_complex_normal_binary;
+
 /// Generates the same concrete f64 scaled arithmetic in scalar and native-spin
 /// owners while keeping their local function names and overflow descriptions.
 macro_rules! define_f64_scaled_arithmetic {

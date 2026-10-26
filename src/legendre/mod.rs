@@ -15,7 +15,7 @@ mod spin_fast;
 
 pub(crate) use numeric::{
     LegendrePrecision, ScaledValue, define_f64_scaled_arithmetic, define_scale_binary,
-    scalar_recurrence_step,
+    define_scale_complex_normal_binary, scalar_recurrence_step,
 };
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]

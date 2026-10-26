@@ -28,7 +28,7 @@ use pulp::{Arch, Simd, WithSimd};
 use crate::error::ShtError;
 use crate::legendre::{
     LegendrePrecision, ScaledValue as BinaryScaledValue, define_f64_scaled_arithmetic,
-    define_scale_binary, scalar_recurrence_step,
+    define_scale_binary, define_scale_complex_normal_binary, scalar_recurrence_step,
 };
 
 type ScaledValue = BinaryScaledValue<f64>;
@@ -600,28 +600,15 @@ pub(crate) fn multiply_complex_scaled_product(
     )
 }
 
-fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
-    if exponent == 0 {
-        return Some(value);
-    }
-    if !(-4096..=4096).contains(&exponent) {
-        return None;
-    }
-
-    let real_bits = value.re.to_bits();
-    let imag_bits = value.im.to_bits();
-    let real_exponent = ((real_bits >> 52) & 0x7ff) as i64 + exponent;
-    let imag_exponent = ((imag_bits >> 52) & 0x7ff) as i64 + exponent;
-    if !(1..0x7ff).contains(&real_exponent) || !(1..0x7ff).contains(&imag_exponent) {
-        return None;
-    }
-
-    let exponent_mask = 0x7ff_u64 << 52;
-    Some(Complex64::new(
-        f64::from_bits((real_bits & !exponent_mask) | ((real_exponent as u64) << 52)),
-        f64::from_bits((imag_bits & !exponent_mask) | ((imag_exponent as u64) << 52)),
-    ))
-}
+define_scale_complex_normal_binary!(
+    scale_complex_normal_binary,
+    Complex64,
+    f64,
+    u64,
+    52,
+    0x7ff,
+    4096,
+);
 
 fn multiply_component_scaled_with_normal_factor(value: f64, factor: f64, exponent: i64) -> f64 {
     if value.is_normal() {
@@ -2273,6 +2260,36 @@ mod tests {
         let actual = multiply_complex_scaled_product(value, factor, additional_factor, 0);
         assert_eq!(actual.re.to_bits(), expected.re.to_bits());
         assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+    }
+
+    #[test]
+    fn normal_complex_binary_scaling_preserves_f64_exponent_boundaries() {
+        let values = [
+            Complex64::new(0.75, -1.25),
+            Complex64::new(f64::MIN_POSITIVE, -f64::MIN_POSITIVE),
+            Complex64::new(f64::MAX, -f64::MAX),
+        ];
+        let exponents = [-4097, -1023, -1022, -1, 0, 1, 1022, 1023, 4096, 4097];
+
+        for value in values {
+            for exponent in exponents {
+                let expected = if exponent == 0 {
+                    Some(value)
+                } else if !(-4096..=4096).contains(&exponent) {
+                    None
+                } else {
+                    let re = scale_binary(value.re, exponent);
+                    let im = scale_binary(value.im, exponent);
+                    (re.is_normal() && im.is_normal()).then_some(Complex64::new(re, im))
+                };
+                let actual = scale_complex_normal_binary(value, exponent);
+                assert_eq!(
+                    actual.map(|value| (value.re.to_bits(), value.im.to_bits())),
+                    expected.map(|value| (value.re.to_bits(), value.im.to_bits())),
+                    "value={value:?}, exponent={exponent}"
+                );
+            }
+        }
     }
 
     #[test]

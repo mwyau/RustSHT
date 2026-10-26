@@ -26,7 +26,7 @@ use pulp::{Arch, Simd, WithSimd};
 use crate::error::ShtError;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue, define_scale_binary,
-    scalar_recurrence_step,
+    define_scale_complex_normal_binary, scalar_recurrence_step,
 };
 
 type ScaledValue = BinaryScaledValue<f32>;
@@ -673,28 +673,15 @@ pub(crate) fn multiply_complex_scaled(value: Complex32, factor: f32, exponent: i
     }
 }
 
-fn scale_complex_normal_binary(value: Complex32, exponent: i64) -> Option<Complex32> {
-    if exponent == 0 {
-        return Some(value);
-    }
-    if !(-512..=512).contains(&exponent) {
-        return None;
-    }
-
-    let real_bits = value.re.to_bits();
-    let imag_bits = value.im.to_bits();
-    let real_exponent = ((real_bits >> 23) & 0xff) as i64 + exponent;
-    let imag_exponent = ((imag_bits >> 23) & 0xff) as i64 + exponent;
-    if !(1..0xff).contains(&real_exponent) || !(1..0xff).contains(&imag_exponent) {
-        return None;
-    }
-
-    let exponent_mask = 0xff_u32 << 23;
-    Some(Complex32::new(
-        f32::from_bits((real_bits & !exponent_mask) | ((real_exponent as u32) << 23)),
-        f32::from_bits((imag_bits & !exponent_mask) | ((imag_exponent as u32) << 23)),
-    ))
-}
+define_scale_complex_normal_binary!(
+    scale_complex_normal_binary,
+    Complex32,
+    f32,
+    u32,
+    23,
+    0xff,
+    512,
+);
 
 fn multiply_component_scaled_with_normal_factor(value: f32, factor: f32, exponent: i64) -> f32 {
     if value.is_normal() {
