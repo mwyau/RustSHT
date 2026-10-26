@@ -129,6 +129,8 @@ macro_rules! scalar_recurrence_step {
 pub(crate) use scalar_recurrence_step;
 
 /// Restores one recurrence value to the precision's safe exponent interval.
+/// The shared power/product helpers below serve native-f32 scalar and spin;
+/// f64 transform kernels keep their measured local leaves.
 #[inline(always)]
 pub(crate) fn normalize_scaled_value<T: LegendrePrecision>(
     mut value: T,

@@ -515,14 +515,57 @@ impl WithSimd for SpinAnalysisAccumulation<'_> {
     }
 }
 
-#[inline(always)]
-fn power(base: f64, exponent: usize) -> Result<ScaledValue, ShtError> {
-    super::numeric::scaled_power(base, exponent, "spin recurrence exponent")
+// Keep the f64 recurrence leaf specialized; B32's f64 timing evidence does
+// not justify routing this protected transform through the generic helpers.
+fn power(base: f64, mut exponent: usize) -> Result<ScaledValue, ShtError> {
+    let mut result = ScaledValue {
+        mantissa: 1.0,
+        exponent: 0,
+    };
+    let mut factor = normalize(base, 0)?;
+    while exponent != 0 {
+        if !exponent.is_multiple_of(2) {
+            result = multiply(result, factor)?;
+        }
+        exponent /= 2;
+        if exponent != 0 {
+            factor = multiply(factor, factor)?;
+        }
+    }
+    Ok(result)
 }
 
-#[inline(always)]
 fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtError> {
-    super::numeric::multiply_scaled(left, right, "spin recurrence exponent")
+    let exponent = left
+        .exponent
+        .checked_add(right.exponent)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "spin recurrence exponent",
+        })?;
+    normalize(left.mantissa * right.mantissa, exponent)
+}
+
+fn normalize(mut value: f64, mut exponent: i64) -> Result<ScaledValue, ShtError> {
+    while value.abs() > BIG {
+        value *= SCALE_DOWN;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
+    }
+    while value != 0.0 && value.abs() < SMALL {
+        value *= SCALE_UP;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
+    }
+    Ok(ScaledValue {
+        mantissa: value,
+        exponent,
+    })
 }
 
 /// Converts one scaled recurrence value to a real spin basis value.
