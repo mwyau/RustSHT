@@ -12,7 +12,7 @@ mod spin_f32;
 mod spin_factors;
 mod spin_fast;
 
-pub(crate) use numeric::{LegendrePrecision, ScaledValue, scalar_recurrence_step};
+pub(crate) use numeric::{LegendrePrecision, ScaledValue};
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 pub(crate) use spin_f32::{normalizer_profile, reset_normalizer_profile};

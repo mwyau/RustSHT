@@ -90,44 +90,6 @@ pub(crate) fn value_in_normal_range<T: LegendrePrecision>(value: T) -> bool {
     value == T::zero() || (value.is_finite() && magnitude <= T::BIG && magnitude >= T::SMALL)
 }
 
-/// Expands one normalized scalar-recurrence degree step with concrete Pulp
-/// operations selected by the f32/f64 caller.
-macro_rules! scalar_recurrence_step {
-    (
-        $simd:ident, $simd_type:ident,
-        $epsilon:ident, $degree:ident,
-        $current:ident, $previous:ident, $cosine:ident, $next:ident,
-        $splat:ident, $as_simd:ident, $as_mut_simd:ident,
-        $multiply:ident, $subtract:ident, $divide:ident
-    ) => {{
-        let epsilon_l = $simd.$splat($epsilon[$degree]);
-        let epsilon_next = $simd.$splat($epsilon[$degree + 1]);
-        let (current_vectors, current_tail) = $simd_type::$as_simd($current);
-        let (previous_vectors, previous_tail) = $simd_type::$as_simd($previous);
-        let (cos_vectors, cos_tail) = $simd_type::$as_simd($cosine);
-        let (next_vectors, next_tail) = $simd_type::$as_mut_simd($next);
-        debug_assert_eq!(current_vectors.len(), previous_vectors.len());
-        debug_assert_eq!(current_vectors.len(), cos_vectors.len());
-        debug_assert_eq!(current_vectors.len(), next_vectors.len());
-        for block in 0..current_vectors.len() {
-            let degree_term = $simd.$multiply(epsilon_l, previous_vectors[block]);
-            let latitude_term = $simd.$multiply(cos_vectors[block], current_vectors[block]);
-            next_vectors[block] =
-                $simd.$divide($simd.$subtract(latitude_term, degree_term), epsilon_next);
-        }
-        debug_assert_eq!(current_tail.len(), previous_tail.len());
-        debug_assert_eq!(current_tail.len(), cos_tail.len());
-        debug_assert_eq!(current_tail.len(), next_tail.len());
-        for index in 0..current_tail.len() {
-            next_tail[index] = (cos_tail[index] * current_tail[index]
-                - $epsilon[$degree] * previous_tail[index])
-                / $epsilon[$degree + 1];
-        }
-    }};
-}
-
-pub(crate) use scalar_recurrence_step;
-
 #[cfg(test)]
 mod tests {
     use super::*;
