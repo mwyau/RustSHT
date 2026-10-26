@@ -344,44 +344,6 @@ pub(crate) fn normalize_scaled_value<T: LegendrePrecision>(
     })
 }
 
-/// Applies the checked f64 pair rescaling shared by scalar and native-spin
-/// recurrence lanes while preserving each lane's two exponent updates.
-#[inline(always)]
-pub(crate) fn normalize_pair_values_f64(
-    previous: &mut f64,
-    current: &mut f64,
-    previous_exponent: &mut i64,
-    current_exponent: &mut i64,
-    overflow_quantity: &'static str,
-) -> Result<(), ShtError> {
-    let mut maximum = previous.abs().max(current.abs());
-    while maximum > <f64 as LegendrePrecision>::BIG {
-        *previous *= <f64 as LegendrePrecision>::SCALE_DOWN;
-        *current *= <f64 as LegendrePrecision>::SCALE_DOWN;
-        *previous_exponent = (*previous_exponent)
-            .checked_add(<f64 as LegendrePrecision>::SCALE_EXPONENT)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: overflow_quantity,
-            })?;
-        *current_exponent = *previous_exponent;
-        maximum *= <f64 as LegendrePrecision>::SCALE_DOWN;
-    }
-    if maximum != 0.0 {
-        while maximum < <f64 as LegendrePrecision>::SMALL {
-            *previous *= <f64 as LegendrePrecision>::SCALE_UP;
-            *current *= <f64 as LegendrePrecision>::SCALE_UP;
-            *previous_exponent = (*previous_exponent)
-                .checked_sub(<f64 as LegendrePrecision>::SCALE_EXPONENT)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: overflow_quantity,
-                })?;
-            *current_exponent = *previous_exponent;
-            maximum *= <f64 as LegendrePrecision>::SCALE_UP;
-        }
-    }
-    Ok(())
-}
-
 /// Normalizes one native-f32 recurrence pair shared by scalar and spin paths.
 /// Returns the final absolute-value bits and number of scaling steps so callers
 /// can preserve their fast-range and test-profile bookkeeping.

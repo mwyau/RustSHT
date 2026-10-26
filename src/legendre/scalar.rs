@@ -724,13 +724,36 @@ define_f64_scaled_arithmetic!(
 );
 
 fn normalize_pair(previous: &mut ScaledValue, current: &mut ScaledValue) -> Result<(), ShtError> {
-    super::numeric::normalize_pair_values_f64(
-        &mut previous.mantissa,
-        &mut current.mantissa,
-        &mut previous.exponent,
-        &mut current.exponent,
-        "scalar recurrence scale",
-    )
+    let mut maximum = previous.mantissa.abs().max(current.mantissa.abs());
+    while maximum > BIG {
+        previous.mantissa *= SCALE_DOWN;
+        current.mantissa *= SCALE_DOWN;
+        previous.exponent =
+            previous
+                .exponent
+                .checked_add(SCALE_EXPONENT)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "scalar recurrence scale",
+                })?;
+        current.exponent = previous.exponent;
+        maximum *= SCALE_DOWN;
+    }
+    if maximum != 0.0 {
+        while maximum < SMALL {
+            previous.mantissa *= SCALE_UP;
+            current.mantissa *= SCALE_UP;
+            previous.exponent =
+                previous
+                    .exponent
+                    .checked_sub(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "scalar recurrence scale",
+                    })?;
+            current.exponent = previous.exponent;
+            maximum *= SCALE_UP;
+        }
+    }
+    Ok(())
 }
 
 define_scale_binary! {
