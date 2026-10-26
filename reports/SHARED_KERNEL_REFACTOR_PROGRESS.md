@@ -292,4 +292,4 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - `cargo test --lib spin_transform_matches_between_one_and_two_rayon_threads`: 1 passed.
 - No benchmark or full suite ran.
 
-Scratch was the unique tmpfs directory labeled `rustsht-exp-transform-scheduling.5tfd73JL`, containing only its isolated Cargo target. It measured 787,205,812 bytes across 702 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Cleanup verification follows immediately after this report commit.
+Scratch was the unique tmpfs directory labeled `rustsht-exp-transform-scheduling.5tfd73JL`, containing only its isolated Cargo target. It measured 787,205,812 bytes across 702 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Immediately after this report commit, the owned directory was deleted and absence verified. This reclaimed its measured 787,205,812 bytes (702 files); no experiment worker remained. Post-cleanup tmpfs availability was 49,092,980,736 bytes, with 949,018 free inodes.
