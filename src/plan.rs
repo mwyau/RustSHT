@@ -202,7 +202,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     quantity: "grid Fourier spectrum count",
                 })?;
         let spin2_fast_enabled =
-            harmonics.spin() == 2 && harmonics.lmax() >= 500 && T::supports_paired_scalar();
+            harmonics.spin() == 2 && harmonics.lmax() >= 500 && T::supports_paired_spin();
         let recurrence_factor_count = harmonics
             .lmax()
             .checked_add(if spin2_fast_enabled { 6 } else { 5 })
@@ -216,27 +216,27 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "spin recurrence factor count",
                 })?;
-        let spin_fast_coefficient_count = match (harmonics.spin(), T::supports_paired_scalar()) {
-            (0, true) => harmonics
-                .lmax()
-                .checked_add(2)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "paired scalar coefficient scratch count",
-                })?,
-            (1, true) if harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
+        let spin_fast_coefficient_count = match harmonics.spin() {
+            0 if T::supports_paired_scalar() => {
+                harmonics
+                    .lmax()
+                    .checked_add(2)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "paired scalar coefficient scratch count",
+                    })?
+            }
+            1 if T::supports_paired_spin() && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
                 .lmax()
                 .checked_add(2)
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "spin-1 fast scalar coefficient count",
                 })?,
-            (2, true) if harmonics.lmax() >= 500 => {
-                harmonics
-                    .lmax()
-                    .checked_add(5)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "spin-2 fast scalar coefficient count",
-                    })?
-            }
+            2 if T::supports_paired_spin() && harmonics.lmax() >= 500 => harmonics
+                .lmax()
+                .checked_add(5)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "spin-2 fast scalar coefficient count",
+                })?,
             _ => 0,
         };
         let spin2_factor_count = if spin2_fast_enabled {
@@ -516,7 +516,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     quantity: "analysis order count",
                 })?;
         let spin_pair_fast_coefficient_count =
-            if self.harmonics.spin() == 1 && T::supports_paired_scalar() {
+            if self.harmonics.spin() == 1 && T::supports_paired_spin() {
                 self.spin_fast_coefficient_count
             } else {
                 0
@@ -635,7 +635,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 required_worker_count = required_worker_count.max(hemisphere_workers);
             }
             let spin_pair_fast_coefficient_count =
-                if self.harmonics.spin() == 1 && T::supports_paired_scalar() {
+                if self.harmonics.spin() == 1 && T::supports_paired_spin() {
                     self.spin_fast_coefficient_count
                 } else {
                     0

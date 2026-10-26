@@ -443,7 +443,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             )?,
             #[cfg(feature = "parallel")]
             spin_hemisphere_pair_basis: allocate_real(
-                if T::supports_paired_scalar() && spin_pair_fast_coefficient_count > 0 {
+                if T::supports_paired_spin() && spin_pair_fast_coefficient_count > 0 {
                     HEMISPHERE_PAIR_DEGREE_TILE * LATITUDE_BLOCK_SIZE
                 } else {
                     0
@@ -940,7 +940,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             })?;
         let spin1_analysis_pair_range_block_count =
             latitude_count.div_ceil(2).div_ceil(LATITUDE_BLOCK_SIZE);
-        let spin1_analysis_pair_range_cache_len = if T::supports_paired_scalar() {
+        let spin1_analysis_pair_range_cache_len = if T::supports_paired_spin() {
             analysis_order_count
                 .checked_mul(spin1_analysis_pair_range_block_count)
                 .ok_or(ShtError::IntegerOverflow {

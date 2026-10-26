@@ -71,7 +71,7 @@ pub(crate) fn spin1_hemisphere_worker_count<T: ShtScalar>(
     let lmax = plan.harmonics.lmax();
     let thread_count = execution_capacity;
     if plan.harmonics.spin() != 1
-        || !T::supports_paired_scalar()
+        || !T::supports_paired_spin()
         || !(319..=511).contains(&lmax)
         || (lmax == 511 && thread_count >= 8)
         || plan.harmonics.mmax() != lmax
@@ -868,7 +868,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let theta_sin = &workspace.theta_sin[..analysis_ntheta];
         let theta_cos = &workspace.theta_cos[..analysis_ntheta];
         let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
-        let analysis_ring_scales = if T::supports_paired_scalar()
+        let analysis_ring_scales = if T::supports_paired_spin()
             && recurrence_spin == 1
             && !derivative_norm
             && (analysis_ring_weights.is_some() || analysis_spectra_preweighted)

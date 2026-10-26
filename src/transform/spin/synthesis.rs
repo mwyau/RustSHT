@@ -204,7 +204,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && allow_fast_scalar
                     && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX
                     && self.harmonics.lmax() <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX
-                    && T::supports_paired_scalar()
+                    && T::supports_paired_spin()
                     && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
                 // For exact CC cache-enabled synthesis, use the existing
@@ -824,7 +824,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             && (!derivative_norm || (spin == 1 && self.harmonics.spin() == 0))
             && (spin == 1 || b_alm.is_some())
             && self.harmonics.lmax() >= fast_scalar_min_lmax
-            && T::supports_paired_scalar()
+            && if self.harmonics.spin() == 0 {
+                T::supports_paired_scalar()
+            } else {
+                T::supports_paired_spin()
+            }
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (spin != 2 || self.spin2_fast_f1.len() > self.harmonics.lmax());
         let reflected_q1_full_order = spin == 1
@@ -1144,7 +1148,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let exact_cc_spin1_pole = spin == 1
             && self.harmonics.spin() == 1
             && !derivative_norm
-            && T::supports_paired_scalar()
+            && T::supports_paired_spin()
             && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis
             && theta_sin.len() == 1
             && theta_sin[0] == T::zero()
@@ -1200,7 +1204,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && spin1_scalar_coefficients.is_none()
                     && spin1_scalar_coefficient_finite_orders.is_none()
                     && !allow_spin1_table
-                    && T::supports_paired_scalar()
+                    && T::supports_paired_spin()
                     && fused_local_preparation_eligible
                     && ring_start + ring_end == self.grid.ntheta()
                     && order_start == m
@@ -1343,7 +1347,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         && !derivative_norm
                         && b_alm.is_some()
                         && !allow_spin1_table
-                        && T::supports_paired_scalar();
+                        && T::supports_paired_spin();
                     let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
                     let pair_scratch_ready = coefficient_pair_count
                         <= recurrence.fast_spin_first.len()
@@ -1893,7 +1897,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
 
         if !has_excluded_ring {
-            let paired_channels_eligible = T::supports_paired_scalar()
+            let paired_channels_eligible = T::supports_paired_spin()
                 && recurrence.fast_spin_first.len() >= (scalar_lmax - m + 2) / 2
                 && recurrence.fast_spin_pair_first.len() >= (scalar_lmax - m + 2) / 2
                 && theta_sin.iter().all(|&sine| sine >= pair_min_sine);
@@ -2285,7 +2289,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         // Polar synthesis falls back to one scalar recurrence per degree.
         // For the paired f64 route, cache each lane's inverse sine once
         // instead of recomputing the same division for every degree.
-        let inverse_sines = if T::supports_paired_scalar() {
+        let inverse_sines = if T::supports_paired_spin() {
             for (inverse_sine, &sine) in recurrence.analysis_same_real[..fallback_len]
                 .iter_mut()
                 .zip(fallback_sin)

@@ -139,6 +139,10 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    fn supports_paired_spin() -> bool {
+        false
+    }
+
     fn supports_precomputed_scalar() -> bool {
         false
     }
@@ -884,6 +888,10 @@ impl ShtScalar for f64 {
     }
 
     fn supports_paired_scalar() -> bool {
+        true
+    }
+
+    fn supports_paired_spin() -> bool {
         true
     }
 

@@ -1123,6 +1123,7 @@ mod tests {
     #[test]
     fn f32_paired_accumulator_matches_direct_synthesis_and_declines_polar_orders() {
         assert!(!<f32 as crate::legendre::ShtScalar>::supports_paired_scalar());
+        assert!(!<f32 as crate::legendre::ShtScalar>::supports_paired_spin());
 
         let sine_samples = [
             0.0_f32,

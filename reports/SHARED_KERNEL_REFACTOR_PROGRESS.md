@@ -412,3 +412,17 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - No benchmark ran; only method/module ownership changed.
 
 Before cleanup, the owned scratch measured 859,459,710 bytes across 1,895 files; `/tmp` had 45 GiB available and 946,747 free inodes. After verifying source and results on `origin/dev`, the exact scratch label was removed and absence verified at 2026-10-26 20:20 UTC. This reclaimed 859,459,710 bytes; `/tmp` returned to 46 GiB available and 949,018 free inodes. No experiment build artifacts remain.
+
+## Scalar and spin paired capability split — 2026-10-26 20:34 UTC
+
+Candidate source follows exact parent `ca297811d2aea613eb427212749402ea473e048a`. Added an explicit `ShtScalar::supports_paired_spin()` capability alongside `supports_paired_scalar()`. The f64 implementation advertises both, preserving every existing f64 route; f32 advertises neither in this slice. Spin orchestration, plan allocations, and spin-specific workspace sizing now consult the spin capability. Scalar routes—including the scalar derivative subpath housed in spin synthesis—continue to consult scalar capability. This prevents enabling the native-f32 scalar paired route from implicitly enabling f32 spin pairing. It is routing isolation, not a numerical-kernel or performance change (46 lines added, 34 removed across seven source files).
+
+Validation used rustc/Cargo 1.99.1, locked default profiles, no explicit `RUSTFLAGS`, and isolated `CARGO_HOME`/`CARGO_TARGET_DIR` under scratch `rustsht-exp-f32-paired-route.p5rc2x44`:
+
+- `cargo check --locked --all-targets --all-features` passed.
+- `cargo test --locked --all-features --lib legendre::scalar_f32::tests`: 7 passed, including native-f32 paired recurrence, factor limit, and disabled-capability assertions.
+- `cargo test --locked --all-features --lib transform::spin::tests -- --skip spin1_order_major_synthesis_reuses_workspace_across_changed_coefficients --skip spin1_scalar_conversion_matches_general_on_all_grids`: 69 passed, 0 failed, 11 ignored; the two named long tests were skipped for this capability-only change.
+- `cargo clippy --locked --all-targets --all-features -- -D warnings`, `cargo fmt --all -- --check`, and `git diff --check` passed.
+- No benchmark ran: f64 capabilities still resolve true, f32 capabilities remain false, and therefore the production routes are unchanged.
+
+This is a prerequisite for the next native-f32 scalar route integration. Keep synthesis accumulation transactional and preserve the ordinary scalar fallback before enabling `supports_paired_scalar()` for f32. Save this report and source commit, then delete the exact owned scratch and verify space is reclaimed.

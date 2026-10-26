@@ -63,7 +63,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             && !derivative_norm
             && (recurrence_spin == 1 || b_alm.is_some())
             && lmax >= fast_scalar_min_lmax
-            && T::supports_paired_scalar()
+            && T::supports_paired_spin()
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (recurrence_spin != 2 || self.spin2_fast_f1.len() > lmax)
             && recurrence.fast_spin_first.len() > lmax;
@@ -528,8 +528,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         next: &mut [T],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
-        if !T::supports_paired_scalar() || !products_safe[0] || !products_safe[1] || m > scalar_lmax
-        {
+        if !T::supports_paired_spin() || !products_safe[0] || !products_safe[1] || m > scalar_lmax {
             return Ok(false);
         }
 
@@ -603,7 +602,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         mut b_coefficients: Option<&mut [Complex<T>]>,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<bool, ShtError> {
-        if !T::supports_paired_scalar() {
+        if !T::supports_paired_spin() {
             return Ok(false);
         }
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
@@ -790,7 +789,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             if !q_products_safe || !u_products_safe {
                 return Ok(false);
             }
-            let opposite_preweighted = sequential_channels && T::supports_paired_scalar();
+            let opposite_preweighted = sequential_channels && T::supports_paired_spin();
             #[cfg(all(test, feature = "parallel"))]
             let mut block_range_status = (false, false);
             let mut range_check_was_exercised = false;
@@ -1013,7 +1012,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         table: &crate::legendre::ScalarLegendreTable<T>,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<bool, ShtError> {
-        if !T::supports_precomputed_scalar() || !T::supports_paired_scalar() {
+        if !T::supports_precomputed_scalar() || !T::supports_paired_spin() {
             return Ok(false);
         }
         let lmax = self.harmonics.lmax();
