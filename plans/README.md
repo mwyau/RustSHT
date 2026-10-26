@@ -1,6 +1,6 @@
 # RustSHT plans
 
-**Final Legendre deliverable (22:36 UTC):** [Converge precision-specific scalar/spin modules](final-legendre-precision-convergence-2026-10-26.md) — restore f64 seed fast path; remove independently maintained `scalar_f32.rs` and `spin_f32.rs` via genuine mathematical deduplication, retaining fast typed SIMD leaves. This is the active completion gate, not a request for cosmetic file moves.
+**Final Legendre deliverable (22:36 UTC):** [Converge precision-specific scalar/spin modules](final-legendre-precision-convergence-2026-10-26.md) — f64 seed fast path restored in `f44821350`; now remove independently maintained `scalar_f32.rs` and `spin_f32.rs` via genuine mathematical deduplication, retaining fast typed SIMD leaves. This is the active completion gate, not a request for cosmetic file moves.
 
 **Standing experiment policy (2026-10-26):** [Experiment lifecycle and disk hygiene](../docs/EXPERIMENT_HYGIENE.md) governs all active plans: no Sol reviewer without explicit single-use authorization, and immediate deletion of experiment-owned build artifacts/environments after verified durable evidence preservation. Check `/tmp` capacity before using temporary scratch; never fill the system volume or delete another worker's files.
 
