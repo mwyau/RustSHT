@@ -17,7 +17,7 @@
  * Author: Martin Reinecke
  */
 
-use num_complex::Complex64;
+use num_complex::{Complex, Complex64};
 use pulp::{Arch, Simd, WithSimd};
 use rustfft::num_traits::Float;
 
@@ -172,27 +172,52 @@ pub(crate) fn fill_factors(
     coefficient_a: &mut [f64],
     coefficient_b: &mut [f64],
 ) -> bool {
+    fill_factors_typed(
+        m,
+        lmax,
+        epsilon,
+        alpha,
+        coefficient_a,
+        coefficient_b,
+        PAIRED_FACTOR_LIMIT,
+    )
+}
+
+/// Prepares the paired recurrence factors using the caller's native precision.
+/// The f64 production path keeps its established factor limit through
+/// `fill_factors`; a native-f32 paired route can select and validate its own
+/// limit without converting through f64.
+pub(crate) fn fill_factors_typed<T: Float>(
+    m: usize,
+    lmax: usize,
+    epsilon: &[T],
+    alpha: &mut [T],
+    coefficient_a: &mut [T],
+    coefficient_b: &mut [T],
+    factor_limit: T,
+) -> bool {
     let factor_count = lmax / 2 + 2;
     debug_assert!(epsilon.len() >= lmax + 4);
     debug_assert!(alpha.len() >= factor_count.max(2));
     debug_assert!(coefficient_a.len() >= factor_count);
     debug_assert!(coefficient_b.len() >= factor_count);
 
-    alpha[0] = 1.0 / epsilon[m + 1];
+    let one = T::one();
+    alpha[0] = one / epsilon[m + 1];
     alpha[1] = epsilon[m + 1] / (epsilon[m + 2] * epsilon[m + 3]);
     for (index, degree) in (m + 2..lmax + 1).step_by(2).enumerate() {
         let alpha_index = index + 1;
         let sign = if alpha_index.is_multiple_of(2) {
-            1.0
+            one
         } else {
-            -1.0
+            -one
         };
         alpha[alpha_index + 1] =
             sign / (epsilon[degree + 2] * epsilon[degree + 3] * alpha[alpha_index]);
     }
 
     for (index, degree) in (m..lmax + 2).step_by(2).enumerate() {
-        let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+        let sign = if index.is_multiple_of(2) { one } else { -one };
         coefficient_a[index] = sign * alpha[index] * alpha[index];
         coefficient_b[index] = -coefficient_a[index]
             * (epsilon[degree + 2] * epsilon[degree + 2]
@@ -204,19 +229,19 @@ pub(crate) fn fill_factors(
         .iter()
         .chain(&coefficient_a[..pair_count])
         .chain(&coefficient_b[..pair_count])
-        .all(|value| value.is_finite() && value.abs() <= PAIRED_FACTOR_LIMIT)
+        .all(|value| value.is_finite() && value.abs() <= factor_limit)
 }
 
 /// Transforms the scalar harmonic coefficients used by the paired synthesis
 /// recurrence. These values depend on order and degree, not on latitude.
-pub(crate) fn prepare_synthesis_coefficients(
+pub(crate) fn prepare_synthesis_coefficients<T: Float>(
     m: usize,
     lmax: usize,
-    epsilon: &[f64],
-    alpha: &[f64],
-    coefficients: &[Complex64],
-    coefficient_even: &mut [Complex64],
-    coefficient_odd: &mut [Complex64],
+    epsilon: &[T],
+    alpha: &[T],
+    coefficients: &[Complex<T>],
+    coefficient_even: &mut [Complex<T>],
+    coefficient_odd: &mut [Complex<T>],
 ) -> bool {
     debug_assert!(m <= lmax);
     debug_assert!(epsilon.len() > lmax + 2);
@@ -232,14 +257,14 @@ pub(crate) fn prepare_synthesis_coefficients(
         let next_even = if degree + 2 <= lmax {
             coefficients[offset + 2]
         } else {
-            Complex64::new(0.0, 0.0)
+            Complex::new(T::zero(), T::zero())
         };
         let even = (coefficients[offset] * epsilon[degree + 1] + next_even * epsilon[degree + 2])
             * alpha[pair];
         let odd = if degree < lmax {
             coefficients[offset + 1] * alpha[pair]
         } else {
-            Complex64::new(0.0, 0.0)
+            Complex::new(T::zero(), T::zero())
         };
         if !even.re.is_finite()
             || !even.im.is_finite()
@@ -307,17 +332,17 @@ pub(crate) fn prepare_synthesis_coefficient_pair_values<T: Float>(
     clippy::too_many_arguments,
     reason = "The spin-1 conversion supplies two coefficient rows and their paired outputs."
 )]
-pub(crate) fn prepare_synthesis_coefficient_pair(
+pub(crate) fn prepare_synthesis_coefficient_pair<T: Float>(
     m: usize,
     lmax: usize,
-    epsilon: &[f64],
-    alpha: &[f64],
-    first_coefficients: &[Complex64],
-    second_coefficients: &[Complex64],
-    first_even: &mut [Complex64],
-    first_odd: &mut [Complex64],
-    second_even: &mut [Complex64],
-    second_odd: &mut [Complex64],
+    epsilon: &[T],
+    alpha: &[T],
+    first_coefficients: &[Complex<T>],
+    second_coefficients: &[Complex<T>],
+    first_even: &mut [Complex<T>],
+    first_odd: &mut [Complex<T>],
+    second_even: &mut [Complex<T>],
+    second_odd: &mut [Complex<T>],
 ) -> bool {
     debug_assert!(m <= lmax);
     debug_assert!(epsilon.len() > lmax + 2);
@@ -337,22 +362,22 @@ pub(crate) fn prepare_synthesis_coefficient_pair(
         let first_next = if degree + 2 <= lmax {
             first_coefficients[offset + 2]
         } else {
-            Complex64::new(0.0, 0.0)
+            Complex::new(T::zero(), T::zero())
         };
         let second_next = if degree + 2 <= lmax {
             second_coefficients[offset + 2]
         } else {
-            Complex64::new(0.0, 0.0)
+            Complex::new(T::zero(), T::zero())
         };
         let first_next_odd = if degree < lmax {
             first_coefficients[offset + 1]
         } else {
-            Complex64::new(0.0, 0.0)
+            Complex::new(T::zero(), T::zero())
         };
         let second_next_odd = if degree < lmax {
             second_coefficients[offset + 1]
         } else {
-            Complex64::new(0.0, 0.0)
+            Complex::new(T::zero(), T::zero())
         };
         let prepared = prepare_synthesis_coefficient_pair_values(
             degree,
@@ -10578,6 +10603,171 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn paired_synthesis_setup_uses_native_f32_and_rejects_overflow() {
+        use num_complex::Complex32;
+
+        for m in 0..=4 {
+            for lmax in m..=m + 9 {
+                let mut epsilon = vec![0.0_f32; lmax + 4];
+                crate::legendre::numeric::fill_epsilon(m, lmax, &mut epsilon);
+                let factor_count = lmax / 2 + 2;
+                let mut alpha = vec![0.0_f32; factor_count];
+                let mut coefficient_a = vec![0.0_f32; factor_count];
+                let mut coefficient_b = vec![0.0_f32; factor_count];
+                assert!(fill_factors_typed(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &mut alpha,
+                    &mut coefficient_a,
+                    &mut coefficient_b,
+                    f32::MAX,
+                ));
+
+                let mut expected_alpha = vec![0.0_f32; factor_count];
+                expected_alpha[0] = 1.0_f32 / epsilon[m + 1];
+                expected_alpha[1] = epsilon[m + 1] / (epsilon[m + 2] * epsilon[m + 3]);
+                for (index, degree) in (m + 2..lmax + 1).step_by(2).enumerate() {
+                    let alpha_index = index + 1;
+                    let sign = if alpha_index.is_multiple_of(2) {
+                        1.0_f32
+                    } else {
+                        -1.0_f32
+                    };
+                    expected_alpha[alpha_index + 1] = sign
+                        / (epsilon[degree + 2] * epsilon[degree + 3] * expected_alpha[alpha_index]);
+                }
+                let mut expected_coefficient_a = vec![0.0_f32; factor_count];
+                let mut expected_coefficient_b = vec![0.0_f32; factor_count];
+                for (index, degree) in (m..lmax + 2).step_by(2).enumerate() {
+                    let sign = if index.is_multiple_of(2) {
+                        1.0_f32
+                    } else {
+                        -1.0_f32
+                    };
+                    expected_coefficient_a[index] =
+                        sign * expected_alpha[index] * expected_alpha[index];
+                    expected_coefficient_b[index] = -expected_coefficient_a[index]
+                        * (epsilon[degree + 2] * epsilon[degree + 2]
+                            + epsilon[degree + 1] * epsilon[degree + 1]);
+                }
+                assert_eq!(alpha, expected_alpha);
+                assert_eq!(coefficient_a, expected_coefficient_a);
+                assert_eq!(coefficient_b, expected_coefficient_b);
+
+                let first: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex32::new(
+                            (0.31_f32 * degree as f32 + 0.73_f32 * m as f32).sin(),
+                            (0.19_f32 * degree as f32 - 0.41_f32 * m as f32).cos(),
+                        )
+                    })
+                    .collect();
+                let second: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex32::new(
+                            (0.47_f32 * degree as f32 - 0.29_f32 * m as f32).cos(),
+                            (0.13_f32 * degree as f32 + 0.67_f32 * m as f32).sin(),
+                        )
+                    })
+                    .collect();
+                let pair_count = (lmax - m + 2) / 2;
+                let mut first_even = vec![Complex32::new(0.0, 0.0); pair_count];
+                let mut first_odd = first_even.clone();
+                let mut second_even = first_even.clone();
+                let mut second_odd = first_even.clone();
+                let mut expected_first_even = first_even.clone();
+                let mut expected_first_odd = first_even.clone();
+                let mut expected_second_even = first_even.clone();
+                let mut expected_second_odd = first_even.clone();
+
+                assert!(prepare_synthesis_coefficient_pair(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &first,
+                    &second,
+                    &mut first_even,
+                    &mut first_odd,
+                    &mut second_even,
+                    &mut second_odd,
+                ));
+                assert!(prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &first,
+                    &mut expected_first_even,
+                    &mut expected_first_odd,
+                ));
+                assert!(prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &second,
+                    &mut expected_second_even,
+                    &mut expected_second_odd,
+                ));
+                assert_eq!(first_even, expected_first_even);
+                assert_eq!(first_odd, expected_first_odd);
+                assert_eq!(second_even, expected_second_even);
+                assert_eq!(second_odd, expected_second_odd);
+
+                for pair in 0..pair_count {
+                    let degree = m + 2 * pair;
+                    let offset = degree - m;
+                    let next_even = if degree + 2 <= lmax {
+                        first[offset + 2]
+                    } else {
+                        Complex32::new(0.0, 0.0)
+                    };
+                    let expected_even = (first[offset] * epsilon[degree + 1]
+                        + next_even * epsilon[degree + 2])
+                        * alpha[pair];
+                    let expected_odd = if degree < lmax {
+                        first[offset + 1] * alpha[pair]
+                    } else {
+                        Complex32::new(0.0, 0.0)
+                    };
+                    assert_eq!(first_even[pair], expected_even);
+                    assert_eq!(first_odd[pair], expected_odd);
+                }
+            }
+        }
+
+        let (m, lmax) = (0, 1);
+        let mut epsilon = vec![0.0_f32; lmax + 4];
+        crate::legendre::numeric::fill_epsilon(m, lmax, &mut epsilon);
+        let mut alpha = [0.0_f32; 2];
+        let mut coefficient_a = [0.0_f32; 2];
+        let mut coefficient_b = [0.0_f32; 2];
+        assert!(fill_factors_typed(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+            f32::MAX,
+        ));
+        let coefficients = [Complex32::new(0.0, 0.0), Complex32::new(f32::MAX, 0.0)];
+        let mut even = [Complex32::new(0.0, 0.0)];
+        let mut odd = [Complex32::new(0.0, 0.0)];
+        assert!(!prepare_synthesis_coefficients(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &coefficients,
+            &mut even,
+            &mut odd,
+        ));
     }
 
     #[test]
