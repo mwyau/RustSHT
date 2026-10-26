@@ -265,3 +265,17 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - The first test compile found scale constants still used by test-only reference normalizers. They were kept under `cfg(test)` where needed; the final test runs passed without warnings. No full suite ran.
 
 Scratch was the unique tmpfs directory labeled `rustsht-exp-f32-pair-normalizer.KJpVbIK1`, containing only its isolated Cargo target. It measured 964,664,257 bytes across 956 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Immediately after this report commit, the owned directory was deleted and absence verified. This reclaimed its measured 964,664,257 bytes (956 files); no experiment worker remained. Post-cleanup tmpfs availability was 49,092,980,736 bytes, with 949,018 free inodes.
+
+## Shared row-FFT module extraction — 2026-10-26 18:42 UTC
+
+Source commit `4bc4b50a9f871b5464df49ad7b781d1367630590` follows exact parent `9dcaccea0133d6ba801a59ec407f59bd6ee76766`. Moved the generic paired and single-row forward/inverse FFT methods into `transform/fft_rows.rs`, and converted `transform.rs` to `transform/mod.rs`. Scalar and spin transforms already call these same `ShtPlan` methods; the move makes their shared ownership explicit. All 394 method lines and their inline attributes match the parent exactly after normalizing the visibility widened for module-local callers and tests. `transform/mod.rs` decreased from 3,751 to 3,357 lines; the new row-FFT module is 418 lines. No arithmetic or route condition changed.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and an isolated `CARGO_TARGET_DIR`:
+
+- `cargo fmt --all -- --check`, `git diff --check`, `cargo check --lib`, and `cargo clippy --lib --all-features -- -D warnings` passed.
+- `cargo test --lib scalar_gl_row_fft_uses_sample_work_threshold_without_changing_other_routes`: 1 passed.
+- `cargo test --lib spin_transform_matches_between_one_and_two_rayon_threads`: 1 passed.
+- Initial compile/test attempts exposed private-method visibility after extraction. The methods called by the parent and its test module were made `pub(super)`; final compile, tests, and lint passed.
+- The exhaustive ignored T0–T256 paired-versus-independent FFT test and the full suite were not run. No benchmark ran.
+
+Scratch was the unique tmpfs directory labeled `rustsht-exp-transform-fft-rows.m50F6WE5`, containing only its isolated Cargo target. It measured 776,249,588 bytes across 691 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Cleanup verification follows immediately after this report commit.
