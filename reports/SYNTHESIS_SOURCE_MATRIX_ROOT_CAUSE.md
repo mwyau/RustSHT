@@ -76,7 +76,7 @@ The fair allocating API comparison and the current coarse phase probes rule out 
 
 ## Inline-boundary candidate: measured mechanism and current decision
 
-The exact parent source is `c61ebcfb`; later `97fbcbea`/`39dde511` changes are documentation-only. The candidate differs only by `#[inline(always)]` on `ScalarOrderedSynthesis::with_simd`, `synthesize_batch`, and `synthesize_ordinary_suffix_two_vectors` in `src/legendre/scalar_ordered.rs:460,803,1122`. The optimized extension was rebuilt with rustc 1.99.1 / LLVM 23.1.1 on `x86_64-unknown-linux-gnu`, using the default release profile, no custom `target-cpu` or `RUSTFLAGS`; Pulp runtime dispatch selected AVX2 `V3` on this Ryzen 9 5950X host. DUCC is the source-matrix build identified above. Callgrind profiles use the same warmed, one-transform client-request protocol as the parent profiles.
+The exact candidate parent is `39dde511`; the baseline extension was built from `c61ebcfb`, with only documentation changes between those revisions. Candidate source is `ef319aa9` and differs only by `#[inline(always)]` on `ScalarOrderedSynthesis::with_simd`, `synthesize_batch`, and `synthesize_ordinary_suffix_two_vectors` in `src/legendre/scalar_ordered.rs:460,803,1122`. The optimized extension was rebuilt with rustc 1.99.1 / LLVM 23.1.1 on `x86_64-unknown-linux-gnu`, using the default release profile, no custom `target-cpu` or `RUSTFLAGS`; Pulp runtime dispatch selected AVX2 `V3` on this Ryzen 9 5950X host. DUCC is the source-matrix build identified above. Callgrind profiles use the same warmed, one-transform client-request protocol as the parent profiles.
 
 | GL T320 q1 | Parent Ir | Candidate Ir | Reduction | `_mm256_fmadd_pd` calls | `_mm256_set1_pd` calls |
 |---|---:|---:|---:|---:|---:|
@@ -84,6 +84,10 @@ The exact parent source is `c61ebcfb`; later `97fbcbea`/`39dde511` changes are d
 | spin 1 | 899.112M | 260.816M | 71.0% | 23.333M → 0.073M | 12.939M → 1.244M |
 
 These are whole-program Callgrind instructions, not cycles. The candidate spin-0 `V3::vectorize::imp<ScalarOrderedSynthesis>` is 46.743M exclusive Ir; the candidate spin-1 `V3::vectorize::imp_fastcall<PreparedComponentBatch>` is 58.206M. In optimized AVX2 disassembly, the ordinary two-vector suffix now contains direct YMM `vfmadd*pd` instructions in its loop instead of repeatedly calling the six-instruction `_mm256_fmadd_pd` wrapper. The hot FMA-helper call count falls by 99.7%; `set1_pd` calls fall by about 90.3%. This confirms removal of ABI call/argument-marshalling work. It does not establish cycles saved by instruction category. The candidate still has a 0x2b8-byte scalar-kernel frame and visible YMM stack traffic in the hot loop; register spills were not eliminated. No claim of spill-free code is made.
+
+A q8 process profile confirms the same instruction mechanism on scalar synthesis: GL T320 spin 0 parent/candidate/DUCC totals are **430.154M / 119.879M / 86.781M Ir**. The AVX2 helper-call counts are unchanged from q1 (parent/candidate FMA calls 11.590M/0.036M; `set1_pd` 6.435M/0.626M). DUCC's `alm2map_kernel` is again 28.725M Ir (33.1% of its q8 process profile). Thus q8 scalar synthesis uses the same Pulp/AVX2 boundary.
+
+Spin-1 q8 is a separate route and does not share this gain: GL T320 parent/candidate/DUCC totals are **604.649M / 605.134M / 226.425M Ir**. The top Rust AVX2 helper counts are unchanged across parent and candidate, and DUCC's `alm2map_spin_kernel` is 110.741M Ir (48.9%). This matches timing equivalence at q8. The q1 spin-1 profile reduction is specific to its prepared-component path; q8 ordinary grouped recurrence does not execute that inlining boundary.
 
 Interleaved whole-transform screen: three rounds per cell, each sample averaging three calls, same fixture and CPU affinity for parent/candidate/source-matrix DUCC. Times are medians in ms; host load/runqueue data was not captured, so these remain a focused screen rather than quiet-host acceptance data.
 
@@ -97,16 +101,18 @@ Interleaved whole-transform screen: three rounds per cell, each sample averaging
 | CC T360 oversampled | 1 | 1 | 50.812 | 50.062 | 18.238 |
 | CC T360 oversampled | 8 | 0 | 17.584 | 2.949 | 2.187 |
 | CC T360 oversampled | 8 | 1 | 17.775 | 17.591 | 4.799 |
+| GL T511 oversampled | 1 | 0 | 353.612 | 41.680 | 19.606 |
+| GL T511 oversampled | 8 | 0 | 47.111 | 6.253 | 3.400 |
 
-Candidate spin-0 synthesis is 5.7–6.6× faster than its parent across these four cells, with the same direction and scale on GL and CC. Spin-1 is timing-equivalent on both controls; the candidate shows no measured cross-route regression. Rust remains slower than DUCC in every listed cell. The simple inline-boundary source change is retained as a promising production improvement, subject to the wider regression matrix.
+Candidate spin-0 synthesis is 5.7–8.5× faster than its parent across the six GL/CC cells, including the larger T511 control. Spin-1 is timing-equivalent on GL T320 and CC T360; the candidate shows no measured cross-route regression. Rust remains slower than DUCC in every listed cell. The simple inline-boundary source change is retained as a production improvement, subject to the wider regression matrix.
 
-Focused correctness checks actually run on this source: `cargo test --lib scalar_ordered` (18 passed, 2 ignored); `cargo test --lib spin1_scalar_fast_synthesis_matches_general_channel_cases` (1 passed); and `cargo test --lib spin1_fine_synthesis_groups_preserve_t720_adjoint_identities` (1 passed). The Python benchmark asserted output shape, f64 dtype and finiteness; it is not a numerical comparison. No tolerance was changed.
+Parent/candidate output arrays are bitwise identical for GL T320 and CC T360 at q1/q8 for both spin 0 and spin 1 (eight allocating transforms; max absolute difference 0). Focused checks actually run on this source: `cargo test --lib scalar_ordered` (18 passed, 2 ignored; includes extreme/subnormal fallback, exact CC/F1 comparison, q1/q8, and the >T511 parallel-order case); `cargo test --lib spin1_scalar_fast_synthesis_matches_general_channel_cases` (1 passed); `cargo test --lib spin1_fine_synthesis_groups_preserve_t720_adjoint_identities` (1 passed); `cargo clippy --lib -- -D warnings` passed; `cargo fmt --all -- --check` and `git diff --check` passed. No tolerance was changed. Candidate extension size grew by 16,576 bytes (6,296,240→6,312,816; +0.26%); the change adds no branches, scratch storage or fallback state.
 
 ## Next measurement
 
 - Finish normalizing the hot loop counts by active latitude × degree × channel updates, and capture the matched q8 profile/route where it changes.
 - Add only a low-overhead test-only phase probe for the exact-q8 hemisphere route, then compare with oversampled q8. Capture CC T360 spin-1 q8 worker balance before attributing its poor scaling to recurrence.
-- Run matched exact-parent/candidate/DUCC Callgrind on q8 and a representative larger GL scalar synthesis cell, then validate the candidate across the required f64 spin-0/1 matrix before updating the short performance snapshot. The current three attributes are a bounded candidate; do not add further inlining annotations until these controls finish.
+- Run focused numerical and AVX2 instruction controls at larger GL sizes, then validate the candidate across the required f64 spin-0/1 matrix before updating the short performance snapshot. Do not add further inlining annotations until these controls finish.
 
 `perf stat` failed because hardware events are unavailable to this process. Callgrind and disassembly are still available. Any percentages reported here are wall-time phase shares or explicit route counters, never Callgrind-cycle estimates.
 
