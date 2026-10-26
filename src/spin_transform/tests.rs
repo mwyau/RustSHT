@@ -2348,6 +2348,7 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
+        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2380,6 +2381,7 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
+        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2411,6 +2413,7 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
+        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2443,6 +2446,7 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
+        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2778,6 +2782,10 @@ fn spin1_order_major_synthesis_reuses_workspace_across_changed_coefficients() {
             single_second.fill(f64::NAN);
             parallel_first.fill(f64::NAN);
             parallel_second.fill(f64::NAN);
+            for scratch in &mut parallel_workspace.spin_order_output_scratch {
+                scratch.q.fill(Complex64::new(f64::NAN, f64::INFINITY));
+                scratch.u.fill(Complex64::new(f64::NAN, f64::INFINITY));
+            }
             single_thread_pool
                 .install(|| {
                     plan.synthesis_spin_into(
@@ -2830,13 +2838,17 @@ fn spin1_order_major_synthesis_reuses_workspace_across_changed_coefficients() {
                 .filter(|value| value.is_finite())
                 .map(|value| value.abs())
                 .fold(1.0_f64, f64::max);
-            for (&single, &parallel) in single_first
+            for (index, (&single, &parallel)) in single_first
                 .iter()
                 .zip(&parallel_first)
                 .chain(single_second.iter().zip(&parallel_second))
+                .enumerate()
             {
                 if single.is_finite() {
-                    assert!(parallel.is_finite(), "{label} changed a finite q1 output");
+                    assert!(
+                        parallel.is_finite(),
+                        "{label} changed finite q1 output {index}: single={single:?}, parallel={parallel:?}"
+                    );
                     assert!(
                         (single / scale - parallel / scale).abs() <= 2e-11,
                         "{label} changed a finite q8 output"
@@ -6944,6 +6956,10 @@ fn spin1_t1023_order_major_cache_is_bounded_and_reused() {
         unsafe_b[plan.harmonics.index(1, 1).unwrap()] = Complex64::new(0.0, -1.44e308);
         first.fill(f64::NAN);
         second.fill(f64::NAN);
+        for scratch in &mut workspace.spin_order_output_scratch {
+            scratch.q.fill(Complex64::new(f64::NAN, f64::INFINITY));
+            scratch.u.fill(Complex64::new(f64::NAN, f64::INFINITY));
+        }
         pool.install(|| {
             plan.synthesis_spin_into(
                 &unsafe_e,
@@ -6996,6 +7012,10 @@ fn spin1_t1023_order_major_cache_is_bounded_and_reused() {
         b_alm.fill(Complex64::new(0.0, 0.0));
         first.fill(f64::NAN);
         second.fill(f64::NAN);
+        for scratch in &mut workspace.spin_order_output_scratch {
+            scratch.q.fill(Complex64::new(f64::NAN, f64::INFINITY));
+            scratch.u.fill(Complex64::new(f64::NAN, f64::INFINITY));
+        }
         pool.install(|| {
             plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
         })
