@@ -103,16 +103,19 @@ Interleaved whole-transform screen: three rounds per cell, each sample averaging
 | CC T360 oversampled | 8 | 1 | 17.775 | 17.591 | 4.799 |
 | GL T511 oversampled | 1 | 0 | 353.612 | 41.680 | 19.606 |
 | GL T511 oversampled | 8 | 0 | 47.111 | 6.253 | 3.400 |
+| GL T1023 oversampled | 1 | 0 | 2534.961 | 302.441 | 132.196 |
+| GL T1023 oversampled | 8 | 0 | 340.496 | 45.929 | 24.871 |
+| GL T1023 oversampled | 1 | 1 | 1298.178 | 1283.110 | 531.982 |
 
-Candidate spin-0 synthesis is 5.7–8.5× faster than its parent across the six GL/CC cells, including the larger T511 control. Spin-1 is timing-equivalent on GL T320 and CC T360; the candidate shows no measured cross-route regression. Rust remains slower than DUCC in every listed cell. The simple inline-boundary source change is retained as a production improvement, subject to the wider regression matrix.
+Candidate spin-0 synthesis is 5.7–8.5× faster than its parent across the eight GL/CC cells, including T511 and T1023. T1023 spin-1 q1 improves only 1.2%, which is not a material timing change. Rust remains slower than the source-matrix DUCC build in every listed cell. The simple inline-boundary source change is retained as a production improvement, subject to the wider regression matrix.
 
-Parent/candidate output arrays are bitwise identical for GL T320 and CC T360 at q1/q8 for both spin 0 and spin 1 (eight allocating transforms; max absolute difference 0). Focused checks actually run on this source: `cargo test --lib scalar_ordered` (18 passed, 2 ignored; includes extreme/subnormal fallback, exact CC/F1 comparison, q1/q8, and the >T511 parallel-order case); `cargo test --lib spin1_scalar_fast_synthesis_matches_general_channel_cases` (1 passed); `cargo test --lib spin1_fine_synthesis_groups_preserve_t720_adjoint_identities` (1 passed); `cargo clippy --lib -- -D warnings` passed; `cargo fmt --all -- --check` and `git diff --check` passed. No tolerance was changed. Candidate extension size grew by 16,576 bytes (6,296,240→6,312,816; +0.26%); the change adds no branches, scratch storage or fallback state.
+Parent/candidate output arrays are bitwise identical for GL T320 and CC T360 at q1/q8 for both spin 0 and spin 1, and for GL T511 at q1/q8 spin 0/1 plus GL T1023 q1 spin 1 (13 allocating transforms; max absolute difference 0). Focused checks actually run on this source: `cargo test --lib scalar_ordered` (18 passed, 2 ignored; includes extreme/subnormal fallback, exact CC/F1 comparison, q1/q8, and the >T511 parallel-order case); `cargo test --lib spin1_scalar_fast_synthesis_matches_general_channel_cases` (1 passed); `cargo test --lib spin1_fine_synthesis_groups_preserve_t720_adjoint_identities` (1 passed); `cargo clippy --lib -- -D warnings` passed; `cargo fmt --all -- --check` and `git diff --check` passed. No tolerance was changed. Candidate extension size grew by 16,576 bytes (6,296,240→6,312,816; +0.26%); the change adds no branches, scratch storage or fallback state.
 
 ## Next measurement
 
 - Finish normalizing the hot loop counts by active latitude × degree × channel updates, and capture the matched q8 profile/route where it changes.
 - Add only a low-overhead test-only phase probe for the exact-q8 hemisphere route, then compare with oversampled q8. Capture CC T360 spin-1 q8 worker balance before attributing its poor scaling to recurrence.
-- Run focused numerical and AVX2 instruction controls at larger GL sizes, then validate the candidate across the required f64 spin-0/1 matrix before updating the short performance snapshot. Do not add further inlining annotations until these controls finish.
+- Investigate why the q1 spin-1 prepared-component route remains about 2.4× slower than source-matrix DUCC at GL T1023 despite similar q1 Callgrind instruction totals; identify its dominant exclusive PCs and normalize by latitude/degree/channel work before selecting another change. The matched benchmark and output hash controls are not the pinned-DUCC parity result; keep the parity ledger separate.
 
 `perf stat` failed because hardware events are unavailable to this process. Callgrind and disassembly are still available. Any percentages reported here are wall-time phase shares or explicit route counters, never Callgrind-cycle estimates.
 
