@@ -13,8 +13,6 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-#[cfg(feature = "parallel")]
-use crate::dynamic_jobs::run_dynamic_order_jobs;
 use crate::error::{ShtError, check_len};
 use crate::grid::resampling::CCResamplingPlan;
 #[cfg(feature = "parallel")]
@@ -26,6 +24,8 @@ use crate::legendre::{
     spin2_to_scalar,
 };
 use crate::plan::{ShtPlan, current_execution_thread_count};
+#[cfg(feature = "parallel")]
+use crate::transform::scheduling::run_dynamic_order_jobs;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 #[cfg(feature = "parallel")]

@@ -78,3 +78,28 @@ where
     }
     Ok(())
 }
+
+/// Chooses the order boundary with the closest total coefficient work on both sides.
+#[cfg(feature = "parallel")]
+pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
+    debug_assert!(m_start < m_end);
+    debug_assert!(m_end - 1 <= lmax);
+    debug_assert!(m_end - m_start > 1);
+
+    let total_work = (m_start..m_end)
+        .map(|m| (lmax - m + 1) as u128)
+        .sum::<u128>();
+    let mut left_work = 0_u128;
+    let mut best_mid = m_start + 1;
+    let mut best_difference = u128::MAX;
+    for m in m_start..(m_end - 1) {
+        left_work += (lmax - m + 1) as u128;
+        let right_work = total_work - left_work;
+        let difference = left_work.abs_diff(right_work);
+        if difference < best_difference {
+            best_difference = difference;
+            best_mid = m + 1;
+        }
+    }
+    best_mid
+}

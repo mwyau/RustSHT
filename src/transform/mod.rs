@@ -11,8 +11,6 @@ use std::collections::VecDeque;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-#[cfg(feature = "parallel")]
-use crate::dynamic_jobs::run_dynamic_order_jobs;
 use crate::error::{ShtError, check_len};
 use crate::grid::GridKind;
 use crate::legendre::{
@@ -21,8 +19,12 @@ use crate::legendre::{
 };
 use crate::plan::{ScalarLatitudeGeometry, ShtPlan};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
+#[cfg(feature = "parallel")]
+use scheduling::{run_dynamic_order_jobs, weighted_order_midpoint};
 
 mod fft_rows;
+#[cfg(feature = "parallel")]
+pub(crate) mod scheduling;
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 #[cfg(feature = "parallel")]
@@ -287,30 +289,6 @@ impl<T: ShtScalar> ScalarAnalysisOrderSpectra<'_, T> {
             }
         }
     }
-}
-
-#[cfg(feature = "parallel")]
-pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
-    debug_assert!(m_start < m_end);
-    debug_assert!(m_end - 1 <= lmax);
-    debug_assert!(m_end - m_start > 1);
-
-    let total_work = (m_start..m_end)
-        .map(|m| (lmax - m + 1) as u128)
-        .sum::<u128>();
-    let mut left_work = 0_u128;
-    let mut best_mid = m_start + 1;
-    let mut best_difference = u128::MAX;
-    for m in m_start..(m_end - 1) {
-        left_work += (lmax - m + 1) as u128;
-        let right_work = total_work - left_work;
-        let difference = left_work.abs_diff(right_work);
-        if difference < best_difference {
-            best_difference = difference;
-            best_mid = m + 1;
-        }
-    }
-    best_mid
 }
 
 fn accumulate_precomputed_synthesis_order<T: ShtScalar>(

@@ -11,6 +11,8 @@ use crate::grid::{GridKind, GridSpec};
 use crate::harmonics::HarmonicSpec;
 #[cfg(feature = "parallel")]
 use crate::plan::LegendreReuseEstimate;
+#[cfg(feature = "parallel")]
+use crate::transform::scheduling::weighted_order_midpoint;
 
 fn make_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64) -> ShtPlan {
     ShtPlan::new(
