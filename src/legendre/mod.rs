@@ -1918,7 +1918,7 @@ impl ShtScalar for f64 {
         coefficient_a: &mut [Self],
         coefficient_b: &mut [Self],
     ) -> Result<Self::SpinInitial, ShtError> {
-        spin::fill_spin_factors(spin, m, lmax, alpha, coefficient_a, coefficient_b)
+        spin_factors::fill_spin_factors::<Self>(spin, m, lmax, alpha, coefficient_a, coefficient_b)
     }
 
     fn for_each_spin_lm_dispatched<F>(
@@ -2263,7 +2263,7 @@ impl ShtScalar for f32 {
         coefficient_a: &mut [Self],
         coefficient_b: &mut [Self],
     ) -> Result<Self::SpinInitial, ShtError> {
-        spin_f32::fill_spin_factors(spin, m, lmax, alpha, coefficient_a, coefficient_b)
+        spin_factors::fill_spin_factors::<Self>(spin, m, lmax, alpha, coefficient_a, coefficient_b)
     }
 
     fn for_each_spin_lm_dispatched<F>(

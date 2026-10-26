@@ -39,18 +39,6 @@ const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
 
 pub(crate) type SpinInitial = super::spin_factors::SpinInitial<f64>;
 
-/// Fills DUCC's order-dependent spin recurrence coefficients.
-pub(crate) fn fill_spin_factors(
-    spin: usize,
-    m: usize,
-    lmax: usize,
-    alpha: &mut [f64],
-    coefficient_a: &mut [f64],
-    coefficient_b: &mut [f64],
-) -> Result<SpinInitial, ShtError> {
-    super::spin_factors::fill_spin_factors(spin, m, lmax, alpha, coefficient_a, coefficient_b)
-}
-
 /// Visits the two normalized spin recurrence sequences over latitude lanes.
 #[expect(
     clippy::too_many_arguments,
@@ -683,7 +671,7 @@ mod tests {
         let mut alpha = vec![0.0; count];
         let mut coefficient_a = vec![0.0; count];
         let mut coefficient_b = vec![0.0; count];
-        let initial = fill_spin_factors(
+        let initial = crate::legendre::spin_factors::fill_spin_factors::<f64>(
             spin,
             m,
             lmax,

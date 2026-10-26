@@ -571,7 +571,7 @@ mod tests {
     use super::*;
     use pulp::Arch;
 
-    use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar, spin};
+    use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar, spin, spin_factors};
 
     #[test]
     fn spin1_scalar_conversion_matches_the_spin_recurrence() {
@@ -636,9 +636,15 @@ mod tests {
             let mut spin_alpha = vec![0.0; lmax + 2];
             let mut spin_a = vec![0.0; lmax + 2];
             let mut spin_b = vec![0.0; lmax + 2];
-            let spin_initial =
-                spin::fill_spin_factors(1, m, lmax, &mut spin_alpha, &mut spin_a, &mut spin_b)
-                    .unwrap();
+            let spin_initial = spin_factors::fill_spin_factors(
+                1,
+                m,
+                lmax,
+                &mut spin_alpha,
+                &mut spin_a,
+                &mut spin_b,
+            )
+            .unwrap();
             let mut spin_previous_plus = vec![0.0; theta.len()];
             let mut spin_current_plus = vec![0.0; theta.len()];
             let mut spin_next_plus = vec![0.0; theta.len()];
@@ -698,8 +704,7 @@ mod tests {
                 &mut spin_next_minus,
                 &mut spin_exponents_minus,
                 |l, ring_start, plus, plus_exp, minus, minus_exp| {
-                    let norm = spin_alpha[l]
-                        * crate::legendre::spin_factors::spin_normalization::<f64>(1, l, false);
+                    let norm = spin_alpha[l] * spin_factors::spin_normalization::<f64>(1, l, false);
                     for lane in 0..plus.len() {
                         let plus_value = spin::scaled_basis_value(plus[lane], plus_exp[lane], norm);
                         let minus_value =
@@ -945,9 +950,15 @@ mod tests {
             let mut spin_alpha = vec![0.0; lmax + 2];
             let mut spin_a = vec![0.0; lmax + 2];
             let mut spin_b = vec![0.0; lmax + 2];
-            let spin_initial =
-                spin::fill_spin_factors(2, m, lmax, &mut spin_alpha, &mut spin_a, &mut spin_b)
-                    .unwrap();
+            let spin_initial = spin_factors::fill_spin_factors(
+                2,
+                m,
+                lmax,
+                &mut spin_alpha,
+                &mut spin_a,
+                &mut spin_b,
+            )
+            .unwrap();
             let mut spin_previous_plus = vec![0.0; theta.len()];
             let mut spin_current_plus = vec![0.0; theta.len()];
             let mut spin_next_plus = vec![0.0; theta.len()];
@@ -975,8 +986,7 @@ mod tests {
                 &mut spin_next_minus,
                 &mut spin_exponents_minus,
                 |l, ring_start, plus, plus_exp, minus, minus_exp| {
-                    let norm = spin_alpha[l]
-                        * crate::legendre::spin_factors::spin_normalization::<f64>(2, l, false);
+                    let norm = spin_alpha[l] * spin_factors::spin_normalization::<f64>(2, l, false);
                     for lane in 0..plus.len() {
                         let plus_value = spin::scaled_basis_value(plus[lane], plus_exp[lane], norm);
                         let minus_value =

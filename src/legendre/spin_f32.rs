@@ -76,17 +76,6 @@ pub(crate) fn normalizer_profile() -> (u64, u64, u64, u64, u64) {
 
 pub(crate) type SpinInitial32 = super::spin_factors::SpinInitial<f32>;
 
-pub(crate) fn fill_spin_factors(
-    spin: usize,
-    m: usize,
-    lmax: usize,
-    alpha: &mut [f32],
-    coefficient_a: &mut [f32],
-    coefficient_b: &mut [f32],
-) -> Result<SpinInitial32, ShtError> {
-    super::spin_factors::fill_spin_factors(spin, m, lmax, alpha, coefficient_a, coefficient_b)
-}
-
 pub(crate) fn analysis_inputs_vectorizable(
     m: usize,
     q_real: &[f32],
@@ -1009,7 +998,7 @@ mod tests {
         let mut alpha = vec![0.0; count];
         let mut coefficient_a = vec![0.0; count];
         let mut coefficient_b = vec![0.0; count];
-        let initial = fill_spin_factors(
+        let initial = crate::legendre::spin_factors::fill_spin_factors::<f32>(
             spin,
             m,
             lmax,
