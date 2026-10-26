@@ -279,7 +279,7 @@ mod tests {
             for m in 0..=mmax {
                 let mut factors_f64 = vec![f64::NAN; mmax + 1];
                 fill_epsilon(m, mmax, &mut factors_f64);
-                for l in m..=mmax {
+                for (l, &factor) in factors_f64.iter().enumerate().skip(m) {
                     let lf = l as f64;
                     let mf = m as f64;
                     let expected = if l == m {
@@ -287,12 +287,12 @@ mod tests {
                     } else {
                         (((lf - mf) * (lf + mf)) / ((2.0 * lf + 1.0) * (2.0 * lf - 1.0))).sqrt()
                     };
-                    assert_eq!(factors_f64[l].to_bits(), expected.to_bits());
+                    assert_eq!(factor.to_bits(), expected.to_bits());
                 }
 
                 let mut factors_f32 = vec![f32::NAN; mmax + 1];
                 fill_epsilon(m, mmax, &mut factors_f32);
-                for l in m..=mmax {
+                for (l, &factor) in factors_f32.iter().enumerate().skip(m) {
                     let lf = l as f32;
                     let mf = m as f32;
                     let expected = if l == m {
@@ -300,7 +300,7 @@ mod tests {
                     } else {
                         (((lf - mf) * (lf + mf)) / ((2.0 * lf + 1.0) * (2.0 * lf - 1.0))).sqrt()
                     };
-                    assert_eq!(factors_f32[l].to_bits(), expected.to_bits());
+                    assert_eq!(factor.to_bits(), expected.to_bits());
                 }
             }
         }
