@@ -4551,7 +4551,18 @@ fn spin1_fine_synthesis_groups_preserve_t720_adjoint_identities() {
 #[cfg(feature = "parallel")]
 #[test]
 fn spin1_gl_overresolved_order_major_queue_preserves_adjoint_identities() {
-    let plan = make_plan(1, 320, 320, 640, 1280);
+    assert_spin1_gl_overresolved_order_major_adjoint_identities(320, 320, 640, 1280);
+    assert_spin1_gl_overresolved_order_major_adjoint_identities(320, 120, 640, 250);
+}
+
+#[cfg(feature = "parallel")]
+fn assert_spin1_gl_overresolved_order_major_adjoint_identities(
+    lmax: usize,
+    mmax: usize,
+    ntheta: usize,
+    nphi: usize,
+) {
+    let plan = make_plan(1, lmax, mmax, ntheta, nphi);
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
         .build()
