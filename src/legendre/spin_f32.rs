@@ -669,14 +669,55 @@ fn pair_lane_is_in_safe_range(previous: f32, current: f32) -> bool {
     maximum_bits == 0 || (SMALL.to_bits()..=BIG.to_bits()).contains(&maximum_bits)
 }
 
-#[inline(always)]
-fn power(base: f32, exponent: usize) -> Result<ScaledValue, ShtError> {
-    super::numeric::scaled_power(base, exponent, "spin recurrence exponent")
+fn power(base: f32, mut exponent: usize) -> Result<ScaledValue, ShtError> {
+    let mut result = ScaledValue {
+        mantissa: 1.0,
+        exponent: 0,
+    };
+    let mut factor = normalize(base, 0)?;
+    while exponent != 0 {
+        if !exponent.is_multiple_of(2) {
+            result = multiply(result, factor)?;
+        }
+        exponent /= 2;
+        if exponent != 0 {
+            factor = multiply(factor, factor)?;
+        }
+    }
+    Ok(result)
 }
 
-#[inline(always)]
 fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtError> {
-    super::numeric::multiply_scaled(left, right, "spin recurrence exponent")
+    let exponent = left
+        .exponent
+        .checked_add(right.exponent)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "spin recurrence exponent",
+        })?;
+    normalize(left.mantissa * right.mantissa, exponent)
+}
+
+fn normalize(mut value: f32, mut exponent: i64) -> Result<ScaledValue, ShtError> {
+    while value.abs() > BIG {
+        value *= SCALE_DOWN;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
+    }
+    while value != 0.0 && value.abs() < SMALL {
+        value *= SCALE_UP;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
+    }
+    Ok(ScaledValue {
+        mantissa: value,
+        exponent,
+    })
 }
 
 pub(crate) fn scaled_basis_value(value: f32, exponent: i64, alpha_norm: f32) -> f32 {

@@ -745,14 +745,56 @@ fn epsilon(l: usize, m: usize) -> f64 {
     super::numeric::epsilon(l, m)
 }
 
-#[inline(always)]
-fn scaled_power(base: f64, exponent: usize) -> Result<ScaledValue, ShtError> {
-    super::numeric::scaled_power(base, exponent, "scalar recurrence scale")
+fn scaled_power(base: f64, mut exponent: usize) -> Result<ScaledValue, ShtError> {
+    let mut result = ScaledValue {
+        mantissa: 1.0,
+        exponent: 0,
+    };
+    let mut factor = normalize_value(base, 0)?;
+
+    while exponent != 0 {
+        if !exponent.is_multiple_of(2) {
+            result = multiply(result, factor)?;
+        }
+        exponent /= 2;
+        if exponent != 0 {
+            factor = multiply(factor, factor)?;
+        }
+    }
+    Ok(result)
 }
 
-#[inline(always)]
-fn normalize_value(value: f64, exponent: i64) -> Result<ScaledValue, ShtError> {
-    super::numeric::normalize_scaled_value(value, exponent, "scalar recurrence scale")
+fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtError> {
+    let exponent = left
+        .exponent
+        .checked_add(right.exponent)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "scalar recurrence scale",
+        })?;
+    normalize_value(left.mantissa * right.mantissa, exponent)
+}
+
+fn normalize_value(mut value: f64, mut exponent: i64) -> Result<ScaledValue, ShtError> {
+    while value.abs() > BIG {
+        value *= SCALE_DOWN;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence scale",
+            })?;
+    }
+    while value != 0.0 && value.abs() < SMALL {
+        value *= SCALE_UP;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence scale",
+            })?;
+    }
+    Ok(ScaledValue {
+        mantissa: value,
+        exponent,
+    })
 }
 
 fn normalize_pair(previous: &mut ScaledValue, current: &mut ScaledValue) -> Result<(), ShtError> {
