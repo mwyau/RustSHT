@@ -6,7 +6,7 @@
   - `cargo test --locked --all-features --lib binary_scaling`: 4 passed, including f64/f32 exponent-boundary bit comparisons and the spin scaling reference.
   - `cargo test --locked --all-features --lib scaled_complex_multiply`: 2 passed for f64 overflow avoidance and f32 split-reference parity.
   - `cargo check --locked --all-targets --all-features`, `cargo clippy --locked --all-targets --all-features -- -D warnings`, `cargo fmt --all -- --check`, and `git diff --check` passed.
-  - No benchmark ran. This slice changes the source owner of an exceptional scaling fallback; no whole-transform speed claim is made. Scratch measured 863,083,812 bytes before cleanup. After verifying this report and source commit on `origin/dev`, remove that exact scratch and confirm reclaimed space.
+  - No benchmark ran. This slice changes the source owner of an exceptional scaling fallback; no whole-transform speed claim is made. The experiment scratch measured 863,083,812 bytes before cleanup. After verifying the report and source on `origin/dev`, deleted the exact owned scratch and verified it was absent; `/tmp` now has 46 GiB available and 949,018 free inodes.
 
 Next: inspect remaining scalar/spin recurrence state duplication for a similarly substantive shared-kernel simplification, then continue module consolidation without repeating baseline or benchmark campaigns.
 
