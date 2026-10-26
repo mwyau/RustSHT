@@ -399,3 +399,16 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - No benchmark ran; this was a source organization change with no hot-loop edits.
 
 Before cleanup, the owned scratch measured 858,999,325 bytes across 1,895 files; `/tmp` had 45 GiB available and 946,747 free inodes. After verifying source and results on `origin/dev`, the exact scratch label was removed and absence verified at 2026-10-26 20:15 UTC. This reclaimed 858,999,325 bytes; `/tmp` returned to 46 GiB available and 949,018 free inodes. No experiment build artifacts remain.
+
+## Spin synthesis/analysis module split — 2026-10-26 20:20 UTC
+
+Source commit `0e0ff60be42b094d6e137aec450362d5968fd8aa` follows parent `b7ab29556308ce41a792c0be92dc24f3a9db39cd`. Split the 6,254-line spin orchestration file by operator responsibility: the public API and shared setup/validation remain in `transform/spin.rs` (1,429 lines), synthesis kernels moved to `transform/spin/synthesis.rs` (3,019 lines), and analysis kernels to `transform/spin/analysis.rs` (1,822 lines). The split adds 16 lines for module and visibility wiring. The 26 moved private helpers are `pub(super)` so the parent API, hemisphere worker, and existing parent-level unit tests retain their former access; none becomes public outside `transform::spin`. No recurrence, adjoint, scratch, fallback, route-gate, or numerical code changed.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, with Cargo home and target isolated in scratch label `rustsht-exp-spin-op-split.sntkh48q`:
+
+- `cargo check --locked --all-targets --all-features` passed, and `cargo clippy --locked --all-targets --all-features -- -D warnings` passed cleanly.
+- `cargo test --locked --all-features --lib transform::spin`: 72 passed, 0 failed, 11 ignored, 252 filtered. This includes the nested hemisphere test plus spin analysis/synthesis, adjoints, exceptional fallback, workspace, polar and parallel checks.
+- `cargo fmt --all -- --check` and `git diff --check` passed.
+- No benchmark ran; only method/module ownership changed.
+
+Before cleanup, the owned scratch measured 859,459,710 bytes across 1,895 files; `/tmp` had 45 GiB available and 946,747 free inodes. Source and results are durable; immediate cleanup and reclaimed-space verification are pending.
