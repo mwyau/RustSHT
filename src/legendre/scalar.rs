@@ -27,7 +27,8 @@ use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
 use crate::legendre::{
-    LegendrePrecision, ScaledValue as BinaryScaledValue, scalar_recurrence_step,
+    LegendrePrecision, ScaledValue as BinaryScaledValue, define_scale_binary,
+    scalar_recurrence_step,
 };
 
 type ScaledValue = BinaryScaledValue<f64>;
@@ -813,45 +814,16 @@ fn normalize_pair(previous: &mut ScaledValue, current: &mut ScaledValue) -> Resu
     Ok(())
 }
 
-/// Applies a binary scale without forming an overflowing power-of-two factor.
-pub(crate) fn scale_binary(mut value: f64, mut exponent: i64) -> f64 {
-    if value == 0.0 || !value.is_finite() {
-        return value;
+define_scale_binary! {
+    pub(crate) fn scale_binary {
+        float: f64,
+        bits: u64,
+        mantissa_bits: 52,
+        exponent_field_mask: 0x7ff,
+        maximum_exponent: 0x7ff,
+        upper_chunk: 1023,
+        lower_chunk: -1022,
     }
-    if exponent == 0 {
-        return value;
-    }
-    if exponent > 4096 {
-        return value.signum() * f64::INFINITY;
-    }
-    if exponent < -4096 {
-        return 0.0_f64.copysign(value);
-    }
-
-    let bits = value.to_bits();
-    let raw_exponent = ((bits >> 52) & 0x7ff) as i64;
-    let scaled_exponent = raw_exponent + exponent;
-    // This exact path avoids powi for the normal values in each recurrence lane.
-    if (1..0x7ff).contains(&raw_exponent) && (1..0x7ff).contains(&scaled_exponent) {
-        let exponent_mask = 0x7ff_u64 << 52;
-        return f64::from_bits((bits & !exponent_mask) | ((scaled_exponent as u64) << 52));
-    }
-
-    while exponent > 1023 {
-        value *= 2.0_f64.powi(1023);
-        exponent -= 1023;
-        if !value.is_finite() {
-            return value;
-        }
-    }
-    while exponent < -1022 {
-        value *= 2.0_f64.powi(-1022);
-        exponent += 1022;
-        if value == 0.0 {
-            return value;
-        }
-    }
-    value * 2.0_f64.powi(exponent as i32)
 }
 
 fn scale_normal_binary(value: f64, exponent: i64) -> f64 {

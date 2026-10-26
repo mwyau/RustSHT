@@ -25,7 +25,7 @@ use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue,
+    LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue, define_scale_binary,
     scalar_recurrence_step,
 };
 
@@ -853,38 +853,16 @@ fn pair_lanes_need_scaling<S: Simd>(simd: S, previous: &[f32], current: &[f32]) 
         .any(|(&previous, &current)| !pair_is_in_normal_range(previous, current))
 }
 
-pub(crate) fn scale_binary(mut value: f32, mut exponent: i64) -> f32 {
-    if value == 0.0 || !value.is_finite() || exponent == 0 {
-        return value;
+define_scale_binary! {
+    pub(crate) fn scale_binary {
+        float: f32,
+        bits: u32,
+        mantissa_bits: 23,
+        exponent_field_mask: 0xff,
+        maximum_exponent: 0xff,
+        upper_chunk: 127,
+        lower_chunk: -126,
     }
-    if exponent > 4096 {
-        return value.signum() * f32::INFINITY;
-    }
-    if exponent < -4096 {
-        return 0.0_f32.copysign(value);
-    }
-    let bits = value.to_bits();
-    let raw_exponent = ((bits >> 23) & 0xff) as i64;
-    let scaled_exponent = raw_exponent + exponent;
-    if (1..0xff).contains(&raw_exponent) && (1..0xff).contains(&scaled_exponent) {
-        let exponent_mask = 0xff_u32 << 23;
-        return f32::from_bits((bits & !exponent_mask) | ((scaled_exponent as u32) << 23));
-    }
-    while exponent > 127 {
-        value *= 2.0_f32.powi(127);
-        exponent -= 127;
-        if !value.is_finite() {
-            return value;
-        }
-    }
-    while exponent < -126 {
-        value *= 2.0_f32.powi(-126);
-        exponent += 126;
-        if value == 0.0 {
-            return value;
-        }
-    }
-    value * 2.0_f32.powi(exponent as i32)
 }
 
 fn scale_normal_binary(value: f32, exponent: i64) -> Option<f32> {

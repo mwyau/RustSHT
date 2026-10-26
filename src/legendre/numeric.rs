@@ -128,6 +128,69 @@ macro_rules! scalar_recurrence_step {
 
 pub(crate) use scalar_recurrence_step;
 
+/// Defines the shared typed binary-scale fallback used by the scalar kernels.
+/// The normal-value paths remain local because their precision-specific return
+/// contracts differ and are part of the measured hot leaves.
+macro_rules! define_scale_binary {
+    (
+        $visibility:vis fn $name:ident {
+            float: $float:ty,
+            bits: $bits:ty,
+            mantissa_bits: $mantissa_bits:expr,
+            exponent_field_mask: $exponent_field_mask:expr,
+            maximum_exponent: $maximum_exponent:expr,
+            upper_chunk: $upper_chunk:expr,
+            lower_chunk: $lower_chunk:expr $(,)?
+        }
+    ) => {
+        $visibility fn $name(mut value: $float, mut exponent: i64) -> $float {
+            if value == 0.0 || !value.is_finite() || exponent == 0 {
+                return value;
+            }
+            if exponent > 4096 {
+                return value.signum() * <$float>::INFINITY;
+            }
+            if exponent < -4096 {
+                return (0.0 as $float).copysign(value);
+            }
+
+            let bits = value.to_bits();
+            let raw_exponent =
+                ((bits >> $mantissa_bits) & ($exponent_field_mask as $bits)) as i64;
+            let scaled_exponent = raw_exponent + exponent;
+            // Preserve exact normal scaling by changing only the exponent bits.
+            if raw_exponent > 0
+                && raw_exponent < ($maximum_exponent as i64)
+                && scaled_exponent > 0
+                && scaled_exponent < ($maximum_exponent as i64)
+            {
+                let exponent_mask = ($exponent_field_mask as $bits) << $mantissa_bits;
+                return <$float>::from_bits(
+                    (bits & !exponent_mask) | ((scaled_exponent as $bits) << $mantissa_bits),
+                );
+            }
+
+            while exponent > $upper_chunk {
+                value *= (2.0 as $float).powi($upper_chunk);
+                exponent -= $upper_chunk;
+                if !value.is_finite() {
+                    return value;
+                }
+            }
+            while exponent < $lower_chunk {
+                value *= (2.0 as $float).powi($lower_chunk);
+                exponent += -($lower_chunk);
+                if value == 0.0 {
+                    return value;
+                }
+            }
+            value * (2.0 as $float).powi(exponent as i32)
+        }
+    };
+}
+
+pub(crate) use define_scale_binary;
+
 /// Restores one recurrence value to the precision's safe exponent interval.
 /// The shared power/product helpers below serve native-f32 scalar and spin;
 /// f64 transform kernels keep their measured local leaves.
