@@ -24,7 +24,10 @@ use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
-use crate::legendre::{LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue,
+    scalar_recurrence_step,
+};
 
 type ScaledValue = BinaryScaledValue<f32>;
 
@@ -233,29 +236,22 @@ where
                 break;
             }
 
-            let epsilon_l = simd.splat_f32s(epsilon[l]);
-            let epsilon_next = simd.splat_f32s(epsilon[l + 1]);
-            let (current_vectors, current_tail) = S::as_simd_f32s(current);
-            let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
-            let (cos_vectors, cos_tail) = S::as_simd_f32s(cos_theta);
-            let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
-            debug_assert_eq!(current_vectors.len(), previous_vectors.len());
-            debug_assert_eq!(current_vectors.len(), cos_vectors.len());
-            debug_assert_eq!(current_vectors.len(), next_vectors.len());
-            for block in 0..current_vectors.len() {
-                let degree_term = simd.mul_f32s(epsilon_l, previous_vectors[block]);
-                let latitude_term = simd.mul_f32s(cos_vectors[block], current_vectors[block]);
-                next_vectors[block] =
-                    simd.div_f32s(simd.sub_f32s(latitude_term, degree_term), epsilon_next);
-            }
-            debug_assert_eq!(current_tail.len(), previous_tail.len());
-            debug_assert_eq!(current_tail.len(), cos_tail.len());
-            debug_assert_eq!(current_tail.len(), next_tail.len());
-            for index in 0..current_tail.len() {
-                next_tail[index] = (cos_tail[index] * current_tail[index]
-                    - epsilon[l] * previous_tail[index])
-                    / epsilon[l + 1];
-            }
+            scalar_recurrence_step!(
+                simd,
+                S,
+                epsilon,
+                l,
+                current,
+                previous,
+                cos_theta,
+                next,
+                splat_f32s,
+                as_simd_f32s,
+                as_mut_simd_f32s,
+                mul_f32s,
+                sub_f32s,
+                div_f32s
+            );
 
             if ALLOW_NORMAL_RANGE_SKIP {
                 if normal_range {
