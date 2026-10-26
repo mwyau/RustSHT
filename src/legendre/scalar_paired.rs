@@ -4857,12 +4857,11 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut vector_states_in_range = simd.equal_f64s(zero, zero);
     let mut scalar_states_in_range = true;
     let mut tails_in_range = true;
-    let mut snapshot_vectors = snapshot_vectors.iter_mut();
 
     macro_rules! update_analysis_pair_vector {
         ($previous:expr, $current:expr, $same_real:expr, $same_imag:expr,
          $opposite_real:expr, $opposite_imag:expr, $cosine:expr,
-         $cosine_squared:expr) => {{
+         $cosine_squared:expr, $snapshot:expr) => {{
             let previous_value = *($previous);
             let current_value = *($current);
             if ACCUMULATE {
@@ -4945,8 +4944,7 @@ fn fused_analysis_two_pair_steps_with_simd<
                 }
             }
             if ROTATE_SEQUENTIAL_STATES {
-                let snapshot = snapshot_vectors.next()?;
-                *snapshot = first_next;
+                *($snapshot) = first_next;
                 *($previous) = second_next;
             } else {
                 *($previous) = first_next;
@@ -4955,29 +4953,52 @@ fn fused_analysis_two_pair_steps_with_simd<
         }};
     }
 
-    for (
-        ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
-        cosine_squared,
-    ) in previous_vectors
-        .iter_mut()
-        .zip(current_vectors.iter_mut())
-        .zip(same_real_vectors.iter())
-        .zip(same_imag_vectors.iter())
-        .zip(opposite_real_vectors.iter())
-        .zip(opposite_imag_vectors.iter())
-        .zip(cosine_vectors.iter())
-        .zip(cosine_squared_vectors.iter())
-    {
-        update_analysis_pair_vector!(
-            previous,
-            current,
-            same_real,
-            same_imag,
-            opposite_real,
-            opposite_imag,
-            cosine,
-            cosine_squared
-        );
+    macro_rules! pair_vector_inputs {
+        () => {
+            previous_vectors
+                .iter_mut()
+                .zip(current_vectors.iter_mut())
+                .zip(same_real_vectors.iter())
+                .zip(same_imag_vectors.iter())
+                .zip(opposite_real_vectors.iter())
+                .zip(opposite_imag_vectors.iter())
+                .zip(cosine_vectors.iter())
+                .zip(cosine_squared_vectors.iter())
+        };
+    }
+
+    macro_rules! update_pair_vector {
+        ($values:expr, $snapshot:expr) => {{
+            let (
+                (
+                    (((((previous, current), same_real), same_imag), opposite_real), opposite_imag),
+                    cosine,
+                ),
+                cosine_squared,
+            ) = $values;
+            update_analysis_pair_vector!(
+                previous,
+                current,
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                cosine,
+                cosine_squared,
+                $snapshot
+            );
+        }};
+    }
+
+    if ROTATE_SEQUENTIAL_STATES {
+        for (values, snapshot) in pair_vector_inputs!().zip(snapshot_vectors.iter_mut()) {
+            update_pair_vector!(values, snapshot);
+        }
+    } else {
+        for values in pair_vector_inputs!() {
+            let mut unused_snapshot = zero;
+            update_pair_vector!(values, &mut unused_snapshot);
+        }
     }
 
     let (first_same, first_opposite, second_same, second_opposite) = if ACCUMULATE {
