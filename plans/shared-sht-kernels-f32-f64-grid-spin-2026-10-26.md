@@ -1,5 +1,7 @@
 # Shared SHT kernels: f32/f64, scalar/spin, GL/CC/F1
 
+**Persistent agent/storage policy (2026-10-26 17:36 UTC):** [Experiment hygiene](../docs/EXPERIMENT_HYGIENE.md) and `AGENTS.md` take precedence over historical benchmark build-reuse directions. **No Sol reviewer unless the owner explicitly approves that exact one-time review.** Use bounded experiment-owned scratch (prefer `/tmp` when capacity permits); after each test/benchmark experiment, save/verify durable report and required data outside scratch, then immediately delete its compiled artifacts, virtualenvs, caches, temporary worktrees and profiler intermediates. Do not fill `/tmp`; never delete other jobs' files or the only copy of required results. Rebuild for later experiments rather than retaining compiled baseline/DUCC objects.
+
 **Latest clarification (17:13 UTC, supersedes the 17:02 symmetric speed trade-off):** f64 numerical correctness and performance are top priorities; do not sacrifice established f64 whole-transform wins to simplify code. f32 correctness remains mandatory, but accept small f32 regressions for substantial sharing. [B32–B35 recovery and candidate ranking](rejected-shared-kernel-candidate-recovery-2026-10-26.md) is the immediate targeted steering; B36's shared scalar step is already present on `dev` since `c908452a` and must not be treated as rejected. Keep f64-specific SIMD leaves as needed.
 
 **Updated owner steering (2026-10-26 14:51 and 17:02 UTC):** [Final module architecture and implementation steering](shared-sht-final-architecture-steering-2026-10-26.md) takes precedence for module layout, removing the Rust `src/pyspharm` namespace, precise task ordering, lightweight validation between small edits, authorized benchmark subagent usage, and final measured complexity reduction. Preserve existing completed `dev` work; do not restart baselines. The separate Python compatibility distribution remains unless separately retired.
@@ -8,7 +10,7 @@
 
 **Owner direction: 2026-10-26.** Reduce duplicated SHT algorithms, dispatch branches, and special-case maintenance by using Rust compile-time generics and limited precision-specialized SIMD implementations. Extend the successful f64 Legendre paths to f32, and share scalar/spin and grid-independent machinery when their mathematics is identical. **Do not sacrifice numerical correctness or demonstrated performance to maximize shared line count.**
 
-**Branch:** `dev`, starting from the exact initialization baseline `062218639bc2f097f004c617da0ce46a3a4d2941`. Implement, commit, and push directly on `dev`; do not modify `main`. Fetch and reconcile `origin/dev` before each push. Preserve work in existing candidate worktrees and never overwrite parallel work. Keep intermediate commits reviewable.
+**Branch:** `dev`, starting from the exact initialization baseline `062218639bc2f097f004c617da0ce46a3a4d2941`. Implement, commit, and push directly on `dev`; do not modify `main`. Fetch and reconcile `origin/dev` before each push. Preserve work in existing candidate worktrees and never overwrite parallel work. Keep intermediate commits reviewable; experimental build outputs and environments are transient and must be cleaned after saving durable evidence.
 
 **Owner priority on `dev`:** The 2026-10-26 request prioritizes shared kernels across f32/f64, spins, and grids, superseding the older f64-only optimization priority and f32 pause for work required by this refactor. Preserve other numerical, provenance, testing, performance, and safety requirements. Update `AGENTS.md` minimally to reflect this priority.
 
@@ -38,7 +40,7 @@ Current source:
 
 ### M0 — Freeze exact baselines and coverage
 
-- At start record remote refs, source SHA, compiler versions, CPU flags, pinned DUCC 0.42.0 SHA `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, existing Rust/Python tests, and current selected performance status. Reuse current benchmarking harness; don't add a new framework.
+- At start record remote refs, source SHA, compiler versions, CPU flags, pinned DUCC 0.42.0 SHA `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, existing Rust/Python tests, and current selected performance status. Reuse existing benchmark source and provenance; don't add a new framework or retain compiled binaries across experiments.
 - Create a small **operator × precision × grid × route inventory** marking `shared`, `precision specialization`, `grid adapter`, `distinct mathematics`, `old/rejected`, and exact call sites. Include public S/A/S*/A*, spin-0, spin-1 STANDARD/GRAD_ONLY/DERIV1, supported higher spins, full/reduced mmax and q1/q8.
 - Record current release-build exact-parent outputs, adjoint dot products, extreme/subnormal/pole checks and reused-workspace behavior. Capture f32 warm end-to-end A/S q1/q8 T255/T511/T720/T1023 before changing it: October 22 f32 timings are historical and not interchangeable with current f64 data.
 - Baseline selected f64 performance wins that must not regress: GL T1023 full spin-1 synthesis q1, GL over-resolved T320 full q8, T720 reduced q8, T1023 full q8, selected CC T720/T1023 synthesis, T720 analysis q1/q8. Include fast small-T controls.
