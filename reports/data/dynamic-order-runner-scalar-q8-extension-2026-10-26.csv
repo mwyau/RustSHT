@@ -1,0 +1,13 @@
+triplet,parent_ms,candidate_ms,ducc_ms,candidate_parent_ratio,parent_wait_fraction,candidate_wait_fraction,ducc_wait_fraction,parent_candidate_bytes_equal,finite,reset_check,repeat_check,ducc_relative_l2,ducc_max_abs
+4,2.144202,2.166754,2.134155,1.010518,0.002801,0.004310,0.001828,true,true,true,unavailable,,
+5,2.157864,2.162121,2.124880,1.001973,0.011555,0.003714,0.002043,true,true,true,unavailable,,
+6,2.136212,2.174579,2.127600,1.017960,0.003495,0.004232,0.001619,true,true,true,unavailable,,
+7,2.153320,2.148559,2.123530,0.997789,0.005565,0.005466,0.000799,true,true,true,unavailable,,
+8,2.755232,2.227918,2.136675,0.808614,0.066440,0.025472,0.001342,true,true,true,unavailable,,
+9,2.143100,2.150743,2.133055,1.003566,0.003483,0.003063,0.001800,true,true,true,unavailable,,
+10,2.162934,2.163514,2.141865,1.000268,0.002195,0.002632,0.005304,true,true,true,unavailable,,
+11,2.153043,2.163354,2.128750,1.004789,0.007979,0.003937,0.001138,true,true,true,unavailable,,
+12,2.162737,2.157835,2.132510,0.997734,0.002596,0.007955,0.003105,true,true,true,unavailable,,
+13,2.162023,2.267327,2.216565,1.048706,0.005381,0.013433,0.035093,true,true,true,unavailable,,
+14,2.155304,2.177338,2.141910,1.010223,0.002272,0.009516,0.001059,true,true,true,unavailable,,
+15,2.184948,2.168485,2.144065,0.992465,0.005495,0.003110,0.005308,true,true,true,unavailable,,
