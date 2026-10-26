@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 mod numeric;
+pub mod pointwise;
 mod scalar;
 mod scalar_f32;
 pub(crate) mod scalar_ordered;

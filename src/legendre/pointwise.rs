@@ -9,46 +9,44 @@ use crate::error::ShtError;
 use crate::harmonics::HarmonicSpec;
 use crate::legendre::ShtScalar;
 
-/// Evaluates pyspharm-normalized associated Legendre functions at one latitude.
+/// Evaluates pointwise associated Legendre basis values at one latitude.
 ///
 /// The result contains all values through degree `lmax`, ordered by increasing
-/// order `m`, then increasing degree `l = m..=lmax`. The normalization is the
-/// one returned by pyspharm's `legendre`; in particular, the degree-zero value
-/// is `1/sqrt(2)`. Latitude is in degrees and may lie outside the usual
-/// geographic range; finite values are evaluated using the same trigonometric
-/// formula as the source API.
+/// order `m`, then increasing degree `l = m..=lmax`. This pointwise basis uses
+/// the non-Condon–Shortley phase and normalization `(-1)^m * sqrt(2π) * Y_lm`;
+/// its degree-zero value is `1/sqrt(2)`. Latitude is in degrees and may lie
+/// outside the usual geographic range.
 ///
 /// # Errors
 ///
 /// Returns an error if the latitude is non-finite, the packed size overflows,
 /// or the result cannot be allocated.
 pub fn associated_legendre_f32(latitude_degrees: f32, lmax: usize) -> Result<Vec<f32>, ShtError> {
-    legendre_table(&[latitude_degrees], lmax, lmax)
+    pointwise_legendre_table(&[latitude_degrees], lmax, lmax)
 }
 
-/// Evaluates pyspharm-normalized associated Legendre functions at one latitude.
+/// Evaluates pointwise associated Legendre basis values at one latitude.
 ///
 /// The result contains all values through degree `lmax`, ordered by increasing
-/// order `m`, then increasing degree `l = m..=lmax`. The normalization is the
-/// one returned by pyspharm's `legendre`; in particular, the degree-zero value
-/// is `1/sqrt(2)`. Latitude is in degrees and may lie outside the usual
-/// geographic range; finite values are evaluated using the same trigonometric
-/// formula as the source API.
+/// order `m`, then increasing degree `l = m..=lmax`. This pointwise basis uses
+/// the non-Condon–Shortley phase and normalization `(-1)^m * sqrt(2π) * Y_lm`;
+/// its degree-zero value is `1/sqrt(2)`. Latitude is in degrees and may lie
+/// outside the usual geographic range.
 ///
 /// # Errors
 ///
 /// Returns an error if the latitude is non-finite, the packed size overflows,
 /// or the result cannot be allocated.
 pub fn associated_legendre_f64(latitude_degrees: f64, lmax: usize) -> Result<Vec<f64>, ShtError> {
-    legendre_table(&[latitude_degrees], lmax, lmax)
+    pointwise_legendre_table(&[latitude_degrees], lmax, lmax)
 }
 
 /// Visits each normalized basis value over a set of arbitrary latitudes.
 ///
 /// The recurrence is shared with the regular-grid transform implementation.
 /// Its callback receives degree, order, point offset, mantissas, binary
-/// exponents and the pyspharm normalization/phase factor for the order.
-pub(crate) fn for_each_pyspharm_legendre<T, F>(
+/// exponents and the pointwise basis normalization/phase factor for the order.
+pub(crate) fn for_each_pointwise_legendre<T, F>(
     latitudes_degrees: &[T],
     lmax: usize,
     mmax: usize,
@@ -111,9 +109,9 @@ where
         } else {
             -T::one()
         };
-        // RustSHT's recurrence returns Y_lm with the Condon-Shortley phase.
-        // pyspharm's pbar is (-1)^m * sqrt(2*pi) * Y_lm.
-        let pyspharm_scale = phase_sign * sqrt_two_pi;
+        // RustSHT's recurrence returns Y_lm with the Condon–Shortley phase.
+        // The pointwise basis is (-1)^m * sqrt(2*pi) * Y_lm.
+        let pointwise_scale = phase_sign * sqrt_two_pi;
         T::for_each_y_lm_dispatched(
             arch,
             m,
@@ -134,7 +132,7 @@ where
                     point_start,
                     mantissas,
                     lane_exponents,
-                    pyspharm_scale,
+                    pointwise_scale,
                 )
             },
         )?;
@@ -142,7 +140,7 @@ where
     Ok(())
 }
 
-pub(crate) fn legendre_table<T: ShtScalar>(
+pub(crate) fn pointwise_legendre_table<T: ShtScalar>(
     latitudes_degrees: &[T],
     lmax: usize,
     mmax: usize,
@@ -157,7 +155,7 @@ pub(crate) fn legendre_table<T: ShtScalar>(
             })?;
     let mut output = reserve_filled(output_len, T::zero(), "arbitrary-latitude Legendre table")?;
 
-    for_each_pyspharm_legendre(
+    for_each_pointwise_legendre(
         latitudes_degrees,
         lmax,
         mmax,
@@ -190,5 +188,5 @@ pub(crate) fn reserve_filled<T: Clone>(
 }
 
 #[cfg(test)]
-#[path = "legendre_tests.rs"]
+#[path = "pointwise_tests.rs"]
 mod tests;

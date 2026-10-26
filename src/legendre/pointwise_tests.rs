@@ -5,7 +5,7 @@ use super::{associated_legendre_f32, associated_legendre_f64};
 use crate::ShtError;
 
 #[test]
-fn pyspharm_normalization_phase_and_packed_order_match_closed_forms() {
+fn pointwise_normalization_phase_and_packed_order_match_closed_forms() {
     let latitude = 30.0_f64;
     let values = associated_legendre_f64(latitude, 2).unwrap();
     let x = latitude.to_radians().sin();

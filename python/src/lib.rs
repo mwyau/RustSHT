@@ -672,7 +672,9 @@ fn pyspharm_legendre<'py>(
     ntrunc: usize,
 ) -> PyResult<Bound<'py, PyArrayDyn<f32>>> {
     let values = py
-        .detach(move || rustsht::pyspharm::associated_legendre_f32(latitude_degrees, ntrunc))
+        .detach(move || {
+            rustsht::legendre::pointwise::associated_legendre_f32(latitude_degrees, ntrunc)
+        })
         .map_err(to_python_error)?;
     output_array(py, &[values.len()], values)
 }
@@ -697,8 +699,14 @@ fn pyspharm_specintrp(
     let legendre = legendre
         .as_slice()
         .map_err(|_| contiguous_error("legendre"))?;
-    py.detach(move || rustsht::pyspharm::specintrp_f32(longitude_degrees, coefficients, legendre))
-        .map_err(to_python_error)
+    py.detach(move || {
+        rustsht::evaluation::interpolate_spectrum_at_longitude_f32(
+            longitude_degrees,
+            coefficients,
+            legendre,
+        )
+    })
+    .map_err(to_python_error)
 }
 
 /// Return pyspharm-ordered geodesic latitudes and longitudes in degrees.
@@ -710,7 +718,7 @@ fn pyspharm_getgeodesicpts<'py>(
 ) -> PyResult<PythonFloat32ArrayPair<'py>> {
     let (latitudes, longitudes) = py
         .detach(move || {
-            let points = rustsht::pyspharm::geodesic_points(subdivision)?;
+            let points = rustsht::grid::geodesic::geodesic_points(subdivision)?;
             let mut latitudes = Vec::new();
             let mut longitudes = Vec::new();
             latitudes
@@ -724,7 +732,7 @@ fn pyspharm_getgeodesicpts<'py>(
                     array: "pyspharm geodesic longitudes",
                 })?;
             for point in points {
-                let (latitude, longitude) = point.pyspharm_lat_lon_degrees();
+                let (latitude, longitude) = point.legacy_lat_lon_degrees();
                 latitudes.push(latitude);
                 longitudes.push(longitude);
             }

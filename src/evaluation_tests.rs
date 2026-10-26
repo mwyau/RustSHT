@@ -4,14 +4,15 @@
 use num_complex::{Complex32, Complex64};
 
 use super::{
-    specintrp_f32, specintrp_f64, synthesize_at_point_f32, synthesize_at_point_f64,
-    synthesize_at_points_f32, synthesize_at_points_f64,
+    interpolate_spectrum_at_longitude_f32, interpolate_spectrum_at_longitude_f64,
+    synthesize_at_point_f32, synthesize_at_point_f64, synthesize_at_points_f32,
+    synthesize_at_points_f64,
 };
 use crate::ShtError;
-use crate::pyspharm::{associated_legendre_f32, associated_legendre_f64};
+use crate::legendre::pointwise::{associated_legendre_f32, associated_legendre_f64};
 
 #[test]
-fn specintrp_uses_pyspharm_real_field_phase_and_packed_order() {
+fn spectrum_interpolation_uses_real_field_phase_and_packed_order() {
     let latitude = 23.0_f64;
     let longitude = -41.0_f64;
     let basis = associated_legendre_f64(latitude, 2).unwrap();
@@ -23,7 +24,7 @@ fn specintrp_uses_pyspharm_real_field_phase_and_packed_order() {
     let expected = 0.5 * basis[0]
         + 2.0 * (2.0 * basis[3] * lon.cos() + 3.0 * basis[3] * lon.sin())
         + 2.0 * (-0.75 * basis[5] * (2.0 * lon).cos() - 0.25 * basis[5] * (2.0 * lon).sin());
-    let observed = specintrp_f64(longitude, &coefficients, &basis).unwrap();
+    let observed = interpolate_spectrum_at_longitude_f64(longitude, &coefficients, &basis).unwrap();
     assert!((observed - expected).abs() < 2.0e-15);
 }
 
@@ -44,7 +45,9 @@ fn point_and_batch_synthesis_agree_with_precomputed_legendre_values() {
     assert_eq!(batch.len(), latitudes.len());
     for point in 0..latitudes.len() {
         let legendre = associated_legendre_f64(latitudes[point], 4).unwrap();
-        let expected = specintrp_f64(longitudes[point], &coefficients, &legendre).unwrap();
+        let expected =
+            interpolate_spectrum_at_longitude_f64(longitudes[point], &coefficients, &legendre)
+                .unwrap();
         let computed =
             synthesize_at_point_f64(latitudes[point], longitudes[point], &coefficients, None)
                 .unwrap();
@@ -71,7 +74,9 @@ fn f32_point_and_batch_paths_preserve_single_precision_coefficients() {
     let batch = synthesize_at_points_f32(&latitudes, &longitudes, &coefficients).unwrap();
     for point in 0..latitudes.len() {
         let basis = associated_legendre_f32(latitudes[point], 3).unwrap();
-        let expected = specintrp_f32(longitudes[point], &coefficients, &basis).unwrap();
+        let expected =
+            interpolate_spectrum_at_longitude_f32(longitudes[point], &coefficients, &basis)
+                .unwrap();
         let observed =
             synthesize_at_point_f32(latitudes[point], longitudes[point], &coefficients, None)
                 .unwrap();
@@ -84,7 +89,7 @@ fn f32_point_and_batch_paths_preserve_single_precision_coefficients() {
 fn invalid_shapes_and_nonfinite_coordinates_are_reported() {
     let coefficients = [Complex64::new(1.0, 0.0), Complex64::new(0.0, 0.0)];
     assert_eq!(
-        specintrp_f64(0.0, &coefficients, &[0.0, 0.0]),
+        interpolate_spectrum_at_longitude_f64(0.0, &coefficients, &[0.0, 0.0]),
         Err(ShtError::InvalidTriangularLength { length: 2 })
     );
     assert_eq!(

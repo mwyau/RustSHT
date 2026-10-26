@@ -9,21 +9,24 @@ use crate::error::ShtError;
 use crate::harmonics::HarmonicSpec;
 use crate::legendre::ShtScalar;
 
-use super::legendre::{for_each_pyspharm_legendre, legendre_table, reserve_filled};
+use crate::legendre::pointwise::{
+    for_each_pointwise_legendre, pointwise_legendre_table, reserve_filled,
+};
 
-/// Evaluates one packed pyspharm spectrum at a longitude using precomputed
-/// associated Legendre values.
+/// Evaluates a packed real-field scalar spectrum at a longitude using
+/// precomputed pointwise Legendre values.
 ///
 /// The coefficient and Legendre arrays use the increasing-order, then
-/// increasing-degree triangular layout produced by associated_legendre_f32.
-/// Longitude is in degrees. As in pyspharm's reference routine, only the real
-/// part of the zonal-order sum contributes to the real output.
+/// increasing-degree triangular layout produced by
+/// [`crate::legendre::pointwise::associated_legendre_f32`]. Longitude is in
+/// degrees; only the real part of the zonal-order sum contributes to the real
+/// output.
 ///
 /// # Errors
 ///
 /// Returns an error if the arrays do not have equal triangular lengths, the
 /// longitude is non-finite, or the packed layout overflows.
-pub fn specintrp_f32(
+pub fn interpolate_spectrum_at_longitude_f32(
     longitude_degrees: f32,
     coefficients: &[Complex<f32>],
     legendre: &[f32],
@@ -31,19 +34,18 @@ pub fn specintrp_f32(
     interpolate(longitude_degrees, coefficients, legendre)
 }
 
-/// Evaluates one packed pyspharm spectrum at a longitude using precomputed
-/// associated Legendre values.
+/// Evaluates a packed real-field scalar spectrum at a longitude using
+/// precomputed pointwise Legendre values.
 ///
 /// The coefficient and Legendre arrays use the increasing-order, then
 /// increasing-degree triangular layout. Longitude is in degrees. As in
-/// pyspharm's reference routine, only the real part of the zonal-order sum
-/// contributes to the real output.
+/// only the real part of the zonal-order sum contributes to the real output.
 ///
 /// # Errors
 ///
 /// Returns an error if the arrays do not have equal triangular lengths, the
 /// longitude is non-finite, or the packed layout overflows.
-pub fn specintrp_f64(
+pub fn interpolate_spectrum_at_longitude_f64(
     longitude_degrees: f64,
     coefficients: &[Complex<f64>],
     legendre: &[f64],
@@ -55,8 +57,9 @@ pub fn specintrp_f64(
 ///
 /// Coordinates are in degrees. Supplying a precomputed Legendre array avoids
 /// recomputing the latitude recurrence and has the same effect as calling
-/// specintrp_f32 directly. The coefficient array must contain a complete
-/// triangular truncation in pyspharm packing order.
+/// [`interpolate_spectrum_at_longitude_f32`] directly. The coefficient array
+/// must contain a complete triangular truncation in increasing-order, then
+/// increasing-degree packing order.
 ///
 /// # Errors
 ///
@@ -81,7 +84,8 @@ pub fn synthesize_at_point_f32(
 ///
 /// Coordinates are in degrees. Supplying a precomputed Legendre array avoids
 /// recomputing the latitude recurrence. The coefficient array must contain a
-/// complete triangular truncation in pyspharm packing order.
+/// complete triangular truncation in increasing-order, then increasing-degree
+/// packing order.
 ///
 /// # Errors
 ///
@@ -102,7 +106,7 @@ pub fn synthesize_at_point_f64(
     )
 }
 
-/// Synthesizes a packed pyspharm spectrum at paired latitude/longitude points.
+/// Synthesizes a packed real-field scalar spectrum at paired coordinates.
 ///
 /// Coordinates are in degrees. The arrays must have equal lengths. The
 /// operation evaluates the scaled latitude recurrence directly at the supplied
@@ -121,7 +125,7 @@ pub fn synthesize_at_points_f32(
     synthesize_points(latitudes_degrees, longitudes_degrees, coefficients)
 }
 
-/// Synthesizes a packed pyspharm spectrum at paired latitude/longitude points.
+/// Synthesizes a packed real-field scalar spectrum at paired coordinates.
 ///
 /// Coordinates are in degrees. The arrays must have equal lengths. The
 /// operation evaluates the scaled latitude recurrence directly at the supplied
@@ -164,7 +168,8 @@ fn synthesize_point<T: ShtScalar>(
         }
         values
     } else {
-        owned_legendre = legendre_table(std::slice::from_ref(&latitude_degrees), lmax, lmax)?;
+        owned_legendre =
+            pointwise_legendre_table(std::slice::from_ref(&latitude_degrees), lmax, lmax)?;
         &owned_legendre
     };
     interpolate(longitude_degrees, coefficients, legendre)
@@ -251,7 +256,7 @@ fn synthesize_points<T: ShtScalar>(
     )?;
     let two = T::one() + T::one();
 
-    for_each_pyspharm_legendre(
+    for_each_pointwise_legendre(
         latitudes_degrees,
         lmax,
         lmax,
@@ -325,5 +330,5 @@ fn triangular_lmax(length: usize) -> Result<usize, ShtError> {
 }
 
 #[cfg(test)]
-#[path = "interpolation_tests.rs"]
+#[path = "evaluation_tests.rs"]
 mod tests;

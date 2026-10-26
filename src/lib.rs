@@ -8,13 +8,13 @@
 //! in radians.
 
 mod error;
+pub mod evaluation;
 mod fft;
-mod grid;
+pub mod grid;
 mod harmonics;
-mod legendre;
+pub mod legendre;
 mod meridional;
 mod plan;
-pub mod pyspharm;
 mod spin_transform;
 mod transform;
 mod workspace;

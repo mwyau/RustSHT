@@ -32,7 +32,7 @@ fn subdivision_counts_poles_and_unit_vectors_are_valid() {
 }
 
 #[test]
-fn subdivision_two_matches_the_reference_vertex_order_and_coordinates() {
+fn subdivision_two_has_expected_vertex_order_and_coordinates() {
     let points = geodesic_points(2).unwrap();
     let expected = [
         (90.0, 0.0),
@@ -50,7 +50,7 @@ fn subdivision_two_matches_the_reference_vertex_order_and_coordinates() {
     ];
     assert_eq!(points.len(), expected.len());
     for (point, (expected_lat, expected_lon)) in points.iter().zip(expected) {
-        let (latitude, longitude) = point.pyspharm_lat_lon_degrees();
+        let (latitude, longitude) = point.legacy_lat_lon_degrees();
         assert!((latitude - expected_lat).abs() < 2.0e-4);
         assert!((longitude - expected_lon).abs() < 2.0e-4);
     }

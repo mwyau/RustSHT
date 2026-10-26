@@ -9,8 +9,8 @@ use crate::error::ShtError;
 ///
 /// The Cartesian coordinates use the usual right-handed eastward convention.
 /// Spherical coordinate accessors return north-positive latitude and longitude
-/// in radians. The pyspharm conversion method preserves its historical degree
-/// convention and is intended for compatibility adapters.
+/// in radians. [`Self::legacy_lat_lon_degrees`] preserves the historical
+/// south-positive degree convention and 180-degree longitude shift.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GeodesicPoint {
     xyz: [f64; 3],
@@ -41,13 +41,13 @@ impl GeodesicPoint {
         }
     }
 
-    /// Returns the latitude/longitude pair used by pyspharm, in degrees.
+    /// Returns latitude and longitude in the historical degree convention.
     ///
-    /// Pyspharm places the poles first and assigns them longitudes of zero. For
-    /// other points its wrapper returns south-positive latitude and adds 180
-    /// degrees to the Cartesian azimuth. The result is ordered latitude first.
+    /// The poles have longitude zero. Other points use south-positive latitude
+    /// and longitude shifted by 180 degrees. The result is ordered latitude
+    /// first.
     #[must_use]
-    pub fn pyspharm_lat_lon_degrees(self) -> (f32, f32) {
+    pub fn legacy_lat_lon_degrees(self) -> (f32, f32) {
         if self.xyz[0] == 0.0 && self.xyz[1] == 0.0 {
             let latitude = if self.xyz[2] >= 0.0 { 90.0 } else { -90.0 };
             return (latitude_f32(latitude), 0.0);
@@ -58,7 +58,7 @@ impl GeodesicPoint {
     }
 }
 
-/// Generates pyspharm's deterministic icosahedral geodesic point ordering.
+/// Generates an icosahedral geodesic point set in deterministic order.
 ///
 /// Subdivision one contains only the north and south poles. For subdivision m,
 /// the output count is 10*(m-1)^2+2. Points are ordered as the two poles, then
