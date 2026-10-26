@@ -26,14 +26,17 @@ use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
+#[cfg(test)]
+use crate::legendre::LegendrePrecision;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue,
-    scalar_f32::scale_binary,
+    LATITUDE_BLOCK_SIZE, ScaledValue as BinaryScaledValue, scalar_f32::scale_binary,
 };
 
 type ScaledValue = BinaryScaledValue<f32>;
 
+#[cfg(test)]
 const BIG: f32 = <f32 as LegendrePrecision>::BIG;
+#[cfg(test)]
 const SMALL: f32 = <f32 as LegendrePrecision>::SMALL;
 #[cfg(test)]
 const SCALE_UP: f32 = <f32 as LegendrePrecision>::SCALE_UP;
@@ -582,45 +585,7 @@ fn pair_recurrence_state_in_safe_range<S: Simd>(
     if previous.len() != current.len() {
         return false;
     }
-
-    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
-    let (current_vectors, current_tail) = S::as_simd_f32s(current);
-    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
-    debug_assert_eq!(previous_tail.len(), current_tail.len());
-
-    let sign_mask = simd.splat_u32s(0x7fff_ffff);
-    let zero = simd.splat_u32s(0);
-    let smallest_safe = simd.splat_u32s(SMALL.to_bits());
-    let largest_safe = simd.splat_u32s(BIG.to_bits());
-    for index in 0..previous_vectors.len() {
-        let previous_bits =
-            simd.and_u32s(simd.transmute_u32s_f32s(previous_vectors[index]), sign_mask);
-        let current_bits =
-            simd.and_u32s(simd.transmute_u32s_f32s(current_vectors[index]), sign_mask);
-        let maximum_bits = simd.max_u32s(previous_bits, current_bits);
-        let all_zero = simd.equal_u32s(maximum_bits, zero);
-        let within_scaler_range = simd.and_m32s(
-            simd.greater_than_or_equal_u32s(maximum_bits, smallest_safe),
-            simd.less_than_or_equal_u32s(maximum_bits, largest_safe),
-        );
-        let safe = simd.or_m32s(all_zero, within_scaler_range);
-        if simd.first_true_m32s(simd.not_m32s(safe)) != S::U32_LANES {
-            return false;
-        }
-    }
-
-    previous_tail
-        .iter()
-        .zip(current_tail)
-        .all(|(&previous, &current)| pair_lane_is_in_safe_range(previous, current))
-}
-
-#[inline(always)]
-fn pair_lane_is_in_safe_range(previous: f32, current: f32) -> bool {
-    let previous_bits = previous.to_bits() & 0x7fff_ffff;
-    let current_bits = current.to_bits() & 0x7fff_ffff;
-    let maximum_bits = previous_bits.max(current_bits);
-    maximum_bits == 0 || (SMALL.to_bits()..=BIG.to_bits()).contains(&maximum_bits)
+    !super::numeric::f32_pair_lanes_need_scaling::<S, false>(simd, previous, current)
 }
 
 #[inline(always)]

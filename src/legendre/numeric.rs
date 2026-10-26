@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+use pulp::Simd;
 use rustfft::num_traits::{Float, FromPrimitive};
 
 use crate::error::ShtError;
@@ -386,6 +387,60 @@ pub(crate) fn normalize_pair_lane_f32(
     }
 
     Ok((maximum_bits, scale_steps))
+}
+
+/// Reports whether any native-f32 recurrence pair is outside its ordinary
+/// range. Both paths share the float range scan; the const policy preserves
+/// scalar's existing single-NaN behavior while spin treats any NaN as unsafe.
+#[inline(always)]
+pub(crate) fn f32_pair_lanes_need_scaling<S: Simd, const IGNORE_SINGLE_NAN: bool>(
+    simd: S,
+    previous: &[f32],
+    current: &[f32],
+) -> bool {
+    debug_assert_eq!(previous.len(), current.len());
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f32s(current);
+    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+    debug_assert_eq!(previous_tail.len(), current_tail.len());
+
+    let big = simd.splat_f32s(<f32 as LegendrePrecision>::BIG);
+    let zeros = simd.splat_f32s(0.0);
+    for index in 0..previous_vectors.len() {
+        let previous = simd.abs_f32s(previous_vectors[index]);
+        let current = simd.abs_f32s(current_vectors[index]);
+        let previous_ordered = simd.equal_f32s(previous, previous);
+        let current_ordered = simd.equal_f32s(current, current);
+        let maximum = simd.max_f32s(previous, current);
+        let maximum = simd.select_f32s(current_ordered, maximum, previous);
+        let maximum = simd.select_f32s(previous_ordered, maximum, current);
+        let below_upper_bound = simd.less_than_or_equal_f32s(maximum, big);
+        let is_zero = simd.equal_f32s(maximum, zeros);
+        let lower_check = simd.select_f32s(is_zero, big, maximum);
+        let in_range = simd.select_f32s(below_upper_bound, lower_check, zeros);
+        if simd.reduce_min_f32s(in_range) < <f32 as LegendrePrecision>::SMALL {
+            return true;
+        }
+        if !IGNORE_SINGLE_NAN {
+            let nonfinite = simd.or_m32s(
+                simd.not_m32s(previous_ordered),
+                simd.not_m32s(current_ordered),
+            );
+            if simd.first_true_m32s(nonfinite) != S::U32_LANES {
+                return true;
+            }
+        }
+    }
+
+    previous_tail
+        .iter()
+        .zip(current_tail)
+        .any(|(&previous, &current)| {
+            let maximum = previous.abs().max(current.abs());
+            let in_range = maximum <= <f32 as LegendrePrecision>::BIG
+                && (maximum == 0.0 || maximum >= <f32 as LegendrePrecision>::SMALL);
+            !in_range || (!IGNORE_SINGLE_NAN && (previous.is_nan() || current.is_nan()))
+        })
 }
 
 /// Multiplies two binary-scaled values and checks their combined exponent.
