@@ -19,22 +19,27 @@
  * Source revision: c1ed01b8fda69d2a378190f0915f1a19762dddbf.
  */
 
+#[cfg(test)]
 use std::f64::consts::PI;
 
 use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
+use crate::legendre::{LegendrePrecision, ScaledValue as BinaryScaledValue};
 
-pub(super) const BIG: f64 = f64::from_bits(1423_u64 << 52);
-pub(super) const SMALL: f64 = f64::from_bits(623_u64 << 52);
-const SCALE_UP: f64 = f64::from_bits(1823_u64 << 52);
-const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
+type ScaledValue = BinaryScaledValue<f64>;
+
+pub(super) const BIG: f64 = <f64 as LegendrePrecision>::BIG;
+pub(super) const SMALL: f64 = <f64 as LegendrePrecision>::SMALL;
+const SCALE_UP: f64 = <f64 as LegendrePrecision>::SCALE_UP;
+const SCALE_DOWN: f64 = <f64 as LegendrePrecision>::SCALE_DOWN;
+const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
 pub(crate) const LATITUDE_BLOCK_SIZE: usize = 64;
 
 #[inline]
 pub(super) fn scalar_value_in_normal_range(value: f64) -> bool {
-    value == 0.0 || (value.is_finite() && value.abs() <= BIG && value.abs() >= SMALL)
+    super::numeric::value_in_normal_range(value)
 }
 
 #[inline(always)]
@@ -57,30 +62,9 @@ pub(super) fn lane_values_in_normal_range(values: &[f64]) -> bool {
         .all(|&value| scalar_value_in_normal_range(value))
 }
 
-#[derive(Clone, Copy)]
-struct ScaledValue {
-    mantissa: f64,
-    exponent: i64,
-}
-
 /// Returns the scalar sectoral normalizations used by the DUCC recurrence.
 pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f64>, ShtError> {
-    let count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
-        quantity: "scalar sectoral normalization count",
-    })?;
-    let mut result = Vec::new();
-    result
-        .try_reserve_exact(count)
-        .map_err(|_| ShtError::AllocationFailed {
-            array: "scalar sectoral normalization",
-        })?;
-    result.push(1.0 / (4.0 * PI).sqrt());
-    for m in 1..=mmax {
-        let mf = m as f64;
-        let previous = result[m - 1];
-        result.push(previous * ((2.0 * mf + 1.0) / (2.0 * mf)).sqrt());
-    }
-    Ok(result)
+    super::numeric::sectoral_normalizations(mmax)
 }
 
 /// Returns the polar order cutoff used by DUCC for a ring.
@@ -99,11 +83,7 @@ pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f64, cos_th
 
 /// Fills the order-dependent scalar recurrence factors through `lmax`.
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f64]) {
-    debug_assert!(m <= lmax);
-    debug_assert!(output.len() > lmax);
-    for (l, value) in output.iter_mut().enumerate().skip(m) {
-        *value = epsilon(l, m);
-    }
+    super::numeric::fill_epsilon(m, lmax, output);
 }
 
 /// Visits `Y_lm(theta)` for one order using shared binary scaling.
@@ -393,7 +373,7 @@ pub(super) fn normalize_pair_vector_simd<S: Simd>(
     let maximum_finite = simd.splat_f64s(f64::MAX);
     let scale_up = simd.splat_f64s(SCALE_UP);
     let scale_down = simd.splat_f64s(SCALE_DOWN);
-    let exponent_step = simd.splat_i64s(800);
+    let exponent_step = simd.splat_i64s(SCALE_EXPONENT);
     let zero_i64 = simd.splat_i64s(0);
 
     let previous_magnitude = simd.abs_f64s(*previous_value);
@@ -760,13 +740,9 @@ fn split_normal(value: f64) -> (f64, i64) {
     )
 }
 
+#[cfg(test)]
 fn epsilon(l: usize, m: usize) -> f64 {
-    if l == m {
-        return 0.0;
-    }
-    let lf = l as f64;
-    let mf = m as f64;
-    (((lf - mf) * (lf + mf)) / ((2.0 * lf + 1.0) * (2.0 * lf - 1.0))).sqrt()
+    super::numeric::epsilon(l, m)
 }
 
 fn scaled_power(base: f64, mut exponent: usize) -> Result<ScaledValue, ShtError> {
@@ -801,15 +777,19 @@ fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtErr
 fn normalize_value(mut value: f64, mut exponent: i64) -> Result<ScaledValue, ShtError> {
     while value.abs() > BIG {
         value *= SCALE_DOWN;
-        exponent = exponent.checked_add(800).ok_or(ShtError::IntegerOverflow {
-            quantity: "scalar recurrence scale",
-        })?;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence scale",
+            })?;
     }
     while value != 0.0 && value.abs() < SMALL {
         value *= SCALE_UP;
-        exponent = exponent.checked_sub(800).ok_or(ShtError::IntegerOverflow {
-            quantity: "scalar recurrence scale",
-        })?;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence scale",
+            })?;
     }
     Ok(ScaledValue {
         mantissa: value,
@@ -825,7 +805,7 @@ fn normalize_pair(previous: &mut ScaledValue, current: &mut ScaledValue) -> Resu
         previous.exponent =
             previous
                 .exponent
-                .checked_add(800)
+                .checked_add(SCALE_EXPONENT)
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "scalar recurrence scale",
                 })?;
@@ -839,7 +819,7 @@ fn normalize_pair(previous: &mut ScaledValue, current: &mut ScaledValue) -> Resu
             previous.exponent =
                 previous
                     .exponent
-                    .checked_sub(800)
+                    .checked_sub(SCALE_EXPONENT)
                     .ok_or(ShtError::IntegerOverflow {
                         quantity: "scalar recurrence scale",
                     })?;

@@ -17,45 +17,29 @@
  * Author: Martin Reinecke
  */
 
+#[cfg(test)]
 use std::f32::consts::PI;
 
 use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
-use crate::legendre::LATITUDE_BLOCK_SIZE;
+use crate::legendre::{LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue};
 
-const BIG: f32 = f32::from_bits(167_u32 << 23);
-const SMALL: f32 = f32::from_bits(87_u32 << 23);
-const SCALE_UP: f32 = f32::from_bits(207_u32 << 23);
-const SCALE_DOWN: f32 = f32::from_bits(47_u32 << 23);
+type ScaledValue = BinaryScaledValue<f32>;
+
+const BIG: f32 = <f32 as LegendrePrecision>::BIG;
+const SMALL: f32 = <f32 as LegendrePrecision>::SMALL;
+const SCALE_UP: f32 = <f32 as LegendrePrecision>::SCALE_UP;
+const SCALE_DOWN: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
+const SCALE_EXPONENT: i64 = <f32 as LegendrePrecision>::SCALE_EXPONENT;
 // Paired screens support the skip at T1023 and T1279. Keep other truncations
 // on the original normalizer; an exact-match selector avoids T720 overhead.
 const NORMAL_RANGE_SKIP_LMAX_T1023: usize = 1023;
 const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
 
-#[derive(Clone, Copy)]
-struct ScaledValue {
-    mantissa: f32,
-    exponent: i64,
-}
-
 pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError> {
-    let count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
-        quantity: "scalar sectoral normalization count",
-    })?;
-    let mut result = Vec::new();
-    result
-        .try_reserve_exact(count)
-        .map_err(|_| ShtError::AllocationFailed {
-            array: "scalar sectoral normalization",
-        })?;
-    result.push(1.0 / (4.0 * PI).sqrt());
-    for m in 1..=mmax {
-        let mf = m as f32;
-        result.push(result[m - 1] * ((2.0 * mf + 1.0) / (2.0 * mf)).sqrt());
-    }
-    Ok(result)
+    super::numeric::sectoral_normalizations(mmax)
 }
 
 pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f32, cos_theta: f32) -> usize {
@@ -72,11 +56,7 @@ pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f32, cos_th
 }
 
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f32]) {
-    debug_assert!(m <= lmax);
-    debug_assert!(output.len() > lmax);
-    for (l, value) in output.iter_mut().enumerate().skip(m) {
-        *value = epsilon(l, m);
-    }
+    super::numeric::fill_epsilon(m, lmax, output);
 }
 
 #[expect(
@@ -411,15 +391,6 @@ fn split_normal(value: f32) -> (f32, i64) {
     )
 }
 
-fn epsilon(l: usize, m: usize) -> f32 {
-    if l == m {
-        return 0.0;
-    }
-    let lf = l as f32;
-    let mf = m as f32;
-    (((lf - mf) * (lf + mf)) / ((2.0 * lf + 1.0) * (2.0 * lf - 1.0))).sqrt()
-}
-
 fn scaled_power(base: f32, mut exponent: usize) -> Result<ScaledValue, ShtError> {
     let mut result = ScaledValue {
         mantissa: 1.0,
@@ -451,15 +422,19 @@ fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtErr
 fn normalize_value(mut value: f32, mut exponent: i64) -> Result<ScaledValue, ShtError> {
     while value.abs() > BIG {
         value *= SCALE_DOWN;
-        exponent = exponent.checked_add(80).ok_or(ShtError::IntegerOverflow {
-            quantity: "scalar recurrence scale",
-        })?;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence scale",
+            })?;
     }
     while value != 0.0 && value.abs() < SMALL {
         value *= SCALE_UP;
-        exponent = exponent.checked_sub(80).ok_or(ShtError::IntegerOverflow {
-            quantity: "scalar recurrence scale",
-        })?;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence scale",
+            })?;
     }
     Ok(ScaledValue {
         mantissa: value,
@@ -481,22 +456,24 @@ fn normalize_pair_lanes(
         while maximum_bits > BIG.to_bits() {
             previous[lane] *= SCALE_DOWN;
             current[lane] *= SCALE_DOWN;
-            exponents[lane] = exponents[lane]
-                .checked_add(80)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "scalar recurrence scale",
-                })?;
+            exponents[lane] =
+                exponents[lane]
+                    .checked_add(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "scalar recurrence scale",
+                    })?;
             maximum *= SCALE_DOWN;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
         }
         while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
             previous[lane] *= SCALE_UP;
             current[lane] *= SCALE_UP;
-            exponents[lane] = exponents[lane]
-                .checked_sub(80)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "scalar recurrence scale",
-                })?;
+            exponents[lane] =
+                exponents[lane]
+                    .checked_sub(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "scalar recurrence scale",
+                    })?;
             maximum *= SCALE_UP;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
         }
@@ -520,22 +497,24 @@ fn normalize_pair_lanes_with_state(
         while maximum_bits > BIG.to_bits() {
             previous[lane] *= SCALE_DOWN;
             current[lane] *= SCALE_DOWN;
-            exponents[lane] = exponents[lane]
-                .checked_add(80)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "scalar recurrence scale",
-                })?;
+            exponents[lane] =
+                exponents[lane]
+                    .checked_add(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "scalar recurrence scale",
+                    })?;
             maximum *= SCALE_DOWN;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
         }
         while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
             previous[lane] *= SCALE_UP;
             current[lane] *= SCALE_UP;
-            exponents[lane] = exponents[lane]
-                .checked_sub(80)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "scalar recurrence scale",
-                })?;
+            exponents[lane] =
+                exponents[lane]
+                    .checked_sub(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "scalar recurrence scale",
+                    })?;
             maximum *= SCALE_UP;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
         }

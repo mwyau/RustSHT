@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+mod numeric;
 mod scalar;
 mod scalar_f32;
 pub(crate) mod scalar_ordered;
@@ -9,6 +10,8 @@ mod scalar_table;
 mod spin;
 mod spin_f32;
 mod spin_fast;
+
+pub(crate) use numeric::{LegendrePrecision, ScaledValue};
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 pub(crate) use spin_f32::{normalizer_profile, reset_normalizer_profile};

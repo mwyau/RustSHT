@@ -1,0 +1,17 @@
+# Shared kernel refactor progress
+
+- **2026-10-26 — initialization / Stage A in progress.** Exact source baseline: `062218639bc2f097f004c617da0ce46a3a4d2941` on `dev`; fetched `origin/dev` matched. Host: AMD Ryzen 9 5950X, rustc 1.99.1 / LLVM 23.1.1, release defaults / empty rustflags, Pulp V3 AVX2/FMA with 8 f32 lanes. Pinned DUCC: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`; its 19 reused native objects and build flags were checked. Imported the shared-kernel plan and updated its branch references for direct work on `dev`. Inspected 32 worktrees; parked candidate edits in non-`dev` worktrees were left untouched. Removed 844 untracked benchmark files under `reports/data/` and a stale untracked benchmark handoff note per user instruction. `cargo check --lib` passed cleanly; focused numeric/scalar/spin tests passed 48/48. The immutable baseline and pinned DUCC completed 48 GL scalar/spin-1 A/S cases at T255/T511/T720/T1023, q1/q8, including T255 M63 and T720 M180; 3 alternating process pairs per case / 288 worker records. All records passed finite, repeat, and poisoned-output reset checks. Full per-case medians, paired ranges, and errors are in [the f32 baseline CSV](shared-kernel-f32-baseline-2026-10-26.csv). Maximum DUCC-relative L2 by operator: scalar A `1.742e-5`, scalar S `2.981e-4`, spin-1 A `2.351e-5`, spin-1 S `2.008e-4` (no new tolerance claim).
+- **Stage A first source slice (validated; full Stage A remains in progress).** Added the compile-time `LegendrePrecision` policy and shared generic scaled-value representation; moved scalar sectoral normalization and epsilon factor equations into one monomorphized implementation; routed scalar f64 normal-range classification and f32/f64 scaling constants/exponent steps through the common policy. Existing scalar and spin recurrence loops remain in place. `cargo check --lib`, `cargo fmt --all -- --check`, and focused Rust tests passed (48/48: numeric 2, scalar f64 31, scalar f32 5, spin f64 4, spin f32 6). `uv run --group dev pytest` in `python/pyspharm-rs` passed 7 tests; the optional `windspharm` integration test was skipped because its dependency is not installed. Next: compare the candidate against the exact parent on affected f64 critical cells, then continue sharing degree traversal/state rotation without rewriting optimized SIMD loops.
+- **Fresh f32 baseline Rust medians (ms; q1/q8).**
+
+  | GL case | Scalar A | Scalar S | Spin-1 A | Spin-1 S |
+  |---|---:|---:|---:|---:|
+  | T255 M63 | 10.096 / 1.519 | 21.410 / 4.520 | 17.143 / 2.511 | 24.723 / 4.556 |
+  | T255 full | 35.341 / 4.676 | 73.612 / 18.680 | 59.369 / 7.821 | 72.878 / 14.765 |
+  | T511 full | 257.934 / 33.584 | 544.382 / 107.316 | 394.167 / 51.643 | 570.673 / 87.631 |
+  | T720 M180 | 275.203 / 36.544 | 580.290 / 196.579 | 370.009 / 49.326 | 580.840 / 109.933 |
+  | T720 full | 700.622 / 90.605 | 1480.217 / 498.584 | 1028.554 / 135.307 | 1435.241 / 262.811 |
+  | T1023 full | 1802.786 / 234.132 | 3877.553 / 667.532 | 2840.108 / 368.682 | 4256.539 / 649.284 |
+
+  The earlier T1023 spin-1 analysis q1 Rust medians (2.834/2.849/2.838 s) are materially below the October 22 historical 6.297 s row; use this fresh exact-source baseline for candidate comparisons.
+- **Pyspharm test scope.** Per user clarification, preserve the public Rust `src/pyspharm` API and `python/pyspharm-rs` package. Removed only the Python test/helper whose expected outputs were copied from upstream `pyspharm-syl`; closed-form and package/API tests remain.

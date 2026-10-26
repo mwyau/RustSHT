@@ -28,17 +28,15 @@ use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
+use crate::legendre::{LegendrePrecision, ScaledValue as BinaryScaledValue};
 
-const BIG: f64 = f64::from_bits(1423_u64 << 52);
-const SMALL: f64 = f64::from_bits(623_u64 << 52);
-const SCALE_UP: f64 = f64::from_bits(1823_u64 << 52);
-const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
+type ScaledValue = BinaryScaledValue<f64>;
 
-#[derive(Clone, Copy)]
-struct ScaledValue {
-    mantissa: f64,
-    exponent: i64,
-}
+const BIG: f64 = <f64 as LegendrePrecision>::BIG;
+const SMALL: f64 = <f64 as LegendrePrecision>::SMALL;
+const SCALE_UP: f64 = <f64 as LegendrePrecision>::SCALE_UP;
+const SCALE_DOWN: f64 = <f64 as LegendrePrecision>::SCALE_DOWN;
+const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
 
 pub(crate) struct SpinInitial {
     pub(crate) start_degree: usize,
@@ -395,7 +393,7 @@ fn normalize_pair_lanes(
             current[ring] *= SCALE_DOWN;
             exponents[ring] =
                 exponents[ring]
-                    .checked_add(800)
+                    .checked_add(SCALE_EXPONENT)
                     .ok_or(ShtError::IntegerOverflow {
                         quantity: "spin recurrence exponent",
                     })?;
@@ -406,7 +404,7 @@ fn normalize_pair_lanes(
             current[ring] *= SCALE_UP;
             exponents[ring] =
                 exponents[ring]
-                    .checked_sub(800)
+                    .checked_sub(SCALE_EXPONENT)
                     .ok_or(ShtError::IntegerOverflow {
                         quantity: "spin recurrence exponent",
                     })?;
@@ -649,15 +647,19 @@ fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtErr
 fn normalize(mut value: f64, mut exponent: i64) -> Result<ScaledValue, ShtError> {
     while value.abs() > BIG {
         value *= SCALE_DOWN;
-        exponent = exponent.checked_add(800).ok_or(ShtError::IntegerOverflow {
-            quantity: "spin recurrence exponent",
-        })?;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
     }
     while value != 0.0 && value.abs() < SMALL {
         value *= SCALE_UP;
-        exponent = exponent.checked_sub(800).ok_or(ShtError::IntegerOverflow {
-            quantity: "spin recurrence exponent",
-        })?;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
     }
     Ok(ScaledValue {
         mantissa: value,

@@ -25,12 +25,18 @@ use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
-use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar_f32::scale_binary};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue,
+    scalar_f32::scale_binary,
+};
 
-const BIG: f32 = f32::from_bits(167_u32 << 23);
-const SMALL: f32 = f32::from_bits(87_u32 << 23);
-const SCALE_UP: f32 = f32::from_bits(207_u32 << 23);
-const SCALE_DOWN: f32 = f32::from_bits(47_u32 << 23);
+type ScaledValue = BinaryScaledValue<f32>;
+
+const BIG: f32 = <f32 as LegendrePrecision>::BIG;
+const SMALL: f32 = <f32 as LegendrePrecision>::SMALL;
+const SCALE_UP: f32 = <f32 as LegendrePrecision>::SCALE_UP;
+const SCALE_DOWN: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
+const SCALE_EXPONENT: i64 = <f32 as LegendrePrecision>::SCALE_EXPONENT;
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 static NORMALIZER_SCALED_CALLS: AtomicU64 = AtomicU64::new(0);
@@ -61,12 +67,6 @@ pub(crate) fn normalizer_profile() -> (u64, u64, u64, u64, u64) {
         NORMALIZER_CALLS.load(Ordering::Relaxed),
         NORMALIZER_LANES.load(Ordering::Relaxed),
     )
-}
-
-#[derive(Clone, Copy)]
-struct ScaledValue {
-    mantissa: f32,
-    exponent: i64,
 }
 
 pub(crate) struct SpinInitial32 {
@@ -652,11 +652,12 @@ fn normalize_pair_lanes(
         while maximum_bits > BIG.to_bits() {
             previous[lane] *= SCALE_DOWN;
             current[lane] *= SCALE_DOWN;
-            exponents[lane] = exponents[lane]
-                .checked_add(80)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "spin recurrence exponent",
-                })?;
+            exponents[lane] =
+                exponents[lane]
+                    .checked_add(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "spin recurrence exponent",
+                    })?;
             maximum *= SCALE_DOWN;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
             #[cfg(all(test, rustsht_profile_spin32_normalizer))]
@@ -668,11 +669,12 @@ fn normalize_pair_lanes(
         while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
             previous[lane] *= SCALE_UP;
             current[lane] *= SCALE_UP;
-            exponents[lane] = exponents[lane]
-                .checked_sub(80)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "spin recurrence exponent",
-                })?;
+            exponents[lane] =
+                exponents[lane]
+                    .checked_sub(SCALE_EXPONENT)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "spin recurrence exponent",
+                    })?;
             maximum *= SCALE_UP;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
             #[cfg(all(test, rustsht_profile_spin32_normalizer))]
@@ -793,15 +795,19 @@ fn multiply(left: ScaledValue, right: ScaledValue) -> Result<ScaledValue, ShtErr
 fn normalize(mut value: f32, mut exponent: i64) -> Result<ScaledValue, ShtError> {
     while value.abs() > BIG {
         value *= SCALE_DOWN;
-        exponent = exponent.checked_add(80).ok_or(ShtError::IntegerOverflow {
-            quantity: "spin recurrence exponent",
-        })?;
+        exponent = exponent
+            .checked_add(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
     }
     while value != 0.0 && value.abs() < SMALL {
         value *= SCALE_UP;
-        exponent = exponent.checked_sub(80).ok_or(ShtError::IntegerOverflow {
-            quantity: "spin recurrence exponent",
-        })?;
+        exponent = exponent
+            .checked_sub(SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "spin recurrence exponent",
+            })?;
     }
     Ok(ScaledValue {
         mantissa: value,
