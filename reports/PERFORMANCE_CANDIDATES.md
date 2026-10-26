@@ -92,6 +92,8 @@
 
 Validated retained routes include `bf938aba` full-exceptional AVX2 scaling, `70c92d9c` finite-mask combination, `0961586a` vectorized standalone analysis preflight, `7ef6d6e1` T1023 q1 synthesis dispatch, the successful **spin-1** zipped coefficient iterator (distinct from scalar zipped failure), scalar fused/in-loop range checks, dynamic q8 scheduling, and size-gated T32/T64/T127 paths. Verify retention against current source before referencing old commit numbers. These are not backlog items for restoring.
 
+The shared-kernel refactor also retains source candidate `7402fbb67de9beea1f5ebbeb1a1ebfb1ca171e9a`, which replaces separate native-f32/f64 spin-normalization formulas with one typed formula while preserving both recurrence leaves. The exact-formula comparison passes bitwise; focused spin tests passed (14). A matched three-triplet screen over GL T720 analysis q1/q8 and T1023 synthesis q1/q8 is **time-inconclusive** (all observed ranges cross parity); all 12 parent/candidate outputs were bit-identical and finite/repeat/reset checks passed. No runtime win is claimed, and no credible f64 regression was established. See the [focused data and report](data/shared-spin-normalization-screen-2026-10-26.md).
+
 ## E — f32 and FFT history (deferred, preserved separately)
 
 These are **not immediately eligible f64 parity candidates**. Keep their historical evidence and do not restart f32/FFT optimization without owner authorization; distinguish accepted production routes from abandoned variants.
