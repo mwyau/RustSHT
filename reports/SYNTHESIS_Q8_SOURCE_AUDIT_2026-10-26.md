@@ -1,5 +1,23 @@
 # Spin-1 synthesis q8 source and measurement audit
 
+## Accepted over-resolved GL coefficient-cache gate (VALIDATED, 2026-10-26 10:46 UTC)
+
+The q8 over-resolved GL gap came from the exact-grid restriction on the existing spin-1 coefficient cache/order-major queue. The bounded change broadens only that GL geometry predicate from `ntheta == lmax + 1` to `ntheta > lmax`; no recurrence arithmetic, fallback, or threshold changed. q1 is unaffected because cache use requires at least eight execution threads. Candidate source behavior was introduced in `3d894088` (worker SHA-256 `d5e2ceb0…`); the lint-only equivalent spelling `ntheta > lmax` is at `8200a4d2`. Exact parent `84035eb2` (worker SHA-256 `fe66fa6d…`), pinned DUCC 0.42.0 `42ce8ab5` (worker SHA-256 `34376ee3…`). All timing workers used optimized x86-64-v3 builds, deterministic fixtures, CPUs 0–7, the native spin-1 worker, and interleaved parent/candidate/DUCC ordering.
+
+| Over-resolved GL synthesis q8 | Parent / candidate / DUCC ms | Candidate / parent | Candidate / DUCC | Pairs |
+|---|---:|---:|---:|---:|
+| T320 full, `nθ=640`, `nφ=1280` | 7.746 / 2.104 / 2.254 | 0.2724, 95% CI [0.2654, 0.2818] | 0.934 | 15 |
+| T320 reduced `m=120`, `nθ=640`, `nφ=250` | 6.157 / 1.464 / 1.176 | 0.2381, [0.2354, 0.2466] | 1.247 | 15 |
+| T511 reduced `m=127`, `nθ=1023`, `nφ=256` | 7.238 / 1.863 / 1.827 | 0.2590, [0.2568, 0.2607] | 1.016, [1.014, 1.032] | 15 |
+| T720 reduced `m=180`, `nθ=1441`, `nφ=378` | 15.258 / 4.285 / 4.660 | 0.2816, [0.2770, 0.2861] | 0.923 | 15 |
+| T1023 full, `nθ=2047`, `nφ=2048` | 68.609 / 28.647 / 37.010 | 0.4163, [0.4090, 0.4182] | 0.7725, [0.7662, 0.7772] | 15 |
+
+Candidate won all 15 parent pairs in every row; it also beat DUCC in every pair for T320 full, T720 reduced and T1023 full. All output maps were finite and repeat/reset-consistent. Maximum candidate-vs-DUCC relative-L2 ranged from `7.51e-14` to `1.04e-12`. T255/T511/T720 full-mmax q8 controls were only three pairs: candidate medians `1.026/4.638/13.376 ms` versus parent `4.311/12.200/28.157 ms` and DUCC `1.087/4.466/11.512 ms`; all substantially improve Rust, while T511/T720 remain about 1.04×/1.16× DUCC. Treat these three-pair controls as preliminary.
+
+Matched whole-worker Callgrind uses the same validation and batch boundary across implementations; counts include setup and repeated worker calls and are Ir, not cycles. T320 full: candidate `1.717B`, parent `4.487B`, DUCC `1.751B`. T320 `m=120`: candidate `816M`, parent `2.670B`, DUCC `784M`. Valgrind emitted a brk-segment warning, but each worker exited successfully and repeat/reset checks passed.
+
+`cargo fmt --all -- --check`, strict all-target/all-feature Clippy, and the focused release test `spin1_gl_overresolved_order_major_queue_preserves_adjoint_identities` passed. That adjoint test covers T320 full/reduced global-cache paths and T720 reduced local-cache preparation using the sparse mode set from the existing T720 adjoint test; tolerance remains `2e-9`. A separate dense-random T720 probe exceeded the fixed absolute assertion on both candidate (`1.559e-8`) and exact-parent route (`2.459e-9`), so it does not establish a candidate-only failure; it remains a scale-sensitive diagnostic and is not hidden by a tolerance change. The existing bounded-cache/extreme/fallback test also passed. **Disposition: accepted production route.** It closes measured T320 full, T720 reduced, and T1023 full over-resolved q8 cells, while T320 reduced and T511 reduced remain gaps. The next priority returns to T720 spin-1 analysis q1, then q8.
+
 ## Pinned GL T320 oversampled q8 profile (PRELIMINARY, 2026-10-26 08:57 UTC)
 
 The checked source is `f1a1c2fc`, source-equivalent to `aecaf595`; Rust profile worker SHA-256 is `e024bb5d9072a8b7c26862926d9b1948a33b046dabd7d3a3c4d2ba4490a0df44`. The pinned DUCC source is `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, worker SHA-256 `671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5`. Rust was built optimized with debug symbols, Rust 1.99.1 / LLVM 23.1.1 and `-C target-cpu=x86-64-v3`; DUCC used GCC 15.2.0, Release AVX2 and `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, with fast math disabled in the driver. Both used the same deterministic f64 GL `ntheta=640`, `nphi=1280`, `lmax=mmax=320`, `phi0=.23` fixture, q8, CPUs 0–7.
