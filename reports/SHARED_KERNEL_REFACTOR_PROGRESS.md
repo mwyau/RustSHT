@@ -551,8 +551,8 @@ After verifying source and validation record on `origin/dev` at `7a8ddf5b4d620d6
 
 ## Direct shared spin normalization calls — 2026-10-26 22:10 UTC
 
-Removed the f64 and f32 `spin_normalization` pass-through wrappers from `legendre::spin` and `legendre::spin_f32`. `ShtScalar` implementations and spin coefficient tests now call the generic normalization in `spin_factors` directly with an explicit precision. This keeps the one mathematical implementation in its owning module and removes five net source lines across four files; no arithmetic, route or public API changed.
+Source commit `0dc2b695038646756a353824e122b52f128dc9ca` follows parent `710463f5e0ea748fa801544f393dd06a47ccadaa`. It removes the f64 and f32 `spin_normalization` pass-through wrappers from `legendre::spin` and `legendre::spin_f32`. `ShtScalar` implementations and spin coefficient tests now call the generic normalization in `spin_factors` directly with an explicit precision. This keeps the one mathematical implementation in its owning module and removes five net source lines across four files; no arithmetic, route or public API changed.
 
 Validation: `cargo check --locked --offline --all-targets --all-features` passed; `shared_spin_normalization_matches_native_precision_formulas` passed for f32 and f64; formatting and diff checks passed. No full suite or benchmark ran because this only removes internal forwarding wrappers.
 
-The isolated target uses scratch label `rustsht-exp-spin-norm-wrapper-20261026-a1`, measuring 824,146,626 allocated bytes, 848 files and 148 directories before cleanup. `/tmp` had 45 GiB free and 948,022 free inodes. Persist and verify the source/report commit on `origin/dev`, then remove this exact owned scratch and record the cleanup.
+After verifying source and validation record on `origin/dev` at `0dc2b695038646756a353824e122b52f128dc9ca`, removed the exact owned scratch label `rustsht-exp-spin-norm-wrapper-20261026-a1` and verified its absence. Cleanup reclaimed 824,146,626 allocated bytes, 848 files, 148 directories and 996 inodes. `/tmp` returned to 46 GiB free and 949,018 free inodes. No experiment-owned build artifacts remain.
