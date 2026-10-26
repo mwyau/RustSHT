@@ -25,6 +25,7 @@ use scheduling::{run_dynamic_order_jobs, weighted_order_midpoint};
 mod fft_rows;
 #[cfg(feature = "parallel")]
 pub(crate) mod scheduling;
+pub(crate) mod spin;
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 #[cfg(feature = "parallel")]

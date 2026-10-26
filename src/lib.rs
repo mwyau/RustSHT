@@ -14,7 +14,6 @@ pub mod grid;
 mod harmonics;
 pub mod legendre;
 mod plan;
-mod spin_transform;
 mod transform;
 mod workspace;
 

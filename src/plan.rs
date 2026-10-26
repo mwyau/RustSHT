@@ -628,7 +628,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         .div_ceil(fine_group_size.min(self.grid.ntheta())),
                 );
             }
-            if let Some(hemisphere_workers) = crate::spin_transform::spin1_hemisphere_worker_count(
+            if let Some(hemisphere_workers) = crate::transform::spin::spin1_hemisphere_worker_count(
                 self,
                 execution_capacity.min(8),
             ) {
