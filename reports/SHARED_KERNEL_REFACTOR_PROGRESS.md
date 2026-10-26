@@ -357,6 +357,18 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - `cargo fmt --all`, `git diff --check`, `cargo check --lib`, and `cargo clippy --all-targets --all-features -- -D warnings` passed.
 - `cargo test --lib legendre::scalar_f32::tests`: 6 passed, including the paired accumulator against direct one-degree synthesis across `m=0,1,2,4,15,31`, even/odd degree spans, scalar/runtime SIMD, block boundary, poles, tiny inputs, and additive spectrum output.
 - The order-level polar decline was checked before any destination write; the test verifies the seeded spectrum remains identical when one ring excludes the order. The native-f32 setup test passed again (1 test). No full suite, whole-transform GL test or benchmark ran; paired routing remains disabled.
-- The f32 setup test currently supplies `f32::MAX` as its factor limit; this is only test input, not an approved production safety threshold. Determine and validate a conservative native-f32 factor bound before wiring the trait methods.
+- The earlier setup test supplied `f32::MAX` only as test input. Follow-up factor-bound evidence is recorded below; the candidate cap is still test-only and does not authorize wiring trait methods.
 
 The experiment scratch contained only its manifest and isolated Cargo target; before cleanup it measured 811,776,726 bytes across 812 files. No timing data was generated. The source and results were verified on `origin/dev` before cleanup; the owned scratch label was then removed and absence verified. This reclaimed 811,776,726 bytes; `/tmp` returned to 46 GiB free and 949,018 free inodes. Next: establish f32 paired factor bounds and end-to-end exact/oversampled GL fallback correctness for full and reduced orders before considering any route gate.
+
+## Candidate f32 paired-factor bound screen — 2026-10-26 20:04 UTC
+
+Source commit `154b17ac8cc4937a0bb392d8ab7d14efb613ba90` follows parent `1d75a7e7f98c9525664763dbbaab91dd6cdf5b6f`. Added a test-only candidate bound of `2^16` for native-f32 paired recurrence factors. The focused scan covers every `m=0..=lmax` at `lmax=255,511,720,1023`; all factor arrays pass the cap. With the existing f32 normalized-value ceiling `BIG=2^40`, `|A|,|B|<=2^16` bounds `|A*cos²+B|` by `2^17`, so one recurrence product plus its previous value stays below `2^58`, far inside f32's finite exponent range. This supports the recurrence update only; it does not bound arbitrary transformed E/B coefficients or authorize production use. The cap remains under `cfg(test)`, and no trait/capability/route gate changed.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and the isolated target under scratch label `rustsht-exp-f32-factor-bound.IlYP9W40`:
+
+- `cargo fmt --all`, `git diff --check`, `cargo check --lib`, and `cargo clippy --all-targets --all-features -- -D warnings` passed.
+- `cargo test --lib legendre::scalar_f32::tests`: 7 passed, including the all-order factor scan. `cargo test --lib paired_synthesis_setup_uses_native_f32_and_rejects_overflow`: 1 passed with the candidate cap.
+- No whole-transform GL test, full suite or benchmark ran. Numerical coefficient headroom and transform-level fallback remain prerequisites before enabling paired f32.
+
+The experiment scratch contained only its manifest and isolated Cargo target; before cleanup it measured 989,028,654 bytes across 1,072 files. No timing data was generated. The source and factor-scan record must be verified on `origin/dev` before removing the scratch; record actual reclamation afterward. Next: validate coefficient-transform headroom and whole-transform fallback on exact/oversampled GL, full/reduced mmax before considering any f32 route gate.
