@@ -191,6 +191,74 @@ macro_rules! define_scale_binary {
 
 pub(crate) use define_scale_binary;
 
+/// Generates the same concrete f64 scaled arithmetic in scalar and native-spin
+/// owners while keeping their local function names and overflow descriptions.
+macro_rules! define_f64_scaled_arithmetic {
+    ($power:ident, $multiply:ident, $normalize:ident, $overflow_quantity:literal $(,)?) => {
+        fn $power(
+            base: f64,
+            mut exponent: usize,
+        ) -> Result<$crate::legendre::ScaledValue<f64>, $crate::error::ShtError> {
+            let mut result = $crate::legendre::ScaledValue {
+                mantissa: 1.0,
+                exponent: 0,
+            };
+            let mut factor = $normalize(base, 0)?;
+            while exponent != 0 {
+                if !exponent.is_multiple_of(2) {
+                    result = $multiply(result, factor)?;
+                }
+                exponent /= 2;
+                if exponent != 0 {
+                    factor = $multiply(factor, factor)?;
+                }
+            }
+            Ok(result)
+        }
+
+        fn $multiply(
+            left: $crate::legendre::ScaledValue<f64>,
+            right: $crate::legendre::ScaledValue<f64>,
+        ) -> Result<$crate::legendre::ScaledValue<f64>, $crate::error::ShtError> {
+            let exponent = left.exponent.checked_add(right.exponent).ok_or(
+                $crate::error::ShtError::IntegerOverflow {
+                    quantity: $overflow_quantity,
+                },
+            )?;
+            $normalize(left.mantissa * right.mantissa, exponent)
+        }
+
+        fn $normalize(
+            mut value: f64,
+            mut exponent: i64,
+        ) -> Result<$crate::legendre::ScaledValue<f64>, $crate::error::ShtError> {
+            while value.abs() > <f64 as $crate::legendre::LegendrePrecision>::BIG {
+                value *= <f64 as $crate::legendre::LegendrePrecision>::SCALE_DOWN;
+                exponent = exponent
+                    .checked_add(<f64 as $crate::legendre::LegendrePrecision>::SCALE_EXPONENT)
+                    .ok_or($crate::error::ShtError::IntegerOverflow {
+                        quantity: $overflow_quantity,
+                    })?;
+            }
+            while value != 0.0 && value.abs() < <f64 as $crate::legendre::LegendrePrecision>::SMALL
+            {
+                value *= <f64 as $crate::legendre::LegendrePrecision>::SCALE_UP;
+                exponent = exponent
+                    .checked_sub(<f64 as $crate::legendre::LegendrePrecision>::SCALE_EXPONENT)
+                    .ok_or($crate::error::ShtError::IntegerOverflow {
+                        quantity: $overflow_quantity,
+                    })?;
+            }
+            Ok($crate::legendre::ScaledValue {
+                mantissa: value,
+                exponent,
+            })
+        }
+    };
+}
+
+pub(crate) use define_f64_scaled_arithmetic;
+
 /// Restores one recurrence value to the precision's safe exponent interval.
 /// The shared power/product helpers below serve native-f32 scalar and spin;
 /// f64 transform kernels keep their measured local leaves.
