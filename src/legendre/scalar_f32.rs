@@ -259,6 +259,160 @@ where
     }
 }
 
+/// Visits the even-degree scalar basis from a native-f32 two-degree
+/// recurrence. The f64 SIMD implementation remains in `scalar_paired`. This
+/// f32 leaf remains unrouted until whole-transform fallback and eligibility
+/// checks are validated.
+#[cfg_attr(not(test), allow(dead_code))]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The paired recurrence receives geometry, factors and caller-owned lane scratch."
+)]
+pub(crate) fn for_each_y_lm_paired_dispatched<F>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f32],
+    cos_theta: &[f32],
+    sectoral_norm: f32,
+    coefficient_a: &[f32],
+    coefficient_b: &[f32],
+    previous: &mut [f32],
+    current: &mut [f32],
+    next: &mut [f32],
+    exponents: &mut [i64],
+    mut visit: F,
+) -> Result<(), ShtError>
+where
+    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
+{
+    debug_assert!(m <= lmax);
+    debug_assert_eq!(sin_theta.len(), cos_theta.len());
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(coefficient_a.len() >= pair_count);
+    debug_assert!(coefficient_b.len() >= pair_count);
+    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+    debug_assert!(previous.len() >= scratch_len);
+    debug_assert!(current.len() >= scratch_len);
+    debug_assert!(next.len() >= scratch_len);
+    debug_assert!(exponents.len() >= scratch_len);
+
+    for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
+        let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
+        let block_len = ring_end - ring_start;
+        arch.dispatch(ForEachPairedYlm32 {
+            ring_start,
+            m,
+            lmax,
+            sin_theta: &sin_theta[ring_start..ring_end],
+            cos_theta: &cos_theta[ring_start..ring_end],
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous: &mut previous[..block_len],
+            current: &mut current[..block_len],
+            next: &mut next[..block_len],
+            exponents: &mut exponents[..block_len],
+            visit: &mut visit,
+        })?;
+    }
+    Ok(())
+}
+
+struct ForEachPairedYlm32<'a, F> {
+    ring_start: usize,
+    m: usize,
+    lmax: usize,
+    sin_theta: &'a [f32],
+    cos_theta: &'a [f32],
+    sectoral_norm: f32,
+    coefficient_a: &'a [f32],
+    coefficient_b: &'a [f32],
+    previous: &'a mut [f32],
+    current: &'a mut [f32],
+    next: &'a mut [f32],
+    exponents: &'a mut [i64],
+    visit: F,
+}
+
+impl<F> WithSimd for ForEachPairedYlm32<'_, F>
+where
+    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
+{
+    type Output = Result<(), ShtError>;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let ForEachPairedYlm32 {
+            ring_start,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            next,
+            exponents,
+            mut visit,
+        } = self;
+        let mut previous = previous;
+        let mut current = current;
+        let mut next = next;
+
+        for lane in 0..sin_theta.len() {
+            let sectoral = scaled_power(sin_theta[lane], m)?;
+            let value = normalize_value(
+                sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
+                sectoral.exponent,
+            )?;
+            previous[lane] = 0.0;
+            current[lane] = value.mantissa;
+            exponents[lane] = value.exponent;
+        }
+        let mut normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
+
+        for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
+            visit(degree, ring_start, current, exponents)?;
+            if degree + 2 > lmax {
+                break;
+            }
+
+            let (current_vectors, current_tail) = S::as_simd_f32s(current);
+            let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+            let (cos_vectors, cos_tail) = S::as_simd_f32s(cos_theta);
+            let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+            let a = simd.splat_f32s(coefficient_a[pair_index]);
+            let b = simd.splat_f32s(coefficient_b[pair_index]);
+            for index in 0..current_vectors.len() {
+                let cosine_squared = simd.mul_f32s(cos_vectors[index], cos_vectors[index]);
+                let leading = simd.mul_add_f32s(a, cosine_squared, b);
+                next_vectors[index] =
+                    simd.mul_add_f32s(leading, current_vectors[index], previous_vectors[index]);
+            }
+            for index in 0..current_tail.len() {
+                let cosine_squared = cos_tail[index] * cos_tail[index];
+                let leading =
+                    coefficient_a[pair_index].mul_add(cosine_squared, coefficient_b[pair_index]);
+                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+            }
+
+            std::mem::swap(&mut previous, &mut current);
+            std::mem::swap(&mut current, &mut next);
+            if normal_range {
+                if pair_lanes_need_scaling(simd, previous, current) {
+                    normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
+                }
+            } else {
+                normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
+            }
+        }
+        Ok(())
+    }
+}
+
 pub(crate) fn multiply_complex_scaled(value: Complex32, factor: f32, exponent: i64) -> Complex32 {
     if factor.is_normal() {
         if value.re.is_normal() && value.im.is_normal() {
@@ -843,21 +997,31 @@ mod tests {
     fn values_over_rings(arch: Arch, m: usize, lmax: usize, theta: &[f32]) -> Vec<Vec<f32>> {
         let sin_theta = theta.iter().map(|value| value.sin()).collect::<Vec<_>>();
         let cos_theta = theta.iter().map(|value| value.cos()).collect::<Vec<_>>();
+        values_over_geometry(arch, m, lmax, &sin_theta, &cos_theta)
+    }
+
+    fn values_over_geometry(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[f32],
+        cos_theta: &[f32],
+    ) -> Vec<Vec<f32>> {
         let mut epsilon = vec![0.0; lmax + 1];
         fill_epsilon(m, lmax, &mut epsilon);
-        let scratch_len = theta.len().min(LATITUDE_BLOCK_SIZE);
+        let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
         let mut previous = vec![0.0; scratch_len];
         let mut current = vec![0.0; scratch_len];
         let mut next = vec![0.0; scratch_len];
         let mut exponents = vec![0; scratch_len];
-        let mut result = vec![vec![0.0; theta.len()]; lmax - m + 1];
+        let mut result = vec![vec![0.0; sin_theta.len()]; lmax - m + 1];
         let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
         for_each_y_lm_dispatched(
             arch,
             m,
             lmax,
-            &sin_theta,
-            &cos_theta,
+            sin_theta,
+            cos_theta,
             sectoral_norm,
             &epsilon,
             &mut previous,
@@ -874,6 +1038,156 @@ mod tests {
         )
         .unwrap();
         result
+    }
+
+    fn paired_values_over_rings(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[f32],
+        cos_theta: &[f32],
+    ) -> Vec<Vec<f32>> {
+        let mut epsilon = vec![0.0; lmax + 4];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        assert!(super::super::scalar_paired::fill_factors_typed(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+            f32::MAX,
+        ));
+        let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+        let mut previous = vec![0.0; scratch_len];
+        let mut current = vec![0.0; scratch_len];
+        let mut next = vec![0.0; scratch_len];
+        let mut exponents = vec![0; scratch_len];
+        let pair_count = (lmax - m + 2) / 2;
+        let mut result = vec![vec![0.0; sin_theta.len()]; pair_count];
+        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+        for_each_y_lm_paired_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |degree, ring_start, values, exponents| {
+                let pair = (degree - m) / 2;
+                for lane in 0..values.len() {
+                    result[pair][ring_start + lane] = scale_binary(values[lane], exponents[lane]);
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+        result
+    }
+
+    #[test]
+    fn f32_paired_synthesis_matches_native_one_degree_reference_across_tails_and_poles() {
+        assert!(!<f32 as crate::legendre::ShtScalar>::supports_paired_scalar());
+
+        let sine_samples = [
+            0.0_f32,
+            f32::from_bits(1),
+            1.0e-12,
+            1.0e-5,
+            0.01,
+            0.1,
+            0.3,
+            0.7,
+            1.0,
+        ];
+        let mut sin_theta = Vec::with_capacity(81);
+        let mut cos_theta = Vec::with_capacity(81);
+        for lane in 0..81 {
+            let sample = lane % sine_samples.len();
+            let sine = sine_samples[sample];
+            let cosine = (1.0 - sine * sine).sqrt();
+            sin_theta.push(sine);
+            cos_theta.push(if sample.is_multiple_of(3) {
+                -cosine
+            } else {
+                cosine
+            });
+        }
+
+        for m in [0, 1, 2, 4, 15, 31] {
+            for degree_span in [8, 9] {
+                let lmax = m + degree_span;
+                let expected = values_over_geometry(Arch::Scalar, m, lmax, &sin_theta, &cos_theta);
+                let coefficients: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex32::new(
+                            (0.31_f32 * degree as f32 + 0.73_f32 * m as f32).sin(),
+                            (0.19_f32 * degree as f32 - 0.41_f32 * m as f32).cos(),
+                        )
+                    })
+                    .collect();
+                let mut epsilon = vec![0.0; lmax + 4];
+                fill_epsilon(m, lmax, &mut epsilon);
+                let factor_count = lmax / 2 + 2;
+                let mut alpha = vec![0.0; factor_count];
+                let mut coefficient_a = vec![0.0; factor_count];
+                let mut coefficient_b = vec![0.0; factor_count];
+                assert!(super::super::scalar_paired::fill_factors_typed(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &mut alpha,
+                    &mut coefficient_a,
+                    &mut coefficient_b,
+                    f32::MAX,
+                ));
+                let pair_count = (lmax - m + 2) / 2;
+                let mut coefficient_even = vec![Complex32::new(0.0, 0.0); pair_count];
+                let mut coefficient_odd = coefficient_even.clone();
+                assert!(super::super::scalar_paired::prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &coefficients,
+                    &mut coefficient_even,
+                    &mut coefficient_odd,
+                ));
+
+                for arch in [Arch::Scalar, Arch::new()] {
+                    let actual = paired_values_over_rings(arch, m, lmax, &sin_theta, &cos_theta);
+                    for ring in 0..sin_theta.len() {
+                        let mut paired_sum = Complex32::new(0.0, 0.0);
+                        for pair in 0..pair_count {
+                            let factor =
+                                coefficient_even[pair] + coefficient_odd[pair] * cos_theta[ring];
+                            paired_sum += factor * actual[pair][ring];
+                        }
+                        let mut direct_sum = Complex32::new(0.0, 0.0);
+                        for (offset, basis) in expected.iter().enumerate() {
+                            direct_sum += coefficients[offset] * basis[ring];
+                        }
+                        let tolerance = 5.0e-5_f32 * (1.0 + direct_sum.norm());
+                        assert!(
+                            paired_sum.re.is_finite()
+                                && paired_sum.im.is_finite()
+                                && (paired_sum - direct_sum).norm() <= tolerance,
+                            "arch={arch:?}, m={m}, lmax={lmax}, ring={ring}: paired={paired_sum:?}, direct={direct_sum:?}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
