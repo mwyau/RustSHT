@@ -213,18 +213,16 @@ where
         let mut current = current;
         let mut next = next;
         let mut normal_range = false;
-        super::numeric::initialize_scalar_recurrence_lanes(
-            m,
-            sin_theta,
-            sectoral_norm,
-            super::numeric::ScalarRecurrenceBuffers {
-                previous,
-                current,
-                exponents,
-            },
-            scaled_power,
-            normalize_value,
-        )?;
+        for ring in 0..sin_theta.len() {
+            let sectoral = scaled_power(sin_theta[ring], m)?;
+            let sectoral = normalize_value(
+                sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
+                sectoral.exponent,
+            )?;
+            previous[ring] = 0.0;
+            current[ring] = sectoral.mantissa;
+            exponents[ring] = sectoral.exponent;
+        }
 
         for l in m..=lmax {
             visit(l, ring_start, current, exponents)?;
