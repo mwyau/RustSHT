@@ -65,7 +65,19 @@ The trait-wide f64 preference was screened in three interleaved parent/candidate
 
 Candidate/DUCC rel-L2 stayed between `3.46e-14` and `1.01e-13` on these fixtures. The large gains share a source-level condition: the existing 2-group grain exposes fewer leaves than q. GL T320 q8 has ten groups (at most five coarse leaves); CC T180 q8 has twelve (at most six); T320 reduced has the same ten. GL T255 over has sixteen groups, so the existing 2-group grain already exposes eight leaves at q8; single-group splitting was slower on full order and noisy/slightly slower in reduced/q2/q4 screens.
 
-This supports a bounded correction rather than the trait-wide rule: allow single-group grain only when `ceil(group_count/2) < execution_threads`, meaning the current 2-group grain would leave at least one worker without a task. For q8 this keeps the measured GL T320/CC T180 gains and preserves GL T255's current grain; q2/q4 T255 also remain unchanged. This bound is now implemented in WIP source (`0bb92baa` worker). The f64 trait method makes the underfill decision from group count and q; the f32 override remains unconditionally true, preserving its prior selection. `cargo fmt --all` completed, and the focused release T720 spin-1 adjoint test passed (1 passed, 325 filtered). Short exact-parent rechecks of T320 q8, T255 q8 and CC T180 q8 are pending. Do not accept the broad trait override as-is.
+This supports a bounded correction rather than the trait-wide rule: allow single-group grain only when `ceil(group_count/2) < execution_threads`, meaning the current 2-group grain would leave at least one worker without a task. For q8 this keeps the measured GL T320/CC T180 gains and preserves GL T255's current grain; q2/q4 T255 also remain unchanged. This bound is implemented in WIP source (`0bb92baa` worker). The f64 trait method makes the underfill decision from group count and q; the f32 override remains unconditionally true, preserving its prior selection. `cargo fmt --all` completed, and the focused release T720 spin-1 adjoint test passed (1 passed, 325 filtered). Three-pair exact-parent rechecks for T320 q8, T255 q8 and CC T180 q8 are recorded below; the final 15-pair T320 q8 run remains pending. Do not accept the broad trait override as-is.
+
+## Bounded-policy recheck (PRELIMINARY, 2026-10-26 09:15 UTC)
+
+The bounded source commit is `5b0be50d`; optimized candidate worker SHA-256 is `0bb92baa8473d25dc21149cae032820a3fa612c8c5c77434b832c0c294f714d5`. It selects fine grains only when the current 2-group grain would expose fewer chunks than execution threads. Three interleaved exact-parent/candidate/pinned-DUCC triplets were run for the primary target, the GL T255 full-q8 regression guard and the CC T180 full-q8 positive control.
+
+| Workload | Parent ms | Candidate ms | DUCC ms | Candidate/parent | Wins |
+|---|---:|---:|---:|---:|---:|
+| GL T320 over, full q8 | 10.743 | 8.090 | 2.337 | 0.762 | 3/3 |
+| GL T255 over, full q8 | 4.908 | 5.029 | 1.121 | 1.010 | 1/3 |
+| CC T180 over, full q8 | 4.087 | 2.914 | 0.513 | 0.710 | 3/3 |
+
+Candidate maps remained bitwise equal to exact parent in all nine pairs; repeat/reset and finiteness checks passed. Candidate/DUCC rel-L2 was `6.80e-14`, `6.67e-14`, and `3.46e-14` respectively. The bound therefore retains the T320 and CC gains while removing the earlier T255 slowdown. This is still a short route recheck: run the final 15-pair T320 q8 comparison against this bounded binary before accepting the source change. The earlier 15-pair result used the broad trait-wide candidate; T320 takes the same fine-grain route under both policies.
 
 ## Single-vector suffix force-inline experiment (VALIDATED, 2026-10-26 07:43 UTC)
 
