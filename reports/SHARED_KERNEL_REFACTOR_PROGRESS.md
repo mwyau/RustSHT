@@ -251,3 +251,17 @@ Validation used rustc 1.99.1 / Cargo 1.99.1, default dev/test profiles, no expli
 - No benchmark or full suite ran.
 
 Experiment scratch was the unique tmpfs directory labeled `rustsht-exp-grid-quadrature.QSlp6xao`, containing only the isolated Cargo target. It measured 763,528,680 bytes across 680 files before cleanup; the tmpfs had 46 GiB free and 949,018 free inodes before this check. Immediately after saving this report, the owned directory was deleted and absence verified. This reclaimed its measured 763,528,680 bytes (680 files); no experiment worker remained. Post-cleanup tmpfs availability was 49,092,980,736 bytes, with 949,018 free inodes.
+
+## Shared native-f32 recurrence-pair normalization — 2026-10-26 18:37 UTC
+
+Candidate `f68d70a4acc3eb031db669cd202d89db1d3c9c2b` follows exact parent `2d048b660382560c5adfa170e2307cf2729aea8b`. The normalized scalar f32 recurrence had the same per-lane scale-up/scale-down loop twice, while spin f32 maintained a third copy. These now call one inline native-f32 lane helper in `numeric.rs`; scalar normal-range reporting and spin test-only profiling counters remain at their callers. The f64 scalar/spin kernels and SIMD leaves are untouched. Across the three files the change removes 32 net source lines and one duplicated f32 normalization algorithm body. No timing claim is made; no benchmark was run.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and an isolated `CARGO_TARGET_DIR`:
+
+- `cargo fmt --all -- --check`, `git diff --check`, `cargo check --lib`, and `cargo clippy --lib --all-features -- -D warnings` passed.
+- `cargo test --lib numeric::tests`: 3 passed.
+- `cargo test --lib scalar_f32::tests`: 5 passed, including pair normalization reference and SIMD-tail checks.
+- `cargo test --lib spin_f32::tests`: 6 passed, including scaled-lane fallback and pair normalization reference checks.
+- The first test compile found scale constants still used by test-only reference normalizers. They were kept under `cfg(test)` where needed; the final test runs passed without warnings. No full suite ran.
+
+Scratch was the unique tmpfs directory labeled `rustsht-exp-f32-pair-normalizer.KJpVbIK1`, containing only its isolated Cargo target. It measured 964,664,257 bytes across 956 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Cleanup verification follows immediately after this report commit.
