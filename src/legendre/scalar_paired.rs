@@ -6993,47 +6993,11 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             debug_assert_eq!(basis.len(), opposite_real[channel].len());
             debug_assert_eq!(basis.len(), opposite_imag[channel].len());
         }
-        let mut ordinary_basis = [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE];
         let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
         let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
-        let (ordinary_basis_vectors, ordinary_basis_tail) =
-            S::as_mut_simd_f64s(&mut ordinary_basis[..basis.len()]);
         debug_assert!(basis.len() <= SCALAR_ANALYSIS_PAIR_TILE_SIZE);
         debug_assert_eq!(basis_vectors.len(), exponent_vectors.len());
-        debug_assert_eq!(basis_vectors.len(), ordinary_basis_vectors.len());
         debug_assert_eq!(basis_tail.len(), exponent_tail.len());
-        debug_assert_eq!(basis_tail.len(), ordinary_basis_tail.len());
-
-        let zero_f64 = simd.splat_f64s(0.0);
-        let minimum = simd.splat_f64s(scalar::SMALL);
-        let maximum = simd.splat_f64s(scalar::BIG);
-        let zero_i64 = simd.splat_i64s(0);
-        let mut exceptional_vector_lanes = 0_u64;
-        let mut has_avx2_lane_masks = true;
-        for index in 0..basis_vectors.len() {
-            let magnitude = simd.abs_f64s(basis_vectors[index]);
-            let in_range = simd.and_m64s(
-                simd.less_than_or_equal_f64s(magnitude, maximum),
-                simd.or_m64s(
-                    simd.equal_f64s(magnitude, zero_f64),
-                    simd.greater_than_or_equal_f64s(magnitude, minimum),
-                ),
-            );
-            let ordinary =
-                simd.and_m64s(simd.equal_i64s(exponent_vectors[index], zero_i64), in_range);
-            if let Some(ordinary_lanes) = analysis_mask_lane_bits::<S>(ordinary) {
-                exceptional_vector_lanes |= u64::from(!ordinary_lanes & 0b1111) << (index * 4);
-            } else {
-                has_avx2_lane_masks = false;
-            }
-            ordinary_basis_vectors[index] =
-                simd.select_f64s(ordinary, basis_vectors[index], zero_f64);
-        }
-        for lane in 0..basis_tail.len() {
-            if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
-                ordinary_basis_tail[lane] = basis_tail[lane];
-            }
-        }
 
         let (same_real_0, _) = S::as_simd_f64s(same_real[0]);
         let (same_imag_0, _) = S::as_simd_f64s(same_imag[0]);
@@ -7055,18 +7019,40 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             opposite_imag_1,
             cosine_vectors,
         ] {
-            debug_assert_eq!(vectors.len(), ordinary_basis_vectors.len());
+            debug_assert_eq!(vectors.len(), basis_vectors.len());
         }
 
+        let zero_f64 = simd.splat_f64s(0.0);
+        let minimum = simd.splat_f64s(scalar::SMALL);
+        let maximum = simd.splat_f64s(scalar::BIG);
+        let zero_i64 = simd.splat_i64s(0);
+        let mut exceptional_vector_lanes = 0_u64;
+        let mut has_avx2_lane_masks = true;
         let zeros = simd.splat_f64s(0.0);
         let mut sums_0 = [zeros; 4];
-        for index in 0..ordinary_basis_vectors.len() {
-            let basis = ordinary_basis_vectors[index];
+        let mut sums_1 = [zeros; 4];
+        for index in 0..basis_vectors.len() {
+            let magnitude = simd.abs_f64s(basis_vectors[index]);
+            let in_range = simd.and_m64s(
+                simd.less_than_or_equal_f64s(magnitude, maximum),
+                simd.or_m64s(
+                    simd.equal_f64s(magnitude, zero_f64),
+                    simd.greater_than_or_equal_f64s(magnitude, minimum),
+                ),
+            );
+            let ordinary =
+                simd.and_m64s(simd.equal_i64s(exponent_vectors[index], zero_i64), in_range);
+            if let Some(ordinary_lanes) = analysis_mask_lane_bits::<S>(ordinary) {
+                exceptional_vector_lanes |= u64::from(!ordinary_lanes & 0b1111) << (index * 4);
+            } else {
+                has_avx2_lane_masks = false;
+            }
+            let ordinary_basis = simd.select_f64s(ordinary, basis_vectors[index], zero_f64);
             let cosine = cosine_vectors[index];
-            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(same_real_0[index], basis));
-            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(same_imag_0[index], basis));
-            let opposite_real_product = simd.mul_f64s(opposite_real_0[index], basis);
-            let opposite_imag_product = simd.mul_f64s(opposite_imag_0[index], basis);
+            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(same_real_0[index], ordinary_basis));
+            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(same_imag_0[index], ordinary_basis));
+            let opposite_real_product = simd.mul_f64s(opposite_real_0[index], ordinary_basis);
+            let opposite_imag_product = simd.mul_f64s(opposite_imag_0[index], ordinary_basis);
             let (opposite_real_product, opposite_imag_product) = if OPPOSITE_COSINE_WEIGHTED {
                 (opposite_real_product, opposite_imag_product)
             } else {
@@ -7077,7 +7063,23 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             };
             sums_0[2] = simd.add_f64s(sums_0[2], opposite_real_product);
             sums_0[3] = simd.add_f64s(sums_0[3], opposite_imag_product);
+
+            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(same_real_1[index], ordinary_basis));
+            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(same_imag_1[index], ordinary_basis));
+            let opposite_real_product = simd.mul_f64s(opposite_real_1[index], ordinary_basis);
+            let opposite_imag_product = simd.mul_f64s(opposite_imag_1[index], ordinary_basis);
+            let (opposite_real_product, opposite_imag_product) = if OPPOSITE_COSINE_WEIGHTED {
+                (opposite_real_product, opposite_imag_product)
+            } else {
+                (
+                    simd.mul_f64s(opposite_real_product, cosine),
+                    simd.mul_f64s(opposite_imag_product, cosine),
+                )
+            };
+            sums_1[2] = simd.add_f64s(sums_1[2], opposite_real_product);
+            sums_1[3] = simd.add_f64s(sums_1[3], opposite_imag_product);
         }
+
         let mut results = [
             (
                 Complex64::new(
@@ -7092,25 +7094,6 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             (Complex64::new(0.0, 0.0), Complex64::new(0.0, 0.0)),
         ];
 
-        let mut sums_1 = [zeros; 4];
-        for index in 0..ordinary_basis_vectors.len() {
-            let basis = ordinary_basis_vectors[index];
-            let cosine = cosine_vectors[index];
-            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(same_real_1[index], basis));
-            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(same_imag_1[index], basis));
-            let opposite_real_product = simd.mul_f64s(opposite_real_1[index], basis);
-            let opposite_imag_product = simd.mul_f64s(opposite_imag_1[index], basis);
-            let (opposite_real_product, opposite_imag_product) = if OPPOSITE_COSINE_WEIGHTED {
-                (opposite_real_product, opposite_imag_product)
-            } else {
-                (
-                    simd.mul_f64s(opposite_real_product, cosine),
-                    simd.mul_f64s(opposite_imag_product, cosine),
-                )
-            };
-            sums_1[2] = simd.add_f64s(sums_1[2], opposite_real_product);
-            sums_1[3] = simd.add_f64s(sums_1[3], opposite_imag_product);
-        }
         results[1] = (
             Complex64::new(
                 simd.reduce_sum_f64s(sums_1[0]),
