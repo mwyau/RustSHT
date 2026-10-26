@@ -510,6 +510,53 @@ pub(crate) fn scaled_power<T: LegendrePrecision>(
     Ok(result)
 }
 
+/// Mutable lane state written by scalar-recurrence sectoral initialization.
+pub(crate) struct ScalarRecurrenceBuffers<'a, T> {
+    pub(crate) previous: &'a mut [T],
+    pub(crate) current: &'a mut [T],
+    pub(crate) exponents: &'a mut [i64],
+}
+
+/// Initializes one scalar-recurrence latitude block from the shared sectoral
+/// formula while retaining each precision's local scaled-power leaves.
+#[inline]
+pub(crate) fn initialize_scalar_recurrence_lanes<T, P, N>(
+    m: usize,
+    sin_theta: &[T],
+    sectoral_norm: T,
+    buffers: ScalarRecurrenceBuffers<'_, T>,
+    power: P,
+    normalize: N,
+) -> Result<(), ShtError>
+where
+    T: LegendrePrecision,
+    P: Fn(T, usize) -> Result<ScaledValue<T>, ShtError>,
+    N: Fn(T, i64) -> Result<ScaledValue<T>, ShtError>,
+{
+    let ScalarRecurrenceBuffers {
+        previous,
+        current,
+        exponents,
+    } = buffers;
+    debug_assert_eq!(sin_theta.len(), previous.len());
+    debug_assert_eq!(sin_theta.len(), current.len());
+    debug_assert_eq!(sin_theta.len(), exponents.len());
+
+    let sign = if m.is_multiple_of(2) {
+        T::one()
+    } else {
+        -T::one()
+    };
+    for lane in 0..sin_theta.len() {
+        let sectoral = power(sin_theta[lane], m)?;
+        let value = normalize(sectoral.mantissa * sectoral_norm * sign, sectoral.exponent)?;
+        previous[lane] = T::zero();
+        current[lane] = value.mantissa;
+        exponents[lane] = value.exponent;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -229,16 +229,18 @@ where
         let mut current = current;
         let mut next = next;
         let mut normal_range = false;
-        for lane in 0..sin_theta.len() {
-            let sectoral = scaled_power(sin_theta[lane], m)?;
-            let value = normalize_value(
-                sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
-                sectoral.exponent,
-            )?;
-            previous[lane] = 0.0;
-            current[lane] = value.mantissa;
-            exponents[lane] = value.exponent;
-        }
+        super::numeric::initialize_scalar_recurrence_lanes(
+            m,
+            sin_theta,
+            sectoral_norm,
+            super::numeric::ScalarRecurrenceBuffers {
+                previous,
+                current,
+                exponents,
+            },
+            scaled_power,
+            normalize_value,
+        )?;
 
         for l in m..=lmax {
             visit(l, ring_start, current, exponents)?;
@@ -424,16 +426,18 @@ where
         let mut current = current;
         let mut next = next;
 
-        for lane in 0..sin_theta.len() {
-            let sectoral = scaled_power(sin_theta[lane], m)?;
-            let value = normalize_value(
-                sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
-                sectoral.exponent,
-            )?;
-            previous[lane] = 0.0;
-            current[lane] = value.mantissa;
-            exponents[lane] = value.exponent;
-        }
+        super::numeric::initialize_scalar_recurrence_lanes(
+            m,
+            sin_theta,
+            sectoral_norm,
+            super::numeric::ScalarRecurrenceBuffers {
+                previous,
+                current,
+                exponents,
+            },
+            scaled_power,
+            normalize_value,
+        )?;
         let mut normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
 
         for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
