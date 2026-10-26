@@ -9,14 +9,14 @@ use std::sync::atomic::AtomicBool;
 
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
+use crate::grid::resampling::CCResamplingPlan;
+#[cfg(feature = "parallel")]
+use crate::grid::resampling::CCResamplingWorkspace;
 #[cfg(feature = "parallel")]
 use crate::legendre::HEMISPHERE_PAIR_DEGREE_TILE;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, ShtScalar, recurrence_scratch_len,
 };
-use crate::meridional::CCResamplingPlan;
-#[cfg(feature = "parallel")]
-use crate::meridional::CCResamplingWorkspace;
 
 const ANALYSIS_VECTOR_BUFFER_CAPACITY: usize = crate::legendre::SCALAR_ORDER_BATCH_SIZE;
 

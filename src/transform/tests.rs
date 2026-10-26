@@ -5909,7 +5909,7 @@ fn scalar_cc_f1_analysis_parallelizes_only_large_resampling_work() {
             let expected_parallel = plan.cc_resampling.as_ref().is_some_and(|resampling| {
                 resampling.needs_resampling()
                     && (mmax + 1) * resampling.prepared_ntheta()
-                        >= crate::meridional::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
+                        >= crate::grid::resampling::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
             });
             let phases = phase_probe.lock().unwrap().clone();
             assert!(

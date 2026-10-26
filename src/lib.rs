@@ -13,7 +13,6 @@ mod fft;
 pub mod grid;
 mod harmonics;
 pub mod legendre;
-mod meridional;
 mod plan;
 mod spin_transform;
 mod transform;

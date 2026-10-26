@@ -14,15 +14,15 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
+use crate::grid::resampling::CCResamplingPlan;
+#[cfg(feature = "parallel")]
+use crate::grid::resampling::CCResamplingWorkspace;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendreOperation, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX,
     SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin1_with_epsilon,
     scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin1_to_scalar_with_visit,
     spin2_to_scalar,
 };
-use crate::meridional::CCResamplingPlan;
-#[cfg(feature = "parallel")]
-use crate::meridional::CCResamplingWorkspace;
 use crate::plan::{ShtPlan, current_execution_thread_count};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -1082,7 +1082,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )
                 && resampling.needs_resampling()
                 && estimated_active_pairs
-                    >= crate::meridional::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
+                    >= crate::grid::resampling::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
                 && active_workers > 1
             {
                 resampling.to_prepared_parallel(

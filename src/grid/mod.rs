@@ -32,6 +32,7 @@ use rustfft::FftPlanner;
 use crate::error::ShtError;
 
 pub mod geodesic;
+pub(crate) mod resampling;
 
 /// Latitude grid used by a rectangular spherical harmonic transform.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

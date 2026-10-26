@@ -2315,7 +2315,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     T::supports_precomputed_scalar()
                         && resampling.needs_resampling()
                         && estimated_order_ring_pairs
-                            >= crate::meridional::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
+                            >= crate::grid::resampling::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
                         && active_workers > 1,
                     active_workers,
                 )

@@ -4,6 +4,7 @@
 use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
+use crate::grid::resampling::CCResamplingPlan;
 use crate::harmonics::HarmonicSpec;
 #[cfg(feature = "parallel")]
 use crate::legendre::recurrence_scratch_len;
@@ -12,7 +13,6 @@ use crate::legendre::{
     fill_spin2_factors, measured_table_break_even_calls, select_scalar_legendre_strategy,
     sin_cos_from_f64,
 };
-use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 use std::sync::Arc;
 use std::sync::OnceLock;
@@ -651,7 +651,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             workspace.ensure_cc_resampling_worker_count(
                 execution_capacity
                     .min(analysis_order_count)
-                    .min(crate::meridional::CC_RESAMPLING_ORDER_TILE),
+                    .min(crate::grid::resampling::CC_RESAMPLING_ORDER_TILE),
                 if T::supports_precomputed_scalar()
                     && self.harmonics.spin() <= 1
                     && matches!(
