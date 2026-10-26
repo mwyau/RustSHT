@@ -2,9 +2,28 @@
 
 **Priority:** Active owner instruction, 2026-10-26 14:51 UTC onward. This supplements and, where inconsistent, supersedes earlier layout and compatibility instructions in AGENTS.md, the shared-kernel plan, the M0 route inventory, and older progress entries. Work on `dev` directly. Do not modify `main`, force-push, reset shared history or disturb parked experiments. Do not restart completed work.
 
-**Objective:** One coherent RustSHT core with compile-time-shared algorithms across f32/f64, scalar/spin, and GL/CC/F1 where mathematically valid; limited typed SIMD leaves; fewer duplicate implementation bodies, dispatch modes, thresholds, scratch variants and special cases. Maintain numerical correctness, distinct adjoints, and validated end-to-end performance. **Do not optimize for minimum file count or line count alone.**
+**Objective:** One coherent RustSHT core with compile-time-shared algorithms across f32/f64, scalar/spin, and GL/CC/F1 where mathematically valid; limited typed SIMD leaves; fewer duplicate implementation bodies, dispatch modes, thresholds, scratch variants and special cases. Maintain numerical correctness, distinct adjoints, and transparently measured end-to-end performance; accept a justified few-percent slowdown for substantial simplification. **Do not optimize for minimum file count or line count alone.**
 
 **Current progress (not a restart request):** The refactor already introduced `src/legendre/numeric.rs` / `LegendrePrecision` and shared spin factor preparation (`src/legendre/spin_factors.rs`), recorded fresh f32 baselines and an operator route inventory, and retained the validated f64 paths. These changes are on `dev`. Fetch and read HEAD before continuing. Advance from that state; do not redo baseline collection, factor extraction, or archived-source searches without a new reason. Baseline SHA: `062218639bc2f097f004c617da0ce46a3a4d2941`; all current benchmark comparison claims must specify the exact candidate SHA.
+
+## New owner performance-vs-maintainability acceptance policy (2026-10-26 17:02 UTC)
+
+**Priority correction:** The owner explicitly accepts a few percent slower execution in exchange for a **large, real reduction in source duplication and special-case maintenance**. The earlier rule "any measured regression in a validated fast path means revert" is superseded for this refactor. Maintainability is an objective, not merely a noise-level tie-breaker.
+
+Decision guidance for correct, statistically credible **whole-transform** regressions:
+- **0–2%:** ordinarily keep a meaningful shared implementation.
+- **2–5%:** keep when it materially eliminates distinct recurrence bodies, substantial duplicated numerical branches, unsafe/fallback code, or persistent dispatch complexity.
+- **5–10%:** require a demonstrably large maintainability benefit, review the affected workloads, and consider a small specialized SIMD leaf instead.
+- **Over 10%:** normally do not accept; restore the fast leaf and share the surrounding algorithm.
+These bands are guidelines, not automatic acceptance thresholds. A macro that hides but does not remove actual duplication, adds tangled abstractions, or complicates debugging is **not** sufficiently beneficial by itself.
+
+**Measure the total result:** Compare each affected cell against both (a) the exact previous candidate parent and (b) the immutable pre-refactor `dev` baseline `062218639bc2f097f004c617da0ce46a3a4d2941`. Do not accept four successive 4% slowdowns by resetting the acceptance budget at each commit. Track f32 and f64, q1/q8, scalar/spin, full/reduced and selected GL/CC/F1 cells separately; avoid averages hiding outliers. Preserve explicit DUCC relative ratios and labels PASS/GAP even when the owner chooses a documented maintenance trade-off. No numerical correctness/adjoint/exceptional-input waiver.
+
+**Source structure benefit should be concrete:** Report reduction in independently maintained recurrence/normalizer/accumulator implementations, duplicate LoC excluding comments/tests, number and complexity of dispatch gates, state/scratch variants, and new abstractions. Avoid arbitrary percentage requirements but articulate what code future maintenance no longer needs to duplicate. Prefer a 2–3% slower shared numerical algorithm if it genuinely replaces multiple precision-specific bodies and remains straightforward to optimize. Keep separate f32/f64 SIMD leaves only where required by numeric representation or a larger measured performance impact.
+
+**Previously reverted work is eligible to reconsider, not auto-accept:** Review source commits `f974d1d5` (scaled arithmetic), `75cf5472` (callback traversal), `8e57a108` (compile-time scalar traversal macro), and `467d73ab` (spin-step macro), plus recorded reverts. They passed available output parity/focused tests but produced different slowdowns: the callbacks were slower on multiple affected scalar cells; the scalar macro slowed f32 T720 synthesis by roughly 2.5–3%, and spin-step macro slowed protected f64 T1023 synthesis q1 by ~1.25%. Decide whether the *actual simplification* justifies those costs. Do not reinstate them simultaneously. Reuse saved benchmark data as initial evidence; run only narrowly scoped further tests for changed code, and a cumulative regression screen at a suitable family milestone. A trivial macro with no net maintenance improvement need not be restored solely because its slowdown is allowable.
+
+**Validation economy:** No 15-triplet benchmark required to prove that a 1–3% regression exists if prior tests already established it. Do focused correctness and small performance screens after a coherent kernel family; reserve extensive benchmarks for larger changes, uncertain performance, and final cumulative results. The main goal is completing the shared numerical and module architecture.
 
 ## Final design principle: organize by mathematical/execution responsibility
 
@@ -170,7 +189,7 @@ At completion, the actual running code (not just a tree diagram) must show:
 4. `src/pyspharm/` is removed, with its numerical capabilities integrated into `legendre/pointwise.rs`, `evaluation.rs` and `grid/geodesic.rs` or clearly justified equivalents. The obsolete Rust module path is not retained as a compatibility shell.
 5. Supported operators/adjoints, f32/f64 extreme cases, scratch reuse, exact/oversampled/reduced and all supported grids pass appropriate numerical validation.
 6. Duplicate kernel implementations, unnecessary source branches and special cases are demonstrably reduced; quantify before/after.
-7. The final Rust/Python test suite and applicable CI pass; all claimed benchmark improvements have exact baseline/candidate and pinned-DUCC provenance.
+7. The final Rust/Python test suite and applicable CI pass; all accepted performance trade-offs or improvements have exact baseline/candidate and pinned-DUCC provenance.
 8. Updated internal module documentation states why any remaining precision-specific kernels and grid/operator adapters are necessary.
 
 **Immediate next action:** Continue the already-in-progress scalar/spin shared recurrence work on `dev`. Do not detour into moving all files now. First finish one coherent shared numerical family, then merge the old `pyspharm` functions into their long-term owners as a standalone no-arithmetic-change commit, then tackle the paired/ordered f32 enablement. Keep implementation moving and avoid frequent validation of minor edits.
