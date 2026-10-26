@@ -1298,7 +1298,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         .is_some_and(|work| work >= execution_threads.saturating_mul(12_000));
                 let reusable_spin1_coefficient_geometry = (self.grid.kind()
                     == crate::grid::GridKind::GaussLegendre
-                    && self.grid.ntheta() == self.harmonics.lmax() + 1)
+                    && self.grid.ntheta() >= self.harmonics.lmax() + 1)
                     || (self.grid.kind() == crate::grid::GridKind::Fejer1
                         && f1_synthesis_group_size.is_some())
                     || cc_coefficients_reused_across_groups;
