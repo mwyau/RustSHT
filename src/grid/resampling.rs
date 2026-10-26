@@ -31,7 +31,7 @@ use rustfft::num_traits::{Float, Zero};
 use rustfft::{Fft, FftNum, FftPlanner};
 
 use crate::error::ShtError;
-use crate::grid::{GridKind, clenshaw_curtis_ring_weights};
+use crate::grid::{GridKind, quadrature::clenshaw_curtis_ring_weights};
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
