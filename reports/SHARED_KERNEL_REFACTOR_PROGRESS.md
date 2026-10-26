@@ -279,3 +279,17 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - The exhaustive ignored T0–T256 paired-versus-independent FFT test and the full suite were not run. No benchmark ran.
 
 Scratch was the unique tmpfs directory labeled `rustsht-exp-transform-fft-rows.m50F6WE5`, containing only its isolated Cargo target. It measured 776,249,588 bytes across 691 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Immediately after this report commit, the owned directory was deleted and absence verified. This reclaimed its measured 776,249,588 bytes (691 files); no experiment worker remained. Post-cleanup tmpfs availability was 49,092,980,736 bytes, with 949,018 free inodes.
+
+## Transform scheduling module consolidation — 2026-10-26 18:45 UTC
+
+Source commit `021e1144021cae446fa883bf1ffa440db496073d` follows exact parent `526e1f2fb505bbd8f1f668c92af9d526fe5db98a`. Moved the shared dynamic scalar/spin order-job runner from the crate-root `dynamic_jobs.rs` into `transform/scheduling.rs`, and moved the scalar coefficient-work midpoint helper there as well. Both function bodies compare exactly with their parent source. Scalar and spin callers now import from the shared transform scheduling owner; the crate-root module declaration is removed. The change adds 3 net lines for module/import wiring and does not change queue behavior or job partitioning.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and an isolated `CARGO_TARGET_DIR`:
+
+- `cargo fmt --all -- --check`, `git diff --check`, `cargo check --lib`, `cargo check --lib --no-default-features`, and `cargo clippy --lib --all-features -- -D warnings` passed.
+- `cargo test --lib weighted_order_midpoint_minimizes_coefficient_work`: 1 passed.
+- `cargo test --lib analysis_order_local_init_overwrites_existing_coefficients`: 1 passed.
+- `cargo test --lib spin_transform_matches_between_one_and_two_rayon_threads`: 1 passed.
+- No benchmark or full suite ran.
+
+Scratch was the unique tmpfs directory labeled `rustsht-exp-transform-scheduling.5tfd73JL`, containing only its isolated Cargo target. It measured 787,205,812 bytes across 702 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Cleanup verification follows immediately after this report commit.
