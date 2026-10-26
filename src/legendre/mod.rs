@@ -9,6 +9,7 @@ mod scalar_paired;
 mod scalar_table;
 mod spin;
 mod spin_f32;
+mod spin_factors;
 mod spin_fast;
 
 pub(crate) use numeric::{LegendrePrecision, ScaledValue};

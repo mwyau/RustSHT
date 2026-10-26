@@ -69,14 +69,7 @@ pub(crate) fn normalizer_profile() -> (u64, u64, u64, u64, u64) {
     )
 }
 
-pub(crate) struct SpinInitial32 {
-    pub(crate) start_degree: usize,
-    cos_power: usize,
-    sin_power: usize,
-    plus_sign: f32,
-    minus_sign: f32,
-    prefactor: ScaledValue,
-}
+pub(crate) type SpinInitial32 = super::spin_factors::SpinInitial<f32>;
 
 pub(crate) fn fill_spin_factors(
     spin: usize,
@@ -86,91 +79,7 @@ pub(crate) fn fill_spin_factors(
     coefficient_a: &mut [f32],
     coefficient_b: &mut [f32],
 ) -> Result<SpinInitial32, ShtError> {
-    debug_assert!(spin > 0 && spin <= lmax && m <= lmax);
-    debug_assert!(alpha.len() > lmax + 1);
-    debug_assert!(coefficient_a.len() > lmax + 1);
-    debug_assert!(coefficient_b.len() > lmax + 1);
-
-    let mlo = spin.min(m);
-    let mhi = spin.max(m);
-    alpha.fill(0.0);
-    coefficient_a.fill(0.0);
-    coefficient_b.fill(0.0);
-    alpha[mhi] = 1.0;
-
-    for l in mhi..=lmax {
-        let lf = l as f32;
-        let mf = m as f32;
-        let sf = spin as f32;
-        let inv_product = ((lf + mf + 1.0).recip()
-            * (lf - mf + 1.0).recip()
-            * (lf + sf + 1.0).recip()
-            * (lf - sf + 1.0).recip())
-        .sqrt();
-        let leading = (lf + 1.0) * (2.0 * lf + 1.0) * inv_product;
-        let coupling = if l == 0 {
-            0.0
-        } else {
-            mf * sf / (lf * (lf + 1.0))
-        };
-
-        if l > mhi {
-            let ratio = (((lf + mf) * (lf - mf) * (lf + sf) * (lf - sf))
-                / ((lf + mf + 1.0) * (lf - mf + 1.0) * (lf + sf + 1.0) * (lf - sf + 1.0)))
-                .sqrt()
-                * ((lf + 1.0) / lf);
-            alpha[l + 1] = alpha[l - 1] * ratio;
-        } else {
-            alpha[l + 1] = 1.0;
-        }
-
-        let a = leading * alpha[l] / alpha[l + 1];
-        coefficient_a[l + 1] = a;
-        coefficient_b[l + 1] = coupling * a;
-    }
-
-    let mut prefactor = ScaledValue {
-        mantissa: 1.0,
-        exponent: 0,
-    };
-    let binomial_lower = mhi - mlo;
-    for i in 1..=binomial_lower {
-        let numerator = mhi
-            .checked_add(mlo)
-            .and_then(|value| value.checked_add(i))
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "spin recurrence binomial factor",
-            })?;
-        prefactor = normalize(
-            prefactor.mantissa * ((numerator as f32) / (i as f32)).sqrt(),
-            prefactor.exponent,
-        )?;
-    }
-
-    let (cos_power, sin_power, plus_sign, minus_sign) = if mhi == m {
-        (
-            mhi.checked_add(spin).ok_or(ShtError::IntegerOverflow {
-                quantity: "spin recurrence half-angle power",
-            })?,
-            mhi - spin,
-            parity_sign(m),
-            parity_sign(mhi - spin),
-        )
-    } else {
-        let combined = mhi.checked_add(m).ok_or(ShtError::IntegerOverflow {
-            quantity: "spin recurrence half-angle power",
-        })?;
-        (combined, mhi - m, parity_sign(spin), parity_sign(combined))
-    };
-
-    Ok(SpinInitial32 {
-        start_degree: mhi,
-        cos_power,
-        sin_power,
-        plus_sign,
-        minus_sign,
-        prefactor,
-    })
+    super::spin_factors::fill_spin_factors(spin, m, lmax, alpha, coefficient_a, coefficient_b)
 }
 
 pub(crate) fn analysis_inputs_vectorizable(
@@ -387,10 +296,6 @@ impl WithSimd for SpinAnalysisAccumulation32<'_> {
             ),
         )
     }
-}
-
-const fn parity_sign(value: usize) -> f32 {
-    if value.is_multiple_of(2) { 1.0 } else { -1.0 }
 }
 
 #[expect(
