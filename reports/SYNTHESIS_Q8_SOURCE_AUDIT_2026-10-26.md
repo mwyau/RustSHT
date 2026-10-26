@@ -79,6 +79,20 @@ The bounded source commit is `5b0be50d`; optimized candidate worker SHA-256 is `
 
 Candidate maps remained bitwise equal to exact parent in all nine pairs; repeat/reset and finiteness checks passed. Candidate/DUCC rel-L2 was `6.80e-14`, `6.67e-14`, and `3.46e-14` respectively. The bound therefore retains the T320 and CC gains while removing the earlier T255 slowdown. This is still a short route recheck: run the final 15-pair T320 q8 comparison against this bounded binary before accepting the source change. The earlier 15-pair result used the broad trait-wide candidate; T320 takes the same fine-grain route under both policies.
 
+## Final 15-pair bounded-candidate comparison (VALIDATED TIMING, 2026-10-26 09:17 UTC)
+
+The bounded source candidate is commit `5b0be50d`, worker SHA-256 `0bb92baa8473d25dc21149cae032820a3fa612c8c5c77434b832c0c294f714d5`; exact parent worker `e024bb5d9072a8b7c26862926d9b1948a33b046dabd7d3a3c4d2ba4490a0df44`; pinned DUCC worker `671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5`. Fifteen interleaved process triplets used the same deterministic GL 640×1280, lmax=mmax=320 fixture, CPUs 0–7, ten timed batches per process, 25 ms batch target, and all six backend orders rotated.
+
+| Measure | Bounded candidate | Exact parent | Pinned DUCC |
+|---|---:|---:|---:|
+| Median whole-transform time | 7.630 ms | 10.570 ms | 2.256 ms |
+| Candidate/parent paired ratio | 0.724 (95% bootstrap interval `[0.716, 0.749]`) | — | — |
+| Candidate wins | 15/15 | — | — |
+| Candidate/DUCC ratio | 3.39× | — | — |
+| Median scheduler wait fraction | 0.61% | 2.80% | 0.16% |
+
+Candidate maps are bitwise identical to exact parent in all 15 pairs; all worker runs report repeat/reset consistency and finite outputs. Maximum candidate/DUCC rel-L2 is `6.80e-14`. The result confirms the bounded scheduling improvement on this case, not full DUCC parity: the candidate still takes 3.39× DUCC elapsed time. Callgrind Ir remained effectively unchanged for the equivalent broad candidate (+0.010%), so the measured win is elapsed-time behavior, not instruction-count reduction. The new bound follows the q-underfill evidence; short controls also show it retains gains on CC T180 q8 while restoring GL T255 q8 to parent-level behavior. Full test/CI validation remains before final production acceptance.
+
 ## Single-vector suffix force-inline experiment (VALIDATED, 2026-10-26 07:43 UTC)
 
 The exact parent was `aecaf595f5e215143aa63ef1d11bc9ae053c28a5`; the experimental source commit `7a5f36fefcf3fe10a13c88f61c790dbadffc896c` added only `#[inline(always)]` to `synthesize_ordinary_suffix_vector`. It was reverted in the isolated experiment worktree after measurement; current production source is unchanged. The pinned DUCC reference was `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Parent and candidate used Rust 1.99.1 / LLVM 23.1.1, release builds, `-C target-cpu=x86-64-v3`; profiler binaries were `5e733110…` and `fbdd638c…`, benchmark workers `265e9730…` and `d77cf80d…`.
