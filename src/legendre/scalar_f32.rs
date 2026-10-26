@@ -41,6 +41,10 @@ const SCALE_DOWN: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
 // on the original normalizer; an exact-match selector avoids T720 overhead.
 const NORMAL_RANGE_SKIP_LMAX_T1023: usize = 1023;
 const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
+// Test candidate: with normalized recurrence values bounded by 2^40, factors
+// bounded by 2^16 keep the two-degree multiply-and-sum below 2^58.
+#[cfg(test)]
+const PAIRED_FACTOR_LIMIT_F32: f32 = f32::from_bits(143_u32 << 23);
 
 pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError> {
     super::numeric::sectoral_normalizations(mmax)
@@ -1170,7 +1174,7 @@ mod tests {
                     &mut alpha,
                     &mut coefficient_a,
                     &mut coefficient_b,
-                    f32::MAX,
+                    PAIRED_FACTOR_LIMIT_F32,
                 ));
                 let pair_count = (lmax - m + 2) / 2;
                 let mut coefficient_even = vec![Complex32::new(0.0, 0.0); pair_count];
@@ -1268,6 +1272,33 @@ mod tests {
                         assert_eq!(declined, original);
                     }
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn f32_paired_factor_limit_covers_supported_lmax_for_every_order() {
+        for lmax in [255, 511, 720, 1023] {
+            let mut epsilon = vec![0.0; lmax + 4];
+            let factor_count = lmax / 2 + 2;
+            let mut alpha = vec![0.0; factor_count];
+            let mut coefficient_a = vec![0.0; factor_count];
+            let mut coefficient_b = vec![0.0; factor_count];
+
+            for m in 0..=lmax {
+                fill_epsilon(m, lmax, &mut epsilon);
+                assert!(
+                    super::super::scalar_paired::fill_factors_typed(
+                        m,
+                        lmax,
+                        &epsilon,
+                        &mut alpha,
+                        &mut coefficient_a,
+                        &mut coefficient_b,
+                        PAIRED_FACTOR_LIMIT_F32,
+                    ),
+                    "m={m}, lmax={lmax}"
+                );
             }
         }
     }
