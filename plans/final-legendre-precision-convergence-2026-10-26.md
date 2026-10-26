@@ -19,6 +19,21 @@
 - **Done on current `dev`:** `f44821350d172539f89fad9faf02abfff618c726` restored the exact original f64 seed loop in `scalar.rs` and retained the shared f32 ordinary/paired initializer. Focused correctness checks, all-target warning-denied Clippy, formatting and diff checks passed; `git diff 2475a809 -- src/legendre/scalar.rs` was empty. Durable report `a2eaae68` and cleanup `01aab1f0` confirm the owned scratch was removed. **Do not recreate or rebench the completed restoration.**
 - Do **not** count temporary three-way seed sharing as an accepted f64 optimization. Preserve its saved 3-pair evidence and exact SHAs. The f64 selective restoration is already complete; proceed directly to the precision-module inventory.
 
+## Concrete remaining algorithm families — inventory 2026-10-26 23:04 UTC
+
+The source-aware audit is **already completed** in `reports/SHARED_KERNEL_REFACTOR_PROGRESS.md`; do not commission or rewrite the same inventory. At the time of the audit, four independently maintained f32/f64 algorithm families remain:
+
+1. **Ordinary scalar traversal** in `scalar.rs` / `scalar_f32.rs`.
+2. **Paired scalar traversal** across the same owners, including ordinary-versus-paired f32 seed sharing, checked transactional synthesis and normal-range fallback.
+3. **Native-spin recurrence traversal** in `spin.rs` / `spin_f32.rs`, distinct from scalar recurrence and keeping the signed-spin mathematics.
+4. **Spin-analysis SIMD accumulation** in the two spin owners, maintaining actual typed Pulp vector operations as necessary.
+
+**Implementation order:** Start with ordinary scalar traversal as one coherent mathematical family, then its paired traversal; retire `scalar_f32.rs` after both families and all users/tests have migrated. Next converge native-spin traversal and analysis accumulation, then retire `spin_f32.rs`. If a narrowly specialized f64 fast leaf is necessary, retain it in the scalar/spin SIMD owner. The goal is one maintained algorithm where mathematical semantics match, not one function handling every case or a cosmetic disappearance of filenames.
+
+**New negative candidate:** `e3b9b7fe3866` shared the f64 scalar/spin checked lane-pair rescaling. Source/tests were correct, but GL T720 spin-1 analysis q8 was slower in every one of three low-wait pairs (candidate/parent `1.003704–1.022573`, median `1.007089`). Source restored in `0a74927f5c12`. **Do not reinstate unchanged or run the same experiment again.** The source audit also identified the f64 sectoral seed and f64 vector normalizer as specialized leaves worth keeping.
+
+**Milestone cadence:** Stop making repeated one-off attempts to unify hot f64 scaling loops with only minor source savings. Pick a full mathematical family, write the shared traversal/control with typed SIMD/precision hooks, and validate it end to end. Keep the benchmark subagent and slow full-suite tests for coherent behavior changes and final integration; never benchmark a pure source move. Report functions/bodies actually eliminated, not only changed LOC or newly split modules. Continue numerical implementation directly after the audit.
+
 ## Finish by algorithm family, not a growing series of disconnected helpers
 
 1. **One concise audit before further micro-experiments:** enumerate the remaining independently maintained bodies in `scalar.rs` vs `scalar_f32.rs` and `spin.rs` vs `spin_f32.rs`. Classify each as **identical mathematics suitable for one owner**, **legitimate typed SIMD leaf**, **genuinely distinct precision policy**, **test/reference code**, or **dead/obsolete adapter**. Point to callers and identify which f32/f64 routes use them. Report counts and the most valuable remaining groups, not an enormous copy of code or another broad archive review.
