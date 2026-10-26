@@ -128,9 +128,114 @@ macro_rules! scalar_recurrence_step {
 
 pub(crate) use scalar_recurrence_step;
 
+/// Restores one recurrence value to the precision's safe exponent interval.
+#[inline(always)]
+pub(crate) fn normalize_scaled_value<T: LegendrePrecision>(
+    mut value: T,
+    mut exponent: i64,
+    overflow_quantity: &'static str,
+) -> Result<ScaledValue<T>, ShtError> {
+    while value.abs() > T::BIG {
+        value = value * T::SCALE_DOWN;
+        exponent = exponent
+            .checked_add(T::SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: overflow_quantity,
+            })?;
+    }
+    while value != T::zero() && value.abs() < T::SMALL {
+        value = value * T::SCALE_UP;
+        exponent = exponent
+            .checked_sub(T::SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: overflow_quantity,
+            })?;
+    }
+    Ok(ScaledValue {
+        mantissa: value,
+        exponent,
+    })
+}
+
+/// Multiplies two binary-scaled values and checks their combined exponent.
+#[inline(always)]
+pub(crate) fn multiply_scaled<T: LegendrePrecision>(
+    left: ScaledValue<T>,
+    right: ScaledValue<T>,
+    overflow_quantity: &'static str,
+) -> Result<ScaledValue<T>, ShtError> {
+    let exponent = left
+        .exponent
+        .checked_add(right.exponent)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: overflow_quantity,
+        })?;
+    normalize_scaled_value(left.mantissa * right.mantissa, exponent, overflow_quantity)
+}
+
+/// Raises a scalar base to an integer power without leaving the safe interval.
+#[inline(always)]
+pub(crate) fn scaled_power<T: LegendrePrecision>(
+    base: T,
+    mut exponent: usize,
+    overflow_quantity: &'static str,
+) -> Result<ScaledValue<T>, ShtError> {
+    let mut result = ScaledValue {
+        mantissa: T::one(),
+        exponent: 0,
+    };
+    let mut factor = normalize_scaled_value(base, 0, overflow_quantity)?;
+    while exponent != 0 {
+        if !exponent.is_multiple_of(2) {
+            result = multiply_scaled(result, factor, overflow_quantity)?;
+        }
+        exponent /= 2;
+        if exponent != 0 {
+            factor = multiply_scaled(factor, factor, overflow_quantity)?;
+        }
+    }
+    Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn shared_scaled_arithmetic_preserves_precision<T: LegendrePrecision + std::fmt::Debug>() {
+        let two = T::one() + T::one();
+        let low = T::SMALL / two;
+        let normalized = normalize_scaled_value(low, 0, "test recurrence scale").unwrap();
+        assert_eq!(normalized.exponent, -T::SCALE_EXPONENT);
+        assert_eq!(normalized.mantissa, low * T::SCALE_UP);
+
+        let powered = scaled_power(T::from_f64(0.75).unwrap(), 3, "test recurrence scale").unwrap();
+        assert_eq!(powered.exponent, 0);
+        assert_eq!(powered.mantissa, T::from_f64(0.421875).unwrap());
+
+        let overflow = multiply_scaled(
+            ScaledValue {
+                mantissa: T::one(),
+                exponent: i64::MAX,
+            },
+            ScaledValue {
+                mantissa: T::one(),
+                exponent: 1,
+            },
+            "test recurrence scale",
+        );
+        assert!(matches!(
+            overflow,
+            Err(ShtError::IntegerOverflow {
+                quantity: "test recurrence scale"
+            })
+        ));
+    }
+
+    #[test]
+    fn shared_scaled_arithmetic_uses_native_precision_and_checked_exponents() {
+        shared_scaled_arithmetic_preserves_precision::<f32>();
+        shared_scaled_arithmetic_preserves_precision::<f64>();
+    }
 
     #[test]
     fn shared_scalar_factors_match_precision_specific_formulas_bitwise() {
