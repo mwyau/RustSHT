@@ -1486,21 +1486,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                             Ok(())
                         })?;
                 } else {
-                    // Matched f32 spin-1 synthesis runs show better q8 balance
-                    // when workers can steal individual groups; retain the
-                    // existing grain when q is one or groups do not exceed q.
-                    let minimum_group_chunk = if T::prefers_fine_spin1_synthesis_groups()
-                        && recurrence_spin == 1
-                        && self.harmonics.spin() == 1
-                        && !derivative_norm
-                        && b_alm.is_some()
-                        && execution_threads > 1
-                        && group_count > execution_threads
-                    {
-                        1
-                    } else {
-                        group_count.div_ceil(execution_threads)
-                    };
+                    // Fine-grain only when pairing groups would leave worker
+                    // slots idle; finer chunks hurt small groups.
+                    let minimum_group_chunk =
+                        if T::prefers_fine_spin1_synthesis_groups(group_count, execution_threads)
+                            && recurrence_spin == 1
+                            && self.harmonics.spin() == 1
+                            && !derivative_norm
+                            && b_alm.is_some()
+                            && execution_threads > 1
+                            && group_count > execution_threads
+                        {
+                            1
+                        } else {
+                            group_count.div_ceil(execution_threads)
+                        };
                     workspace
                         .spectra
                         .par_chunks_mut(group_spectrum_len)

@@ -139,7 +139,7 @@ pub(crate) trait ShtScalar:
     }
 
     #[cfg(feature = "parallel")]
-    fn prefers_fine_spin1_synthesis_groups() -> bool {
+    fn prefers_fine_spin1_synthesis_groups(_group_count: usize, _execution_threads: usize) -> bool {
         false
     }
 
@@ -861,8 +861,8 @@ impl ShtScalar for f64 {
     type SpinInitial = spin::SpinInitial;
 
     #[cfg(feature = "parallel")]
-    fn prefers_fine_spin1_synthesis_groups() -> bool {
-        true
+    fn prefers_fine_spin1_synthesis_groups(group_count: usize, execution_threads: usize) -> bool {
+        group_count.div_ceil(2) < execution_threads
     }
 
     fn supports_scalar_ordered() -> bool {
@@ -1888,7 +1888,7 @@ impl ShtScalar for f32 {
     }
 
     #[cfg(feature = "parallel")]
-    fn prefers_fine_spin1_synthesis_groups() -> bool {
+    fn prefers_fine_spin1_synthesis_groups(_group_count: usize, _execution_threads: usize) -> bool {
         true
     }
 
