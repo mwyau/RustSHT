@@ -2348,7 +2348,6 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
-        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2381,7 +2380,6 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
-        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2413,7 +2411,6 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
-        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )
@@ -2446,7 +2443,6 @@ fn spin1_exact_cc_pole_skips_only_safe_nonsectoral_orders() {
         &workspace.theta_sin[..1],
         &workspace.theta_cos[..1],
         &workspace.ring_order_limits,
-        false,
         pulp::Arch::new(),
         &mut workspace.recurrence_workers[0],
     )

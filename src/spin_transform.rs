@@ -1777,8 +1777,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     for m in tile_start..tile_end {
                         let q_row = &mut output_scratch.q[..ntheta];
                         let u_row = &mut output_scratch.u[..ntheta];
-                        // The per-order path initializes all rows before fallback,
-                        // or only the polar slices after a successful component pass.
+                        q_row.fill(Complex::new(T::zero(), T::zero()));
+                        u_row.fill(Complex::new(T::zero(), T::zero()));
                         self.synthesize_spin_ring_group_orders(
                             e_alm,
                             Some(b_alm),
@@ -1800,7 +1800,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                             theta_sin,
                             theta_cos,
                             ring_order_limits,
-                            true,
                             arch,
                             recurrence,
                         )?;
@@ -1875,7 +1874,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_sin,
             theta_cos,
             ring_order_limits,
-            false,
             arch,
             recurrence,
         )
@@ -1907,7 +1905,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
-        defer_order_output_initialization: bool,
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
@@ -1974,7 +1971,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_sin,
                 theta_cos,
                 ring_order_limits,
-                defer_order_output_initialization,
                 arch,
                 recurrence,
             );
@@ -2018,7 +2014,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &theta_sin[segment_start..segment_end],
                 &theta_cos[segment_start..segment_end],
                 ring_order_limits,
-                defer_order_output_initialization,
                 arch,
                 recurrence,
             )?;
@@ -2076,7 +2071,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_sin,
             theta_cos,
             ring_order_limits,
-            false,
             arch,
             recurrence,
         )
@@ -2223,7 +2217,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
-        defer_order_output_initialization: bool,
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
@@ -2266,11 +2259,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             // Synthesis cleared these spectra, and the polar cutoff excludes this
             // order from every ring in the segment.
             if maximum_ring_order.is_some_and(|limit| m > limit) {
-                if defer_order_output_initialization {
-                    let zero = Complex::new(T::zero(), T::zero());
-                    q_spectra.fill(zero);
-                    u_spectra.fill(zero);
-                }
                 continue;
             }
             // At an exact pole, a spin-1 harmonic has support only at |m|=1.
@@ -2299,11 +2287,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                             && (value == T::zero() || value.abs() >= min_normal)
                     });
                 if row_is_safe {
-                    if defer_order_output_initialization {
-                        let zero = Complex::new(T::zero(), T::zero());
-                        q_spectra.fill(zero);
-                        u_spectra.fill(zero);
-                    }
                     continue;
                 }
             }
@@ -2497,10 +2480,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                         && output_order == 0
                         && spectrum_len == 1
                         && q_spectra.len() == theta_sin.len();
-                    debug_assert!(
-                        !defer_order_output_initialization || contiguous_component_order,
-                        "deferred output initialization is only valid for one-order scratch rows"
-                    );
                     // Reduced CC/F1 q8 cross-thread checks exceed the existing
                     // tolerance with the reflected component route. Keep those
                     // orders on the established paired-latitude recurrence.
@@ -2577,22 +2556,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                         #[cfg(all(test, feature = "parallel"))]
                         SPIN1_PREPARED_COMPONENT_ORDER_SUCCESSES.fetch_add(1, Ordering::Relaxed);
                         let segment_end = theta_sin.len();
-                        let ranges = [(0, safe_start), (segment_end - safe_start, segment_end)];
-                        if defer_order_output_initialization {
-                            let zero = Complex::new(T::zero(), T::zero());
-                            for &(range_start, range_end) in &ranges {
-                                q_spectra[range_start..range_end].fill(zero);
-                                u_spectra[range_start..range_end].fill(zero);
-                            }
-                        }
-                        ranges
+                        [(0, safe_start), (segment_end - safe_start, segment_end)]
                     } else {
                         // A declined component pass may have staged one channel
                         // or earlier ring batches. Discard the whole local order
-                        // before entering the established checked fallback. An
-                        // unattempted order also needs its first zero when the
-                        // caller supplied reused scratch without initialization.
-                        if prepared_component_attempted || defer_order_output_initialization {
+                        // before entering the established checked fallback.
+                        if prepared_component_attempted {
                             for ring in 0..theta_sin.len() {
                                 let spectrum_index = ring * spectrum_len + output_order;
                                 q_spectra[spectrum_index] = Complex::new(T::zero(), T::zero());
@@ -2723,11 +2692,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                 }
             } else {
-                if defer_order_output_initialization {
-                    let zero = Complex::new(T::zero(), T::zero());
-                    q_spectra.fill(zero);
-                    u_spectra.fill(zero);
-                }
                 self.synthesize_general_spin_order_to_order(
                     m,
                     e_alm,
