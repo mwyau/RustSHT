@@ -293,3 +293,17 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - No benchmark or full suite ran.
 
 Scratch was the unique tmpfs directory labeled `rustsht-exp-transform-scheduling.5tfd73JL`, containing only its isolated Cargo target. It measured 787,205,812 bytes across 702 files before cleanup; tmpfs had 46 GiB free and 949,018 free inodes before this experiment. Immediately after this report commit, the owned directory was deleted and absence verified. This reclaimed its measured 787,205,812 bytes (702 files); no experiment worker remained. Post-cleanup tmpfs availability was 49,092,980,736 bytes, with 949,018 free inodes.
+
+## Shared native spin normalization formula — 2026-10-26 18:52 UTC
+
+Source candidate `7402fbb67de9beea1f5ebbeb1a1ebfb1ca171e9a` follows `376ac1c3317e6b887817fa4aa78cee5f580b461e`. It replaces the separate native-f32 and native-f64 spin-normalization formulas with one `LegendrePrecision` implementation in `legendre/spin_factors.rs`; the existing module entry points remain as thin typed wrappers. The formula retains native arithmetic and the same operation order. The independent reference test compared both precisions bit-for-bit for spins 1–4, degrees 0–2048, and both standard/derivative normalization. This removes one separately maintained formula body; production LOC is approximately unchanged because the generic implementation and wrappers are similar in size.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and `CARGO_TARGET_DIR=$TMPDIR/rustsht-exp-spin-normalization.7g9ighR9/target`:
+
+- `cargo fmt --all -- --check`, `git diff --check`, `cargo check --lib`, and `cargo test --lib legendre::spin` passed.
+- The focused spin filter ran 14 tests, including f32/f64 recurrence, spin-1/spin-2 scalar adapters and the new exact normalization comparison. No full suite ran.
+- No benchmark has run yet. Keep the candidate pending an f64 whole-transform screen on GL T1023 full spin-1 synthesis q1/q8 before pushing; preserve the existing recurrence-specific leaves if the shared helper regresses them.
+
+The test target measured 778,027,008 bytes across 685 files. It remains in the uniquely labeled owned scratch directory only until the report commit is verified; then delete the entire directory, verify it is absent, and check reclaimed space.
+
+**Next code changes after this candidate gate:** (1) implement the typed f32 paired scalar synthesis leaf while keeping its routing capability disabled; (2) validate exact/oversampled GL, full/reduced-order, q1/q8 numerical and reset behavior; (3) enable only a measured geometry/work-shape gate, then broaden to CC/F1 after their resampling/adjoint tests. Keep the optimized f64 paired/order-major leaves unchanged.
