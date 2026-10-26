@@ -6954,11 +6954,12 @@ fn try_accumulate_scaled_exception_vector<S: Simd, const OPPOSITE_COSINE_WEIGHTE
     true
 }
 
-/// Accumulates mixed scaled lanes for Q and U while computing the ordinary
-/// lane mask once. When `OPPOSITE_COSINE_WEIGHTED` is true, callers pass spectra
-/// already weighted and checked by `prepare_analysis_opposite`, matching the
-/// ordinary suffix operation. Each channel uses four live SIMD sums, keeping
-/// AVX2 register pressure bounded.
+/// Accumulates mixed scaled lanes for Q and U while classifying ordinary lanes
+/// once and updating both channels in the same vector traversal. When
+/// `OPPOSITE_COSINE_WEIGHTED` is true, callers pass spectra already weighted
+/// and checked by `prepare_analysis_opposite`, matching the ordinary suffix
+/// operation. Each channel keeps four SIMD sums; nonordinary lanes use the
+/// existing checked scalar/vector fallback below.
 struct MixedAnalysisPairChannelsAccumulation<'a, const OPPOSITE_COSINE_WEIGHTED: bool = false> {
     same_real: [&'a [f64]; 2],
     same_imag: [&'a [f64]; 2],
