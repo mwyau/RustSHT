@@ -1,5 +1,18 @@
 # Spin-1 synthesis q8 source and measurement audit
 
+## CPU-exclusive source comparison: remaining GL T320 reduced q8 gap (PRELIMINARY, 2026-10-26 10:57 UTC)
+
+No benchmark, Callgrind, perf, build, or test ran for this comparison. The current production source is `260b74a8`; only documentation changed at the checkout tip. The pause remains active.
+
+The strongest measured residual q8 synthesis gap with a 15-pair result is over-resolved GL T320 reduced `mmax=120`: Rust `1.464 ms`, pinned DUCC `1.176 ms` (1.247x). The matched whole-worker Callgrind boundary is `816M` versus `784M` Ir, only about 4% more Rust instructions. This whole-worker difference does not identify a kernel cause and cannot explain the elapsed ratio on its own. The older T320 source profile described a pre-gate grouped route and used a non-pinned DUCC revision; it cannot be used to attribute the accepted current route.
+
+The accepted gate makes this a distinct dispatch: `ntheta=640 > lmax=320`, q8, and `ceil((mmax+1)/8)=16` meets the order-queue threshold. Its scalar coefficient rows occupy `1,246,784` bytes, below the 4 MB global-cache cutoff. The current source therefore selects the one-order queue with globally prepared scalar coefficients. Its full-domain GL order shape is eligible to attempt the prepared reflected-component adapter, but current T320 reduced adapter hit/decline counts are unresolved. Do not assume all orders use the adapter based on exact T720 counters.
+
+Pinned DUCC 0.42.0 takes a materially different small-degree path. In `sht.cc::alm2leg`, the `rdata_fast` spin route is gated on `lmax >= 500`; T320 instead builds `YlmBase(..., spin=1)` and enters `inner_loop_a2m` with nonzero spin. `sht_inner_loop.h::inner_loop_a2m` then calls `fill_a2m_spin` and `calc_alm2map_spin`; it does not first call `spin1to0`. Current Rust q8 order-queue code prepares E/B-derived scalar rows and may run the reflected scalar-component recurrence. This algorithmic distinction is a concrete hypothesis for matched active-work attribution, not proof that Rust does more work or that a direct-spin Rust route would be faster.
+
+The saved exact-grid T720 q8 profile is a separate control: its selected scalar reflected route has equal reported normal-range FMA work/update against DUCC, lower directional Rust Ir/update, and slightly lower saved elapsed time. Its coefficient-broadcast count cannot be transferred to T320 reduced. The T320 reduced result instead needs current-route counts for coefficient preparation, adapter acceptance/fallback, active reflected pairs, degree-pair updates, and equivalent DUCC direct-spin updates before choosing a code experiment. Existing row-clear and inlining candidates remain rejected/unsupported; no production change is recommended during the pause.
+
+
 ## Accepted over-resolved GL coefficient-cache gate (VALIDATED, 2026-10-26 10:46 UTC)
 
 The q8 over-resolved GL gap came from the exact-grid restriction on the existing spin-1 coefficient cache/order-major queue. The bounded change broadens only that GL geometry predicate from `ntheta == lmax + 1` to `ntheta > lmax`; no recurrence arithmetic, fallback, or threshold changed. q1 is unaffected because cache use requires at least eight execution threads. Candidate source behavior was introduced in `3d894088` (worker SHA-256 `d5e2ceb0…`); the lint-only equivalent spelling `ntheta > lmax` is at `8200a4d2`. Exact parent `84035eb2` (worker SHA-256 `fe66fa6d…`), pinned DUCC 0.42.0 `42ce8ab5` (worker SHA-256 `34376ee3…`). All timing workers used optimized x86-64-v3 builds, deterministic fixtures, CPUs 0–7, the native spin-1 worker, and interleaved parent/candidate/DUCC ordering.
