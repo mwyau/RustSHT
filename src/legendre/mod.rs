@@ -860,6 +860,11 @@ impl ShtScalar for f64 {
 
     type SpinInitial = spin::SpinInitial;
 
+    #[cfg(feature = "parallel")]
+    fn prefers_fine_spin1_synthesis_groups() -> bool {
+        true
+    }
+
     fn supports_scalar_ordered() -> bool {
         true
     }
