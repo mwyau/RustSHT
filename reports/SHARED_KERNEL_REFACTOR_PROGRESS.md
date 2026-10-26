@@ -320,4 +320,4 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - The first test compile found a stale test-only reference in `scalar_paired_kernel_bench.rs`; it was redirected to the grid helper and the focused test then passed. No numerical assertion failed.
 - No benchmark ran: only per-ring geometry planning was consolidated, and exhaustive representative-grid checks return exactly the prior integer cutoffs. No transform recurrence or SIMD route changed.
 
-The isolated target measured 906,035,200 bytes across 940 files. After this report is committed and verified, remove the uniquely labeled scratch root, verify absence, and record reclaimed space/inodes. Keep the f64 leaves and route gates unchanged.
+The isolated target measured 906,035,200 bytes across 940 files. After the report commit was verified, the uniquely labeled scratch root was removed and its absence verified. This reclaimed 906,035,200 target bytes; the temp filesystem returned to 949,018 free inodes and approximately 46 GiB free. Keep the f64 leaves and route gates unchanged.
