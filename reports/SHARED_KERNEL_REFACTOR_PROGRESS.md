@@ -372,3 +372,17 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - No whole-transform GL test, full suite or benchmark ran. Numerical coefficient headroom and transform-level fallback remain prerequisites before enabling paired f32.
 
 The experiment scratch contained only its manifest and isolated Cargo target; before cleanup it measured 989,028,654 bytes across 1,072 files. No timing data was generated. The source and factor-scan record were verified on `origin/dev` before cleanup; the owned scratch label was then removed and absence verified. This reclaimed 989,028,654 bytes; `/tmp` returned to 46 GiB free and 949,018 free inodes. Next: validate coefficient-transform headroom and whole-transform fallback on exact/oversampled GL, full/reduced mmax before considering any f32 route gate.
+
+## Spin orchestration module relocation — 2026-10-26 20:09 UTC
+
+Source commit `e81cb91850b14827ccb1fc6236771e8dc6195cdd` follows parent `6d3e78fbc5e3d6452a6e7e5ea1e47a7202233c58`. Moved `spin_transform.rs` and its hemisphere and unit-test modules under `src/transform/spin/`, removed the old root-level module declaration, and updated the plan's internal worker-count reference. Git records all four implementation/test files as 100% renames; no numerical or scheduling body changed (two source lines added and two removed for module wiring). This places spin transform orchestration under its mathematical/execution owner; it is an internal path move with no public Rust or Python API change and no measured performance claim.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, with Cargo home and target isolated in the uniquely owned scratch labelled `rustsht-exp-spin-module-move.o9NJuxPS`.
+
+- `cargo check --locked --all-targets --all-features` passed.
+- `cargo test --locked --all-features --lib transform::spin::tests`: 71 passed, 0 failed, 11 ignored, 253 filtered; includes spin transforms, adjoints, extreme/fallback, poisoned workspace, hemisphere selector and paired recurrence checks.
+- `cargo test --locked --all-features --lib transform::spin::hemisphere::tests`: 1 passed, 0 failed, 334 filtered.
+- `cargo clippy --locked --all-targets --all-features -- -D warnings`, `cargo fmt --all -- --check`, and `git diff --check` passed. The first format check found module declaration ordering; `cargo fmt` corrected it before the final passing checks.
+- No performance benchmark ran because this was a pure relocation. The existing spin performance paths and B36 source are unchanged.
+
+The owned scratch measured 857,586,187 bytes across 1,893 files before cleanup; `/tmp` had 45 GiB available and 946,749 free inodes after compilation. Results and source commit are durable; this scratch contains only the experiment manifest, isolated Cargo cache, and build target and is scheduled for immediate removal after the source/result commits are verified on `origin/dev`.
