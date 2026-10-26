@@ -1967,7 +1967,7 @@ impl ShtScalar for f64 {
     }
 
     fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> Self {
-        spin::spin_normalization(spin, degree, derivative)
+        spin_factors::spin_normalization::<Self>(spin, degree, derivative)
     }
 }
 
@@ -2312,7 +2312,7 @@ impl ShtScalar for f32 {
     }
 
     fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> Self {
-        spin_f32::spin_normalization(spin, degree, derivative)
+        spin_factors::spin_normalization::<Self>(spin, degree, derivative)
     }
 }
 

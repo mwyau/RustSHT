@@ -548,3 +548,11 @@ Source commit `7a8ddf5b4d620d62d4f24ee74212bf21f9b5bece` follows parent `17015bd
 Validation on the final source: `cargo clippy --locked --offline --all-targets --all-features -- -D warnings` passed. The scalar boundary/nonfinite/tail test passed (`f32_normal_range_check_covers_simd_lanes_and_tail`); the spin normalizer boundary/nonfinite/tail test passed (`simd_normalizer_precheck_matches_scalar_scaler_for_boundaries_and_tail`); both scalar and spin SIMD recurrence-vs-scalar tests passed (2 tests). `cargo fmt --all -- --check` and `git diff --check` passed. No full suite, f64 benchmark, f32 benchmark, or baseline run was done; this is a focused f32 maintainability extraction.
 
 After verifying source and validation record on `origin/dev` at `7a8ddf5b4d620d62d4f24ee74212bf21f9b5bece`, removed the exact owned scratch label `rustsht-exp-f32-range-20261026-a1` and verified its absence. Cleanup reclaimed 1,039,659,714 allocated bytes, 1,112 files, 150 directories and 1,262 inodes. `/tmp` returned to 46 GiB free and 949,018 free inodes. No experiment-owned build artifacts remain.
+
+## Direct shared spin normalization calls — 2026-10-26 22:10 UTC
+
+Removed the f64 and f32 `spin_normalization` pass-through wrappers from `legendre::spin` and `legendre::spin_f32`. `ShtScalar` implementations and spin coefficient tests now call the generic normalization in `spin_factors` directly with an explicit precision. This keeps the one mathematical implementation in its owning module and removes five net source lines across four files; no arithmetic, route or public API changed.
+
+Validation: `cargo check --locked --offline --all-targets --all-features` passed; `shared_spin_normalization_matches_native_precision_formulas` passed for f32 and f64; formatting and diff checks passed. No full suite or benchmark ran because this only removes internal forwarding wrappers.
+
+The isolated target uses scratch label `rustsht-exp-spin-norm-wrapper-20261026-a1`, measuring 824,146,626 allocated bytes, 848 files and 148 directories before cleanup. `/tmp` had 45 GiB free and 948,022 free inodes. Persist and verify the source/report commit on `origin/dev`, then remove this exact owned scratch and record the cleanup.

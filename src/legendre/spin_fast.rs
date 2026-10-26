@@ -698,7 +698,8 @@ mod tests {
                 &mut spin_next_minus,
                 &mut spin_exponents_minus,
                 |l, ring_start, plus, plus_exp, minus, minus_exp| {
-                    let norm = spin_alpha[l] * spin::spin_normalization(1, l, false);
+                    let norm = spin_alpha[l]
+                        * crate::legendre::spin_factors::spin_normalization::<f64>(1, l, false);
                     for lane in 0..plus.len() {
                         let plus_value = spin::scaled_basis_value(plus[lane], plus_exp[lane], norm);
                         let minus_value =
@@ -974,7 +975,8 @@ mod tests {
                 &mut spin_next_minus,
                 &mut spin_exponents_minus,
                 |l, ring_start, plus, plus_exp, minus, minus_exp| {
-                    let norm = spin_alpha[l] * spin::spin_normalization(2, l, false);
+                    let norm = spin_alpha[l]
+                        * crate::legendre::spin_factors::spin_normalization::<f64>(2, l, false);
                     for lane in 0..plus.len() {
                         let plus_value = spin::scaled_basis_value(plus[lane], plus_exp[lane], norm);
                         let minus_value =

@@ -605,11 +605,6 @@ pub(crate) fn scaled_basis_value(value: f32, exponent: i64, alpha_norm: f32) -> 
     scale_binary(value * alpha_norm, exponent)
 }
 
-#[inline]
-pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> f32 {
-    super::spin_factors::spin_normalization(spin, degree, derivative)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1054,7 +1049,9 @@ mod tests {
             &mut next_minus,
             &mut exponent_minus,
             |degree, ring_start, plus, plus_exponents, minus, minus_exponents| {
-                let factor = spin_normalization(spin, degree, false) * alpha[degree];
+                let factor =
+                    crate::legendre::spin_factors::spin_normalization::<f32>(spin, degree, false)
+                        * alpha[degree];
                 for lane in 0..plus.len() {
                     plus_values[degree - initial.start_degree][ring_start + lane] =
                         scaled_basis_value(plus[lane], plus_exponents[lane], factor);

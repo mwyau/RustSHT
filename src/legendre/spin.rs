@@ -516,12 +516,6 @@ pub(crate) fn scaled_basis_value(value: f64, exponent: i64, alpha_norm: f64) -> 
     crate::legendre::scale_binary(product, exponent)
 }
 
-/// Returns the normalization applied to one spin recurrence degree.
-#[inline]
-pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> f64 {
-    super::spin_factors::spin_normalization(spin, degree, derivative)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -727,7 +721,9 @@ mod tests {
             &mut next_minus,
             &mut exponent_minus,
             |degree, _, plus, plus_exp, minus, minus_exp| {
-                let norm = spin_normalization(spin, degree, false) * alpha[degree];
+                let norm =
+                    crate::legendre::spin_factors::spin_normalization::<f64>(spin, degree, false)
+                        * alpha[degree];
                 result.push((
                     degree,
                     plus.iter()
