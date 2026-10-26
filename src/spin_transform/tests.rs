@@ -4551,8 +4551,9 @@ fn spin1_fine_synthesis_groups_preserve_t720_adjoint_identities() {
 #[cfg(feature = "parallel")]
 #[test]
 fn spin1_gl_overresolved_order_major_queue_preserves_adjoint_identities() {
-    assert_spin1_gl_overresolved_order_major_adjoint_identities(320, 320, 640, 1280);
-    assert_spin1_gl_overresolved_order_major_adjoint_identities(320, 120, 640, 250);
+    assert_spin1_gl_overresolved_order_major_adjoint_identities(320, 320, 640, 1280, true, false);
+    assert_spin1_gl_overresolved_order_major_adjoint_identities(320, 120, 640, 250, true, false);
+    assert_spin1_gl_overresolved_order_major_adjoint_identities(720, 180, 1441, 378, false, true);
 }
 
 #[cfg(feature = "parallel")]
@@ -4561,6 +4562,8 @@ fn assert_spin1_gl_overresolved_order_major_adjoint_identities(
     mmax: usize,
     ntheta: usize,
     nphi: usize,
+    expect_global_coefficients: bool,
+    sparse_coefficients: bool,
 ) {
     let plan = make_plan(1, lmax, mmax, ntheta, nphi);
     let eight_threads = rayon::ThreadPoolBuilder::new()
@@ -4572,10 +4575,37 @@ fn assert_spin1_gl_overresolved_order_major_adjoint_identities(
         .install(|| plan.prepare_workspace(&mut workspace, 8))
         .unwrap();
 
-    let (e, b) = coefficients(&plan);
+    let (e, b) = if sparse_coefficients {
+        let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut b = e.clone();
+        for (l, m, e_value, b_value) in [
+            (1, 0, Complex64::new(0.31, 0.0), Complex64::new(-0.17, 0.0)),
+            (
+                91,
+                27,
+                Complex64::new(-0.23, 0.19),
+                Complex64::new(0.13, 0.29),
+            ),
+            (
+                lmax,
+                mmax,
+                Complex64::new(0.41, -0.11),
+                Complex64::new(-0.37, 0.21),
+            ),
+        ] {
+            let index = plan.harmonics.index(l, m).unwrap();
+            e[index] = e_value;
+            b[index] = b_value;
+        }
+        (e, b)
+    } else {
+        coefficients(&plan)
+    };
     let (mut input_first, mut input_second) = arbitrary_maps(&plan);
-    for value in input_first.iter_mut().chain(&mut input_second) {
-        *value *= 1.0e-3;
+    if !sparse_coefficients {
+        for value in input_first.iter_mut().chain(&mut input_second) {
+            *value *= 1.0e-3;
+        }
     }
     let mut synthesized_first = vec![0.0; plan.sample_count];
     let mut synthesized_second = vec![0.0; plan.sample_count];
@@ -4591,21 +4621,27 @@ fn assert_spin1_gl_overresolved_order_major_adjoint_identities(
         })
         .unwrap();
 
-    let expected_coefficient_values = 2 * (plan.harmonics.mmax() + 1) * (plan.harmonics.lmax() + 2);
-    assert_eq!(
-        workspace.spin1_scalar_coefficients.len(),
-        expected_coefficient_values
-    );
-    assert_eq!(
-        workspace.spin1_scalar_coefficient_finite_orders.len(),
-        plan.harmonics.mmax() + 1
-    );
-    assert!(
-        workspace
-            .spin1_scalar_coefficient_finite_orders
-            .iter()
-            .all(|&finite| finite == 1)
-    );
+    if expect_global_coefficients {
+        let expected_coefficient_values =
+            2 * (plan.harmonics.mmax() + 1) * (plan.harmonics.lmax() + 2);
+        assert_eq!(
+            workspace.spin1_scalar_coefficients.len(),
+            expected_coefficient_values
+        );
+        assert_eq!(
+            workspace.spin1_scalar_coefficient_finite_orders.len(),
+            plan.harmonics.mmax() + 1
+        );
+        assert!(
+            workspace
+                .spin1_scalar_coefficient_finite_orders
+                .iter()
+                .all(|&finite| finite == 1)
+        );
+    } else {
+        assert!(workspace.spin1_scalar_coefficients.is_empty());
+        assert!(workspace.spin1_scalar_coefficient_finite_orders.is_empty());
+    }
     assert_eq!(workspace.spin_order_output_scratch.len(), 8);
     assert!(
         synthesized_first
