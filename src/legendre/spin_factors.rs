@@ -6,6 +6,44 @@ use rustfft::num_traits::Float;
 use crate::error::ShtError;
 use crate::legendre::{LegendrePrecision, ScaledValue};
 
+/// Builds native-spin positive/negative seed values from one cosine lane.
+/// The typed power/product functions preserve the precision-specific scaled
+/// arithmetic leaves while sharing the half-angle mathematics.
+#[inline(always)]
+pub(crate) fn initial_spin_values<T, P, M>(
+    cosine: T,
+    initial: &SpinInitial<T>,
+    power: P,
+    multiply: M,
+) -> Result<(ScaledValue<T>, ScaledValue<T>), ShtError>
+where
+    T: LegendrePrecision,
+    P: Fn(T, usize) -> Result<ScaledValue<T>, ShtError>,
+    M: Fn(ScaledValue<T>, ScaledValue<T>) -> Result<ScaledValue<T>, ShtError>,
+{
+    let half_cosine = ((T::one() + cosine) * T::HALF)
+        .sqrt()
+        .max(T::SPIN_HALF_ANGLE_FLOOR);
+    let half_sine = ((T::one() - cosine) * T::HALF)
+        .sqrt()
+        .max(T::SPIN_HALF_ANGLE_FLOOR);
+    let plus = multiply(
+        initial.prefactor,
+        multiply(
+            power(half_cosine, initial.cos_power)?,
+            power(half_sine, initial.sin_power)?,
+        )?,
+    )?;
+    let minus = multiply(
+        initial.prefactor,
+        multiply(
+            power(half_cosine, initial.sin_power)?,
+            power(half_sine, initial.cos_power)?,
+        )?,
+    )?;
+    Ok((plus, minus))
+}
+
 /// Returns the normalization shared by both native spin precisions.
 #[inline]
 pub(crate) fn spin_normalization<T: LegendrePrecision>(

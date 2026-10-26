@@ -10,6 +10,8 @@ use crate::error::ShtError;
 /// Implementations stay concrete so these values are resolved at compile
 /// time in the f32 and f64 kernels.
 pub(crate) trait LegendrePrecision: Float + FromPrimitive {
+    const HALF: Self;
+    const SPIN_HALF_ANGLE_FLOOR: Self;
     const BIG: Self;
     const SMALL: Self;
     const SCALE_UP: Self;
@@ -18,6 +20,8 @@ pub(crate) trait LegendrePrecision: Float + FromPrimitive {
 }
 
 impl LegendrePrecision for f32 {
+    const HALF: Self = 0.5;
+    const SPIN_HALF_ANGLE_FLOOR: Self = 1e-15;
     const BIG: Self = f32::from_bits(167_u32 << 23);
     const SMALL: Self = f32::from_bits(87_u32 << 23);
     const SCALE_UP: Self = f32::from_bits(207_u32 << 23);
@@ -26,6 +30,8 @@ impl LegendrePrecision for f32 {
 }
 
 impl LegendrePrecision for f64 {
+    const HALF: Self = 0.5;
+    const SPIN_HALF_ANGLE_FLOOR: Self = 1e-15;
     const BIG: Self = f64::from_bits(1423_u64 << 52);
     const SMALL: Self = f64::from_bits(623_u64 << 52);
     const SCALE_UP: Self = f64::from_bits(1823_u64 << 52);

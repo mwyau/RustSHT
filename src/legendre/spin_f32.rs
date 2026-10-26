@@ -413,21 +413,11 @@ where
         debug_assert_eq!(cos_theta.len(), exponent_minus.len());
 
         for lane in 0..cos_theta.len() {
-            let half_cosine = ((1.0 + cos_theta[lane]) * 0.5).sqrt().max(1e-15);
-            let half_sine = ((1.0 - cos_theta[lane]) * 0.5).sqrt().max(1e-15);
-            let plus = multiply(
-                initial.prefactor,
-                multiply(
-                    power(half_cosine, initial.cos_power)?,
-                    power(half_sine, initial.sin_power)?,
-                )?,
-            )?;
-            let minus = multiply(
-                initial.prefactor,
-                multiply(
-                    power(half_cosine, initial.sin_power)?,
-                    power(half_sine, initial.cos_power)?,
-                )?,
+            let (plus, minus) = super::spin_factors::initial_spin_values(
+                cos_theta[lane],
+                initial,
+                power,
+                multiply,
             )?;
             previous_plus[lane] = 0.0;
             current_plus[lane] = initial.plus_sign * plus.mantissa;

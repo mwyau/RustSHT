@@ -161,21 +161,11 @@ where
         } = self;
 
         for ring in 0..sin_theta.len() {
-            let half_cosine = ((1.0 + cos_theta[ring]) * 0.5).sqrt().max(1e-15);
-            let half_sine = ((1.0 - cos_theta[ring]) * 0.5).sqrt().max(1e-15);
-            let plus = multiply(
-                initial.prefactor,
-                multiply(
-                    power(half_cosine, initial.cos_power)?,
-                    power(half_sine, initial.sin_power)?,
-                )?,
-            )?;
-            let minus = multiply(
-                initial.prefactor,
-                multiply(
-                    power(half_cosine, initial.sin_power)?,
-                    power(half_sine, initial.cos_power)?,
-                )?,
+            let (plus, minus) = super::spin_factors::initial_spin_values(
+                cos_theta[ring],
+                initial,
+                power,
+                multiply,
             )?;
             previous_plus[ring] = 0.0;
             current_plus[ring] = initial.plus_sign * plus.mantissa;

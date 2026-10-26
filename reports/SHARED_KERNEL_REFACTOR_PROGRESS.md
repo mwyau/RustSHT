@@ -1,6 +1,15 @@
 # Shared kernel refactor progress
 
-- **2026-10-26 21:41 UTC — next implementation slices:** (1) inspect the remaining native-spin recurrence/state control for sharing that leaves f64 SIMD code unchanged; (2) continue native-f32 paired-spin numerical work only with transactional fallback coverage and keep its route gate conservative; (3) consolidate exact order-job and FFT staging helpers after the numerical review, preserving distinct adjoints and grid adapters.
+- **2026-10-26 21:51 UTC — next implementation slices:** (1) validate and performance-screen a shared native-spin seed initializer while retaining the typed f64/f32 scaled power and multiplication leaves; (2) inspect normalized recurrence state transitions for exact sharing that leaves f64 SIMD code unchanged; (3) continue native-f32 paired-spin work only with transactional fallback coverage and keep its route gate conservative.
+
+- **2026-10-26 21:53 UTC — shared native-spin seed initialization (f64 screen pending).** Candidate follows exact parent `c4ab9b6d8f58a816f4b30eaf91889760c754c3ee`. Moved the duplicated half-angle and ± seed-power/product setup from `spin.rs` and `spin_f32.rs` into `spin_factors::initial_spin_values`. The shared compile-time generic calls the original f64/f32 `power` and `multiply` leaves; typed `HALF` and half-angle floor constants preserve their previous values. Recurrence steps, lane normalizers, dispatch, routes, and adjoints are untouched.
+
+  Validation used rustc/Cargo 1.99.1, default profiles, no explicit `RUSTFLAGS`, and isolated `CARGO_HOME` / `CARGO_TARGET_DIR` under scratch label `rustsht-exp-spin-seed.AoyjLAmF` in `/tmp`:
+  - `cargo test --locked --all-features --lib spin`: 95 passed, 0 failed, 11 ignored, 231 filtered; includes spin transforms/adjoints, poles and cutoffs, exceptional inputs, reset/poison, GL/CC/F1, and thread-count comparisons.
+  - `cargo check --locked --workspace --all-targets --all-features`, `cargo clippy --locked --workspace --all-targets --all-features -- -D warnings`, `cargo fmt --all -- --check`, and `git diff --check` passed.
+  - No benchmark ran in this test experiment. A focused f64 regression screen for GL T1023 spin-1 synthesis q1/q8 and GL T720 spin-1 analysis q1/q8 is pending; no f64 performance claim is made.
+
+  The owned scratch measured 995,516,338 bytes. Keep it until this report and source are committed and verified on `origin/dev`, then remove this exact scratch and verify reclamation before starting the separate f64 benchmark experiment.
 
 - **2026-10-26 21:41 UTC — shared normal-complex binary scaling template (screen complete; q8 inconclusive).** Source `4ce0009f56be80a2982ca2f970bf3246df6201cf` follows exact parent `f4a9b1db5f2fec52b54edf8d306359fb3baf9f4b`; immutable performance baseline remains `062218639bc2f097f004c617da0ce46a3a4d2941`. Replaced the separate f64/f32 normal-complex exponent-bit restoration bodies with one compile-time macro in `legendre/numeric.rs`, instantiated with each precision's complex/float/bit types, mantissa width, exponent mask, and exponent limit. The generated f64/f32 functions retain their prior typed shifts, range checks, and bit reconstruction; no runtime dispatch or arithmetic route changed. The two independently maintained bit-restoration bodies are now one source body.
 
