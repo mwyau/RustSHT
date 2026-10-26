@@ -1,0 +1,24 @@
+# Shared-kernel route inventory
+
+Source inspected at `ad3438c3` on `dev`. This is a call-site and capability inventory, not a claim that every cell has a newly generated parity result. Scalar and spin plans retain full or reduced `mmax`; q1/q8 select different worker execution shapes without changing the mathematical operator.
+
+| Family and precision | GL route | CC route | F1 route | Shared or distinct status |
+|---|---|---|---|---|
+| Spin-0, f64 | `transform.rs` uses `legendre/scalar.rs`; f64 paired, reflected/order-major, and precomputed-table capabilities can be selected by shape. | Scalar recurrence after the prepared CC meridional operator when required; CC quadrature and weighted analysis stay at the grid boundary. | Scalar recurrence after prepared F1 meridional resampling; F1 phase/weight handling stays at the grid boundary. | Scalar equations and scaled-value policy are being shared; f64-specific Pulp leaves and paired/order-major/table routes remain specialized. |
+| Spin-0, f32 | `transform.rs` uses `legendre/scalar_f32.rs` and native f32 Pulp lanes. | Same f32 recurrence after prepared CC meridional processing; the CC operator/adjoint remains separate. | Same f32 recurrence after prepared F1 meridional processing and phase handling. | The normalized scalar recurrence is duplicated from f64 beyond the shared factor/scaling primitives. The f64 paired, ordered, and precomputed capability gates remain disabled for f32. |
+| Spin-1 STANDARD, f64 | `spin_transform.rs` selects scalar-coefficient adapters through `legendre/spin_fast.rs` for eligible shapes and retains the direct `legendre/spin.rs` recurrence/fallback. | Prepared CC grid path with the spin worker; conversion/adapters are selected only where their preconditions hold. | Prepared F1 grid path with the spin worker and F1 phase operator. | Spin-1 coefficient conversion is already generic; scalar recurrence reuse, direct-spin fallback, and adjoints remain separate routes. |
+| Spin-1 STANDARD, f32 | Native `legendre/spin_f32.rs` recurrence and SIMD accumulation, with generic coefficient adapters available at selected call sites. | Prepared CC resampling and its adjoint surround the f32 spin worker. | Prepared F1 resampling/phase and its adjoint surround the f32 spin worker. | f32 and f64 spin factor preparation now uses `legendre/spin_factors.rs`; SIMD recurrence leaves remain precision-specific. |
+| Spin-2, f32/f64 | `spin_transform.rs` may use the generic spin-2/scalar coefficient adapter from `spin_fast.rs`; direct native spin recurrence remains available. | Prepared CC meridional operator plus the selected spin/scalar route. | Prepared F1 meridional operator plus the selected spin/scalar route. | The adapter shares coefficient plumbing, not the distinct spin-2 basis recurrence or CC/F1 operators. |
+| Spin-3/4, f32/f64 | Direct positive/negative spin recurrence in `spin.rs` or `spin_f32.rs`. | Direct spin recurrence around prepared CC resampling and weighted adjoint handling. | Direct spin recurrence around prepared F1 resampling and phase handling. | No scalar-recurrence shortcut; f32/f64 recurrence leaves remain precision-specific. |
+
+## Operator distinctions
+
+The public transform surface keeps `S`, `A`, `S*`, and `A*` as separate implementations: scalar `synthesis_into`, `analysis_into`, `adjoint_synthesis_into`, and `adjoint_analysis_into`, with matching spin operations in `spin_transform.rs`. Weighted analysis is also distinct from its adjoint. Spin-1 `STANDARD`, `GRAD_ONLY`, and `DERIV1` have different coefficient mappings and restrictions; spin 2–4 use their own spin definitions. CC/F1 analysis uses prepared meridional spectra and the true transpose for adjoints; GL uses direct grid weights. Shared post-preparation Legendre workers must preserve these boundaries.
+
+## Current routing capabilities
+
+- `ShtScalar` supplies common typed orchestration, with static f32/f64 implementations. The f64 implementation enables paired scalar, reflected/order-major, and precomputed scalar paths; f32 leaves those gates false until the corresponding typed kernels exist and are measured.
+- f32 and f64 have native SIMD implementations with different lane widths, thresholds, and exponent scaling. No hot-path f32-to-f64 conversion is part of the target design.
+- `meridional::CCResamplingPlan` is precision-generic. It prepares the CC/F1 latitude operation; GL does not pass through this resampler. CC can skip resampling when its sampling density is sufficient; F1 always uses the prepared operator.
+- The spin-1 and spin-2 scalar adapters in `spin_fast.rs` are shared coefficient transforms. They do not make native spin recurrence, weighted analysis, or the adjoint operations mathematically interchangeable.
+- Per user instruction, the Rust `src/pyspharm` API and Python `python/pyspharm-rs` facade remain. Only the test that compared against upstream `pyspharm-syl` was removed.
