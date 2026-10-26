@@ -69,20 +69,6 @@ pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f64>, ShtError>
     super::numeric::sectoral_normalizations(mmax)
 }
 
-/// Returns the polar order cutoff used by DUCC for a ring.
-pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f64, cos_theta: f64) -> usize {
-    let lmax_f = lmax as f64;
-    let offset = (0.01 * lmax_f).max(100.0);
-    let b = -2.0 * spin as f64 * cos_theta.abs();
-    let t = lmax_f * sin_theta + offset;
-    let c = (spin as f64).powi(2) - t * t;
-    let discriminant = b * b - 4.0 * c;
-    if discriminant <= 0.0 {
-        return lmax;
-    }
-    (((-b + discriminant.sqrt()) * 0.5).min(lmax_f) + 0.5) as usize
-}
-
 /// Fills the order-dependent scalar recurrence factors through `lmax`.
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f64]) {
     super::numeric::fill_epsilon(m, lmax, output);
@@ -2939,9 +2925,9 @@ mod tests {
 
     #[test]
     fn polar_order_cutoff_matches_ducc_bounds() {
-        assert_eq!(polar_order_limit(64, 0, 0.0, 1.0), 64);
-        assert_eq!(polar_order_limit(255, 0, 0.0, 1.0), 100);
-        assert_eq!(polar_order_limit(255, 0, 1.0, 0.0), 255);
+        assert_eq!(crate::grid::polar_order_limit(64, 0, 0.0_f64, 1.0), 64);
+        assert_eq!(crate::grid::polar_order_limit(255, 0, 0.0_f64, 1.0), 100);
+        assert_eq!(crate::grid::polar_order_limit(255, 0, 1.0_f64, 0.0), 255);
     }
 
     #[test]

@@ -1826,7 +1826,7 @@ fn benchmark_fused_scaled_scalar_analysis_prefix() {
             .iter()
             .map(|&theta| (theta.sin(), theta.cos()))
             .filter(|&(sine, cosine)| {
-                REALISTIC_M <= scalar::polar_order_limit(BENCH_LMAX, 0, sine, cosine)
+                REALISTIC_M <= crate::grid::polar_order_limit(BENCH_LMAX, 0, sine, cosine)
             })
             .take(lane_count)
             .collect();

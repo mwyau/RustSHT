@@ -935,7 +935,7 @@ impl ShtScalar for f64 {
     }
 
     fn polar_order_limit(lmax: usize, spin: usize, sin_theta: Self, cos_theta: Self) -> usize {
-        scalar::polar_order_limit(lmax, spin, sin_theta, cos_theta)
+        crate::grid::polar_order_limit(lmax, spin, sin_theta, cos_theta)
     }
 
     fn fill_epsilon(m: usize, lmax: usize, output: &mut [Self]) {
@@ -1947,7 +1947,7 @@ impl ShtScalar for f32 {
     }
 
     fn polar_order_limit(lmax: usize, spin: usize, sin_theta: Self, cos_theta: Self) -> usize {
-        scalar_f32::polar_order_limit(lmax, spin, sin_theta, cos_theta)
+        crate::grid::polar_order_limit(lmax, spin, sin_theta, cos_theta)
     }
 
     fn fill_epsilon(m: usize, lmax: usize, output: &mut [Self]) {

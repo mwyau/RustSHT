@@ -3,6 +3,7 @@
 //
 // Latitude grid descriptors, geometry, and longitude sampling.
 
+use rustfft::num_traits::{Float, FromPrimitive, ToPrimitive};
 use std::f64::consts::TAU;
 
 use crate::error::ShtError;
@@ -11,6 +12,39 @@ use quadrature::{clenshaw_curtis_geometry, fejer1_geometry, gauss_legendre_geome
 pub mod geodesic;
 mod quadrature;
 pub(crate) mod resampling;
+
+/// Returns the maximum usable harmonic order for one latitude and spin.
+///
+/// The cutoff is computed in the transform's native precision and is shared
+/// by the f32 and f64 Legendre workers.
+pub(crate) fn polar_order_limit<T: Float + FromPrimitive + ToPrimitive>(
+    lmax: usize,
+    spin: usize,
+    sin_theta: T,
+    cos_theta: T,
+) -> usize {
+    let lmax_float = T::from_usize(lmax).expect("lmax is representable in f32 and f64");
+    let spin_float = T::from_usize(spin).expect("spin is representable in f32 and f64");
+    let zero = T::zero();
+    let half = T::from_f64(0.5).expect("0.5 is representable in f32 and f64");
+    let offset = (T::from_f64(0.01).expect("0.01 is representable") * lmax_float)
+        .max(T::from_f64(100.0).expect("100 is representable in f32 and f64"));
+    let b = -T::from_f64(2.0).expect("2 is representable in f32 and f64")
+        * spin_float
+        * cos_theta.abs();
+    let t = lmax_float * sin_theta + offset;
+    let c = spin_float.powi(2) - t * t;
+    let discriminant = b * b - T::from_f64(4.0).expect("4 is representable in f32 and f64") * c;
+    if discriminant <= zero {
+        return lmax;
+    }
+    let cutoff = ((-b + discriminant.sqrt()) * half).min(lmax_float) + half;
+    if cutoff.is_nan() || cutoff <= zero {
+        0
+    } else {
+        cutoff.to_usize().unwrap_or(usize::MAX)
+    }
+}
 
 /// Latitude grid used by a rectangular spherical harmonic transform.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -182,6 +216,98 @@ fn find_fft_friendly_nphi(
 mod tests {
     use super::*;
     use std::f64::consts::PI;
+
+    fn reference_polar_order_limit_f64(
+        lmax: usize,
+        spin: usize,
+        sin_theta: f64,
+        cos_theta: f64,
+    ) -> usize {
+        let lmax_float = lmax as f64;
+        let offset = (0.01 * lmax_float).max(100.0);
+        let b = -2.0 * spin as f64 * cos_theta.abs();
+        let t = lmax_float * sin_theta + offset;
+        let c = (spin as f64).powi(2) - t * t;
+        let discriminant = b * b - 4.0 * c;
+        if discriminant <= 0.0 {
+            return lmax;
+        }
+        (((-b + discriminant.sqrt()) * 0.5).min(lmax_float) + 0.5) as usize
+    }
+
+    fn reference_polar_order_limit_f32(
+        lmax: usize,
+        spin: usize,
+        sin_theta: f32,
+        cos_theta: f32,
+    ) -> usize {
+        let lmax_float = lmax as f32;
+        let offset = (0.01 * lmax_float).max(100.0);
+        let b = -2.0 * spin as f32 * cos_theta.abs();
+        let t = lmax_float * sin_theta + offset;
+        let c = (spin as f32).powi(2) - t * t;
+        let discriminant = b * b - 4.0 * c;
+        if discriminant <= 0.0 {
+            return lmax;
+        }
+        (((-b + discriminant.sqrt()) * 0.5).min(lmax_float) + 0.5) as usize
+    }
+
+    #[test]
+    fn shared_polar_order_limit_matches_native_precision_formulas() {
+        fn check(lmax: usize, spin: usize, sin_theta: f64, cos_theta: f64) {
+            let expected_f64 = reference_polar_order_limit_f64(lmax, spin, sin_theta, cos_theta);
+            assert_eq!(
+                polar_order_limit(lmax, spin, sin_theta, cos_theta),
+                expected_f64
+            );
+            assert_eq!(
+                <f64 as crate::legendre::ShtScalar>::polar_order_limit(
+                    lmax, spin, sin_theta, cos_theta
+                ),
+                expected_f64
+            );
+            let sin_theta = sin_theta as f32;
+            let cos_theta = cos_theta as f32;
+            let expected_f32 = reference_polar_order_limit_f32(lmax, spin, sin_theta, cos_theta);
+            assert_eq!(
+                polar_order_limit(lmax, spin, sin_theta, cos_theta),
+                expected_f32
+            );
+            assert_eq!(
+                <f32 as crate::legendre::ShtScalar>::polar_order_limit(
+                    lmax, spin, sin_theta, cos_theta
+                ),
+                expected_f32
+            );
+        }
+
+        let angles = [0.0, 1.0e-5, 0.1, 0.5, PI / 2.0, PI - 1.0e-5, PI];
+        for lmax in [0, 1, 2, 15, 99, 100, 101, 255, 511, 720, 1023, 2048, 10_000] {
+            for spin in [0, 1, 2, 4] {
+                for angle in angles {
+                    let (sin_theta, cos_theta) = angle.sin_cos();
+                    check(lmax, spin, sin_theta, cos_theta);
+                }
+            }
+        }
+
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            for lmax in [255, 511, 720, 1023] {
+                let ntheta = lmax + 1;
+                let grid = GridSpec::new(kind, ntheta, 1, 0.0).unwrap();
+                for spin in [0, 1, 2, 4] {
+                    for &theta in grid.theta() {
+                        check(lmax, spin, theta.sin(), theta.cos());
+                    }
+                }
+            }
+        }
+    }
 
     fn is_fft_friendly(mut value: usize) -> bool {
         for factor in [2, 3, 5, 7] {

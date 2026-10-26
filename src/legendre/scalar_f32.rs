@@ -46,19 +46,6 @@ pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError>
     super::numeric::sectoral_normalizations(mmax)
 }
 
-pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f32, cos_theta: f32) -> usize {
-    let lmax_f = lmax as f32;
-    let offset = (0.01 * lmax_f).max(100.0);
-    let b = -2.0 * spin as f32 * cos_theta.abs();
-    let t = lmax_f * sin_theta + offset;
-    let c = (spin as f32).powi(2) - t * t;
-    let discriminant = b * b - 4.0 * c;
-    if discriminant <= 0.0 {
-        return lmax;
-    }
-    (((-b + discriminant.sqrt()) * 0.5).min(lmax_f) + 0.5) as usize
-}
-
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f32]) {
     super::numeric::fill_epsilon(m, lmax, output);
 }
