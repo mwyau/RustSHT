@@ -1,5 +1,7 @@
 # Shared SHT kernels: f32/f64, scalar/spin, GL/CC/F1
 
+**Updated owner steering (2026-10-26 14:51 UTC):** [Final module architecture and implementation steering](shared-sht-final-architecture-steering-2026-10-26.md) takes precedence for module layout, removing the Rust `src/pyspharm` namespace, precise task ordering, lightweight validation between small edits, authorized benchmark subagent usage, and final measured complexity reduction. Preserve existing completed `dev` work; do not restart baselines. The separate Python compatibility distribution remains unless separately retired.
+
 **Owner direction: 2026-10-26.** Reduce duplicated SHT algorithms, dispatch branches, and special-case maintenance by using Rust compile-time generics and limited precision-specialized SIMD implementations. Extend the successful f64 Legendre paths to f32, and share scalar/spin and grid-independent machinery when their mathematics is identical. **Do not sacrifice numerical correctness or demonstrated performance to maximize shared line count.**
 
 **Branch:** `dev`, starting from the exact initialization baseline `062218639bc2f097f004c617da0ce46a3a4d2941`. Implement, commit, and push directly on `dev`; do not modify `main`. Fetch and reconcile `origin/dev` before each push. Preserve work in existing candidate worktrees and never overwrite parallel work. Keep intermediate commits reviewable.
