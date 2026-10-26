@@ -90,43 +90,6 @@ pub(crate) fn value_in_normal_range<T: LegendrePrecision>(value: T) -> bool {
     value == T::zero() || (value.is_finite() && magnitude <= T::BIG && magnitude >= T::SMALL)
 }
 
-/// Traverses one scalar order while the precision-specific SIMD leaf advances
-/// the recurrence and maintains its scaling state.
-#[inline(always)]
-#[expect(
-    clippy::too_many_arguments,
-    reason = "The traversal operates directly on caller-owned recurrence scratch."
-)]
-pub(crate) fn traverse_scalar_degrees<T, Visit, Advance>(
-    ring_start: usize,
-    m: usize,
-    lmax: usize,
-    previous: &mut [T],
-    current: &mut [T],
-    next: &mut [T],
-    exponents: &mut [i64],
-    mut visit: Visit,
-    mut advance: Advance,
-) -> Result<(), ShtError>
-where
-    Visit: FnMut(usize, usize, &[T], &[i64]) -> Result<(), ShtError>,
-    Advance: FnMut(usize, &mut [T], &mut [T], &mut [T], &mut [i64]) -> Result<(), ShtError>,
-{
-    let mut previous = previous;
-    let mut current = current;
-    let mut next = next;
-    for degree in m..=lmax {
-        visit(degree, ring_start, current, exponents)?;
-        if degree == lmax {
-            break;
-        }
-        advance(degree, previous, current, next, exponents)?;
-        std::mem::swap(&mut previous, &mut current);
-        std::mem::swap(&mut current, &mut next);
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -220,6 +220,9 @@ where
         debug_assert_eq!(sin_theta.len(), exponents.len());
         debug_assert!(epsilon.len() > lmax);
 
+        let mut previous = previous;
+        let mut current = current;
+        let mut next = next;
         let mut normal_range = false;
         for ring in 0..sin_theta.len() {
             let sectoral = scaled_power(sin_theta[ring], m)?;
@@ -232,50 +235,46 @@ where
             exponents[ring] = sectoral.exponent;
         }
 
-        super::numeric::traverse_scalar_degrees(
-            ring_start,
-            m,
-            lmax,
-            previous,
-            current,
-            next,
-            exponents,
-            |degree, ring_start, values, scales| visit(degree, ring_start, values, scales),
-            |degree, previous, current, next, exponents| {
-                let epsilon_l = simd.splat_f64s(epsilon[degree]);
-                let epsilon_next = simd.splat_f64s(epsilon[degree + 1]);
-                let (current_vectors, current_tail) = S::as_simd_f64s(current);
-                let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
-                let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
-                let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
-                debug_assert_eq!(current_vectors.len(), previous_vectors.len());
-                debug_assert_eq!(current_vectors.len(), cos_vectors.len());
-                debug_assert_eq!(current_vectors.len(), next_vectors.len());
-                for block in 0..current_vectors.len() {
-                    let degree_term = simd.mul_f64s(epsilon_l, previous_vectors[block]);
-                    let latitude_term = simd.mul_f64s(cos_vectors[block], current_vectors[block]);
-                    next_vectors[block] =
-                        simd.div_f64s(simd.sub_f64s(latitude_term, degree_term), epsilon_next);
-                }
-                debug_assert_eq!(current_tail.len(), previous_tail.len());
-                debug_assert_eq!(current_tail.len(), cos_tail.len());
-                debug_assert_eq!(current_tail.len(), next_tail.len());
-                for index in 0..current_tail.len() {
-                    next_tail[index] = (cos_tail[index] * current_tail[index]
-                        - epsilon[degree] * previous_tail[index])
-                        / epsilon[degree + 1];
-                }
+        for l in m..=lmax {
+            visit(l, ring_start, current, exponents)?;
+            if l == lmax {
+                break;
+            }
 
-                if normal_range {
-                    if pair_lanes_need_scaling(simd, current, next) {
-                        normal_range = normalize_pair_lanes(current, next, exponents)?;
-                    }
-                } else {
+            let epsilon_l = simd.splat_f64s(epsilon[l]);
+            let epsilon_next = simd.splat_f64s(epsilon[l + 1]);
+            let (current_vectors, current_tail) = S::as_simd_f64s(current);
+            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+            let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
+            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+            debug_assert_eq!(current_vectors.len(), previous_vectors.len());
+            debug_assert_eq!(current_vectors.len(), cos_vectors.len());
+            debug_assert_eq!(current_vectors.len(), next_vectors.len());
+            for block in 0..current_vectors.len() {
+                let degree_term = simd.mul_f64s(epsilon_l, previous_vectors[block]);
+                let latitude_term = simd.mul_f64s(cos_vectors[block], current_vectors[block]);
+                next_vectors[block] =
+                    simd.div_f64s(simd.sub_f64s(latitude_term, degree_term), epsilon_next);
+            }
+            debug_assert_eq!(current_tail.len(), previous_tail.len());
+            debug_assert_eq!(current_tail.len(), cos_tail.len());
+            debug_assert_eq!(current_tail.len(), next_tail.len());
+            for index in 0..current_tail.len() {
+                next_tail[index] = (cos_tail[index] * current_tail[index]
+                    - epsilon[l] * previous_tail[index])
+                    / epsilon[l + 1];
+            }
+
+            if normal_range {
+                if pair_lanes_need_scaling(simd, current, next) {
                     normal_range = normalize_pair_lanes(current, next, exponents)?;
                 }
-                Ok(())
-            },
-        )?;
+            } else {
+                normal_range = normalize_pair_lanes(current, next, exponents)?;
+            }
+            std::mem::swap(&mut previous, &mut current);
+            std::mem::swap(&mut current, &mut next);
+        }
         Ok(())
     }
 }
