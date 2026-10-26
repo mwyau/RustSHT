@@ -321,3 +321,16 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - No benchmark ran: only per-ring geometry planning was consolidated, and exhaustive representative-grid checks return exactly the prior integer cutoffs. No transform recurrence or SIMD route changed.
 
 The isolated target measured 906,035,200 bytes across 940 files. After the report commit was verified, the uniquely labeled scratch root was removed and its absence verified. This reclaimed 906,035,200 target bytes; the temp filesystem returned to 949,018 free inodes and approximately 46 GiB free. Keep the f64 leaves and route gates unchanged.
+
+## Native-precision paired scalar setup — 2026-10-26 19:48 UTC
+
+Source commit `4970bdd6798ec319be7b5b6b39e6f4e19d14b140` follows parent `c92bccf975276bad2de2529f7fe79a51dc19b839`. `fill_factors` retains its f64 signature and exact `PAIRED_FACTOR_LIMIT`, delegating to one generic native-precision implementation. The scalar even/odd coefficient preparation and two-row spin coefficient preparation are now generic over `Float` as well; both use native `f32` arithmetic when instantiated for f32. This consolidates three setup formula bodies instead of requiring separate f32 copies as the paired f32 leaf is added. No existing f32 paired production body was deleted because that route does not exist yet; its capability remains disabled. The f64 recurrence/SIMD kernels and routing gates are unchanged.
+
+Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUSTFLAGS`, and an experiment-local `CARGO_TARGET_DIR=$SCRATCH/target` (scratch label `rustsht-exp-paired-setup.WOQqqHX4`):
+
+- `cargo fmt --all`, `git diff --check`, `cargo check --lib`, and `cargo clippy --all-targets --all-features -- -D warnings` passed.
+- The new `paired_synthesis_setup_uses_native_f32_and_rejects_overflow` test passed. It checks f32 factors and transformed coefficients against direct native-f32 equations for `m=0..4`, `lmax=m..m+9`, verifies paired and independent row preparation agree, and checks nonfinite transformed-value rejection.
+- Existing f64 coefficient boundary/nonfinite tests and paired-spin two-row equivalence/rejection tests passed (4 tests total). A focused `paired_synthesis` filter also passed 6 tests. No full suite or benchmark ran; no f32 production gate was enabled.
+- This setup code is outside the recurrence/SIMD leaves and preserves operation order for f64. No f64 timing claim is made; there was no route or scheduling change.
+
+The experiment scratch contained only its manifest and isolated Cargo target; before cleanup it measured 988,337,984 bytes across 1,125 files. The test target is transient, not retained benchmark evidence. After this progress note is committed and verified, remove the owned scratch directory and verify absence/free space before beginning another experiment.
