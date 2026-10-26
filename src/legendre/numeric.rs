@@ -389,6 +389,33 @@ pub(crate) fn normalize_pair_lane_f32(
     Ok((maximum_bits, scale_steps))
 }
 
+/// Normalizes every lane in a native-f32 recurrence pair. The optional
+/// counters support the spin normalizer profile without duplicating the lane
+/// traversal in the scalar and spin owners.
+#[inline(always)]
+pub(crate) fn normalize_pair_lanes_f32<const TRACK_SCALE_COUNTS: bool>(
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+    overflow_quantity: &'static str,
+) -> Result<(usize, usize), ShtError> {
+    let mut scaled_lanes = 0;
+    let mut scale_steps = 0;
+    for lane in 0..previous.len() {
+        let (_, lane_scale_steps) = normalize_pair_lane_f32(
+            &mut previous[lane],
+            &mut current[lane],
+            &mut exponents[lane],
+            overflow_quantity,
+        )?;
+        if TRACK_SCALE_COUNTS && lane_scale_steps != 0 {
+            scaled_lanes += 1;
+            scale_steps += lane_scale_steps;
+        }
+    }
+    Ok((scaled_lanes, scale_steps))
+}
+
 /// Reports whether any native-f32 recurrence pair is outside its ordinary
 /// range. Both paths share the float range scan; the const policy preserves
 /// scalar's existing single-NaN behavior while spin treats any NaN as unsafe.

@@ -769,15 +769,13 @@ fn normalize_pair_lanes(
     current: &mut [f32],
     exponents: &mut [i64],
 ) -> Result<(), ShtError> {
-    for lane in 0..previous.len() {
-        super::numeric::normalize_pair_lane_f32(
-            &mut previous[lane],
-            &mut current[lane],
-            &mut exponents[lane],
-            "scalar recurrence scale",
-        )?;
-    }
-    Ok(())
+    super::numeric::normalize_pair_lanes_f32::<false>(
+        previous,
+        current,
+        exponents,
+        "scalar recurrence scale",
+    )
+    .map(|_| ())
 }
 
 #[inline(always)]

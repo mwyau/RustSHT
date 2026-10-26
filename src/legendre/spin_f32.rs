@@ -518,32 +518,29 @@ fn normalize_pair_lanes(
     exponents: &mut [i64],
 ) -> Result<(), ShtError> {
     #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-    let mut scaled_lanes = 0_u64;
-    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-    let mut scale_steps = 0_u64;
-    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
     {
         NORMALIZER_CALLS.fetch_add(1, Ordering::Relaxed);
         NORMALIZER_LANES.fetch_add(previous.len() as u64, Ordering::Relaxed);
-    }
-    for lane in 0..previous.len() {
-        let (_, _scale_steps) = super::numeric::normalize_pair_lane_f32(
-            &mut previous[lane],
-            &mut current[lane],
-            &mut exponents[lane],
+        let (scaled_lanes, scale_steps) = super::numeric::normalize_pair_lanes_f32::<true>(
+            previous,
+            current,
+            exponents,
             "spin recurrence exponent",
         )?;
-        #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-        if _scale_steps != 0 {
-            scaled_lanes += 1;
-            scale_steps += _scale_steps as u64;
+        if scaled_lanes != 0 {
+            NORMALIZER_SCALED_CALLS.fetch_add(1, Ordering::Relaxed);
+            NORMALIZER_SCALED_LANES.fetch_add(scaled_lanes as u64, Ordering::Relaxed);
+            NORMALIZER_SCALE_STEPS.fetch_add(scale_steps as u64, Ordering::Relaxed);
         }
     }
-    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-    if scaled_lanes != 0 {
-        NORMALIZER_SCALED_CALLS.fetch_add(1, Ordering::Relaxed);
-        NORMALIZER_SCALED_LANES.fetch_add(scaled_lanes, Ordering::Relaxed);
-        NORMALIZER_SCALE_STEPS.fetch_add(scale_steps, Ordering::Relaxed);
+    #[cfg(not(all(test, rustsht_profile_spin32_normalizer)))]
+    {
+        super::numeric::normalize_pair_lanes_f32::<false>(
+            previous,
+            current,
+            exponents,
+            "spin recurrence exponent",
+        )?;
     }
     Ok(())
 }
