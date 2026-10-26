@@ -351,9 +351,11 @@ Current checkout is `dev` at `02d1b360`, equal to fetched `origin/dev`. Process 
 
 **Preliminary ranking:** (1) repeated per-group order conversion/factor preparation, with the cache/order-queue gate as the boundary; (2) lane-block/degree loop order and coefficient materialization in the grouped paired kernel; (3) bounded order-only repeated work such as `power_lower_limit`, which is already too small in T720 to justify added plumbing. No production change is justified without measurements. When CPU measurement is explicitly resumed, first refresh GL T320 over q8 against pinned DUCC and current source, counting preparation by order/group and normalizing active lane × degree × channel work before considering a route-gate candidate. T720 q8 remains a useful control; do not add another inline attribute or widen SIMD state based on these source observations.
 
-## Current reduced-q8 synthesis dispatch review (PRELIMINARY, 2026-10-26 12:01 UTC)
+## Current reduced-q8 synthesis dispatch review (PRELIMINARY, 2026-10-26 12:04 UTC)
 
 The 09:42 source description of over-resolved GL T320 using grouped physical-latitude work, and its 605M/226M profile, predates accepted change `8200a4d2`. The current cache gate includes `ntheta > lmax`, so successful preparation selects the order-major queue for both T320 full and reduced q8. The old grouped-route loop-order and repeated-preparation ranking is historical; do not use it as current q8 PC attribution. Current route hit/decline counts and T320-specific disassembly are unresolved.
+
+The saved T320 reduced q8 whole-worker Callgrind boundary is 816M Rust versus 784M DUCC Ir (about 4.1% more Rust instructions), while the matched elapsed ratio is 1.247×. These are not disjoint stage counts or cycles, so they do not assign the 0.288 ms gap to recurrence, cache preparation, FFT, or scheduling. That stage attribution remains unresolved.
 
 This source-only check supersedes the earlier 09:42 statement that GL T320 full over-resolved q8 is the strongest current synthesis gap. `PERFORMANCE_STATUS.md` now records T320 full as a measured pass; the current measured reduced-q8 gaps are T320 `mmax=120` (1.247× DUCC) and T511 `mmax=127` (1.016×). Exact GL T720 full q8 remains a passing control (saved Rust 5.561 ms versus DUCC 5.885 ms). The source checkout is `dev` at `527ddb90`. No profile, benchmark, build, or test ran for this review.
 
