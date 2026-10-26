@@ -41,13 +41,31 @@ The 15-pair confirmation used the same exact GL T320 oversampled fixture (input 
 
 All 15 candidate output maps are bitwise identical to exact parent; every worker reported repeat/reset consistency, all outputs were finite, and maximum candidate/DUCC rel-L2 was `6.80e-14`. Median scheduler wait fractions were 0.83% candidate, 3.13% parent, 0.22% DUCC; these are observed host scheduler statistics, not hardware counter attribution. A matched Callgrind run reports 4,478,968,546 candidate Ir versus 4,478,518,610 parent Ir (+0.010%), so this candidate does not reduce instruction work. Its current code cost is one f64 trait override selecting `with_min_len(1)` on the existing grouped path; no recurrence, numerical, fallback, or scratch logic changed.
 
-**Decision pending affected-route screens.** The timing effect is repeatable and material on this cell, with minimal source complexity. The largest interpretation risk is the mechanism: Callgrind's per-thread summaries do not show a broader high-Ir thread set, and that instrumented scheduler view may not preserve real parallel occupancy. The q1 and exact-GL T511/T1023 q8 controls below are neutral and source-dispatch-unaffected; remaining risk is the other static grouped workload shapes, especially reduced-order and q2/q4 cases.
+**Interim decision:** the T320 q8 timing gain is repeatable and material, but the trait-wide preference has not been accepted. Callgrind Ir is neutral and its per-thread files do not prove broader worker participation. q1 and exact-GL T511/T1023 q8 controls below are neutral and source-dispatch-unaffected; the broader static-group screen that follows finds a T255 regression and supports narrowing the rule to cases where the current coarse grain underfills q.
 
 ## q1 and exact-GL q8 route controls (PRELIMINARY, 2026-10-26 09:09 UTC)
 
 Three interleaved parent/candidate/DUCC process triplets were run on each control with the same pinned worker binaries and CPUs as the primary q8 test. GL T320 oversampled q1 candidate/parent median ratio was `1.011` (candidate `10.497 ms`, parent `10.387 ms`); all three maps were bitwise identical. The q1 route has `execution_threads > 1 == false`, so the new trait method is not consulted.
 
-For exact GL T511 q8, candidate/parent median ratio was `0.997` (2.481/2.484 ms); for exact GL T1023 q8 it was `0.983` (14.102/14.335 ms). Both controls were bitwise identical to parent in every pair, repeat/reset-consistent and finite. Candidate/DUCC rel-L2 was `2.22e-13` and `2.60e-13`, respectively. Source dispatch confirms T511/T1023 full q8 enter the existing coefficient/order queue and bypass the changed static grouped `with_min_len` branch. Three pairs are a smoke control, not a statistically powered regression study. The remaining risk is the other **affected static grouped** workloads, notably reduced-order and q2/q4 cases; screen those before retaining the trait-wide f64 preference. No `PERFORMANCE_STATUS.md` update is justified until the candidate disposition is final.
+For exact GL T511 q8, candidate/parent median ratio was `0.997` (2.481/2.484 ms); for exact GL T1023 q8 it was `0.983` (14.102/14.335 ms). Both controls were bitwise identical to parent in every pair, repeat/reset-consistent and finite. Candidate/DUCC rel-L2 was `2.22e-13` and `2.60e-13`, respectively. Source dispatch confirms T511/T1023 full q8 enter the existing coefficient/order queue and bypass the changed static grouped `with_min_len` branch. Three pairs are a smoke control, not a statistically powered regression study. The broader static grouped workloads, including reduced-order and q2/q4 cases, are screened below. No `PERFORMANCE_STATUS.md` update is justified until the bounded candidate disposition is final.
+
+## Broader static-group route screen (PRELIMINARY, 2026-10-26 09:11 UTC)
+
+The trait-wide f64 preference was screened in three interleaved parent/candidate/DUCC triplets per affected geometry/thread cell. Candidate maps matched the exact parent bit-for-bit in every pair; repeat/reset and finite-output checks passed. Ratios below are candidate/parent medians; three pairs are screening evidence, not final confidence intervals.
+
+| Workload | Parent ms | Candidate ms | DUCC ms | Ratio | Candidate wins |
+|---|---:|---:|---:|---:|---:|
+| GL T255, m255, `ntheta=511`, q8 | 4.220 | 4.721 | 1.087 | 1.119 | 0/3 |
+| GL T255, m63, `ntheta=511`, q8 | 1.346 | 1.397 | 0.463 | 1.032 | 1/3 |
+| GL T255, m255, `ntheta=511`, q4 | 6.736 | 6.998 | 1.985 | 1.039 | 1/3 |
+| GL T255, m255, `ntheta=511`, q2 | 7.920 | 7.958 | 3.797 | 1.005 | 1/3 |
+| GL T320, m80, `ntheta=640`, q8 | 3.858 | 2.882 | 0.881 | 0.744 | 3/3 |
+| CC T180, m180, `ntheta=361`, q8 | 4.081 | 2.829 | 0.501 | 0.696 | 3/3 |
+| CC T180, m45, `ntheta=361`, q8 | 0.923 | 0.638 | 0.213 | 0.692 | 3/3 |
+
+Candidate/DUCC rel-L2 stayed between `3.46e-14` and `1.01e-13` on these fixtures. The large gains share a source-level condition: the existing 2-group grain exposes fewer leaves than q. GL T320 q8 has ten groups (at most five coarse leaves); CC T180 q8 has twelve (at most six); T320 reduced has the same ten. GL T255 over has sixteen groups, so the existing 2-group grain already exposes eight leaves at q8; single-group splitting was slower on full order and noisy/slightly slower in reduced/q2/q4 screens.
+
+This supports a bounded correction rather than the trait-wide rule: allow single-group grain only when `ceil(group_count/2) < execution_threads`, meaning the current 2-group grain would leave at least one worker without a task. For q8 this keeps the measured GL T320/CC T180 gains and preserves GL T255's current grain; q2/q4 T255 also remain unchanged. This correction is measurement-derived but still needs a short recheck of the T320 q8 target and T255 q8 regression guard after recompilation. Do not accept the broad trait override as-is.
 
 ## Single-vector suffix force-inline experiment (VALIDATED, 2026-10-26 07:43 UTC)
 
