@@ -29,13 +29,7 @@ use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
-use crate::legendre::{LegendrePrecision, define_f64_scaled_arithmetic};
-
-const BIG: f64 = <f64 as LegendrePrecision>::BIG;
-const SMALL: f64 = <f64 as LegendrePrecision>::SMALL;
-const SCALE_UP: f64 = <f64 as LegendrePrecision>::SCALE_UP;
-const SCALE_DOWN: f64 = <f64 as LegendrePrecision>::SCALE_DOWN;
-const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
+use crate::legendre::define_f64_scaled_arithmetic;
 
 pub(crate) type SpinInitial = super::spin_factors::SpinInitial<f64>;
 
@@ -262,30 +256,14 @@ fn normalize_pair_lanes(
     exponents: &mut [i64],
 ) -> Result<(), ShtError> {
     for ring in 0..previous.len() {
-        let maximum = previous[ring].abs().max(current[ring].abs());
-        let mut value = maximum;
-        while value > BIG {
-            previous[ring] *= SCALE_DOWN;
-            current[ring] *= SCALE_DOWN;
-            exponents[ring] =
-                exponents[ring]
-                    .checked_add(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "spin recurrence exponent",
-                    })?;
-            value *= SCALE_DOWN;
-        }
-        while value != 0.0 && value < SMALL {
-            previous[ring] *= SCALE_UP;
-            current[ring] *= SCALE_UP;
-            exponents[ring] =
-                exponents[ring]
-                    .checked_sub(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "spin recurrence exponent",
-                    })?;
-            value *= SCALE_UP;
-        }
+        let mut current_exponent = exponents[ring];
+        super::numeric::normalize_pair_values_f64(
+            &mut previous[ring],
+            &mut current[ring],
+            &mut exponents[ring],
+            &mut current_exponent,
+            "spin recurrence exponent",
+        )?;
     }
     Ok(())
 }
