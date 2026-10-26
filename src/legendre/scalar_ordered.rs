@@ -460,7 +460,7 @@ struct ScalarOrderedSynthesis<'a, 's> {
 impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
     type Output = bool;
 
-    #[inline]
+    #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
         let Self {
             alm,
@@ -799,6 +799,7 @@ impl WithSimd for PreparedComponentBatch<'_, '_> {
     }
 }
 
+#[inline(always)]
 fn synthesize_batch<S: Simd>(
     simd: S,
     scratch: &mut ScalarOrderedScratch<'_, f64>,
@@ -1113,6 +1114,7 @@ fn synthesize_ordinary_suffix_vector<S: Simd>(
         && store_simd_vector::<S>(&mut scratch.sum_odd_im[start..end], sum_odd_im_vector)
 }
 
+#[inline(always)]
 #[expect(
     clippy::too_many_arguments,
     reason = "Two ring vectors share each degree's coefficient broadcasts while retaining register state."

@@ -1,6 +1,6 @@
 # General-grid synthesis source-matrix root cause
 
-**Status: PRELIMINARY.** The large f64 gaps reproduce. Current-source stage probes place most GL T320 work in recurrence and spectrum accumulation, but exclusive instruction attribution and AVX2 comparison are still pending. No production optimization has been selected.
+**Status: PRELIMINARY.** The large f64 gaps reproduce. Fine-grained attribution identifies an out-of-line Pulp/AVX2 intrinsic boundary in the scalar ordered synthesis path. A three-attribute inline-boundary candidate has large matched instruction and GL/CC spin-0 timing gains, with spin-1 timings unchanged. Wider parity and regression validation remain pending.
 
 ## Revisions, binaries and protocol
 
@@ -74,11 +74,39 @@ The q8 oversampled spin-1 route counters recorded 2,270 ordinary fused block suc
 
 The fair allocating API comparison and the current coarse phase probes rule out one-sided coefficient conversion, plan setup, output materialization, or FFT as explanations for the largest GL ratios. The source-matrix run itself did not validate numerical accuracy, so all timing rows remain exploratory.
 
-## Next measurement before a code change
+## Inline-boundary candidate: measured mechanism and current decision
+
+The exact parent source is `c61ebcfb`; later `97fbcbea`/`39dde511` changes are documentation-only. The candidate differs only by `#[inline(always)]` on `ScalarOrderedSynthesis::with_simd`, `synthesize_batch`, and `synthesize_ordinary_suffix_two_vectors` in `src/legendre/scalar_ordered.rs:460,803,1122`. The optimized extension was rebuilt with rustc 1.99.1 / LLVM 23.1.1 on `x86_64-unknown-linux-gnu`, using the default release profile, no custom `target-cpu` or `RUSTFLAGS`; Pulp runtime dispatch selected AVX2 `V3` on this Ryzen 9 5950X host. DUCC is the source-matrix build identified above. Callgrind profiles use the same warmed, one-transform client-request protocol as the parent profiles.
+
+| GL T320 q1 | Parent Ir | Candidate Ir | Reduction | `_mm256_fmadd_pd` calls | `_mm256_set1_pd` calls |
+|---|---:|---:|---:|---:|---:|
+| spin 0 | 429.930M | 119.614M | 72.2% | 11.590M → 0.036M | 6.435M → 0.626M |
+| spin 1 | 899.112M | 260.816M | 71.0% | 23.333M → 0.073M | 12.939M → 1.244M |
+
+These are whole-program Callgrind instructions, not cycles. The candidate spin-0 `V3::vectorize::imp<ScalarOrderedSynthesis>` is 46.743M exclusive Ir; the candidate spin-1 `V3::vectorize::imp_fastcall<PreparedComponentBatch>` is 58.206M. In optimized AVX2 disassembly, the ordinary two-vector suffix now contains direct YMM `vfmadd*pd` instructions in its loop instead of repeatedly calling the six-instruction `_mm256_fmadd_pd` wrapper. The hot FMA-helper call count falls by 99.7%; `set1_pd` calls fall by about 90.3%. This confirms removal of ABI call/argument-marshalling work. It does not establish cycles saved by instruction category. The candidate still has a 0x2b8-byte scalar-kernel frame and visible YMM stack traffic in the hot loop; register spills were not eliminated. No claim of spill-free code is made.
+
+Interleaved whole-transform screen: three rounds per cell, each sample averaging three calls, same fixture and CPU affinity for parent/candidate/source-matrix DUCC. Times are medians in ms; host load/runqueue data was not captured, so these remain a focused screen rather than quiet-host acceptance data.
+
+| Workload | q | Spin | Parent | Candidate | DUCC |
+|---|---:|---:|---:|---:|---:|
+| GL T320 oversampled | 1 | 0 | 96.105 | 15.494 | 6.394 |
+| GL T320 oversampled | 1 | 1 | 39.875 | 38.159 | 17.451 |
+| GL T320 oversampled | 8 | 0 | 12.523 | 2.184 | 1.521 |
+| GL T320 oversampled | 8 | 1 | 13.722 | 13.712 | 3.285 |
+| CC T360 oversampled | 1 | 0 | 133.486 | 20.213 | 7.552 |
+| CC T360 oversampled | 1 | 1 | 50.812 | 50.062 | 18.238 |
+| CC T360 oversampled | 8 | 0 | 17.584 | 2.949 | 2.187 |
+| CC T360 oversampled | 8 | 1 | 17.775 | 17.591 | 4.799 |
+
+Candidate spin-0 synthesis is 5.7–6.6× faster than its parent across these four cells, with the same direction and scale on GL and CC. Spin-1 is timing-equivalent on both controls; the candidate shows no measured cross-route regression. Rust remains slower than DUCC in every listed cell. The simple inline-boundary source change is retained as a promising production improvement, subject to the wider regression matrix.
+
+Focused correctness checks actually run on this source: `cargo test --lib scalar_ordered` (18 passed, 2 ignored); `cargo test --lib spin1_scalar_fast_synthesis_matches_general_channel_cases` (1 passed); and `cargo test --lib spin1_fine_synthesis_groups_preserve_t720_adjoint_identities` (1 passed). The Python benchmark asserted output shape, f64 dtype and finiteness; it is not a numerical comparison. No tolerance was changed.
+
+## Next measurement
 
 - Finish normalizing the hot loop counts by active latitude × degree × channel updates, and capture the matched q8 profile/route where it changes.
 - Add only a low-overhead test-only phase probe for the exact-q8 hemisphere route, then compare with oversampled q8. Capture CC T360 spin-1 q8 worker balance before attributing its poor scaling to recurrence.
-- Test the smallest inlining boundary that preserves Pulp runtime dispatch; retain it only if AVX2 helper calls, whole-transform Ir and elapsed time improve without regressions. A single `synthesize_batch` inline annotation was tried and reverted; it did not reduce helper calls or Ir.
+- Run matched exact-parent/candidate/DUCC Callgrind on q8 and a representative larger GL scalar synthesis cell, then validate the candidate across the required f64 spin-0/1 matrix before updating the short performance snapshot. The current three attributes are a bounded candidate; do not add further inlining annotations until these controls finish.
 
 `perf stat` failed because hardware events are unavailable to this process. Callgrind and disassembly are still available. Any percentages reported here are wall-time phase shares or explicit route counters, never Callgrind-cycle estimates.
 
