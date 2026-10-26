@@ -250,4 +250,4 @@ Validation used rustc 1.99.1 / Cargo 1.99.1, default dev/test profiles, no expli
 - `cargo test --lib fejer1_scalar_operations_match_ducc_and_adjoint_identities`: 1 passed.
 - No benchmark or full suite ran.
 
-Experiment scratch was the unique tmpfs directory labeled `rustsht-exp-grid-quadrature.QSlp6xao`, containing only the isolated Cargo target. It measured 763,528,680 bytes across 680 files before cleanup; the tmpfs had 46 GiB free and 949,018 free inodes before this check. Cleanup verification is pending and will be recorded immediately after removal.
+Experiment scratch was the unique tmpfs directory labeled `rustsht-exp-grid-quadrature.QSlp6xao`, containing only the isolated Cargo target. It measured 763,528,680 bytes across 680 files before cleanup; the tmpfs had 46 GiB free and 949,018 free inodes before this check. Immediately after saving this report, the owned directory was deleted and absence verified. This reclaimed its measured 763,528,680 bytes (680 files); no experiment worker remained. Post-cleanup tmpfs availability was 49,092,980,736 bytes, with 949,018 free inodes.
