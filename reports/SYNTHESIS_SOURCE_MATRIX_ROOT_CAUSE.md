@@ -76,8 +76,25 @@ The fair allocating API comparison and the current coarse phase probes rule out 
 
 ## Next measurement before a code change
 
-- Capture single-transform Callgrind Ir, executed PCs and disjoint exclusive symbols for current GL T320 q1 spin-0 and spin-1, matched with source-matrix DUCC `31d9fe99`; normalize loop counts by active latitude × degree × channel updates. Inspect AVX2 assembly for the actual Rust ordered scalar and prepared-component loops, plus DUCC's `calc_alm2map` / `alm2map_kernel` equivalents.
+- Finish normalizing the hot loop counts by active latitude × degree × channel updates, and capture the matched q8 profile/route where it changes.
 - Add only a low-overhead test-only phase probe for the exact-q8 hemisphere route, then compare with oversampled q8. Capture CC T360 spin-1 q8 worker balance before attributing its poor scaling to recurrence.
-- Select one experiment only after those exclusive instruction and work-normalized comparisons. No source-level optimization has been attempted in this investigation.
+- Test the smallest inlining boundary that preserves Pulp runtime dispatch; retain it only if AVX2 helper calls, whole-transform Ir and elapsed time improve without regressions. A single `synthesize_batch` inline annotation was tried and reverted; it did not reduce helper calls or Ir.
 
 `perf stat` failed because hardware events are unavailable to this process. Callgrind and disassembly are still available. Any percentages reported here are wall-time phase shares or explicit route counters, never Callgrind-cycle estimates.
+
+## Callgrind and AVX2 attribution (PRELIMINARY)
+
+Profiles isolate one allocating API transform with client-controlled Callgrind instrumentation, after a warm transform. Both sides use GL T320 oversampled geometry (640×1280), full mmax, q1, f64, one thread, the same fixture/adapter and a single CPU. Rust code is `97fbcbea` and code-equivalent to `c61ebcfb`; the source-matrix DUCC binary is from `31d9fe99`. Totals exclude import and plan setup, but include the transform's output allocation. Counts are instructions, not cycles.
+
+| Workload | RustSHT total Ir | Rust top exclusive region | DUCC total Ir | DUCC top exclusive region |
+|---|---:|---|---:|---|
+| spin 0 q1 | 429.93M | `scalar_ordered::synthesize_batch` 253.00M (58.9%); AVX2 FMA wrapper 69.54M (16.2%); `set1_pd` wrapper 32.17M (7.5%) | 86.98M | `alm2map_kernel` 28.73M (33.0%); FFT `rfftp4` 23.64M (27.2%); `leg2map` worker 5.84M (6.7%) |
+| spin 1 q1 | 899.11M | `scalar_ordered::synthesize_batch` 509.24M (56.6%); AVX2 FMA wrapper 140.00M (15.6%); `set1_pd` wrapper 64.70M (7.2%) | 226.53M | `alm2map_spin_kernel` 110.74M (48.9%); FFT `rfftp4` 47.27M (20.9%); `leg2map` worker 11.67M (5.2%) |
+
+For spin 0, Callgrind attributes 11.59M calls to Rust's `_mm256_fmadd_pd` and 6.43M calls to `_mm256_set1_pd`. The AVX2 FMA wrapper is a six-instruction out-of-line body: two YMM loads, one FMA, a YMM store, `vzeroupper`, and `ret`. Its call sites repeatedly marshal vector arguments/results through stack memory. This is measured ABI traffic around intrinsic calls, distinct from inferring spills from the function's stack-frame size. DUCC's corresponding AVX2 `alm2map_kernel` contains 11 inline FMA PCs in the dominant inner loop, each executed 960,404 times (10.56M vector FMA instructions); it broadcasts coefficients directly and has no per-FMA calls. This is the same complete transform geometry, but the exact active-latitude/degree/channel normalization is still pending, so the count ratio is not yet treated as a recurrence-work ratio.
+
+The spin-0 Rust `synthesize_batch` symbol is 16 KiB and has a 0x540-byte frame. Disassembly around its ordinary suffix shows repeated XMM stack transfers, pointer setup, and calls to the AVX2 intrinsic wrappers; the frame size alone is not being used as spill evidence. DUCC's `alm2map_kernel` is a small inlined AVX2 loop with broadcast loads, YMM recurrence/accumulator state and counted backedges. Rust's principal hot exclusive region is the recurrence and accumulation, not FFT or Python/API setup.
+
+Two diagnostic builds help isolate the compiler mechanism. Thin LTO (one codegen unit) retained the intrinsic helper symbols and essentially all wrapper call sites. `#[inline(always)]` on `synthesize_batch` alone also retained 11.59M FMA calls and increased spin-0 whole-transform Ir slightly (429.93M→431.80M); this source trial was reverted. A separate `target-cpu=native` diagnostic emitted no AVX2 FMA wrapper calls and recorded 70.11M spin-0 Ir. That build is hardware-specific and changes code generation globally, so it is evidence that target-feature inlining explains most excess Ir, not a production candidate or a matched runtime result.
+
+**Current root-cause hypothesis:** the generic Pulp callback/helper boundaries are not consistently inlined into the runtime-selected `V3` target-feature body. The resulting AVX2 intrinsics cross an ordinary ABI boundary, causing millions of call/argument-marshalling operations. This is directly supported by the disassembly and the target-native diagnostic. The smallest runtime-dispatch-safe inline boundary, its spin-1 effect, exact work normalization, and elapsed benefit remain unresolved.
