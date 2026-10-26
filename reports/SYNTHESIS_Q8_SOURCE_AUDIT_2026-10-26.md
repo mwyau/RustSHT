@@ -1,5 +1,25 @@
 # Spin-1 synthesis q8 source and measurement audit
 
+## CPU-exclusive read-only dispatch and SIMD review (PRELIMINARY, 2026-10-26 13:25 UTC)
+
+The current source is unchanged from `97fe394c` (`src/spin_transform.rs` blob `c24d8c24`); `c7421af6` is documentation-only. No profiler, timing loop, benchmark, build, or test ran for this review. The user has reserved the CPU for `sht_bench`; resume measurements only after explicit authorization.
+
+**Clarification on the T320 reduced-q8 queue:** `SPIN1_ORDER_MAJOR_ELIGIBILITY_TILE=8` is used only by the dispatch threshold. With 121 orders, the eligibility calculation is `ceil(121/8)=16`, exactly the minimum for q8. The selected queue has a different task grain: `SPIN1_ORDER_MAJOR_TILE=1`, `fetch_add(1)`, and `order_count=121`, so it claims 121 one-order tasks across eight recurrence workers. The route is at its eligibility threshold, but it is not an eight-task or statically underfilled queue. Queue starvation is therefore not supported by the current source. Dynamic per-order cost skew remains possible but unmeasured.
+
+The same T320 reduced route prepares the two scalar coefficient rows in the shared cache (1,246,784 bytes), then handles each order over the full latitude domain. It fills the paired recurrence coefficients and attempts the reflected-component adapter; a decline after writes clears that order before checked fallback. The adapter's current hit/decline count, polar fallback work, and replay frequency remain unknown. The older over-resolved grouped-route hypothesis of repeated conversion per ring group does **not** apply to this accepted cache/order-queue route.
+
+The strongest supported algorithmic distinction is that T320 (`lmax=320`) remains on DUCC's direct-spin `fill_a2m_spin` / `calc_alm2map_spin` route, while Rust's eligible route converts E/B coefficients to scalar components and runs paired scalar recurrence. This may change useful work and instruction mix, but it is not yet causal evidence: T320 full q8 uses the same broad scalar/order-queue family and beats DUCC (2.104/2.254 ms), while reduced q8 is 1.247× DUCC (1.464/1.176 ms). Reduced whole-worker Ir is only 4.1% above DUCC (816M/784M), and the saved median runqueue wait is 6.94%/0.16%. The different order count and FFT/output shape plus wait imbalance leave the elapsed gap unattributed.
+
+**Inlining and redundant operations:** the exact-T720 q8 reference route has 721/721 adapter orders accepted. Its two-vector ordinary suffix is already forced inline and has no call edge; the one-vector tail is 0.42% of saved process Ir. The saved assembly/profile count of 59.77M Rust versus 2.82M DUCC coefficient broadcasts is not a target by itself: normalized ordinary FMA work/update matches, directional Rust Ir/update is lower (3.08 versus 3.72), and saved Rust elapsed time is 5.561 ms versus 5.885 ms DUCC. A prior inline experiment had no q8 benefit and an adverse q1 screen. Recomputing `power_lower_limit(m)` for each prepared component batch is a source-visible duplicate, but its saved cost is only 0.022% of process Ir. Neither supports another inline attribute, wider live SIMD state, or threshold plumbing.
+
+**Evidence-ranked next hypotheses (not production recommendations):**
+
+1. **T320 reduced q8 recurrence-route cost — medium confidence as a differentiator, low causal confidence.** Recollect current adapter hit/decline and active latitude × degree × component updates, then compare scalar-converted and existing direct-spin kernels while holding the one-order queue and transforms fixed. Simply raising `SPIN1_FAST_MIN_LMAX` would also disable the cache/order queue and confound the comparison; do not change the production threshold from source inspection.
+2. **Per-order fallback replay — low confidence.** Count only if the adapter declines after partial writes; the caller explicitly clears and replays through checked fallback. If declines are rare, this cannot explain a whole-transform gap; if common, bucket the decline reason before designing a safe dispatch boundary.
+3. **Output/FFT locality and q8 worker tail — low confidence.** The ring-major spectrum scatter and saved runqueue-wait asymmetry are plausible non-recurrence factors, but the same-shape full control passes and no cache/worker occupancy evidence isolates them. Do not add scratch transposes or alter queue ownership without a targeted profile.
+
+**Disposition during the pause:** no source optimization is supported. Keep T320 reduced q8's 1.247× gap open, T320 full q8 as a pass control, and exact-T720 q8 as an inline/broadcast negative control. After explicit measurement authorization, instrument only the current T320 reduced route's adapter outcomes, pair preparation, fallback, and active updates; then compare the existing spin routes at matched scheduling and whole-transform boundaries.
+
 ## CPU-exclusive source comparison: remaining GL T320 reduced q8 gap (PRELIMINARY, 2026-10-26 10:57 UTC)
 
 No benchmark, Callgrind, perf, build, or test ran for this comparison. The current production source is `260b74a8`; only documentation changed at the checkout tip. The pause remains active.
