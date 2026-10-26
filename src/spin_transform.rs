@@ -1269,8 +1269,8 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         #[cfg(feature = "parallel")]
         {
-            let execution_threads =
-                current_execution_thread_count().min(workspace.execution_capacity);
+            let pool_threads = current_execution_thread_count();
+            let execution_threads = pool_threads.min(workspace.execution_capacity);
             let f1_synthesis_group_size =
                 self.spin1_f1_synthesis_ring_group_size(execution_threads);
             let group_size = if !derivative_norm && b_alm.is_some() {
@@ -1490,6 +1490,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // slots idle; finer chunks hurt small groups.
                     let minimum_group_chunk =
                         if T::prefers_fine_spin1_synthesis_groups(group_count, execution_threads)
+                            && pool_threads <= workspace.execution_capacity
                             && recurrence_spin == 1
                             && self.harmonics.spin() == 1
                             && !derivative_norm
