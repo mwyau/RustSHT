@@ -33,9 +33,10 @@ type ScaledValue = BinaryScaledValue<f32>;
 
 const BIG: f32 = <f32 as LegendrePrecision>::BIG;
 const SMALL: f32 = <f32 as LegendrePrecision>::SMALL;
+#[cfg(test)]
 const SCALE_UP: f32 = <f32 as LegendrePrecision>::SCALE_UP;
+#[cfg(test)]
 const SCALE_DOWN: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
-const SCALE_EXPONENT: i64 = <f32 as LegendrePrecision>::SCALE_EXPONENT;
 // Paired screens support the skip at T1023 and T1279. Keep other truncations
 // on the original normalizer; an exact-match selector avoids T720 overhead.
 const NORMAL_RANGE_SKIP_LMAX_T1023: usize = 1023;
@@ -397,41 +398,19 @@ fn normalize_value(value: f32, exponent: i64) -> Result<ScaledValue, ShtError> {
     super::numeric::normalize_scaled_value(value, exponent, "scalar recurrence scale")
 }
 
+#[inline(always)]
 fn normalize_pair_lanes(
     previous: &mut [f32],
     current: &mut [f32],
     exponents: &mut [i64],
 ) -> Result<(), ShtError> {
     for lane in 0..previous.len() {
-        let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
-        let current_bits = current[lane].to_bits() & 0x7fff_ffff;
-        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
-        let mut maximum_bits = previous_bits.max(current_bits);
-        let mut maximum = f32::from_bits(maximum_bits);
-        while maximum_bits > BIG.to_bits() {
-            previous[lane] *= SCALE_DOWN;
-            current[lane] *= SCALE_DOWN;
-            exponents[lane] =
-                exponents[lane]
-                    .checked_add(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "scalar recurrence scale",
-                    })?;
-            maximum *= SCALE_DOWN;
-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
-        }
-        while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
-            previous[lane] *= SCALE_UP;
-            current[lane] *= SCALE_UP;
-            exponents[lane] =
-                exponents[lane]
-                    .checked_sub(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "scalar recurrence scale",
-                    })?;
-            maximum *= SCALE_UP;
-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
-        }
+        super::numeric::normalize_pair_lane_f32(
+            &mut previous[lane],
+            &mut current[lane],
+            &mut exponents[lane],
+            "scalar recurrence scale",
+        )?;
     }
     Ok(())
 }
@@ -444,35 +423,12 @@ fn normalize_pair_lanes_with_state(
 ) -> Result<bool, ShtError> {
     let mut normal_range = true;
     for lane in 0..previous.len() {
-        let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
-        let current_bits = current[lane].to_bits() & 0x7fff_ffff;
-        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
-        let mut maximum_bits = previous_bits.max(current_bits);
-        let mut maximum = f32::from_bits(maximum_bits);
-        while maximum_bits > BIG.to_bits() {
-            previous[lane] *= SCALE_DOWN;
-            current[lane] *= SCALE_DOWN;
-            exponents[lane] =
-                exponents[lane]
-                    .checked_add(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "scalar recurrence scale",
-                    })?;
-            maximum *= SCALE_DOWN;
-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
-        }
-        while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
-            previous[lane] *= SCALE_UP;
-            current[lane] *= SCALE_UP;
-            exponents[lane] =
-                exponents[lane]
-                    .checked_sub(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "scalar recurrence scale",
-                    })?;
-            maximum *= SCALE_UP;
-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
-        }
+        let (maximum_bits, _) = super::numeric::normalize_pair_lane_f32(
+            &mut previous[lane],
+            &mut current[lane],
+            &mut exponents[lane],
+            "scalar recurrence scale",
+        )?;
         normal_range &= exponents[lane] == 0
             && maximum_bits <= BIG.to_bits()
             && (maximum_bits == 0 || maximum_bits >= SMALL.to_bits());

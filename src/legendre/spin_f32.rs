@@ -34,9 +34,10 @@ type ScaledValue = BinaryScaledValue<f32>;
 
 const BIG: f32 = <f32 as LegendrePrecision>::BIG;
 const SMALL: f32 = <f32 as LegendrePrecision>::SMALL;
+#[cfg(test)]
 const SCALE_UP: f32 = <f32 as LegendrePrecision>::SCALE_UP;
+#[cfg(test)]
 const SCALE_DOWN: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
-const SCALE_EXPONENT: i64 = <f32 as LegendrePrecision>::SCALE_EXPONENT;
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 static NORMALIZER_SCALED_CALLS: AtomicU64 = AtomicU64::new(0);
@@ -547,50 +548,16 @@ fn normalize_pair_lanes(
         NORMALIZER_LANES.fetch_add(previous.len() as u64, Ordering::Relaxed);
     }
     for lane in 0..previous.len() {
-        let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
-        let current_bits = current[lane].to_bits() & 0x7fff_ffff;
-        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
-        let mut maximum_bits = previous_bits.max(current_bits);
-        let mut maximum = f32::from_bits(maximum_bits);
+        let (_, _scale_steps) = super::numeric::normalize_pair_lane_f32(
+            &mut previous[lane],
+            &mut current[lane],
+            &mut exponents[lane],
+            "spin recurrence exponent",
+        )?;
         #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-        let mut lane_scaled = false;
-        while maximum_bits > BIG.to_bits() {
-            previous[lane] *= SCALE_DOWN;
-            current[lane] *= SCALE_DOWN;
-            exponents[lane] =
-                exponents[lane]
-                    .checked_add(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "spin recurrence exponent",
-                    })?;
-            maximum *= SCALE_DOWN;
-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
-            #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-            {
-                lane_scaled = true;
-                scale_steps += 1;
-            }
-        }
-        while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
-            previous[lane] *= SCALE_UP;
-            current[lane] *= SCALE_UP;
-            exponents[lane] =
-                exponents[lane]
-                    .checked_sub(SCALE_EXPONENT)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "spin recurrence exponent",
-                    })?;
-            maximum *= SCALE_UP;
-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
-            #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-            {
-                lane_scaled = true;
-                scale_steps += 1;
-            }
-        }
-        #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-        if lane_scaled {
+        if _scale_steps != 0 {
             scaled_lanes += 1;
+            scale_steps += _scale_steps as u64;
         }
     }
     #[cfg(all(test, rustsht_profile_spin32_normalizer))]

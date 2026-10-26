@@ -159,6 +159,51 @@ pub(crate) fn normalize_scaled_value<T: LegendrePrecision>(
     })
 }
 
+/// Normalizes one native-f32 recurrence pair shared by scalar and spin paths.
+/// Returns the final absolute-value bits and number of scaling steps so callers
+/// can preserve their fast-range and test-profile bookkeeping.
+#[inline(always)]
+pub(crate) fn normalize_pair_lane_f32(
+    previous: &mut f32,
+    current: &mut f32,
+    exponent: &mut i64,
+    overflow_quantity: &'static str,
+) -> Result<(u32, usize), ShtError> {
+    let previous_bits = previous.to_bits() & 0x7fff_ffff;
+    let current_bits = current.to_bits() & 0x7fff_ffff;
+    debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
+    let mut maximum_bits = previous_bits.max(current_bits);
+    let mut maximum = f32::from_bits(maximum_bits);
+    let mut scale_steps = 0;
+
+    while maximum_bits > <f32 as LegendrePrecision>::BIG.to_bits() {
+        *previous *= <f32 as LegendrePrecision>::SCALE_DOWN;
+        *current *= <f32 as LegendrePrecision>::SCALE_DOWN;
+        *exponent = exponent
+            .checked_add(<f32 as LegendrePrecision>::SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: overflow_quantity,
+            })?;
+        maximum *= <f32 as LegendrePrecision>::SCALE_DOWN;
+        maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+        scale_steps += 1;
+    }
+    while maximum_bits != 0 && maximum_bits < <f32 as LegendrePrecision>::SMALL.to_bits() {
+        *previous *= <f32 as LegendrePrecision>::SCALE_UP;
+        *current *= <f32 as LegendrePrecision>::SCALE_UP;
+        *exponent = exponent
+            .checked_sub(<f32 as LegendrePrecision>::SCALE_EXPONENT)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: overflow_quantity,
+            })?;
+        maximum *= <f32 as LegendrePrecision>::SCALE_UP;
+        maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+        scale_steps += 1;
+    }
+
+    Ok((maximum_bits, scale_steps))
+}
+
 /// Multiplies two binary-scaled values and checks their combined exponent.
 #[inline(always)]
 pub(crate) fn multiply_scaled<T: LegendrePrecision>(
