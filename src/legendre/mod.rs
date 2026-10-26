@@ -2163,7 +2163,7 @@ impl ShtScalar for f32 {
     where
         F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>,
     {
-        scalar_f32::for_each_y_lm_dispatched(
+        scalar::for_each_y_lm_dispatched(
             arch,
             m,
             lmax,

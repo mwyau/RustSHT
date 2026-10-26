@@ -23,6 +23,7 @@ use std::f32::consts::PI;
 use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
 
+use super::scalar::ScalarRecurrencePrecision;
 use crate::error::ShtError;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue, define_scale_binary,
@@ -44,6 +45,90 @@ const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
 // With normalized recurrence values bounded by 2^40, factors bounded by 2^16
 // keep the two-degree multiply-and-sum below 2^58.
 const PAIRED_FACTOR_LIMIT_F32: f32 = f32::from_bits(143_u32 << 23);
+
+impl ScalarRecurrencePrecision for f32 {
+    #[inline(always)]
+    fn allow_normal_range_skip(lmax: usize) -> bool {
+        matches!(
+            lmax,
+            NORMAL_RANGE_SKIP_LMAX_T1023 | NORMAL_RANGE_SKIP_LMAX_T1279
+        )
+    }
+
+    #[inline(always)]
+    fn initialize_recurrence(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        super::numeric::initialize_scalar_recurrence_lanes(
+            m,
+            sin_theta,
+            sectoral_norm,
+            super::numeric::ScalarRecurrenceBuffers {
+                previous,
+                current,
+                exponents,
+            },
+            scaled_power,
+            normalize_value,
+        )
+    }
+
+    #[inline(always)]
+    fn step<S: Simd>(
+        simd: S,
+        epsilon: &[Self],
+        degree: usize,
+        current: &[Self],
+        previous: &[Self],
+        cosine: &[Self],
+        next: &mut [Self],
+    ) {
+        scalar_recurrence_step!(
+            simd,
+            S,
+            epsilon,
+            degree,
+            current,
+            previous,
+            cosine,
+            next,
+            splat_f32s,
+            as_simd_f32s,
+            as_mut_simd_f32s,
+            mul_f32s,
+            sub_f32s,
+            div_f32s
+        );
+    }
+
+    #[inline(always)]
+    fn normalize_pair(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        normalize_pair_lanes(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn normalize_pair_with_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        normalize_pair_lanes_with_state(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
+        pair_lanes_need_scaling(simd, previous, current)
+    }
+}
 
 pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError> {
     super::numeric::sectoral_normalizations(mmax)
@@ -70,217 +155,6 @@ pub(crate) fn fill_paired_scalar_factors(
         coefficient_b,
         PAIRED_FACTOR_LIMIT_F32,
     )
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "The recurrence receives grid lanes and caller-owned recurrence scratch explicitly."
-)]
-pub(crate) fn for_each_y_lm_dispatched<F>(
-    arch: Arch,
-    m: usize,
-    lmax: usize,
-    sin_theta: &[f32],
-    cos_theta: &[f32],
-    sectoral_norm: f32,
-    epsilon: &[f32],
-    previous: &mut [f32],
-    current: &mut [f32],
-    next: &mut [f32],
-    exponents: &mut [i64],
-    visit: F,
-) -> Result<(), ShtError>
-where
-    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
-{
-    if matches!(
-        lmax,
-        NORMAL_RANGE_SKIP_LMAX_T1023 | NORMAL_RANGE_SKIP_LMAX_T1279
-    ) {
-        for_each_y_lm_dispatched_impl::<F, true>(
-            arch,
-            m,
-            lmax,
-            sin_theta,
-            cos_theta,
-            sectoral_norm,
-            epsilon,
-            previous,
-            current,
-            next,
-            exponents,
-            visit,
-        )
-    } else {
-        for_each_y_lm_dispatched_impl::<F, false>(
-            arch,
-            m,
-            lmax,
-            sin_theta,
-            cos_theta,
-            sectoral_norm,
-            epsilon,
-            previous,
-            current,
-            next,
-            exponents,
-            visit,
-        )
-    }
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "The recurrence receives grid lanes and caller-owned recurrence scratch explicitly."
-)]
-fn for_each_y_lm_dispatched_impl<F, const ALLOW_NORMAL_RANGE_SKIP: bool>(
-    arch: Arch,
-    m: usize,
-    lmax: usize,
-    sin_theta: &[f32],
-    cos_theta: &[f32],
-    sectoral_norm: f32,
-    epsilon: &[f32],
-    previous: &mut [f32],
-    current: &mut [f32],
-    next: &mut [f32],
-    exponents: &mut [i64],
-    mut visit: F,
-) -> Result<(), ShtError>
-where
-    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
-{
-    debug_assert_eq!(sin_theta.len(), cos_theta.len());
-    debug_assert!(epsilon.len() > lmax);
-    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
-    debug_assert!(previous.len() >= scratch_len);
-    debug_assert!(current.len() >= scratch_len);
-    debug_assert!(next.len() >= scratch_len);
-    debug_assert!(exponents.len() >= scratch_len);
-
-    for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
-        let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
-        let block_len = ring_end - ring_start;
-        arch.dispatch(ForEachYlm32::<_, ALLOW_NORMAL_RANGE_SKIP> {
-            ring_start,
-            m,
-            lmax,
-            sin_theta: &sin_theta[ring_start..ring_end],
-            cos_theta: &cos_theta[ring_start..ring_end],
-            sectoral_norm,
-            epsilon,
-            previous: &mut previous[..block_len],
-            current: &mut current[..block_len],
-            next: &mut next[..block_len],
-            exponents: &mut exponents[..block_len],
-            visit: &mut visit,
-        })?;
-    }
-    Ok(())
-}
-
-struct ForEachYlm32<'a, F, const ALLOW_NORMAL_RANGE_SKIP: bool> {
-    ring_start: usize,
-    m: usize,
-    lmax: usize,
-    sin_theta: &'a [f32],
-    cos_theta: &'a [f32],
-    sectoral_norm: f32,
-    epsilon: &'a [f32],
-    previous: &'a mut [f32],
-    current: &'a mut [f32],
-    next: &'a mut [f32],
-    exponents: &'a mut [i64],
-    visit: F,
-}
-
-impl<F, const ALLOW_NORMAL_RANGE_SKIP: bool> WithSimd
-    for ForEachYlm32<'_, F, ALLOW_NORMAL_RANGE_SKIP>
-where
-    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
-{
-    type Output = Result<(), ShtError>;
-
-    #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        let ForEachYlm32 {
-            ring_start,
-            m,
-            lmax,
-            sin_theta,
-            cos_theta,
-            sectoral_norm,
-            epsilon,
-            previous,
-            current,
-            next,
-            exponents,
-            mut visit,
-        } = self;
-        debug_assert!(m <= lmax);
-        debug_assert_eq!(sin_theta.len(), cos_theta.len());
-        debug_assert_eq!(sin_theta.len(), previous.len());
-        debug_assert_eq!(sin_theta.len(), current.len());
-        debug_assert_eq!(sin_theta.len(), next.len());
-        debug_assert_eq!(sin_theta.len(), exponents.len());
-        debug_assert!(epsilon.len() > lmax);
-
-        let mut previous = previous;
-        let mut current = current;
-        let mut next = next;
-        let mut normal_range = false;
-        super::numeric::initialize_scalar_recurrence_lanes(
-            m,
-            sin_theta,
-            sectoral_norm,
-            super::numeric::ScalarRecurrenceBuffers {
-                previous,
-                current,
-                exponents,
-            },
-            scaled_power,
-            normalize_value,
-        )?;
-
-        for l in m..=lmax {
-            visit(l, ring_start, current, exponents)?;
-            if l == lmax {
-                break;
-            }
-
-            scalar_recurrence_step!(
-                simd,
-                S,
-                epsilon,
-                l,
-                current,
-                previous,
-                cos_theta,
-                next,
-                splat_f32s,
-                as_simd_f32s,
-                as_mut_simd_f32s,
-                mul_f32s,
-                sub_f32s,
-                div_f32s
-            );
-
-            if ALLOW_NORMAL_RANGE_SKIP {
-                if normal_range {
-                    if pair_lanes_need_scaling(simd, current, next) {
-                        normal_range = normalize_pair_lanes_with_state(current, next, exponents)?;
-                    }
-                } else {
-                    normal_range = normalize_pair_lanes_with_state(current, next, exponents)?;
-                }
-            } else {
-                normalize_pair_lanes(current, next, exponents)?;
-            }
-            std::mem::swap(&mut previous, &mut current);
-            std::mem::swap(&mut current, &mut next);
-        }
-        Ok(())
-    }
 }
 
 /// Visits the even-degree scalar basis from a native-f32 two-degree
@@ -1193,7 +1067,7 @@ mod tests {
         let mut exponents = vec![0; scratch_len];
         let mut result = vec![vec![0.0; sin_theta.len()]; lmax - m + 1];
         let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
-        for_each_y_lm_dispatched(
+        crate::legendre::scalar::for_each_y_lm_dispatched(
             arch,
             m,
             lmax,

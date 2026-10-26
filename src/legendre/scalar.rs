@@ -117,26 +117,208 @@ fn for_each_y_lm(
     Ok(())
 }
 
-/// Visits one order over latitude lanes using the runtime-selected pulp backend.
+/// Precision leaves required by the shared scalar recurrence traversal.
+///
+/// Initialization, SIMD arithmetic and normalization stay typed so the f64
+/// seed path and native-f32 range policy remain unchanged.
+pub(crate) trait ScalarRecurrencePrecision: LegendrePrecision {
+    fn allow_normal_range_skip(lmax: usize) -> bool;
+
+    fn initialize_recurrence(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError>;
+
+    fn step<S: Simd>(
+        simd: S,
+        epsilon: &[Self],
+        degree: usize,
+        current: &[Self],
+        previous: &[Self],
+        cosine: &[Self],
+        next: &mut [Self],
+    );
+
+    fn normalize_pair(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError>;
+
+    fn normalize_pair_with_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError>;
+
+    fn needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool;
+}
+
+impl ScalarRecurrencePrecision for f64 {
+    #[inline(always)]
+    fn allow_normal_range_skip(_: usize) -> bool {
+        true
+    }
+
+    #[inline(always)]
+    fn initialize_recurrence(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        for ring in 0..sin_theta.len() {
+            let sectoral = scaled_power(sin_theta[ring], m)?;
+            let sectoral = normalize_value(
+                sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
+                sectoral.exponent,
+            )?;
+            previous[ring] = 0.0;
+            current[ring] = sectoral.mantissa;
+            exponents[ring] = sectoral.exponent;
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn step<S: Simd>(
+        simd: S,
+        epsilon: &[Self],
+        degree: usize,
+        current: &[Self],
+        previous: &[Self],
+        cosine: &[Self],
+        next: &mut [Self],
+    ) {
+        scalar_recurrence_step!(
+            simd,
+            S,
+            epsilon,
+            degree,
+            current,
+            previous,
+            cosine,
+            next,
+            splat_f64s,
+            as_simd_f64s,
+            as_mut_simd_f64s,
+            mul_f64s,
+            sub_f64s,
+            div_f64s
+        );
+    }
+
+    #[inline(always)]
+    fn normalize_pair(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        normalize_pair_lanes(previous, current, exponents).map(|_| ())
+    }
+
+    #[inline(always)]
+    fn normalize_pair_with_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        normalize_pair_lanes(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
+        pair_lanes_need_scaling(simd, previous, current)
+    }
+}
+
+/// Visits one order over latitude lanes using one shared degree traversal and
+/// precision-specific typed initialization, SIMD and normalization leaves.
 #[expect(
     clippy::too_many_arguments,
     reason = "The kernel receives geometry, recurrence factors and caller-owned scratch explicitly."
 )]
-pub(crate) fn for_each_y_lm_dispatched(
+pub(crate) fn for_each_y_lm_dispatched<T, F>(
     arch: Arch,
     m: usize,
     lmax: usize,
-    sin_theta: &[f64],
-    cos_theta: &[f64],
-    sectoral_norm: f64,
-    epsilon: &[f64],
-    previous: &mut [f64],
-    current: &mut [f64],
-    next: &mut [f64],
+    sin_theta: &[T],
+    cos_theta: &[T],
+    sectoral_norm: T,
+    epsilon: &[T],
+    previous: &mut [T],
+    current: &mut [T],
+    next: &mut [T],
     exponents: &mut [i64],
-    mut visit: impl FnMut(usize, usize, &[f64], &[i64]) -> Result<(), ShtError>,
-) -> Result<(), ShtError> {
+    visit: F,
+) -> Result<(), ShtError>
+where
+    T: ScalarRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64]) -> Result<(), ShtError>,
+{
+    if T::allow_normal_range_skip(lmax) {
+        for_each_y_lm_dispatched_impl::<T, F, true>(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )
+    } else {
+        for_each_y_lm_dispatched_impl::<T, F, false>(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The recurrence receives geometry, factors and caller-owned lane scratch explicitly."
+)]
+fn for_each_y_lm_dispatched_impl<T, F, const ALLOW_NORMAL_RANGE_SKIP: bool>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[T],
+    cos_theta: &[T],
+    sectoral_norm: T,
+    epsilon: &[T],
+    previous: &mut [T],
+    current: &mut [T],
+    next: &mut [T],
+    exponents: &mut [i64],
+    mut visit: F,
+) -> Result<(), ShtError>
+where
+    T: ScalarRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64]) -> Result<(), ShtError>,
+{
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
+    debug_assert!(epsilon.len() > lmax);
     let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
     debug_assert!(previous.len() >= scratch_len);
     debug_assert!(current.len() >= scratch_len);
@@ -146,7 +328,7 @@ pub(crate) fn for_each_y_lm_dispatched(
     for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
         let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
         let block_len = ring_end - ring_start;
-        arch.dispatch(ForEachYlm {
+        arch.dispatch(ForEachYlm::<T, _, ALLOW_NORMAL_RANGE_SKIP> {
             ring_start,
             m,
             lmax,
@@ -164,24 +346,26 @@ pub(crate) fn for_each_y_lm_dispatched(
     Ok(())
 }
 
-struct ForEachYlm<'a, F> {
+struct ForEachYlm<'a, T, F, const ALLOW_NORMAL_RANGE_SKIP: bool> {
     ring_start: usize,
     m: usize,
     lmax: usize,
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
-    sectoral_norm: f64,
-    epsilon: &'a [f64],
-    previous: &'a mut [f64],
-    current: &'a mut [f64],
-    next: &'a mut [f64],
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
+    sectoral_norm: T,
+    epsilon: &'a [T],
+    previous: &'a mut [T],
+    current: &'a mut [T],
+    next: &'a mut [T],
     exponents: &'a mut [i64],
     visit: F,
 }
 
-impl<F> WithSimd for ForEachYlm<'_, F>
+impl<T, F, const ALLOW_NORMAL_RANGE_SKIP: bool> WithSimd
+    for ForEachYlm<'_, T, F, ALLOW_NORMAL_RANGE_SKIP>
 where
-    F: FnMut(usize, usize, &[f64], &[i64]) -> Result<(), ShtError>,
+    T: ScalarRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64]) -> Result<(), ShtError>,
 {
     type Output = Result<(), ShtError>;
 
@@ -213,46 +397,26 @@ where
         let mut current = current;
         let mut next = next;
         let mut normal_range = false;
-        for ring in 0..sin_theta.len() {
-            let sectoral = scaled_power(sin_theta[ring], m)?;
-            let sectoral = normalize_value(
-                sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
-                sectoral.exponent,
-            )?;
-            previous[ring] = 0.0;
-            current[ring] = sectoral.mantissa;
-            exponents[ring] = sectoral.exponent;
-        }
+        T::initialize_recurrence(m, sin_theta, sectoral_norm, previous, current, exponents)?;
 
-        for l in m..=lmax {
-            visit(l, ring_start, current, exponents)?;
-            if l == lmax {
+        for degree in m..=lmax {
+            visit(degree, ring_start, current, exponents)?;
+            if degree == lmax {
                 break;
             }
 
-            scalar_recurrence_step!(
-                simd,
-                S,
-                epsilon,
-                l,
-                current,
-                previous,
-                cos_theta,
-                next,
-                splat_f64s,
-                as_simd_f64s,
-                as_mut_simd_f64s,
-                mul_f64s,
-                sub_f64s,
-                div_f64s
-            );
+            T::step(simd, epsilon, degree, current, previous, cos_theta, next);
 
-            if normal_range {
-                if pair_lanes_need_scaling(simd, current, next) {
-                    normal_range = normalize_pair_lanes(current, next, exponents)?;
+            if ALLOW_NORMAL_RANGE_SKIP {
+                if normal_range {
+                    if T::needs_scaling(simd, current, next) {
+                        normal_range = T::normalize_pair_with_state(current, next, exponents)?;
+                    }
+                } else {
+                    normal_range = T::normalize_pair_with_state(current, next, exponents)?;
                 }
             } else {
-                normal_range = normalize_pair_lanes(current, next, exponents)?;
+                T::normalize_pair(current, next, exponents)?;
             }
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
