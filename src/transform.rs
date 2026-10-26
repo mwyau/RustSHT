@@ -7,12 +7,12 @@ use num_complex::Complex;
 use rayon::prelude::*;
 #[cfg(feature = "parallel")]
 use std::collections::VecDeque;
-#[cfg(feature = "parallel")]
-use std::sync::Mutex;
 #[cfg(any(test, feature = "parallel"))]
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[cfg(feature = "parallel")]
+use crate::dynamic_jobs::run_dynamic_order_jobs;
 use crate::error::{ShtError, check_len};
 use crate::fft::RealFftWorkspace;
 use crate::grid::GridKind;
@@ -2916,31 +2916,24 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         debug_assert!(remaining.is_empty());
 
-        let order_jobs = Mutex::new(order_jobs);
-        let failed = AtomicBool::new(false);
-        let failure = Mutex::new(None::<ShtError>);
-        recurrence.par_iter_mut().for_each(|worker| {
-            #[cfg(all(test, feature = "parallel"))]
-            let profile_order_queue = worker.analysis_schedule_profile_enabled();
-            loop {
-                if failed.load(Ordering::Relaxed) {
-                    break;
-                }
-                #[cfg(all(test, feature = "parallel"))]
-                let queue_lock_started = profile_order_queue.then(std::time::Instant::now);
-                let job = order_jobs
-                    .lock()
-                    .expect("scalar analysis order queue is not poisoned")
-                    .pop_front();
-                #[cfg(all(test, feature = "parallel"))]
-                let queue_lock_ns = queue_lock_started
-                    .map(|started| started.elapsed().as_nanos())
-                    .unwrap_or(0);
-                let Some((m, coefficients)) = job else {
-                    break;
-                };
-                #[cfg(all(test, feature = "parallel"))]
-                let job_started = profile_order_queue.then(std::time::Instant::now);
+        let profile_enabled = |worker: &RecurrenceWorkspace<T>| {
+            #[cfg(test)]
+            {
+                worker.analysis_schedule_profile_enabled()
+            }
+            #[cfg(not(test))]
+            {
+                let _ = worker;
+                false
+            }
+        };
+        run_dynamic_order_jobs(
+            order_jobs,
+            recurrence,
+            profile_enabled,
+            |worker, (m, coefficients), profile_worker, queue_lock_ns| {
+                #[cfg(test)]
+                let job_started = profile_worker.then(std::time::Instant::now);
                 let result = self.analyze_order_group(
                     spectra,
                     latitude_count,
@@ -2956,7 +2949,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     coefficients,
                     worker,
                 );
-                #[cfg(all(test, feature = "parallel"))]
+                #[cfg(test)]
                 if let Some(started) = job_started {
                     worker.record_analysis_schedule_job(
                         m,
@@ -2966,24 +2959,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                         queue_lock_ns,
                     );
                 }
-                if let Err(error) = result {
-                    failed.store(true, Ordering::Relaxed);
-                    let mut first_error = failure
-                        .lock()
-                        .expect("scalar analysis error slot is not poisoned");
-                    first_error.get_or_insert(error);
-                    break;
-                }
-            }
-        });
-
-        if failed.load(Ordering::Relaxed) {
-            return Err(failure
-                .into_inner()
-                .expect("scalar analysis error slot is not poisoned")
-                .expect("a failed analysis job records its error"));
-        }
-        Ok(())
+                #[cfg(not(test))]
+                let _ = (profile_worker, queue_lock_ns);
+                result
+            },
+        )
     }
 
     #[expect(

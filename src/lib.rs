@@ -7,6 +7,8 @@
 //! north-to-south latitude rings; longitude samples run eastward from `phi0`
 //! in radians.
 
+#[cfg(feature = "parallel")]
+mod dynamic_jobs;
 mod error;
 pub mod evaluation;
 mod fft;

@@ -13,6 +13,8 @@ use std::sync::Mutex;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+#[cfg(feature = "parallel")]
+use crate::dynamic_jobs::run_dynamic_order_jobs;
 use crate::error::{ShtError, check_len};
 use crate::grid::resampling::CCResamplingPlan;
 #[cfg(feature = "parallel")]
@@ -5906,22 +5908,12 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         // Match DUCC's dynamic harmonic-order schedule. Each task owns one
         // packed coefficient order and reuses its recurrence workspace.
-        let order_jobs = Mutex::new(order_jobs);
-        let failed = AtomicBool::new(false);
-        let failure = Mutex::new(None::<ShtError>);
-        recurrence.par_iter_mut().for_each(|worker| {
-            loop {
-                if failed.load(Ordering::Relaxed) {
-                    break;
-                }
-                let job = order_jobs
-                    .lock()
-                    .expect("spin analysis order queue is not poisoned")
-                    .pop_front();
-                let Some((m, e_coefficients, b_coefficients)) = job else {
-                    break;
-                };
-                if let Err(error) = self.analyze_spin_order_group(
+        run_dynamic_order_jobs(
+            order_jobs,
+            recurrence,
+            |_| false,
+            |worker, (m, e_coefficients, b_coefficients), _, _| {
+                self.analyze_spin_order_group(
                     q_spectra,
                     u_spectra,
                     nphi,
@@ -5943,24 +5935,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                     e_coefficients,
                     b_coefficients,
                     worker,
-                ) {
-                    failed.store(true, Ordering::Relaxed);
-                    let mut first_error = failure
-                        .lock()
-                        .expect("spin analysis error slot is not poisoned");
-                    first_error.get_or_insert(error);
-                    break;
-                }
-            }
-        });
-
-        if failed.load(Ordering::Relaxed) {
-            return Err(failure
-                .into_inner()
-                .expect("spin analysis error slot is not poisoned")
-                .expect("a failed spin-analysis job records its error"));
-        }
-        Ok(())
+                )
+            },
+        )
     }
 
     fn prepare_spin_latitudes(&self, workspace: &mut ShtWorkspace<T>, spin: usize) {
