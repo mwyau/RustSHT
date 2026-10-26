@@ -17,6 +17,7 @@
  * Author: Martin Reinecke
  */
 
+#[cfg(test)]
 use std::f32::consts::PI;
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -653,17 +654,9 @@ pub(crate) fn scaled_basis_value(value: f32, exponent: i64, alpha_norm: f32) -> 
     scale_binary(value * alpha_norm, exponent)
 }
 
+#[inline]
 pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> f32 {
-    if derivative {
-        if degree == 0 {
-            return 0.0;
-        }
-        let degree = degree as f32;
-        0.5 * (degree * (degree + 1.0) * (2.0 * degree + 1.0) / (4.0 * PI)).sqrt()
-    } else {
-        let sign = if spin.is_multiple_of(2) { -1.0 } else { 1.0 };
-        sign * 0.5 * ((2 * degree + 1) as f32 / (4.0 * PI)).sqrt()
-    }
+    super::spin_factors::spin_normalization(spin, degree, derivative)
 }
 
 #[cfg(test)]

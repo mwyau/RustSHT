@@ -22,6 +22,7 @@
  * Source revision: c1ed01b8fda69d2a378190f0915f1a19762dddbf.
  */
 
+#[cfg(test)]
 use std::f64::consts::PI;
 
 use num_complex::Complex64;
@@ -581,17 +582,9 @@ pub(crate) fn scaled_basis_value(value: f64, exponent: i64, alpha_norm: f64) -> 
 }
 
 /// Returns the normalization applied to one spin recurrence degree.
+#[inline]
 pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> f64 {
-    if derivative {
-        if degree == 0 {
-            return 0.0;
-        }
-        let degree = degree as f64;
-        0.5 * (degree * (degree + 1.0) * (2.0 * degree + 1.0) / (4.0 * PI)).sqrt()
-    } else {
-        let sign = if spin.is_multiple_of(2) { -1.0 } else { 1.0 };
-        sign * 0.5 * ((2 * degree + 1) as f64 / (4.0 * PI)).sqrt()
-    }
+    super::spin_factors::spin_normalization(spin, degree, derivative)
 }
 
 #[cfg(test)]
