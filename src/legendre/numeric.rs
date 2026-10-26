@@ -5,6 +5,29 @@ use rustfft::num_traits::{Float, FromPrimitive};
 
 use crate::error::ShtError;
 
+/// Shares scalar degree ordering and the three-buffer rotation while expanding
+/// precision-specific advance and normalization blocks at compile time.
+macro_rules! scalar_degree_traversal {
+    (
+        $m:ident, $lmax:ident, $ring_start:ident,
+        $previous:ident, $current:ident, $next:ident, $exponents:ident, $visit:ident,
+        $degree:ident, $advance:block, $normalize:block
+    ) => {
+        for $degree in $m..=$lmax {
+            $visit($degree, $ring_start, $current, $exponents)?;
+            if $degree == $lmax {
+                break;
+            }
+            $advance;
+            $normalize;
+            std::mem::swap(&mut $previous, &mut $current);
+            std::mem::swap(&mut $current, &mut $next);
+        }
+    };
+}
+
+pub(crate) use scalar_degree_traversal;
+
 /// Precision-dependent limits shared by the scalar and spin recurrences.
 ///
 /// Implementations stay concrete so these values are resolved at compile
