@@ -304,6 +304,6 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - The focused spin filter ran 14 tests, including f32/f64 recurrence, spin-1/spin-2 scalar adapters and the new exact normalization comparison. No full suite ran.
 - No benchmark has run yet. Keep the candidate pending an f64 whole-transform screen on GL T1023 full spin-1 synthesis q1/q8 before pushing; preserve the existing recurrence-specific leaves if the shared helper regresses them.
 
-The test target measured 778,027,008 bytes across 685 files. It remains in the uniquely labeled owned scratch directory only until the report commit is verified; then delete the entire directory, verify it is absent, and check reclaimed space.
+The test target measured 778,027,008 bytes across 685 files. After the report commit was verified, the uniquely labeled owned scratch directory was removed and its absence verified. This reclaimed 778,027,008 target bytes; the temp filesystem returned to 949,018 free inodes and approximately 46 GiB free. No worker or test process remained.
 
 **Next code changes after this candidate gate:** (1) implement the typed f32 paired scalar synthesis leaf while keeping its routing capability disabled; (2) validate exact/oversampled GL, full/reduced-order, q1/q8 numerical and reset behavior; (3) enable only a measured geometry/work-shape gate, then broaden to CC/F1 after their resampling/adjoint tests. Keep the optimized f64 paired/order-major leaves unchanged.
