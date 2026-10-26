@@ -6,7 +6,9 @@
 
 **Current progress (not a restart request):** The refactor already introduced `src/legendre/numeric.rs` / `LegendrePrecision` and shared spin factor preparation (`src/legendre/spin_factors.rs`), recorded fresh f32 baselines and an operator route inventory, and retained the validated f64 paths. These changes are on `dev`. Fetch and read HEAD before continuing. Advance from that state; do not redo baseline collection, factor extraction, or archived-source searches without a new reason. Baseline SHA: `062218639bc2f097f004c617da0ce46a3a4d2941`; all current benchmark comparison claims must specify the exact candidate SHA.
 
-## New owner performance-vs-maintainability acceptance policy (2026-10-26 17:02 UTC)
+**Latest owner clarification (2026-10-26 17:13 UTC):** The earlier symmetric 0–5% performance trade-off below now applies principally to **f32**, not f64. **f64 correctness and important end-to-end performance are highest priority**, and f64 hot kernels must retain fast specialized leaves if sharing introduces a measurable regression. Follow the [rejected shared-kernel candidate recovery steering](rejected-shared-kernel-candidate-recovery-2026-10-26.md) for ranked B32–B35 re-evaluation. **B36 was already restored** to `dev` by `c908452a`; do not reintroduce it. Do not restart completed validation. The older symmetric acceptance bands below are retained as history only where inconsistent.
+
+## Earlier owner performance-vs-maintainability acceptance policy (2026-10-26 17:02 UTC; revised 17:13 UTC)
 
 **Priority correction:** The owner explicitly accepts a few percent slower execution in exchange for a **large, real reduction in source duplication and special-case maintenance**. The earlier rule "any measured regression in a validated fast path means revert" is superseded for this refactor. Maintainability is an objective, not merely a noise-level tie-breaker.
 
