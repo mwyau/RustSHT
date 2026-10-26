@@ -415,7 +415,7 @@ Before cleanup, the owned scratch measured 859,459,710 bytes across 1,895 files;
 
 ## Scalar and spin paired capability split — 2026-10-26 20:34 UTC
 
-Candidate source follows exact parent `ca297811d2aea613eb427212749402ea473e048a`. Added an explicit `ShtScalar::supports_paired_spin()` capability alongside `supports_paired_scalar()`. The f64 implementation advertises both, preserving every existing f64 route; f32 advertises neither in this slice. Spin orchestration, plan allocations, and spin-specific workspace sizing now consult the spin capability. Scalar routes—including the scalar derivative subpath housed in spin synthesis—continue to consult scalar capability. This prevents enabling the native-f32 scalar paired route from implicitly enabling f32 spin pairing. It is routing isolation, not a numerical-kernel or performance change (46 lines added, 34 removed across seven source files).
+Candidate source follows exact parent `ca297811d2aea613eb427212749402ea473e048a`. Added an explicit `ShtScalar::supports_paired_spin()` capability alongside `supports_paired_scalar()`. The f64 implementation advertises both, preserving every existing f64 route; f32 advertises neither in this slice. Spin orchestration, plan allocations, and spin-specific workspace sizing now consult the spin capability. The scalar derivative conversion housed in spin synthesis stays behind the spin capability because it uses spin-1 recurrence and has a separate prepared coefficient contract. This prevents enabling the native-f32 scalar paired route from implicitly enabling f32 spin pairing or that unvalidated derivative route. It is routing isolation, not a numerical-kernel or performance change (46 lines added, 34 removed across seven source files).
 
 Validation used rustc/Cargo 1.99.1, locked default profiles, no explicit `RUSTFLAGS`, and isolated `CARGO_HOME`/`CARGO_TARGET_DIR` under scratch `rustsht-exp-f32-paired-route.p5rc2x44`:
 
@@ -426,3 +426,20 @@ Validation used rustc/Cargo 1.99.1, locked default profiles, no explicit `RUSTFL
 - No benchmark ran: f64 capabilities still resolve true, f32 capabilities remain false, and therefore the production routes are unchanged.
 
 This is a prerequisite for the next native-f32 scalar route integration. Keep synthesis accumulation transactional and preserve the ordinary scalar fallback before enabling `supports_paired_scalar()` for f32. Save this report and source commit, then delete the exact owned scratch and verify space is reclaimed.
+
+## Native-f32 paired scalar route — 2026-10-26 20:46 UTC
+
+Source commit `7676bd64de9897e37fd42dd3d6811ce93ee5ee40` follows parent `9cb22e390ec21a5edb29a23224e3e3492cf989b8`. Enabled the existing native-f32 paired scalar factors and recurrence for scalar synthesis, analysis, and their distinct adjoints. The f32 implementation reuses B32's generic typed factor and coefficient preparation; it keeps the f64 paired SIMD leaf intact and keeps `supports_paired_spin()` false. The separate scalar-derivative conversion in spin synthesis also remains behind the spin capability.
+
+Promoted the validated f32 factor cap `2^16` from test-only to production. A new status visitor reports the native normal-range state needed by paired analysis. The f32 synthesis block stages each ring's existing complex spectrum value in the already allocated compaction arrays, checks every degree contribution and final staged value, and commits only after the full order traversal succeeds. Mixed polar blocks, nonfinite sums, insufficient scratch, or recurrence errors decline without modifying spectra so the established scalar fallback can run. f32 paired analysis retains lane width one until a native-f32 fused analysis leaf exists; the f64 lane-count helper moved under `legendre` and still selects `S::F64_LANES`.
+
+Validation used rustc/Cargo 1.99.1, locked default profiles, no explicit `RUSTFLAGS`, and isolated `CARGO_HOME`/`CARGO_TARGET_DIR` under scratch `rustsht-exp-f32-route-synthesis.dmldsoip`:
+
+- `cargo test --locked --all-features --lib legendre::scalar_f32::tests`: 7 passed. Coverage includes paired recurrence against the direct f32 recurrence, all-order factor bounds at `lmax=255,511,720,1023`, SIMD tails, polar decline, and unchanged spectra after a nonfinite staged contribution.
+- `cargo test --locked --all-features --lib f32_paired_scalar_transforms_match_f64_and_reset_workspace`: passed exact and oversampled GL/CC/F1 cases, full and reduced `mmax`, synthesis, analysis, both distinct adjoints, and repeated workspace reset. f32 results stayed within `3e-5*(1+|reference|)` for map outputs and `8e-4*(1+|reference|)` for coefficients against f64.
+- `cargo test --locked --all-features --lib scalar_plans_cache_exact_grid_and_prepared_latitude_geometry`: passed for f64 and f32 geometry, including prepared CC/F1 latitudes.
+- f64 scalar reference and mixed-polar-lane tests passed: `scalar_analysis_matches_ducc_0410_reference`, `scalar_synthesis_matches_independent_low_degree_harmonics`, and `scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes`.
+- `cargo check --locked --lib --no-default-features`, `cargo clippy --locked --all-targets --all-features -- -D warnings`, `cargo fmt --all -- --check`, and `git diff --check` passed.
+- No benchmark ran. No f64 recurrence or transform route was changed; f32 whole-transform performance remains unmeasured and should be compared at the next scalar-kernel family milestone against existing baseline evidence. This slice introduces the precision-specific f32 SIMD leaf and does not claim paired-recurrence source deduplication.
+
+Remaining validation: high-bandlimit f32 whole-transform extremes and cumulative f32 timing; broadened CC/F1 correctness has passed the small exact/oversampled matrix. After verifying this source and result record on `origin/dev`, remove all artifacts in the owned scratch before starting another experiment.
