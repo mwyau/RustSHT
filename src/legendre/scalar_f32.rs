@@ -41,9 +41,8 @@ const SCALE_DOWN: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
 // on the original normalizer; an exact-match selector avoids T720 overhead.
 const NORMAL_RANGE_SKIP_LMAX_T1023: usize = 1023;
 const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
-// Test candidate: with normalized recurrence values bounded by 2^40, factors
-// bounded by 2^16 keep the two-degree multiply-and-sum below 2^58.
-#[cfg(test)]
+// With normalized recurrence values bounded by 2^40, factors bounded by 2^16
+// keep the two-degree multiply-and-sum below 2^58.
 const PAIRED_FACTOR_LIMIT_F32: f32 = f32::from_bits(143_u32 << 23);
 
 pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError> {
@@ -52,6 +51,25 @@ pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError>
 
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f32]) {
     super::numeric::fill_epsilon(m, lmax, output);
+}
+
+pub(crate) fn fill_paired_scalar_factors(
+    m: usize,
+    lmax: usize,
+    epsilon: &[f32],
+    alpha: &mut [f32],
+    coefficient_a: &mut [f32],
+    coefficient_b: &mut [f32],
+) -> bool {
+    super::scalar_paired::fill_factors_typed(
+        m,
+        lmax,
+        epsilon,
+        alpha,
+        coefficient_a,
+        coefficient_b,
+        PAIRED_FACTOR_LIMIT_F32,
+    )
 }
 
 #[expect(
@@ -264,10 +282,7 @@ where
 }
 
 /// Visits the even-degree scalar basis from a native-f32 two-degree
-/// recurrence. The f64 SIMD implementation remains in `scalar_paired`. This
-/// f32 leaf remains unrouted until whole-transform fallback and eligibility
-/// checks are validated.
-#[cfg_attr(not(test), allow(dead_code))]
+/// recurrence. The f64 SIMD implementation remains in `scalar_paired`.
 #[expect(
     clippy::too_many_arguments,
     reason = "The paired recurrence receives geometry, factors and caller-owned lane scratch."
@@ -289,6 +304,49 @@ pub(crate) fn for_each_y_lm_paired_dispatched<F>(
 ) -> Result<(), ShtError>
 where
     F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
+{
+    for_each_y_lm_paired_status_dispatched(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        next,
+        exponents,
+        |degree, ring_start, basis, lane_exponents, _normal_range| {
+            visit(degree, ring_start, basis, lane_exponents)
+        },
+    )
+}
+
+/// Visits the paired recurrence while also reporting whether its current
+/// basis lanes are in the native normal range.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The paired recurrence receives geometry, factors and caller-owned lane scratch."
+)]
+pub(crate) fn for_each_y_lm_paired_status_dispatched<F>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f32],
+    cos_theta: &[f32],
+    sectoral_norm: f32,
+    coefficient_a: &[f32],
+    coefficient_b: &[f32],
+    previous: &mut [f32],
+    current: &mut [f32],
+    next: &mut [f32],
+    exponents: &mut [i64],
+    mut visit: F,
+) -> Result<(), ShtError>
+where
+    F: FnMut(usize, usize, &[f32], &[i64], bool) -> Result<(), ShtError>,
 {
     debug_assert!(m <= lmax);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
@@ -341,7 +399,7 @@ struct ForEachPairedYlm32<'a, F> {
 
 impl<F> WithSimd for ForEachPairedYlm32<'_, F>
 where
-    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
+    F: FnMut(usize, usize, &[f32], &[i64], bool) -> Result<(), ShtError>,
 {
     type Output = Result<(), ShtError>;
 
@@ -379,7 +437,7 @@ where
         let mut normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
 
         for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
-            visit(degree, ring_start, current, exponents)?;
+            visit(degree, ring_start, current, exponents, normal_range)?;
             if degree + 2 > lmax {
                 break;
             }
@@ -417,10 +475,7 @@ where
     }
 }
 
-/// Accumulates one prepared native-f32 paired scalar order into its spectrum.
-/// This remains unrouted with the paired recurrence until f32 factor safety
-/// and whole-transform fallback behavior are validated.
-#[cfg_attr(not(test), allow(dead_code))]
+/// Accumulates one prepared native-f32 paired scalar order transactionally.
 #[expect(
     clippy::too_many_arguments,
     reason = "The prepared order kernel receives plan data and caller-owned recurrence scratch."
@@ -444,23 +499,50 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
     current: &mut [f32],
     next: &mut [f32],
     exponents: &mut [i64],
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
 ) -> Result<bool, ShtError> {
-    debug_assert_eq!(sin_theta.len(), cos_theta.len());
-    debug_assert_eq!(sin_theta.len(), ring_order_limits.len());
-    debug_assert_eq!(spectra.len(), sin_theta.len() * spectrum_len);
-    debug_assert!(output_order < spectrum_len);
-
-    if sin_theta.is_empty() || ring_order_limits.iter().any(|&limit| m > limit) {
+    let Some(spectrum_count) = sin_theta.len().checked_mul(spectrum_len) else {
+        return Ok(false);
+    };
+    if m > lmax
+        || sin_theta.is_empty()
+        || sin_theta.len() != cos_theta.len()
+        || sin_theta.len() != ring_order_limits.len()
+        || spectra.len() != spectrum_count
+        || output_order >= spectrum_len
+        || ring_order_limits.iter().any(|&limit| m > limit)
+        || staged_real.len() < sin_theta.len()
+        || staged_imag.len() < sin_theta.len()
+    {
         return Ok(false);
     }
 
     let pair_count = (lmax - m + 2) / 2;
-    debug_assert!(coefficient_a.len() >= pair_count);
-    debug_assert!(coefficient_b.len() >= pair_count);
-    debug_assert!(coefficient_even.len() >= pair_count);
-    debug_assert!(coefficient_odd.len() >= pair_count);
+    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+    if coefficient_a.len() < pair_count
+        || coefficient_b.len() < pair_count
+        || coefficient_even.len() < pair_count
+        || coefficient_odd.len() < pair_count
+        || previous.len() < scratch_len
+        || current.len() < scratch_len
+        || next.len() < scratch_len
+        || exponents.len() < scratch_len
+    {
+        return Ok(false);
+    }
 
-    for_each_y_lm_paired_dispatched(
+    for ring in 0..sin_theta.len() {
+        let spectrum = spectra[ring * spectrum_len + output_order];
+        if !spectrum.re.is_finite() || !spectrum.im.is_finite() {
+            return Ok(false);
+        }
+        staged_real[ring] = spectrum.re;
+        staged_imag[ring] = spectrum.im;
+    }
+
+    let mut finite_sums = true;
+    let recurrence_result = for_each_y_lm_paired_dispatched(
         arch,
         m,
         lmax,
@@ -474,6 +556,9 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
         next,
         exponents,
         |degree, ring_start, basis, lane_exponents| {
+            if !finite_sums {
+                return Ok(());
+            }
             let pair = (degree - m) / 2;
             let even = coefficient_even[pair];
             let odd = coefficient_odd[pair];
@@ -485,12 +570,84 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
                 );
                 let contribution =
                     multiply_complex_scaled(coefficient, basis[lane], lane_exponents[lane]);
-                spectra[ring * spectrum_len + output_order] += contribution;
+                let real = staged_real[ring] + contribution.re;
+                let imag = staged_imag[ring] + contribution.im;
+                if !real.is_finite() || !imag.is_finite() {
+                    finite_sums = false;
+                    break;
+                }
+                staged_real[ring] = real;
+                staged_imag[ring] = imag;
             }
             Ok(())
         },
-    )?;
+    );
+    if recurrence_result.is_err() || !finite_sums {
+        return Ok(false);
+    }
+    for ring in 0..sin_theta.len() {
+        let spectrum_index = ring * spectrum_len + output_order;
+        spectra[spectrum_index] = Complex32::new(staged_real[ring], staged_imag[ring]);
+    }
     Ok(true)
+}
+
+/// Runs the paired f32 order kernel for a block with no polar-excluded lanes.
+/// Mixed blocks decline before touching spectra and use the scalar fallback.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The block adapter passes existing recurrence and lane-staging scratch."
+)]
+pub(crate) fn synthesize_paired_scalar_block_partitioned_f32(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f32],
+    cos_theta: &[f32],
+    sectoral_norm: f32,
+    coefficient_a: &[f32],
+    coefficient_b: &[f32],
+    coefficient_even: &[Complex32],
+    coefficient_odd: &[Complex32],
+    ring_order_limits: &[usize],
+    spectrum_len: usize,
+    spectra: &mut [Complex32],
+    previous: &mut [f32],
+    current: &mut [f32],
+    next: &mut [f32],
+    exponents: &mut [i64],
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
+    _compact_ring_indices: &mut [usize],
+) -> Result<bool, ShtError> {
+    if sin_theta.len() != cos_theta.len()
+        || sin_theta.len() != ring_order_limits.len()
+        || ring_order_limits.iter().any(|&limit| m > limit)
+    {
+        return Ok(false);
+    }
+    synthesize_paired_scalar_order_prepared_f32(
+        arch,
+        m,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        coefficient_even,
+        coefficient_odd,
+        ring_order_limits,
+        spectrum_len,
+        spectra,
+        previous,
+        current,
+        next,
+        exponents,
+        staged_real,
+        staged_imag,
+    )
 }
 
 pub(crate) fn multiply_complex_scaled(value: Complex32, factor: f32, exponent: i64) -> Complex32 {
@@ -1122,7 +1279,7 @@ mod tests {
 
     #[test]
     fn f32_paired_accumulator_matches_direct_synthesis_and_declines_polar_orders() {
-        assert!(!<f32 as crate::legendre::ShtScalar>::supports_paired_scalar());
+        assert!(<f32 as crate::legendre::ShtScalar>::supports_paired_scalar());
         assert!(!<f32 as crate::legendre::ShtScalar>::supports_paired_spin());
 
         let sine_samples = [
@@ -1168,14 +1325,13 @@ mod tests {
                 let mut alpha = vec![0.0; factor_count];
                 let mut coefficient_a = vec![0.0; factor_count];
                 let mut coefficient_b = vec![0.0; factor_count];
-                assert!(super::super::scalar_paired::fill_factors_typed(
+                assert!(fill_paired_scalar_factors(
                     m,
                     lmax,
                     &epsilon,
                     &mut alpha,
                     &mut coefficient_a,
                     &mut coefficient_b,
-                    PAIRED_FACTOR_LIMIT_F32,
                 ));
                 let pair_count = (lmax - m + 2) / 2;
                 let mut coefficient_even = vec![Complex32::new(0.0, 0.0); pair_count];
@@ -1202,6 +1358,8 @@ mod tests {
                     let mut current = vec![0.0; scratch_len];
                     let mut next = vec![0.0; scratch_len];
                     let mut exponents = vec![0; scratch_len];
+                    let mut staged_real = vec![0.0; sin_theta.len()];
+                    let mut staged_imag = vec![0.0; sin_theta.len()];
                     assert!(
                         synthesize_paired_scalar_order_prepared_f32(
                             arch,
@@ -1222,6 +1380,8 @@ mod tests {
                             &mut current,
                             &mut next,
                             &mut exponents,
+                            &mut staged_real,
+                            &mut staged_imag,
                         )
                         .unwrap()
                     );
@@ -1267,6 +1427,41 @@ mod tests {
                                 &mut current,
                                 &mut next,
                                 &mut exponents,
+                                &mut staged_real,
+                                &mut staged_imag,
+                            )
+                            .unwrap()
+                        );
+                        assert_eq!(declined, original);
+                    }
+
+                    if m == 0 && degree_span == 8 {
+                        let too_large_even = vec![Complex32::new(f32::MAX, 0.0); pair_count];
+                        let too_large_odd = too_large_even.clone();
+                        let mut declined = vec![seed; sin_theta.len() * spectrum_len];
+                        let original = declined.clone();
+                        assert!(
+                            !synthesize_paired_scalar_order_prepared_f32(
+                                arch,
+                                m,
+                                m,
+                                lmax,
+                                &sin_theta,
+                                &cos_theta,
+                                sectoral_norm,
+                                &coefficient_a,
+                                &coefficient_b,
+                                &too_large_even,
+                                &too_large_odd,
+                                &ring_order_limits,
+                                spectrum_len,
+                                &mut declined,
+                                &mut previous,
+                                &mut current,
+                                &mut next,
+                                &mut exponents,
+                                &mut staged_real,
+                                &mut staged_imag,
                             )
                             .unwrap()
                         );
@@ -1289,14 +1484,13 @@ mod tests {
             for m in 0..=lmax {
                 fill_epsilon(m, lmax, &mut epsilon);
                 assert!(
-                    super::super::scalar_paired::fill_factors_typed(
+                    fill_paired_scalar_factors(
                         m,
                         lmax,
                         &epsilon,
                         &mut alpha,
                         &mut coefficient_a,
                         &mut coefficient_b,
-                        PAIRED_FACTOR_LIMIT_F32,
                     ),
                     "m={m}, lmax={lmax}"
                 );

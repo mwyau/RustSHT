@@ -53,12 +53,22 @@ pub(crate) use scalar_paired::{
     finish_scalar_analysis_route_profile,
 };
 
+use crate::error::ShtError;
 use num_complex::Complex;
 use pulp::Arch;
 use rustfft::FftNum;
 use rustfft::num_traits::{Float, FromPrimitive};
 
-use crate::error::ShtError;
+struct F64LaneCount;
+
+impl pulp::WithSimd for F64LaneCount {
+    type Output = usize;
+
+    #[inline(always)]
+    fn with_simd<S: pulp::Simd>(self, _: S) -> Self::Output {
+        S::F64_LANES
+    }
+}
 
 pub(crate) fn longitude_phase<T: Float + FromPrimitive>(
     order: usize,
@@ -141,6 +151,11 @@ pub(crate) trait ShtScalar:
 
     fn supports_paired_spin() -> bool {
         false
+    }
+
+    #[inline(always)]
+    fn scalar_paired_analysis_lane_width(_arch: Arch) -> usize {
+        1
     }
 
     fn supports_precomputed_scalar() -> bool {
@@ -893,6 +908,11 @@ impl ShtScalar for f64 {
 
     fn supports_paired_spin() -> bool {
         true
+    }
+
+    #[inline(always)]
+    fn scalar_paired_analysis_lane_width(arch: Arch) -> usize {
+        arch.dispatch(F64LaneCount).max(1)
     }
 
     fn supports_precomputed_scalar() -> bool {
@@ -1896,6 +1916,10 @@ impl ShtScalar for f64 {
 impl ShtScalar for f32 {
     type SpinInitial = spin_f32::SpinInitial32;
 
+    fn supports_paired_scalar() -> bool {
+        true
+    }
+
     fn supports_spin_analysis_simd() -> bool {
         true
     }
@@ -1962,6 +1986,90 @@ impl ShtScalar for f32 {
         scalar_f32::fill_epsilon(m, lmax, output);
     }
 
+    fn fill_paired_scalar_factors(
+        m: usize,
+        lmax: usize,
+        epsilon: &[Self],
+        alpha: &mut [Self],
+        coefficient_a: &mut [Self],
+        coefficient_b: &mut [Self],
+    ) -> bool {
+        scalar_f32::fill_paired_scalar_factors(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            coefficient_a,
+            coefficient_b,
+        )
+    }
+
+    fn prepare_paired_scalar_synthesis_coefficients(
+        m: usize,
+        lmax: usize,
+        epsilon: &[Self],
+        alpha: &[Self],
+        coefficients: &[Complex<Self>],
+        coefficient_even: &mut [Complex<Self>],
+        coefficient_odd: &mut [Complex<Self>],
+    ) -> bool {
+        scalar_paired::prepare_synthesis_coefficients(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            coefficients,
+            coefficient_even,
+            coefficient_odd,
+        )
+    }
+
+    fn synthesize_paired_scalar_block_partitioned_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        coefficient_even: &[Complex<Self>],
+        coefficient_odd: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        spectra: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        compact_theta_sin: &mut [Self],
+        compact_theta_cos: &mut [Self],
+        compact_ring_indices: &mut [usize],
+    ) -> Result<bool, ShtError> {
+        scalar_f32::synthesize_paired_scalar_block_partitioned_f32(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            coefficient_even,
+            coefficient_odd,
+            ring_order_limits,
+            spectrum_len,
+            spectra,
+            previous,
+            current,
+            next,
+            exponents,
+            compact_theta_sin,
+            compact_theta_cos,
+            compact_ring_indices,
+        )
+    }
+
     fn for_each_y_lm_dispatched<F>(
         arch: Arch,
         m: usize,
@@ -1993,6 +2101,78 @@ impl ShtScalar for f32 {
             exponents,
             visit,
         )
+    }
+
+    fn for_each_y_lm_paired_dispatched<F>(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        visit: F,
+    ) -> Result<bool, ShtError>
+    where
+        F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>,
+    {
+        scalar_f32::for_each_y_lm_paired_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )?;
+        Ok(true)
+    }
+
+    fn for_each_y_lm_paired_status_dispatched<F>(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        visit: F,
+    ) -> Result<bool, ShtError>
+    where
+        F: FnMut(usize, usize, &[Self], &[i64], bool) -> Result<(), ShtError>,
+    {
+        scalar_f32::for_each_y_lm_paired_status_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )?;
+        Ok(true)
     }
 
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {

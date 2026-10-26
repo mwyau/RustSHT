@@ -108,7 +108,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let allow_fast_scalar = !derivative_norm
             || (recurrence_spin == 1
                 && self.harmonics.spin() == 0
-                && T::supports_paired_scalar()
+                && T::supports_paired_spin()
                 && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX);
         let can_use_spin1_table = spin1_synthesis_table_band_is_beneficial(self.harmonics.lmax())
             && recurrence_spin == 1
@@ -824,11 +824,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             && (!derivative_norm || (spin == 1 && self.harmonics.spin() == 0))
             && (spin == 1 || b_alm.is_some())
             && self.harmonics.lmax() >= fast_scalar_min_lmax
-            && if self.harmonics.spin() == 0 {
-                T::supports_paired_scalar()
-            } else {
-                T::supports_paired_spin()
-            }
+            && T::supports_paired_spin()
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (spin != 2 || self.spin2_fast_f1.len() > self.harmonics.lmax());
         let reflected_q1_full_order = spin == 1

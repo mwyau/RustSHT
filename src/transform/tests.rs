@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#[cfg(feature = "parallel")]
 use num_complex::Complex32;
 use num_complex::Complex64;
 use std::f64::consts::{PI, TAU};
@@ -39,7 +38,7 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
 }
 
 #[test]
-fn f64_scalar_plan_caches_exact_grid_and_prepared_latitude_geometry() {
+fn scalar_plans_cache_exact_grid_and_prepared_latitude_geometry() {
     let lmax = 31;
     let nphi = 65;
     let assert_geometry = |geometry: &crate::plan::ScalarLatitudeGeometry<f64>, theta: &[f64]| {
@@ -96,8 +95,123 @@ fn f64_scalar_plan_caches_exact_grid_and_prepared_latitude_geometry() {
         HarmonicSpec::scalar(lmax, lmax).unwrap(),
     )
     .unwrap();
-    assert!(f32_plan.scalar_latitude_geometry.is_none());
-    assert!(f32_plan.prepared_scalar_latitude_geometry.is_none());
+    assert!(f32_plan.scalar_latitude_geometry.is_some());
+    assert!(f32_plan.prepared_scalar_latitude_geometry.is_some());
+}
+
+#[test]
+fn f32_paired_scalar_transforms_match_f64_and_reset_workspace() {
+    let lmax = 31;
+    for (kind, exact_ntheta) in [
+        (GridKind::GaussLegendre, lmax + 1),
+        (GridKind::ClenshawCurtis, lmax + 2),
+        (GridKind::Fejer1, lmax + 1),
+    ] {
+        for (ntheta, nphi, mmax) in [(exact_ntheta, 67, lmax), (exact_ntheta + 5, 43, 15)] {
+            let grid64 = GridSpec::new(kind, ntheta, nphi, 0.37).unwrap();
+            let harmonics = HarmonicSpec::scalar(lmax, mmax).unwrap();
+            let plan64 = ShtPlan::<f64>::new(grid64.clone(), harmonics.clone()).unwrap();
+            let plan32 = ShtPlan::<f32>::new(grid64, harmonics.clone()).unwrap();
+            let alm64 = coefficients(&harmonics);
+            let alm32: Vec<_> = alm64
+                .iter()
+                .map(|coefficient| Complex32::new(coefficient.re as f32, coefficient.im as f32))
+                .collect();
+
+            let mut map64 = vec![f64::NAN; plan64.sample_count];
+            let mut map32 = vec![f32::NAN; plan32.sample_count];
+            let mut workspace64 = plan64.workspace().unwrap();
+            let mut workspace32 = plan32.workspace().unwrap();
+            plan64
+                .synthesis_into(&alm64, &mut map64, &mut workspace64)
+                .unwrap();
+            plan32
+                .synthesis_into(&alm32, &mut map32, &mut workspace32)
+                .unwrap();
+            for (index, (&actual, &expected)) in map32.iter().zip(&map64).enumerate() {
+                let error = (actual as f64 - expected).abs();
+                assert!(
+                    error <= 3.0e-5 * (1.0 + expected.abs()),
+                    "synthesis grid={kind:?}, ntheta={ntheta}, nphi={nphi}, mmax={mmax}, index={index}, actual={actual}, expected={expected}, error={error}"
+                );
+            }
+
+            let first_map32 = map32.clone();
+            map32.fill(f32::NAN);
+            plan32
+                .synthesis_into(&alm32, &mut map32, &mut workspace32)
+                .unwrap();
+            assert_eq!(map32, first_map32, "workspace synthesis reset failed");
+
+            let mut analysis64 = vec![Complex64::new(0.0, 0.0); harmonics.nalm()];
+            let mut analysis32 = vec![Complex32::new(1.0, -1.0); harmonics.nalm()];
+            plan64
+                .analysis_into(&map64, &mut analysis64, &mut workspace64)
+                .unwrap();
+            plan32
+                .analysis_into(&map32, &mut analysis32, &mut workspace32)
+                .unwrap();
+            for (index, (actual, expected)) in analysis32.iter().zip(&analysis64).enumerate() {
+                let actual = Complex64::new(actual.re as f64, actual.im as f64);
+                let error = (actual - expected).norm();
+                assert!(
+                    error <= 8.0e-4 * (1.0 + expected.norm()),
+                    "analysis grid={kind:?}, ntheta={ntheta}, nphi={nphi}, mmax={mmax}, index={index}, actual={actual:?}, expected={expected:?}, error={error}"
+                );
+            }
+
+            let first_analysis32 = analysis32.clone();
+            analysis32.fill(Complex32::new(-1.0, 1.0));
+            plan32
+                .analysis_into(&map32, &mut analysis32, &mut workspace32)
+                .unwrap();
+            assert_eq!(
+                analysis32, first_analysis32,
+                "workspace analysis reset failed"
+            );
+
+            let mut adjoint_analysis64 = vec![f64::NAN; plan64.sample_count];
+            let mut adjoint_analysis32 = vec![f32::NAN; plan32.sample_count];
+            plan64
+                .adjoint_analysis_into(&alm64, &mut adjoint_analysis64, &mut workspace64)
+                .unwrap();
+            plan32
+                .adjoint_analysis_into(&alm32, &mut adjoint_analysis32, &mut workspace32)
+                .unwrap();
+            for (index, (&actual, &expected)) in adjoint_analysis32
+                .iter()
+                .zip(&adjoint_analysis64)
+                .enumerate()
+            {
+                let error = (actual as f64 - expected).abs();
+                assert!(
+                    error <= 3.0e-5 * (1.0 + expected.abs()),
+                    "adjoint analysis grid={kind:?}, ntheta={ntheta}, nphi={nphi}, mmax={mmax}, index={index}, actual={actual}, expected={expected}, error={error}"
+                );
+            }
+
+            let mut adjoint_synthesis64 = vec![Complex64::new(0.0, 0.0); harmonics.nalm()];
+            let mut adjoint_synthesis32 = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
+            plan64
+                .adjoint_synthesis_into(&map64, &mut adjoint_synthesis64, &mut workspace64)
+                .unwrap();
+            plan32
+                .adjoint_synthesis_into(&map32, &mut adjoint_synthesis32, &mut workspace32)
+                .unwrap();
+            for (index, (actual, expected)) in adjoint_synthesis32
+                .iter()
+                .zip(&adjoint_synthesis64)
+                .enumerate()
+            {
+                let actual = Complex64::new(actual.re as f64, actual.im as f64);
+                let error = (actual - expected).norm();
+                assert!(
+                    error <= 8.0e-4 * (1.0 + expected.norm()),
+                    "adjoint synthesis grid={kind:?}, ntheta={ntheta}, nphi={nphi}, mmax={mmax}, index={index}, actual={actual:?}, expected={expected:?}, error={error}"
+                );
+            }
+        }
+    }
 }
 
 #[cfg(feature = "parallel")]

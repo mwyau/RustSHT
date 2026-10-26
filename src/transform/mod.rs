@@ -34,17 +34,6 @@ const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 // reduce cross-worker sharing on 64-byte cache lines in the ring-major output.
 const SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE: usize = 4;
 
-struct F64LaneCount;
-
-impl pulp::WithSimd for F64LaneCount {
-    type Output = usize;
-
-    #[inline(always)]
-    fn with_simd<S: pulp::Simd>(self, _: S) -> Self::Output {
-        S::F64_LANES
-    }
-}
-
 #[cfg(test)]
 static SCALAR_TABLE_SYNTHESIS_CALLS: AtomicUsize = AtomicUsize::new(0);
 #[cfg(test)]

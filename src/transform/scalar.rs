@@ -2142,7 +2142,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let range_cache_block_count = pair_lane_count.div_ceil(pair_block_size);
         debug_assert!(recurrence.previous.len() >= pair_block_size);
         let paired_simd_width = if T::supports_paired_scalar() {
-            arch.dispatch(F64LaneCount).max(1)
+            T::scalar_paired_analysis_lane_width(arch).max(1)
         } else {
             1
         };
