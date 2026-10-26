@@ -192,4 +192,10 @@ The move preserves arithmetic and public numerical conventions. Pointwise evalua
 
 Validation on this source: `cargo fmt --all -- --check`, `git diff --check`, `cargo check --lib`, `cargo check --manifest-path python/Cargo.toml --lib`, and focused tests for `legendre::pointwise::tests` (4 passed), `evaluation::tests` (4 passed), and `grid::geodesic::tests` (3 passed). No full suite or benchmark ran. The fresh temporary Cargo target was removed after the checks.
 
-Next module-consolidation steps: inspect and relocate prepared CC/F1 meridional resampling under `grid` if its dependencies remain one-way; compare scalar/spin orchestration for one genuinely equivalent scheduling helper; then identify a special-case branch with no remaining caller or correctness role before deleting it.
+## Grid resampling module relocation — 2026-10-26 18:04 UTC
+
+Source commit: `3912e3521fc056483bbd2070add5b569a262a09e` (parent `197fd8ce`). Moved the prepared CC/F1 meridional resampling operators and their local FFT-size search from `src/meridional.rs` to private `src/grid/resampling.rs`. The source has a one-way dependency on grid kind/quadrature and is now owned by `grid`; plan, workspace, scalar transform, spin transform and the existing parallel-threshold test import it from that path. The 100%-similarity Git rename confirms the numerical implementation is byte-for-byte unchanged; no route gates, thresholds, scheduling or scratch behavior changed.
+
+Validation on this source: `cargo fmt --all -- --check`, `git diff --check`, `cargo check --lib`, and the focused tests `scalar_cc_f1_analysis_parallelizes_only_large_resampling_work`, `clenshaw_curtis_scalar_operations_match_ducc_and_adjoint_identities`, and `fejer1_scalar_operations_match_ducc_and_adjoint_identities` (3 passed). No full suite or benchmark ran. The fresh temporary Cargo target was removed after the checks.
+
+Next module-consolidation steps: factor the duplicated dynamic scalar/spin order-job queue and error propagation while keeping coefficient-slice construction local; preserve the scalar test-only queue timing hook and avoid adding release-path timing. Then inspect common FFT staging and scratch-reset code for one exact shared operation. Only remove a route condition after confirming its remaining caller/correctness role and running a focused regression check.
