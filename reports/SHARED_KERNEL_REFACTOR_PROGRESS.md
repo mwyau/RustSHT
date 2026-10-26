@@ -411,4 +411,4 @@ Validation used rustc/Cargo 1.99.1, default dev/test profiles, no explicit `RUST
 - `cargo fmt --all -- --check` and `git diff --check` passed.
 - No benchmark ran; only method/module ownership changed.
 
-Before cleanup, the owned scratch measured 859,459,710 bytes across 1,895 files; `/tmp` had 45 GiB available and 946,747 free inodes. Source and results are durable; immediate cleanup and reclaimed-space verification are pending.
+Before cleanup, the owned scratch measured 859,459,710 bytes across 1,895 files; `/tmp` had 45 GiB available and 946,747 free inodes. After verifying source and results on `origin/dev`, the exact scratch label was removed and absence verified at 2026-10-26 20:20 UTC. This reclaimed 859,459,710 bytes; `/tmp` returned to 46 GiB available and 949,018 free inodes. No experiment build artifacts remain.
