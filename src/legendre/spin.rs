@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * This file adapts the normalized spin recurrence in DUCC's
- * sht_inner_loop.h to caller-owned latitude lanes and binary-scaled f64
+ * sht_inner_loop.h to caller-owned latitude lanes and binary-scaled f32/f64
  * values. The recurrence coefficients and half-angle initialization follow
  * the cited DUCC implementation; lane dispatch and scratch ownership use
  * RustSHT's workspace model.
@@ -24,6 +24,8 @@
 
 #[cfg(test)]
 use std::f64::consts::PI;
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use num_complex::Complex;
 #[cfg(test)]
@@ -38,6 +40,37 @@ const SMALL: f64 = <f64 as LegendrePrecision>::SMALL;
 const SCALE_UP: f64 = <f64 as LegendrePrecision>::SCALE_UP;
 const SCALE_DOWN: f64 = <f64 as LegendrePrecision>::SCALE_DOWN;
 const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
+
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_SCALED_CALLS: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_SCALED_LANES: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_SCALE_STEPS: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_CALLS: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_LANES: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+pub(crate) fn reset_normalizer_profile() {
+    NORMALIZER_SCALED_CALLS.store(0, Ordering::Relaxed);
+    NORMALIZER_SCALED_LANES.store(0, Ordering::Relaxed);
+    NORMALIZER_SCALE_STEPS.store(0, Ordering::Relaxed);
+    NORMALIZER_CALLS.store(0, Ordering::Relaxed);
+    NORMALIZER_LANES.store(0, Ordering::Relaxed);
+}
+
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+pub(crate) fn normalizer_profile() -> (u64, u64, u64, u64, u64) {
+    (
+        NORMALIZER_SCALED_CALLS.load(Ordering::Relaxed),
+        NORMALIZER_SCALED_LANES.load(Ordering::Relaxed),
+        NORMALIZER_SCALE_STEPS.load(Ordering::Relaxed),
+        NORMALIZER_CALLS.load(Ordering::Relaxed),
+        NORMALIZER_LANES.load(Ordering::Relaxed),
+    )
+}
 
 pub(crate) type SpinInitial = super::spin_factors::SpinInitial<f64>;
 
@@ -297,6 +330,49 @@ where
 
 #[expect(
     clippy::too_many_arguments,
+    reason = "The f32 SIMD step receives lane vectors and independent spin coefficients explicitly."
+)]
+#[inline(always)]
+fn recurrence_step_f32<S: Simd>(
+    simd: S,
+    cosine: &[f32],
+    coefficient_a: f32,
+    coefficient_b: f32,
+    current: &[f32],
+    previous: &[f32],
+    next: &mut [f32],
+    add_coupling: bool,
+) {
+    let coefficient_b = if add_coupling {
+        -coefficient_b
+    } else {
+        coefficient_b
+    };
+    let (current_vectors, current_tail) = S::as_simd_f32s(current);
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (cosine_vectors, cosine_tail) = S::as_simd_f32s(cosine);
+    let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+    let coupling = simd.splat_f32s(-coefficient_b);
+    for index in 0..current_vectors.len() {
+        let leading = simd.mul_add_f32s(
+            simd.splat_f32s(coefficient_a),
+            cosine_vectors[index],
+            coupling,
+        );
+        next_vectors[index] = simd.mul_add_f32s(
+            leading,
+            current_vectors[index],
+            simd.neg_f32s(previous_vectors[index]),
+        );
+    }
+    for index in 0..current_tail.len() {
+        let leading = coefficient_a.mul_add(cosine_tail[index], -coefficient_b);
+        next_tail[index] = leading.mul_add(current_tail[index], -previous_tail[index]);
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
     reason = "The SIMD recurrence step receives vector lanes and independent positive/negative spin coefficients."
 )]
 fn recurrence_step_f64<S: Simd>(
@@ -371,6 +447,67 @@ fn normalize_pair_lanes(
     Ok(())
 }
 
+fn normalize_pair_lanes_f32(
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<(), ShtError> {
+    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+    {
+        NORMALIZER_CALLS.fetch_add(1, Ordering::Relaxed);
+        NORMALIZER_LANES.fetch_add(previous.len() as u64, Ordering::Relaxed);
+        let (scaled_lanes, scale_steps) = super::numeric::normalize_pair_lanes_f32::<true>(
+            previous,
+            current,
+            exponents,
+            "spin recurrence exponent",
+        )?;
+        if scaled_lanes != 0 {
+            NORMALIZER_SCALED_CALLS.fetch_add(1, Ordering::Relaxed);
+            NORMALIZER_SCALED_LANES.fetch_add(scaled_lanes as u64, Ordering::Relaxed);
+            NORMALIZER_SCALE_STEPS.fetch_add(scale_steps as u64, Ordering::Relaxed);
+        }
+    }
+    #[cfg(not(all(test, rustsht_profile_spin32_normalizer)))]
+    {
+        super::numeric::normalize_pair_lanes_f32::<false>(
+            previous,
+            current,
+            exponents,
+            "spin recurrence exponent",
+        )?;
+    }
+    Ok(())
+}
+
+/// Skip the scalar lane walk when a Pulp scan proves that every f32 recurrence
+/// pair is already within the established ordinary-range invariant.
+#[inline(always)]
+fn normalize_pair_lanes_f32_prechecked<S: Simd>(
+    simd: S,
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<(), ShtError> {
+    if pair_recurrence_state_f32_in_safe_range(simd, previous, current) {
+        debug_assert_eq!(previous.len(), exponents.len());
+        return Ok(());
+    }
+    normalize_pair_lanes_f32(previous, current, exponents)
+}
+
+#[inline(always)]
+fn pair_recurrence_state_f32_in_safe_range<S: Simd>(
+    simd: S,
+    previous: &[f32],
+    current: &[f32],
+) -> bool {
+    if previous.len() != current.len() {
+        return false;
+    }
+    !super::numeric::f32_pair_lanes_need_scaling::<S, false>(simd, previous, current)
+}
+
 impl SpinRecurrencePrecision for f64 {
     #[inline(always)]
     fn initial_values(
@@ -418,6 +555,68 @@ impl SpinRecurrencePrecision for f64 {
     ) -> Result<(), ShtError> {
         normalize_pair_lanes(previous, current, exponents)
     }
+}
+
+impl SpinRecurrencePrecision for f32 {
+    #[inline(always)]
+    fn initial_values(
+        cosine: Self,
+        initial: &super::spin_factors::SpinInitial<Self>,
+    ) -> Result<
+        (
+            crate::legendre::ScaledValue<Self>,
+            crate::legendre::ScaledValue<Self>,
+        ),
+        ShtError,
+    > {
+        super::spin_factors::initial_spin_values(cosine, initial, power_f32, multiply_f32)
+    }
+
+    #[inline(always)]
+    fn recurrence_step<S: Simd>(
+        simd: S,
+        cosine: &[Self],
+        coefficient_a: Self,
+        coefficient_b: Self,
+        current: &[Self],
+        previous: &[Self],
+        next: &mut [Self],
+        add_coupling: bool,
+    ) {
+        recurrence_step_f32(
+            simd,
+            cosine,
+            coefficient_a,
+            coefficient_b,
+            current,
+            previous,
+            next,
+            add_coupling,
+        );
+    }
+
+    #[inline(always)]
+    fn normalize_pair<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        normalize_pair_lanes_f32_prechecked(simd, previous, current, exponents)
+    }
+}
+
+#[inline(always)]
+fn power_f32(base: f32, exponent: usize) -> Result<crate::legendre::ScaledValue<f32>, ShtError> {
+    super::numeric::scaled_power(base, exponent, "spin recurrence exponent")
+}
+
+#[inline(always)]
+fn multiply_f32(
+    left: crate::legendre::ScaledValue<f32>,
+    right: crate::legendre::ScaledValue<f32>,
+) -> Result<crate::legendre::ScaledValue<f32>, ShtError> {
+    super::numeric::multiply_scaled(left, right, "spin recurrence exponent")
 }
 
 /// Typed Pulp operations and exceptional-input policy for spin analysis.
@@ -797,6 +996,13 @@ pub(crate) fn scaled_basis_value(value: f64, exponent: i64, alpha_norm: f64) -> 
     crate::legendre::scale_binary(product, exponent)
 }
 
+pub(crate) fn scaled_basis_value_f32(value: f32, exponent: i64, alpha_norm: f32) -> f32 {
+    if value == 0.0 || alpha_norm == 0.0 {
+        return 0.0;
+    }
+    super::numeric::scale_binary_f32(value * alpha_norm, exponent)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1063,6 +1269,536 @@ mod tests {
                     * half_angle_product.powi(spin as i32);
                 assert!((basis[0].1[ring] - expected).abs() < 3e-15);
                 assert!((basis[0].2[ring] - expected).abs() < 3e-15);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod f32_tests {
+    use super::*;
+    use crate::error::ShtError;
+    use crate::legendre::{LATITUDE_BLOCK_SIZE, LegendrePrecision};
+    use num_complex::Complex32;
+    use pulp::{Simd, WithSimd};
+    use std::f32::consts::PI;
+
+    const BIG_F32: f32 = <f32 as LegendrePrecision>::BIG;
+    const SMALL_F32: f32 = <f32 as LegendrePrecision>::SMALL;
+    const SCALE_UP_F32: f32 = <f32 as LegendrePrecision>::SCALE_UP;
+    const SCALE_DOWN_F32: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
+
+    struct CheckPairStateRange<'a> {
+        previous: &'a [f32],
+        current: &'a [f32],
+    }
+
+    impl WithSimd for CheckPairStateRange<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            pair_recurrence_state_f32_in_safe_range(simd, self.previous, self.current)
+        }
+    }
+
+    struct NormalizePairPrechecked<'a> {
+        previous: &'a mut [f32],
+        current: &'a mut [f32],
+        exponents: &'a mut [i64],
+    }
+
+    impl WithSimd for NormalizePairPrechecked<'_> {
+        type Output = Result<(), ShtError>;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            normalize_pair_lanes_f32_prechecked(simd, self.previous, self.current, self.exponents)
+        }
+    }
+
+    struct AnalysisLanes32 {
+        q_real: Vec<f32>,
+        q_imag: Vec<f32>,
+        u_real: Vec<f32>,
+        u_imag: Vec<f32>,
+        plus: Vec<f32>,
+        plus_exponents: Vec<i64>,
+        minus: Vec<f32>,
+        minus_exponents: Vec<i64>,
+        limits: Vec<usize>,
+    }
+
+    impl AnalysisLanes32 {
+        fn new(count: usize) -> Self {
+            Self {
+                q_real: (0..count).map(|lane| 0.25 + lane as f32 * 0.007).collect(),
+                q_imag: (0..count).map(|lane| -0.4 + lane as f32 * 0.003).collect(),
+                u_real: (0..count).map(|lane| 0.15 - lane as f32 * 0.002).collect(),
+                u_imag: (0..count).map(|lane| 0.55 + lane as f32 * 0.004).collect(),
+                plus: (0..count).map(|lane| 0.31 + lane as f32 * 0.001).collect(),
+                plus_exponents: vec![0; count],
+                minus: (0..count).map(|lane| -0.17 + lane as f32 * 0.002).collect(),
+                minus_exponents: vec![0; count],
+                limits: vec![64; count],
+            }
+        }
+
+        fn accumulate(
+            &self,
+            arch: Arch,
+            m: usize,
+            alpha_norm: f32,
+            include_b: bool,
+        ) -> (Complex32, Complex32) {
+            let vectorizable_inputs = super::analysis_inputs_vectorizable::<f32>(
+                m,
+                &self.q_real,
+                &self.q_imag,
+                &self.u_real,
+                &self.u_imag,
+                &self.limits,
+            );
+            super::accumulate_analysis_dispatched::<f32>(
+                arch,
+                vectorizable_inputs,
+                m,
+                &self.q_real,
+                &self.q_imag,
+                &self.u_real,
+                &self.u_imag,
+                &self.plus,
+                &self.plus_exponents,
+                &self.minus,
+                &self.minus_exponents,
+                alpha_norm,
+                &self.limits,
+                include_b,
+            )
+        }
+
+        fn scalar_reference(
+            &self,
+            m: usize,
+            alpha_norm: f32,
+            include_b: bool,
+        ) -> (Complex32, Complex32) {
+            let mut e_sum = Complex32::new(0.0, 0.0);
+            let mut b_sum = Complex32::new(0.0, 0.0);
+            for lane in 0..self.plus.len() {
+                if m > self.limits[lane] {
+                    continue;
+                }
+                let plus_value =
+                    scaled_basis_value_f32(self.plus[lane], self.plus_exponents[lane], alpha_norm);
+                let minus_value = scaled_basis_value_f32(
+                    self.minus[lane],
+                    self.minus_exponents[lane],
+                    alpha_norm,
+                );
+                let even_basis = plus_value + minus_value;
+                let odd_basis = plus_value - minus_value;
+                e_sum.re += self.q_real[lane] * even_basis + self.u_imag[lane] * odd_basis;
+                e_sum.im += self.q_imag[lane] * even_basis - self.u_real[lane] * odd_basis;
+                if include_b {
+                    b_sum.re += self.u_real[lane] * even_basis - self.q_imag[lane] * odd_basis;
+                    b_sum.im += self.u_imag[lane] * even_basis + self.q_real[lane] * odd_basis;
+                }
+            }
+            (e_sum, b_sum)
+        }
+    }
+
+    #[test]
+    fn simd_normalizer_precheck_matches_scalar_scaler_for_boundaries_and_tail() {
+        let safe_previous = vec![
+            0.0, -0.0, 0.25, -0.5, SMALL_F32, -SMALL_F32, BIG_F32, -BIG_F32, 0.0, 1.0, 0.0, 0.25,
+            -0.75, 0.0, 2.0, 0.0, 0.5,
+        ];
+        let safe_current = vec![
+            0.0, 0.0, -0.25, 0.5, 0.0, SMALL_F32, 0.0, BIG_F32, -0.0, -1.0, 0.0, -0.25, 0.75, 0.0,
+            -2.0, 0.0, -0.5,
+        ];
+        let mut unsafe_previous = safe_previous.clone();
+        let mut unsafe_current = safe_current.clone();
+        unsafe_previous[0] = f32::from_bits(1);
+        unsafe_previous[1] = f32::MAX;
+        unsafe_current[2] = -f32::MAX;
+        unsafe_current[8] = f32::from_bits(SMALL_F32.to_bits() - 1);
+        unsafe_previous[9] = BIG_F32 * 2.0;
+        unsafe_current[16] = f32::from_bits(SMALL_F32.to_bits() - 1);
+        let mut nonfinite = safe_current.clone();
+        nonfinite[3] = f32::INFINITY;
+        nonfinite[11] = f32::NAN;
+
+        for (name, arch) in [("scalar", Arch::Scalar), ("runtime", Arch::new())] {
+            assert!(
+                arch.dispatch(CheckPairStateRange {
+                    previous: &safe_previous,
+                    current: &safe_current,
+                }),
+                "{name} backend rejected safe values"
+            );
+            assert!(!arch.dispatch(CheckPairStateRange {
+                previous: &unsafe_previous,
+                current: &unsafe_current,
+            }));
+            assert!(!arch.dispatch(CheckPairStateRange {
+                previous: &safe_previous,
+                current: &nonfinite,
+            }));
+
+            for (initial_previous, initial_current) in [
+                (&safe_previous, &safe_current),
+                (&unsafe_previous, &unsafe_current),
+            ] {
+                let mut expected_previous = initial_previous.clone();
+                let mut expected_current = initial_current.clone();
+                let mut expected_exponents = vec![19_i64; initial_previous.len()];
+                normalize_pair_lanes_f32(
+                    &mut expected_previous,
+                    &mut expected_current,
+                    &mut expected_exponents,
+                )
+                .unwrap();
+
+                let mut actual_previous = initial_previous.clone();
+                let mut actual_current = initial_current.clone();
+                let mut actual_exponents = vec![19_i64; initial_previous.len()];
+                arch.dispatch(NormalizePairPrechecked {
+                    previous: &mut actual_previous,
+                    current: &mut actual_current,
+                    exponents: &mut actual_exponents,
+                })
+                .unwrap();
+                assert_eq!(
+                    actual_previous
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                    expected_previous
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                );
+                assert_eq!(
+                    actual_current
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                    expected_current
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                );
+                assert_eq!(actual_exponents, expected_exponents);
+            }
+        }
+    }
+
+    #[test]
+    fn f32_spin_analysis_simd_accumulation_matches_scalar_blocks_and_tails() {
+        for count in [64, 61] {
+            let lanes = AnalysisLanes32::new(count);
+            let expected = lanes.scalar_reference(4, 0.75, true);
+            assert!(super::analysis_inputs_vectorizable::<f32>(
+                4,
+                &lanes.q_real,
+                &lanes.q_imag,
+                &lanes.u_real,
+                &lanes.u_imag,
+                &lanes.limits,
+            ));
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = lanes.accumulate(arch, 4, 0.75, true);
+                assert!((actual.0 - expected.0).norm() < 1.0e-4);
+                assert!((actual.1 - expected.1).norm() < 1.0e-4);
+
+                let e_only = lanes.accumulate(arch, 4, 0.75, false);
+                assert!((e_only.0 - expected.0).norm() < 1.0e-4);
+                assert_eq!(e_only.1, Complex32::new(0.0, 0.0));
+            }
+        }
+    }
+
+    #[test]
+    fn f32_spin_analysis_falls_back_when_simd_lane_partials_can_overflow() {
+        let mut lanes = AnalysisLanes32::new(16);
+        for lane in 0..lanes.q_real.len() {
+            lanes.q_real[lane] = if lane.is_multiple_of(2) {
+                f32::MAX
+            } else {
+                -f32::MAX
+            };
+            lanes.q_imag[lane] = 0.0;
+            lanes.u_real[lane] = 0.0;
+            lanes.u_imag[lane] = 0.0;
+            lanes.plus[lane] = 0.5;
+            lanes.minus[lane] = 0.5;
+        }
+
+        assert!(super::analysis_inputs_vectorizable::<f32>(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+        let expected = lanes.scalar_reference(4, 1.0, false);
+        assert_eq!(expected.0, Complex32::new(0.0, 0.0));
+        for arch in [Arch::Scalar, Arch::new()] {
+            assert_eq!(lanes.accumulate(arch, 4, 1.0, false), expected);
+        }
+    }
+
+    #[test]
+    fn f32_spin_analysis_zero_inputs_use_simd_and_scaled_lanes_use_scalar_accumulation() {
+        let mut lanes = AnalysisLanes32::new(64);
+        lanes.plus_exponents[11] = -800;
+        lanes.limits[7] = 3;
+        let expected = lanes.scalar_reference(4, 0.75, true);
+        assert!(!super::analysis_inputs_vectorizable::<f32>(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+        for arch in [Arch::Scalar, Arch::new()] {
+            let actual = lanes.accumulate(arch, 4, 0.75, true);
+            assert_eq!(actual, expected);
+        }
+
+        lanes.limits.fill(64);
+        lanes.q_real[4] = 0.0;
+        lanes.u_imag[9] = -0.0;
+        lanes.plus[12] = 0.0;
+        lanes.minus[17] = -0.0;
+        assert!(
+            lanes
+                .plus
+                .iter()
+                .all(|&value| value == 0.0 || value.is_normal())
+        );
+        assert!(
+            lanes
+                .minus
+                .iter()
+                .all(|&value| value == 0.0 || value.is_normal())
+        );
+        let zero_expected = lanes.scalar_reference(4, 0.75, true);
+        assert!(super::analysis_inputs_vectorizable::<f32>(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+        for arch in [Arch::Scalar, Arch::new()] {
+            let actual = lanes.accumulate(arch, 4, 0.75, true);
+            assert!((actual.0 - zero_expected.0).norm() < 1.0e-4);
+            assert!((actual.1 - zero_expected.1).norm() < 1.0e-4);
+        }
+
+        lanes.q_real[4] = f32::from_bits(1);
+        lanes.plus[4] = f32::from_bits(1);
+        assert!(
+            !lanes
+                .plus
+                .iter()
+                .all(|&value| value == 0.0 || value.is_normal())
+        );
+        assert!(!super::analysis_inputs_vectorizable::<f32>(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+    }
+
+    fn reference_normalize_pair_lanes_f32(
+        previous: &mut [f32],
+        current: &mut [f32],
+        exponents: &mut [i64],
+    ) {
+        for lane in 0..previous.len() {
+            let mut maximum = previous[lane].abs().max(current[lane].abs());
+            while maximum > BIG_F32 {
+                previous[lane] *= SCALE_DOWN_F32;
+                current[lane] *= SCALE_DOWN_F32;
+                exponents[lane] += 80;
+                maximum *= SCALE_DOWN_F32;
+            }
+            while maximum != 0.0 && maximum < SMALL_F32 {
+                previous[lane] *= SCALE_UP_F32;
+                current[lane] *= SCALE_UP_F32;
+                exponents[lane] -= 80;
+                maximum *= SCALE_UP_F32;
+            }
+        }
+    }
+
+    #[test]
+    fn f32_spin_pair_normalization_matches_float_magnitude_reference() {
+        let initial_previous = [
+            0.0,
+            f32::from_bits(1),
+            f32::from_bits(SMALL_F32.to_bits() - 1),
+            -f32::from_bits(BIG_F32.to_bits() + 1),
+            f32::MAX,
+            f32::MIN_POSITIVE,
+            -0.5,
+            0.0,
+        ];
+        let initial_current = [
+            -0.0,
+            0.0,
+            0.0,
+            BIG_F32,
+            f32::MIN_POSITIVE,
+            -f32::from_bits(1),
+            0.25,
+            SMALL_F32,
+        ];
+        let mut actual_previous = initial_previous;
+        let mut actual_current = initial_current;
+        let mut actual_exponents = [0; 8];
+        let mut expected_previous = initial_previous;
+        let mut expected_current = initial_current;
+        let mut expected_exponents = [0; 8];
+
+        normalize_pair_lanes_f32(
+            &mut actual_previous,
+            &mut actual_current,
+            &mut actual_exponents,
+        )
+        .unwrap();
+        reference_normalize_pair_lanes_f32(
+            &mut expected_previous,
+            &mut expected_current,
+            &mut expected_exponents,
+        );
+
+        for lane in 0..initial_previous.len() {
+            assert_eq!(
+                actual_previous[lane].to_bits(),
+                expected_previous[lane].to_bits()
+            );
+            assert_eq!(
+                actual_current[lane].to_bits(),
+                expected_current[lane].to_bits()
+            );
+            assert_eq!(actual_exponents[lane], expected_exponents[lane]);
+        }
+    }
+
+    fn values_over_rings(
+        arch: Arch,
+        spin: usize,
+        m: usize,
+        lmax: usize,
+        theta: &[f32],
+    ) -> (Vec<Vec<f32>>, Vec<Vec<f32>>) {
+        let count = lmax + 2;
+        let mut alpha = vec![0.0; count];
+        let mut coefficient_a = vec![0.0; count];
+        let mut coefficient_b = vec![0.0; count];
+        let initial = crate::legendre::spin_factors::fill_spin_factors::<f32>(
+            spin,
+            m,
+            lmax,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        )
+        .unwrap();
+        let sin_theta = theta.iter().map(|value| value.sin()).collect::<Vec<_>>();
+        let cos_theta = theta.iter().map(|value| value.cos()).collect::<Vec<_>>();
+        let scratch_len = theta.len().min(LATITUDE_BLOCK_SIZE);
+        let mut previous_plus = vec![0.0; scratch_len];
+        let mut current_plus = vec![0.0; scratch_len];
+        let mut next_plus = vec![0.0; scratch_len];
+        let mut exponent_plus = vec![0; scratch_len];
+        let mut previous_minus = vec![0.0; scratch_len];
+        let mut current_minus = vec![0.0; scratch_len];
+        let mut next_minus = vec![0.0; scratch_len];
+        let mut exponent_minus = vec![0; scratch_len];
+        let degree_count = lmax - initial.start_degree + 1;
+        let mut plus_values = vec![vec![0.0; theta.len()]; degree_count];
+        let mut minus_values = vec![vec![0.0; theta.len()]; degree_count];
+        for_each_spin_lm_dispatched_typed::<f32, _>(
+            arch,
+            &initial,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            &coefficient_a,
+            &coefficient_b,
+            &mut previous_plus,
+            &mut current_plus,
+            &mut next_plus,
+            &mut exponent_plus,
+            &mut previous_minus,
+            &mut current_minus,
+            &mut next_minus,
+            &mut exponent_minus,
+            |degree, ring_start, plus, plus_exponents, minus, minus_exponents| {
+                let factor =
+                    crate::legendre::spin_factors::spin_normalization::<f32>(spin, degree, false)
+                        * alpha[degree];
+                for lane in 0..plus.len() {
+                    plus_values[degree - initial.start_degree][ring_start + lane] =
+                        scaled_basis_value_f32(plus[lane], plus_exponents[lane], factor);
+                    minus_values[degree - initial.start_degree][ring_start + lane] =
+                        scaled_basis_value_f32(minus[lane], minus_exponents[lane], factor);
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+        (plus_values, minus_values)
+    }
+
+    #[test]
+    fn runtime_simd_recurrence_matches_scalar_fallback_across_blocks_and_tails() {
+        let mut theta = (0..129)
+            .map(|ring| PI * (ring as f32 + 0.5) / 129.0)
+            .collect::<Vec<_>>();
+        theta[0] = 1.0e-6;
+        theta[1] = 1.0e-3;
+        theta[127] = PI - 1.0e-3;
+        theta[128] = PI - 1.0e-6;
+
+        for spin in 1..=4 {
+            for m in [0, spin, 96] {
+                let expected = values_over_rings(Arch::Scalar, spin, m, 96, &theta);
+                let actual = values_over_rings(Arch::new(), spin, m, 96, &theta);
+                for (sign, expected_values, actual_values) in [
+                    ("plus", &expected.0, &actual.0),
+                    ("minus", &expected.1, &actual.1),
+                ] {
+                    for (degree_offset, (expected_rings, actual_rings)) in
+                        expected_values.iter().zip(actual_values).enumerate()
+                    {
+                        for (ring, (&expected, &actual)) in
+                            expected_rings.iter().zip(actual_rings).enumerate()
+                        {
+                            assert!(
+                                actual.is_finite(),
+                                "spin={spin}, m={m}, sign={sign}, l={}, ring={ring}: non-finite result {actual}",
+                                spin.max(m) + degree_offset
+                            );
+                            assert!(
+                                (actual - expected).abs() <= 5.0e-6,
+                                "spin={spin}, m={m}, sign={sign}, l={}, ring={ring}: actual {actual:.9e}, scalar {expected:.9e}",
+                                spin.max(m) + degree_offset
+                            );
+                        }
+                    }
+                }
             }
         }
     }

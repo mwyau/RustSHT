@@ -8,7 +8,6 @@ pub(crate) mod scalar_ordered;
 mod scalar_paired;
 mod scalar_table;
 mod spin;
-mod spin_f32;
 mod spin_factors;
 mod spin_fast;
 
@@ -18,7 +17,7 @@ pub(crate) use numeric::{
 };
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
-pub(crate) use spin_f32::{normalizer_profile, reset_normalizer_profile};
+pub(crate) use spin::{normalizer_profile, reset_normalizer_profile};
 
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 pub(crate) const SCALAR_ORDER_BATCH_SIZE: usize = 256;
@@ -1971,7 +1970,7 @@ impl ShtScalar for f64 {
 }
 
 impl ShtScalar for f32 {
-    type SpinInitial = spin_f32::SpinInitial32;
+    type SpinInitial = spin_factors::SpinInitial<f32>;
 
     fn supports_paired_scalar() -> bool {
         true
@@ -2289,7 +2288,7 @@ impl ShtScalar for f32 {
     where
         F: FnMut(usize, usize, &[Self], &[i64], &[Self], &[i64]) -> Result<(), ShtError>,
     {
-        spin_f32::for_each_spin_lm_dispatched(
+        spin::for_each_spin_lm_dispatched_typed::<f32, F>(
             arch,
             initial,
             lmax,
@@ -2310,7 +2309,7 @@ impl ShtScalar for f32 {
     }
 
     fn scaled_basis_value(value: Self, exponent: i64, alpha_norm: Self) -> Self {
-        spin_f32::scaled_basis_value(value, exponent, alpha_norm)
+        spin::scaled_basis_value_f32(value, exponent, alpha_norm)
     }
 
     fn spin_normalization(spin: usize, degree: usize, derivative: bool) -> Self {
