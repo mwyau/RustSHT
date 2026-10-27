@@ -1,0 +1,8 @@
+scope,metric,ir,share_percent,qualification
+whole_call,program_total,639748794,100.0000,Callgrind Ir not cycles
+stage,analyze_spin_order_group_inclusive,534888388,83.6091,inclusive stage cost overlaps callees
+call_site,try_fused_scalar_analysis_pair_shared_recurrence_inclusive,408167451,63.8012,3579 calls; inclusive cost overlaps callees
+function,FusedScalarAnalysisPair_V3_vectorizer_direct,106607678,16.6640,directly attributed function cost
+source_line,store_analysis_pair_same_assignment,8793276,1.3745,src/legendre/scalar_paired/analysis.rs:3222
+source_line,store_analysis_pair_opposite_assignment,10589775,1.6553,src/legendre/scalar_paired/analysis.rs:3224
+function,initialize_analysis_sectoral_lanes_inclusive,10210528,1.5960,3579 calls; inclusive cost overlaps callees
