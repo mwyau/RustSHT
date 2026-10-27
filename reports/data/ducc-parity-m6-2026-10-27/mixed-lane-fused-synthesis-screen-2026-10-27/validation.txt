@@ -1,0 +1,11 @@
+Exact parent: a30537bdcfa0fc5273985abfd592998325a608de
+Candidate patch SHA-256: 863f87b445e0ddc5876ec8444c37b3773f760d78c68d3d70a08d0add742b1653
+
+Commands run (CARGO_HOME and CARGO_TARGET_DIR were experiment-local):
+- cargo test --locked --release --features parallel --lib f32_prepared_paired_synthesis_fuses_safe_lanes_in_mixed_block -- --nocapture: 1 passed
+- cargo test --locked --release --features parallel --lib scalar: 169 passed, 16 ignored
+- cargo test --locked --release --features parallel --test f32: 11 passed, 1 ignored
+- cargo fmt --all: passed
+- git diff --check: passed
+
+Three alternating fresh-process parent/candidate/DUCC pairs completed at q1 and q8. Every worker reported finite output, repeat consistency, and reset consistency. The candidate was not promoted because all three q8 candidate/parent ratios exceeded 1.016; q1 did not show a consistent gain.

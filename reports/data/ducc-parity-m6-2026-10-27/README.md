@@ -4,6 +4,9 @@ Latest accepted source slice: [shared f32/f64 scalar synthesis recurrence](f32-f
 
 The current-source GL T720 q8 f32 scalar synthesis instruction profile is preserved in [the focused Callgrind evidence](f32-callgrind-q8-2026-10-27/README.md). It compares exact parent `972bacda` and pinned DUCC; Ir reductions are attribution evidence, not timing claims.
 
+
+The subsequent mixed-lane fused-synthesis candidate was removed after a repeatable q8 slowdown; see the [matched screen and preserved patch](mixed-lane-fused-synthesis-screen-2026-10-27/README.md).
+
 This directory preserves the bounded selection patch for the checked benchmark workers. Raw Callgrind captures from other campaigns remain local and untracked; compact committed summaries and reports preserve their measurements. The f64 selector derives from `scripts/benchmark_ducc_spin1_native.py` (original SHA-256 `e8364e3a18996bac98daa68cba348ccb0d6803576d26c167f63ce79d111ecabe`); the f32 selector derives from `scripts/benchmark_ducc_f32_native.py` (original SHA-256 `70033f7251358128783f35d7aefa527fa957abce5513571db1142e92e6e38ff0`). The zero-context patch SHA-256 is `63797a6c9566cdfae6d07284fd1401f001fbf177b6c66ccc9ed341ead64e563d`. The resulting bounded copies had SHA-256 values `a80b1c3a43a788978011d3fca19229d35247769c39d3ab8b5b91dcd011b921fd` and `98cfebe740a04d0506f01b9bde2a466e2f575594a14c0a98e0f31f6763702cd4`.
 
 The patch was tested by copying the checked scripts into a clean directory and applying it with `patch -p1`; both resulting files matched the recorded hashes. It limits the f64 run to six spin-1 cells and makes `CARGO_TARGET_DIR` selectable. It limits f32 to eight full-mmax T720 cells and adds worker-level scheduler/frequency capture and output hashes. The checked repository scripts remain unchanged.

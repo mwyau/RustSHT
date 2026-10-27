@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-27",
+  "candidate_decision": "rejected after matched q8 slowdown in all three pairs; q1 near parity/mixed",
+  "candidate_base_head": "d7721e059bdcf2c629ad6e84f8343ee554d58d1f",
+  "exact_source_parent": "a30537bdcfa0fc5273985abfd592998325a608de",
+  "candidate_source_patch_sha256": "863f87b445e0ddc5876ec8444c37b3773f760d78c68d3d70a08d0add742b1653",
+  "candidate_source_sha256": {
+    "src/legendre/scalar_paired/synthesis.rs": "31777cce806913d5f0861a56f2ac84a216306ea9a2ce26ef63df07edd28e3ffb",
+    "src/legendre/scalar/tests/f32.rs": "922835cdd55b2d7a66e859847e108ed50a0e41eb45ed8854f9857f5a8c9800ba"
+  },
+  "parent_source_sha256": {
+    "src/legendre/scalar_paired/synthesis.rs": "0b71aacebfb16b7857ffba3284ee23112ca44ecdfc543255fd66c379837f7c91",
+    "src/legendre/scalar/tests/f32.rs": "2b73f631e34fa363c60233d2c1820c69d226b77783d6a17d44d1d5ba55326c92"
+  },
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_expected_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "binary_sha256": {
+    "parent": "715d47e76b5c1597e5e136f67d4085b19ca7b4eae3e89529d49f60417cf49c48",
+    "candidate": "fc9e9c35908e9710559783368d2f384c4f3f96c8b2bba35d34b311fa94cdda6b",
+    "ducc": "37a20747fde01b5462bafc15a08c1f61c9801a8426d87711be582bdac4aa44de"
+  },
+  "fixture_sha256": {
+    "GL-T720-M720-even-s0-synthesis-q1": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "GL-T720-M720-even-s0-synthesis-q8": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    }
+  },
+  "build": {
+    "rust": "cargo build --locked --release --features parallel --example ducc_f32_full_transform_parity; RUSTFLAGS unset; runtime Pulp dispatch",
+    "ducc": "CMake Release with -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "target_ms": 25,
+    "worker_order": "alternating parent/candidate/DUCC order per pair",
+    "triplets_per_q": 3
+  },
+  "validation": {
+    "focused_mixed_lane_test": "1 passed",
+    "scalar_lib_tests": "169 passed, 16 ignored",
+    "f32_integration_tests": "11 passed, 1 ignored",
+    "format": "passed",
+    "diff_check": "passed",
+    "output_guards": {
+      "count": 18,
+      "finite": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  },
+  "runner_sha256": "69c23dea88930e41dad97145b824426b88a580d456673f48bacf7caaa46481b7",
+  "candidate_patch_uncompressed_bytes": 9421,
+  "cleanup": {
+    "scratch_apparent_bytes_before_removal": 1028386228,
+    "parent_worktree_was_clean": true,
+    "scratch_root_absent_after_removal": true,
+    "parent_worktree_absent_after_removal": true,
+    "tmp_available_bytes_before": 48049979392,
+    "tmp_available_bytes_after": 49092861952,
+    "tmp_available_bytes_reclaimed": 1042882560,
+    "tmp_free_inodes_before": 942227,
+    "tmp_free_inodes_after": 949016,
+    "tmp_free_inodes_reclaimed": 6789,
+    "scratch_label": "rustsht-m6-f32-mixedmask-3948wn9b",
+    "parent_worktree_label": "worktrees/parent"
+  },
+  "toolchain": {
+    "target": "x86_64",
+    "rustc_version": "1.99.1",
+    "gxx_version": "15.2.0",
+    "cmake_version": "4.2.3"
+  }
+}
