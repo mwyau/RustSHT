@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "experiment": "m6-reflected-active-mask-screen",
+  "executed_runner_sha256": "925a928a68f10797bf3be64dc22a989737e247043f9b25069c35c84d3493eaac",
+  "metadata": {
+    "parent_source_sha": "914e68fbdf4385b3a7e74304e2bcdc77cfd6e4c1",
+    "candidate_base_source_sha": "914e68fbdf4385b3a7e74304e2bcdc77cfd6e4c1",
+    "candidate_patch_sha256": "a2a399159a825272db5b04cad6d3e41fdd0fe93f7a478cf13edd4dceb47ffa04",
+    "candidate_source_file_sha256": {
+      "src/legendre/mod.rs": "6b176df9618e44e506aed8699dd7569daf60b146f378733ce096403caa58e85d",
+      "src/legendre/scalar_paired.rs": "1db422a449c3d1dd068ceeb7e2c6af84597340cf5f35bf92c69d3ea3e07aa19e",
+      "src/legendre/scalar_paired/analysis.rs": "356300490b207d730c93b3bcab6840bf3d9ede17df2e33399d9bdf69c09d1a21",
+      "src/transform/spin/analysis.rs": "63f8d84eb46eca5674fd74ab3b2c02d91c76045a778894fc40470d57ae788697"
+    },
+    "parent_binary_sha256": "cbe9820369b02eaf7ddecc4b8b995cd2b9bc04ef75ef621ff0ad80a483229063",
+    "candidate_binary_sha256": "ce6ebe4dae0e04d5b795f6dd420a67ead8bd0ac1e8d2fc5483aa5c81b85aecda",
+    "ducc_binary_sha256": "59f41d407501143f5162fb88c0fa9c20c1384f50fa380ff53843706a740f1f95",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "gxx": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_flags": "SHT -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides with -fno-fast-math -ffp-contract=fast",
+    "case": {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth"
+    },
+    "operation": "spin-1 analysis",
+    "phi0": 0.23,
+    "target_batch_ms": 25.0,
+    "triplets_per_thread_count": 3,
+    "fixture_seed": 1416973757,
+    "fixture_sha256": {
+      "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+      "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+      "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+      "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+    },
+    "recoverable_patch_sha256": "1b3d8012c73752f0ea84e27a0368e5edd599b0bfccd5d67f4ad48a70d9b6bf08"
+  },
+  "triplets": [
+    {
+      "threads": 1,
+      "process_pair": 0,
+      "process_order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "candidate_parent_bitwise_equal": true,
+      "finite_outputs": true,
+      "repeat_consistent": {
+        "parent": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "reset_consistent": {
+        "parent": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "timing_median_ms": {
+        "parent": 36.437934,
+        "candidate": 37.095957,
+        "ducc": 29.074894
+      },
+      "candidate_parent_ratio": 1.0180587351631956,
+      "parent_ducc_ratio": 1.2532439155238193,
+      "candidate_ducc_ratio": 1.2758759154891501,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "output_sha256": {
+        "parent": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "candidate": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "ducc": {
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d",
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db"
+        }
+      }
+    },
+    {
+      "threads": 1,
+      "process_pair": 1,
+      "process_order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "candidate_parent_bitwise_equal": true,
+      "finite_outputs": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "timing_median_ms": {
+        "parent": 36.41225,
+        "candidate": 36.123559,
+        "ducc": 29.002823
+      },
+      "candidate_parent_ratio": 0.9920715967840493,
+      "parent_ducc_ratio": 1.2554726138210752,
+      "candidate_ducc_ratio": 1.2455187207121183,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "output_sha256": {
+        "candidate": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "ducc": {
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d",
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db"
+        },
+        "parent": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        }
+      }
+    },
+    {
+      "threads": 1,
+      "process_pair": 2,
+      "process_order": [
+        "ducc",
+        "parent",
+        "candidate"
+      ],
+      "candidate_parent_bitwise_equal": true,
+      "finite_outputs": true,
+      "repeat_consistent": {
+        "ducc": true,
+        "parent": true,
+        "candidate": true
+      },
+      "reset_consistent": {
+        "ducc": true,
+        "parent": true,
+        "candidate": true
+      },
+      "timing_median_ms": {
+        "parent": 37.606523499999994,
+        "candidate": 36.418192000000005,
+        "ducc": 29.1858795
+      },
+      "candidate_parent_ratio": 0.9684009211859217,
+      "parent_ducc_ratio": 1.2885177402311963,
+      "candidate_ducc_ratio": 1.2478017666042927,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "output_sha256": {
+        "ducc": {
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d",
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db"
+        },
+        "parent": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "candidate": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "process_pair": 0,
+      "process_order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "candidate_parent_bitwise_equal": true,
+      "finite_outputs": true,
+      "repeat_consistent": {
+        "parent": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "reset_consistent": {
+        "parent": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "timing_median_ms": {
+        "parent": 5.2201284999999995,
+        "candidate": 5.293182,
+        "ducc": 4.2047515833333335
+      },
+      "candidate_parent_ratio": 1.0139945788690834,
+      "parent_ducc_ratio": 1.2414832116816095,
+      "candidate_ducc_ratio": 1.2588572464021308,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "output_sha256": {
+        "parent": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "candidate": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "ducc": {
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d",
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db"
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "process_pair": 1,
+      "process_order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "candidate_parent_bitwise_equal": true,
+      "finite_outputs": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "timing_median_ms": {
+        "parent": 5.2359214000000005,
+        "candidate": 5.2792656000000004,
+        "ducc": 4.187368666666666
+      },
+      "candidate_parent_ratio": 1.0082782373318286,
+      "parent_ducc_ratio": 1.2504085063443984,
+      "candidate_ducc_ratio": 1.2607596847216545,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "output_sha256": {
+        "candidate": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "ducc": {
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d",
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db"
+        },
+        "parent": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "process_pair": 2,
+      "process_order": [
+        "ducc",
+        "parent",
+        "candidate"
+      ],
+      "candidate_parent_bitwise_equal": true,
+      "finite_outputs": true,
+      "repeat_consistent": {
+        "ducc": true,
+        "parent": true,
+        "candidate": true
+      },
+      "reset_consistent": {
+        "ducc": true,
+        "parent": true,
+        "candidate": true
+      },
+      "timing_median_ms": {
+        "parent": 5.2739876,
+        "candidate": 5.303203,
+        "ducc": 4.200898416666666
+      },
+      "candidate_parent_ratio": 1.0055395276242212,
+      "parent_ducc_ratio": 1.2554427831618005,
+      "candidate_ducc_ratio": 1.2623973431397544,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "output_sha256": {
+        "ducc": {
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d",
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db"
+        },
+        "parent": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        },
+        "candidate": {
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e",
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f"
+        }
+      }
+    }
+  ]
+}

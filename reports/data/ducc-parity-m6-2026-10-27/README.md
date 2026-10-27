@@ -98,3 +98,18 @@ The corrected runner completed three balanced parent/candidate/DUCC triplets at 
 The run used the GL T720 full-mmax spin-1 analysis case and pinned DUCC 0.42.0. Rust parent/candidate outputs were bitwise identical in all six triplets. The M6 timing gap remains open.
 
 Cleanup removed only scratch root rustsht-m6-pair-safety-final.65icJ7y4 and its two registered worktrees after evidence verification. It contained 55,863 files (1,756,628 KiB allocated; 1,620,623 KiB apparent). The root and worktree registrations are absent; tmpfs available space rose by 1,798,787,072 bytes and free inodes by 65,223. No experiment worker remained.
+
+### Reflected active-lane mask candidate — removed
+
+The candidate reused the staging pass's active-lane decisions during reflected-block compaction. It removed the second activity predicate and its repeated ring-limit reads but added mask recording and bit tests. Parent/candidate source base was `914e68fbdf4385b3a7e74304e2bcdc77cfd6e4c1`; the three-triplet-per-q GL T720 full-mmax screen showed paired median C/P `0.992072` q1 and `1.008278` q8, with no repeatable gain. All six outputs were bitwise equal, and correctness/repeat/reset checks passed. See the [screen report](active-mask-screen-2026-10-27.md).
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate patch](active-mask-candidate.patch) | `1b3d8012c73752f0ea84e27a0368e5edd599b0bfccd5d67f4ad48a70d9b6bf08` | Zero-context recoverable source diff (`git apply --unidiff-zero`); the measured scratch patch SHA was `a2a399159a825272db5b04cad6d3e41fdd0fe93f7a478cf13edd4dceb47ffa04`. |
+| [Triplet results JSON](active-mask-triplets.json) | `064898abfb4e5d2fba954dbb8663a9b0819158e6aea0d6dbcc0d47f1d9d19592` | Six q1/q8 triplets with process-median timings, correctness, numerical errors, output hashes, and binary/fixture provenance; no worker or host snapshots. |
+| [Triplet summary CSV](active-mask-triplets.csv) | `0fa98fac94f29683d64a5b4ccbdd8551a98feae2f7e4866caaa0af98985e61e5` | Per-triplet medians, paired ratios, correctness, errors, and output hashes. |
+| [Runner](active-mask-triplet-runner.py) | `925a928a68f10797bf3be64dc22a989737e247043f9b25069c35c84d3493eaac` | Reused corrected GL T720 triplet runner from the Q/U screen; a scratch patch-name alias supplied the candidate patch. |
+
+The candidate passed `cargo test --release --locked --all-features --lib spin1` (49 passed, 4 ignored), format, and diff checks. q1 runqueue wait was 6.6–6.9%; q8 frequency samples included 1.746 GHz readings. See the [screen report](active-mask-screen-2026-10-27.md) for timing and cleanup details.
+
+Cleanup removed only exact scratch root `rustsht-m6-active-mask.7W3HgJPa` and its two registered worktrees after artifact verification. It contained 12,841 files (1,329,602,560 bytes allocated; 1,294,995,959 apparent). The root and registrations are absent; `/tmp` returned from 45 to 46 GiB available and free inodes increased by 12,430 to 949,018. No worker remained.

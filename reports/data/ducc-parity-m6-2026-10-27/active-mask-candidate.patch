@@ -1,0 +1,21 @@
+diff --git a/src/transform/spin/analysis.rs b/src/transform/spin/analysis.rs
+index 2250374e..32eac8a9 100644
+--- a/src/transform/spin/analysis.rs
++++ b/src/transform/spin/analysis.rs
+@@ -650,0 +651 @@ impl<T: ShtScalar> ShtPlan<T> {
++            let mut active_lane_mask = 0_u64;
+@@ -658,0 +660,3 @@ impl<T: ShtScalar> ShtPlan<T> {
++                    if compaction_enabled {
++                        active_lane_mask |= 1_u64 << lane;
++                    }
+@@ -731,6 +735 @@ impl<T: ShtScalar> ShtPlan<T> {
+-                let pair_index = block_start + lane;
+-                let north_ring = ring_start + pair_index;
+-                let south_ring = ring_end - 1 - pair_index;
+-                let active = m <= ring_order_limits[north_ring]
+-                    || (south_ring != north_ring && m <= ring_order_limits[south_ring]);
+-                if compact && !active {
++                if compact && active_lane_mask & (1_u64 << lane) == 0 {
+@@ -738,0 +738,2 @@ impl<T: ShtScalar> ShtPlan<T> {
++                let pair_index = block_start + lane;
++                let north_ring = ring_start + pair_index;
