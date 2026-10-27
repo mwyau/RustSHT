@@ -168,6 +168,14 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    #[cfg(feature = "parallel")]
+    fn prefers_fine_scalar_synthesis_groups(
+        _group_count: usize,
+        _execution_threads: usize,
+    ) -> bool {
+        false
+    }
+
     #[expect(
         clippy::too_many_arguments,
         reason = "The table accumulator receives packed spectra, basis storage and reusable order scratch."
@@ -1974,6 +1982,11 @@ impl ShtScalar for f32 {
 
     fn supports_paired_scalar() -> bool {
         true
+    }
+
+    #[cfg(feature = "parallel")]
+    fn prefers_fine_scalar_synthesis_groups(group_count: usize, execution_threads: usize) -> bool {
+        group_count > execution_threads
     }
 
     fn supports_spin_analysis_simd() -> bool {

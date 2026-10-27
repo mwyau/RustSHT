@@ -364,14 +364,20 @@ impl<T: ShtScalar> ShtPlan<T> {
                             quantity: "parallel Fourier spectrum group size",
                         },
                     )?;
-                    // CC's general synthesis recurrence has enough work in
-                    // each ring group to justify finer scheduling. The
-                    // coarser default batches several groups into one Rayon
-                    // task and underfills the q8 pool on representative CC
-                    // grids; each group already owns its bounded recurrence
-                    // workspace, so letting Rayon split to one group per task
-                    // does not add transform-sized scratch.
-                    let min_groups_per_task = if self.grid.kind() == GridKind::ClenshawCurtis {
+                    // CC's general synthesis recurrence and native-f32 GL
+                    // scalar synthesis have enough work in each ring group to
+                    // justify finer scheduling. The coarser default batches
+                    // several groups into one Rayon task and can underfill the
+                    // pool; each group already owns bounded recurrence
+                    // workspace, so one group per task adds no
+                    // transform-sized scratch.
+                    let fine_scalar_synthesis_grain = self.grid.kind() == GridKind::ClenshawCurtis
+                        || (self.grid.kind() == GridKind::GaussLegendre
+                            && T::prefers_fine_scalar_synthesis_groups(
+                                parallel_groups,
+                                execution_threads,
+                            ));
+                    let min_groups_per_task = if fine_scalar_synthesis_grain {
                         1
                     } else {
                         parallel_groups.div_ceil(execution_threads)
