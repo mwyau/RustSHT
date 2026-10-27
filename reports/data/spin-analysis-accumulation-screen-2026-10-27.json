@@ -1,0 +1,1579 @@
+{
+  "metadata": {
+    "parent_source": "9af7f3b03e1089a769b99efc21f14e29deebf56a",
+    "candidate_source_head": "9af7f3b03e1089a769b99efc21f14e29deebf56a",
+    "candidate_patch_sha256": "d88aca51d913a9ed3b308f029f5386a2244ea6d05cbce2d42bd687e780230675",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_sht_command": "g++ -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_driver_command": "g++ -O3 -ffast-math -march=x86-64-v3 -fno-fast-math -ffp-contract=fast",
+    "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "physical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "monitor_cpu": 8,
+    "preflight_psi_some_avg10": 0.0,
+    "fixture": {
+      "seed": 1416973757,
+      "sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      }
+    },
+    "method": "three alternating fresh-process parent/DUCC/candidate triplets per GL full-mmax spin-1 analysis q1/q8; 25 ms target batches; worker repeat/reset checks"
+  },
+  "extended_q8_metadata": {
+    "parent_source": "9af7f3b03e1089a769b99efc21f14e29deebf56a",
+    "candidate_source_head": "9af7f3b03e1089a769b99efc21f14e29deebf56a",
+    "candidate_patch_sha256": "d88aca51d913a9ed3b308f029f5386a2244ea6d05cbce2d42bd687e780230675",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_sht_command": "g++ -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_driver_command": "g++ -O3 -ffast-math -march=x86-64-v3 -fno-fast-math -ffp-contract=fast",
+    "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "physical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "monitor_cpu": 8,
+    "preflight_psi_some_avg10": 0.0,
+    "fixture": {
+      "seed": null,
+      "sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      }
+    },
+    "method": "15 alternating fresh-process parent/DUCC/candidate triplets for GL full-mmax spin-1 analysis q8; 25 ms target batches; worker repeat/reset checks"
+  },
+  "summary": {
+    "parent_source": "9af7f3b03e1089a769b99efc21f14e29deebf56a",
+    "candidate_patch_sha256": "d88aca51d913a9ed3b308f029f5386a2244ea6d05cbce2d42bd687e780230675",
+    "q1_initial": {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 1,
+      "median_parent_ms": 36.3283435,
+      "median_candidate_ms": 36.233269,
+      "median_ducc_ms": 29.452351999999998,
+      "paired_candidate_parent_ratio_median": 0.9973829112246749,
+      "paired_candidate_parent_ratio_range": [
+        0.9909813062954892,
+        1.0054834144953364
+      ]
+    },
+    "q8_initial_3_pairs": {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 8,
+      "median_parent_ms": 5.2802088,
+      "median_candidate_ms": 5.5472646,
+      "median_ducc_ms": 4.253561833333333,
+      "paired_candidate_parent_ratio_median": 1.0274796941568867,
+      "paired_candidate_parent_ratio_range": [
+        1.0081577316018708,
+        1.0505767499194352
+      ]
+    },
+    "q8_extended_15_pairs": {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 8,
+      "median_parent_ms": 5.336467600000001,
+      "median_candidate_ms": 5.330387099999999,
+      "median_ducc_ms": 4.272460833333334,
+      "paired_candidate_parent_ratio_median": 0.9956885956604469,
+      "paired_candidate_parent_ratio_range": [
+        0.8036190382897604,
+        1.0616152153109397
+      ]
+    },
+    "q8_low_wait_frequency_sensitivity": {
+      "selection": "both parent and candidate scheduler wait <=2%; both median frequencies >=3 GHz",
+      "pair_count": 10,
+      "candidate_parent_ratio_median": 0.9928540220163897,
+      "candidate_parent_ratio_range": [
+        0.9403388120110014,
+        1.0306762513919494
+      ]
+    },
+    "all_initial_and_extended_candidate_parent_outputs_byte_identical": true,
+    "all_initial_and_extended_outputs_finite": true,
+    "all_initial_and_extended_repeat_reset_checks_passed": true
+  },
+  "initial_cells": [
+    {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 1,
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "timing_medians_ms": {
+            "parent": 36.354378000000004,
+            "candidate": 36.026509,
+            "ducc": 29.754899
+          },
+          "candidate_parent_ratio": 0.9909813062954892,
+          "candidate_parent_byte_identical": true,
+          "candidate_parent_metrics": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "candidate_ducc_metrics": {
+            "absolute_max": 1.2958384365546749e-15,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 4.760590461219097e-14,
+            "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "finite_outputs": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          },
+          "repeat_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "reset_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "scheduler_wait_fraction": {
+            "parent": 0.06897403702901672,
+            "candidate": 0.06919888067821095,
+            "ducc": 0.0006623321606027355
+          },
+          "median_frequency_ghz": {
+            "parent": 4.7503329999999995,
+            "candidate": 4.75234,
+            "ducc": 4.6462710000000005
+          },
+          "binary_sha256": {
+            "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+            "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+            "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+          },
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "timing_medians_ms": {
+            "parent": 36.3283435,
+            "candidate": 36.233269,
+            "ducc": 29.452351999999998
+          },
+          "candidate_parent_ratio": 0.9973829112246749,
+          "candidate_parent_byte_identical": true,
+          "candidate_parent_metrics": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "candidate_ducc_metrics": {
+            "absolute_max": 1.2958384365546749e-15,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 4.760590461219097e-14,
+            "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "finite_outputs": {
+            "candidate": true,
+            "ducc": true,
+            "parent": true
+          },
+          "repeat_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "reset_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "scheduler_wait_fraction": {
+            "parent": 0.06914683360134685,
+            "candidate": 0.06855696835226267,
+            "ducc": 0.0006193986981967755
+          },
+          "median_frequency_ghz": {
+            "parent": 4.728884000000001,
+            "candidate": 4.716423,
+            "ducc": 4.6166339999999995
+          },
+          "binary_sha256": {
+            "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+            "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+            "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+          },
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "timing_medians_ms": {
+            "parent": 36.1873975,
+            "candidate": 36.385828000000004,
+            "ducc": 29.392322999999998
+          },
+          "candidate_parent_ratio": 1.0054834144953364,
+          "candidate_parent_byte_identical": true,
+          "candidate_parent_metrics": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "candidate_ducc_metrics": {
+            "absolute_max": 1.2958384365546749e-15,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 4.760590461219097e-14,
+            "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "finite_outputs": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          },
+          "repeat_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "reset_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "scheduler_wait_fraction": {
+            "parent": 0.06883016207459076,
+            "candidate": 0.06885484373184624,
+            "ducc": 0.0004669256780203797
+          },
+          "median_frequency_ghz": {
+            "parent": 4.7432125,
+            "candidate": 4.728918999999999,
+            "ducc": 4.641581
+          },
+          "binary_sha256": {
+            "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+            "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+            "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+          },
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          }
+        }
+      ],
+      "median_parent_ms": 36.3283435,
+      "median_candidate_ms": 36.233269,
+      "median_ducc_ms": 29.452351999999998,
+      "paired_candidate_parent_ratio_median": 0.9973829112246749,
+      "paired_candidate_parent_ratio_range": [
+        0.9909813062954892,
+        1.0054834144953364
+      ],
+      "all_candidate_parent_outputs_byte_identical": true,
+      "all_outputs_finite": true,
+      "all_repeat_reset_checks_passed": true
+    },
+    {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 8,
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "timing_medians_ms": {
+            "parent": 5.2802088,
+            "candidate": 5.5472646,
+            "ducc": 4.284729916666667
+          },
+          "candidate_parent_ratio": 1.0505767499194352,
+          "candidate_parent_byte_identical": true,
+          "candidate_parent_metrics": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "candidate_ducc_metrics": {
+            "absolute_max": 1.2958384365546749e-15,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 4.760590461219097e-14,
+            "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "finite_outputs": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          },
+          "repeat_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "reset_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "scheduler_wait_fraction": {
+            "parent": 0.008593123627801163,
+            "candidate": 0.012977613762098281,
+            "ducc": 0.0012037671067977108
+          },
+          "median_frequency_ghz": {
+            "parent": 3.7394625,
+            "candidate": 1.74646,
+            "ducc": 4.3979815
+          },
+          "binary_sha256": {
+            "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+            "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+            "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+          },
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "timing_medians_ms": {
+            "parent": 5.2789675,
+            "candidate": 5.3220319,
+            "ducc": 4.224516166666667
+          },
+          "candidate_parent_ratio": 1.0081577316018708,
+          "candidate_parent_byte_identical": true,
+          "candidate_parent_metrics": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "candidate_ducc_metrics": {
+            "absolute_max": 1.2958384365546749e-15,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 4.760590461219097e-14,
+            "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "finite_outputs": {
+            "candidate": true,
+            "ducc": true,
+            "parent": true
+          },
+          "repeat_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "reset_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "scheduler_wait_fraction": {
+            "parent": 0.005150642067265721,
+            "candidate": 0.010124783891814027,
+            "ducc": 0.00014393327531264912
+          },
+          "median_frequency_ghz": {
+            "parent": 3.8530785,
+            "candidate": 3.883867,
+            "ducc": 4.366244
+          },
+          "binary_sha256": {
+            "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+            "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+            "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+          },
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "timing_medians_ms": {
+            "parent": 5.48650575,
+            "candidate": 5.63727325,
+            "ducc": 4.253561833333333
+          },
+          "candidate_parent_ratio": 1.0274796941568867,
+          "candidate_parent_byte_identical": true,
+          "candidate_parent_metrics": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "candidate_ducc_metrics": {
+            "absolute_max": 1.2958384365546749e-15,
+            "reference_peak": 0.014041249823522176,
+            "relative_l2": 4.760590461219097e-14,
+            "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+            "near_zero_reference_count": 2,
+            "metrics_finite": true
+          },
+          "finite_outputs": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          },
+          "repeat_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "reset_consistent": {
+            "parent": true,
+            "candidate": true,
+            "ducc": true
+          },
+          "scheduler_wait_fraction": {
+            "parent": 0.01744522375326647,
+            "candidate": 0.0556955099142202,
+            "ducc": 0.003863358122913474
+          },
+          "median_frequency_ghz": {
+            "parent": 3.712269,
+            "candidate": 3.858359,
+            "ducc": 4.354801
+          },
+          "binary_sha256": {
+            "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+            "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+            "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+          },
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          }
+        }
+      ],
+      "median_parent_ms": 5.2802088,
+      "median_candidate_ms": 5.5472646,
+      "median_ducc_ms": 4.253561833333333,
+      "paired_candidate_parent_ratio_median": 1.0274796941568867,
+      "paired_candidate_parent_ratio_range": [
+        1.0081577316018708,
+        1.0505767499194352
+      ],
+      "all_candidate_parent_outputs_byte_identical": true,
+      "all_outputs_finite": true,
+      "all_repeat_reset_checks_passed": true
+    }
+  ],
+  "extended_q8_cell": {
+    "case_id": "GL-T720-M720-spin1-analysis",
+    "threads": 8,
+    "pairs": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.2742818,
+          "candidate": 5.3344627,
+          "ducc": 4.225182
+        },
+        "candidate_parent_ratio": 1.0114102549469388,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.008848717226661905,
+          "candidate": 0.002935094933960559,
+          "ducc": 0.0036618934532921237
+        },
+        "median_frequency_ghz": {
+          "parent": 4.0279475,
+          "candidate": 3.6716185,
+          "ducc": 4.402536
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.2883001,
+          "candidate": 5.265500100000001,
+          "ducc": 4.2622583333333335
+        },
+        "candidate_parent_ratio": 0.9956885956604469,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.0107063410825128,
+          "candidate": 0.006872079406376666,
+          "ducc": 0.002023806648751229
+        },
+        "median_frequency_ghz": {
+          "parent": 3.8164135000000003,
+          "candidate": 3.8643995,
+          "ducc": 4.365522
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.5383388,
+          "candidate": 5.3076543,
+          "ducc": 4.2556075
+        },
+        "candidate_parent_ratio": 0.958347708883393,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.017711061401074178,
+          "candidate": 0.007541917930912026,
+          "ducc": 0.0043611760711625685
+        },
+        "median_frequency_ghz": {
+          "parent": 3.718786,
+          "candidate": 3.852331,
+          "ducc": 4.345922
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 4,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.408955799999999,
+          "candidate": 5.4262642,
+          "ducc": 4.228236083333334
+        },
+        "candidate_parent_ratio": 1.0031999521977977,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.023583428283559034,
+          "candidate": 0.0159956441172561,
+          "ducc": 0.0001695912426678251
+        },
+        "median_frequency_ghz": {
+          "parent": 3.822699,
+          "candidate": 3.7760425,
+          "ducc": 4.3628915
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 5,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.31523725,
+          "candidate": 5.3880774,
+          "ducc": 4.294480416666667
+        },
+        "candidate_parent_ratio": 1.0137040260996817,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.011799845028633077,
+          "candidate": 0.01110778996667433,
+          "ducc": 0.00874979917777331
+        },
+        "median_frequency_ghz": {
+          "parent": 2.76932,
+          "candidate": 1.74646,
+          "ducc": 4.400644
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 6,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.666733875,
+          "candidate": 5.328649799999999,
+          "ducc": 4.3252325
+        },
+        "candidate_parent_ratio": 0.9403388120110014,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.01530477303232038,
+          "candidate": 0.01015082461800521,
+          "ducc": 0.00917634134995467
+        },
+        "median_frequency_ghz": {
+          "parent": 3.767007,
+          "candidate": 3.8510225,
+          "ducc": 4.373575499999999
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 7,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.3693804,
+          "candidate": 5.321414299999999,
+          "ducc": 4.322394666666666
+        },
+        "candidate_parent_ratio": 0.9910667346273323,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.005524247538176646,
+          "candidate": 0.005688665380944383,
+          "ducc": 0.008955748015345497
+        },
+        "median_frequency_ghz": {
+          "parent": 3.7962845,
+          "candidate": 3.851934,
+          "ducc": 4.369172000000001
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 8,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.2945087,
+          "candidate": 5.3557007,
+          "ducc": 4.268849
+        },
+        "candidate_parent_ratio": 1.0115576351777456,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.007616332286338117,
+          "candidate": 0.009496625411463514,
+          "ducc": 0.002218591566849396
+        },
+        "median_frequency_ghz": {
+          "parent": 3.8032595,
+          "candidate": 3.832287,
+          "ducc": 4.365116
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 9,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.324938899999999,
+          "candidate": 5.2964042000000005,
+          "ducc": 4.308809916666667
+        },
+        "candidate_parent_ratio": 0.994641309405447,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.0011061325779826978,
+          "candidate": 0.012290082262636465,
+          "ducc": 0.0010742455166377564
+        },
+        "median_frequency_ghz": {
+          "parent": 3.8718114999999997,
+          "candidate": 3.8720404999999998,
+          "ducc": 4.3851285
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 10,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.2769518,
+          "candidate": 5.4388289,
+          "ducc": 4.280966833333333
+        },
+        "candidate_parent_ratio": 1.0306762513919494,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.016364511496323227,
+          "candidate": 0.015030555346686122,
+          "ducc": 0.0012968652521386573
+        },
+        "median_frequency_ghz": {
+          "parent": 3.827712,
+          "candidate": 3.783962,
+          "ducc": 4.3585995
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 11,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.336467600000001,
+          "candidate": 5.5296063,
+          "ducc": 4.288532666666667
+        },
+        "candidate_parent_ratio": 1.0361922369771344,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.009991425075746465,
+          "candidate": 0.021952884055322835,
+          "ducc": 0.007712134441040164
+        },
+        "median_frequency_ghz": {
+          "parent": 3.8225375,
+          "candidate": 3.8669645,
+          "ducc": 4.3862380000000005
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 12,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.5286556000000004,
+          "candidate": 5.3197733,
+          "ducc": 4.272460833333334
+        },
+        "candidate_parent_ratio": 0.9622182470544918,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.01217257828597344,
+          "candidate": 0.013144435383979275,
+          "ducc": 0.0104636974372432
+        },
+        "median_frequency_ghz": {
+          "parent": 3.812144,
+          "candidate": 3.8056720000000004,
+          "ducc": 4.35441
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 13,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.5849322,
+          "candidate": 5.929049,
+          "ducc": 4.256653666666667
+        },
+        "candidate_parent_ratio": 1.0616152153109397,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.017436848504947942,
+          "candidate": 0.04204586045377883,
+          "ducc": 0.01119768018874893
+        },
+        "median_frequency_ghz": {
+          "parent": 3.813174,
+          "candidate": 3.7682155,
+          "ducc": 4.366854
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 14,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "timing_medians_ms": {
+          "parent": 6.6329776250000005,
+          "candidate": 5.330387099999999,
+          "ducc": 4.271039833333333
+        },
+        "candidate_parent_ratio": 0.8036190382897604,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "candidate": true,
+          "ducc": true,
+          "parent": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.08858361956385293,
+          "candidate": 0.010720384772236687,
+          "ducc": 0.0085112285012872
+        },
+        "median_frequency_ghz": {
+          "parent": 1.74646,
+          "candidate": 3.830157,
+          "ducc": 4.3848985
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      },
+      {
+        "pair": 15,
+        "order": [
+          "parent",
+          "ducc",
+          "candidate"
+        ],
+        "timing_medians_ms": {
+          "parent": 5.3193684,
+          "candidate": 5.26642,
+          "ducc": 4.274527166666667
+        },
+        "candidate_parent_ratio": 0.9900461114894769,
+        "candidate_parent_byte_identical": true,
+        "candidate_parent_metrics": {
+          "absolute_max": 0.0,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 0.0,
+          "max_relative_above_1e-12_peak": 0.0,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "candidate_ducc_metrics": {
+          "absolute_max": 1.2958384365546749e-15,
+          "reference_peak": 0.014041249823522176,
+          "relative_l2": 4.760590461219097e-14,
+          "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+          "near_zero_reference_count": 2,
+          "metrics_finite": true
+        },
+        "finite_outputs": {
+          "parent": true,
+          "ducc": true,
+          "candidate": true
+        },
+        "repeat_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "reset_consistent": {
+          "parent": true,
+          "candidate": true,
+          "ducc": true
+        },
+        "scheduler_wait_fraction": {
+          "parent": 0.0054019661815505595,
+          "candidate": 0.014178972415358213,
+          "ducc": 0.0026948107817817185
+        },
+        "median_frequency_ghz": {
+          "parent": 3.8557955,
+          "candidate": 3.823229,
+          "ducc": 4.367684000000001
+        },
+        "binary_sha256": {
+          "parent": "ce6667205ed6f62c5be7c5def324ab31bdb9c96b4a73d66c5ccdc487b1b558fe",
+          "candidate": "e6da0c1b44bdb101c7db7f7a3fa7dcefefd141f9dbde45748b5285a9c4186ca1",
+          "ducc": "671986a60c09591c8fc8219a5522006fd883d57d49a2f7d06e6eb468a670b7e5"
+        },
+        "output_sha256": {
+          "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+          "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+          "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+        }
+      }
+    ],
+    "median_parent_ms": 5.336467600000001,
+    "median_candidate_ms": 5.330387099999999,
+    "median_ducc_ms": 4.272460833333334,
+    "paired_candidate_parent_ratio_median": 0.9956885956604469,
+    "paired_candidate_parent_ratio_range": [
+      0.8036190382897604,
+      1.0616152153109397
+    ],
+    "all_candidate_parent_outputs_byte_identical": true,
+    "all_outputs_finite": true,
+    "all_repeat_reset_checks_passed": true
+  },
+  "notes": [
+    "The initial three q8 pairs showed candidate wait/frequency imbalance and are retained as descriptive data, not used as the primary q8 timing result.",
+    "The 15-pair q8 extension retains every sample; no pair was dropped. The low-wait/frequency subset is a sensitivity summary only."
+  ]
+}

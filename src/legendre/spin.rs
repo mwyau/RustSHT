@@ -25,6 +25,8 @@
 #[cfg(test)]
 use std::f64::consts::PI;
 
+use num_complex::Complex;
+#[cfg(test)]
 use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
@@ -418,30 +420,195 @@ impl SpinRecurrencePrecision for f64 {
     }
 }
 
-/// Accumulates one spin-analysis degree over latitude lanes.
+/// Typed Pulp operations and exceptional-input policy for spin analysis.
 ///
-/// Ordinary lanes use Pulp vector arithmetic and a horizontal reduction.
-/// Scaled, inactive, or exceptional lanes use the scalar recurrence path.
+/// The accumulation formula, tail handling and reduction order are shared;
+/// only Pulp's native f32/f64 vector leaves and established input guards differ.
+pub(crate) trait SpinAnalysisPrecision:
+    LegendrePrecision + crate::legendre::ShtScalar
+{
+    type SimdFloat<S: Simd>: Copy;
+
+    fn input_is_vectorizable(value: Self) -> bool;
+    fn simd_result_requires_scalar_fallback(result: &(Complex<Self>, Complex<Self>)) -> bool;
+
+    fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::SimdFloat<S>], &[Self]);
+    fn splat<S: Simd>(simd: S, value: Self) -> Self::SimdFloat<S>;
+    fn simd_add<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S>;
+    fn simd_sub<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S>;
+    fn simd_mul<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S>;
+    fn reduce_sum<S: Simd>(simd: S, value: Self::SimdFloat<S>) -> Self;
+}
+
+impl SpinAnalysisPrecision for f64 {
+    type SimdFloat<S: Simd> = S::f64s;
+
+    #[inline(always)]
+    fn input_is_vectorizable(value: Self) -> bool {
+        value.is_normal()
+    }
+
+    #[inline(always)]
+    fn simd_result_requires_scalar_fallback(_result: &(Complex<Self>, Complex<Self>)) -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::SimdFloat<S>], &[Self]) {
+        S::as_simd_f64s(values)
+    }
+
+    #[inline(always)]
+    fn splat<S: Simd>(simd: S, value: Self) -> Self::SimdFloat<S> {
+        simd.splat_f64s(value)
+    }
+
+    #[inline(always)]
+    fn simd_add<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S> {
+        simd.add_f64s(left, right)
+    }
+
+    #[inline(always)]
+    fn simd_sub<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S> {
+        simd.sub_f64s(left, right)
+    }
+
+    #[inline(always)]
+    fn simd_mul<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S> {
+        simd.mul_f64s(left, right)
+    }
+
+    #[inline(always)]
+    fn reduce_sum<S: Simd>(simd: S, value: Self::SimdFloat<S>) -> Self {
+        simd.reduce_sum_f64s(value)
+    }
+}
+
+impl SpinAnalysisPrecision for f32 {
+    type SimdFloat<S: Simd> = S::f32s;
+
+    #[inline(always)]
+    fn input_is_vectorizable(value: Self) -> bool {
+        value == 0.0 || value.is_normal()
+    }
+
+    #[inline(always)]
+    fn simd_result_requires_scalar_fallback(result: &(Complex<Self>, Complex<Self>)) -> bool {
+        ![result.0.re, result.0.im, result.1.re, result.1.im]
+            .into_iter()
+            .all(f32::is_finite)
+    }
+
+    #[inline(always)]
+    fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::SimdFloat<S>], &[Self]) {
+        S::as_simd_f32s(values)
+    }
+
+    #[inline(always)]
+    fn splat<S: Simd>(simd: S, value: Self) -> Self::SimdFloat<S> {
+        simd.splat_f32s(value)
+    }
+
+    #[inline(always)]
+    fn simd_add<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S> {
+        simd.add_f32s(left, right)
+    }
+
+    #[inline(always)]
+    fn simd_sub<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S> {
+        simd.sub_f32s(left, right)
+    }
+
+    #[inline(always)]
+    fn simd_mul<S: Simd>(
+        simd: S,
+        left: Self::SimdFloat<S>,
+        right: Self::SimdFloat<S>,
+    ) -> Self::SimdFloat<S> {
+        simd.mul_f32s(left, right)
+    }
+
+    #[inline(always)]
+    fn reduce_sum<S: Simd>(simd: S, value: Self::SimdFloat<S>) -> Self {
+        simd.reduce_sum_f32s(value)
+    }
+}
+
+/// Returns whether Fourier inputs can use the shared native-spin SIMD kernel.
+pub(crate) fn analysis_inputs_vectorizable<T: SpinAnalysisPrecision>(
+    m: usize,
+    q_real: &[T],
+    q_imag: &[T],
+    u_real: &[T],
+    u_imag: &[T],
+    ring_order_limits: &[usize],
+) -> bool {
+    debug_assert_eq!(q_real.len(), q_imag.len());
+    debug_assert_eq!(q_real.len(), u_real.len());
+    debug_assert_eq!(q_real.len(), u_imag.len());
+    debug_assert_eq!(q_real.len(), ring_order_limits.len());
+    ring_order_limits.iter().all(|&limit| m <= limit)
+        && q_real.iter().all(|&value| T::input_is_vectorizable(value))
+        && q_imag.iter().all(|&value| T::input_is_vectorizable(value))
+        && u_real.iter().all(|&value| T::input_is_vectorizable(value))
+        && u_imag.iter().all(|&value| T::input_is_vectorizable(value))
+}
+
+/// Accumulates one spin-analysis degree, sharing its E/B formula and tails.
 #[expect(
     clippy::too_many_arguments,
-    reason = "The accumulation receives both Fourier components, spin bases and polar cutoffs."
+    reason = "The accumulation receives Fourier lanes, scaled bases, and polar cutoffs."
 )]
-pub(crate) fn accumulate_analysis_dispatched(
+pub(crate) fn accumulate_analysis_dispatched<
+    T: SpinAnalysisPrecision + crate::legendre::ShtScalar,
+>(
     arch: Arch,
     vectorizable_inputs: bool,
     m: usize,
-    q_real: &[f64],
-    q_imag: &[f64],
-    u_real: &[f64],
-    u_imag: &[f64],
-    plus: &[f64],
+    q_real: &[T],
+    q_imag: &[T],
+    u_real: &[T],
+    u_imag: &[T],
+    plus: &[T],
     plus_exponents: &[i64],
-    minus: &[f64],
+    minus: &[T],
     minus_exponents: &[i64],
-    alpha_norm: f64,
+    alpha_norm: T,
     ring_order_limits: &[usize],
     include_b: bool,
-) -> (Complex64, Complex64) {
+) -> (Complex<T>, Complex<T>) {
     debug_assert_eq!(q_real.len(), plus.len());
     debug_assert_eq!(q_imag.len(), plus.len());
     debug_assert_eq!(u_real.len(), plus.len());
@@ -455,10 +622,10 @@ pub(crate) fn accumulate_analysis_dispatched(
         && alpha_norm.is_normal()
         && plus_exponents.iter().all(|&exponent| exponent == 0)
         && minus_exponents.iter().all(|&exponent| exponent == 0)
-        && plus.iter().all(|value| value.is_normal())
-        && minus.iter().all(|value| value.is_normal());
+        && plus.iter().all(|&value| T::input_is_vectorizable(value))
+        && minus.iter().all(|&value| T::input_is_vectorizable(value));
     if vectorizable {
-        return arch.dispatch(SpinAnalysisAccumulation {
+        let simd_sums = arch.dispatch(SpinAnalysisAccumulation {
             q_real,
             q_imag,
             u_real,
@@ -468,9 +635,12 @@ pub(crate) fn accumulate_analysis_dispatched(
             alpha_norm,
             include_b,
         });
+        if !T::simd_result_requires_scalar_fallback(&simd_sums) {
+            return simd_sums;
+        }
     }
 
-    super::accumulate_spin_analysis_scalar_fallback::<f64>(
+    super::accumulate_spin_analysis_scalar_fallback::<T>(
         m,
         q_real,
         q_imag,
@@ -486,38 +656,19 @@ pub(crate) fn accumulate_analysis_dispatched(
     )
 }
 
-pub(crate) fn analysis_inputs_vectorizable(
-    m: usize,
-    q_real: &[f64],
-    q_imag: &[f64],
-    u_real: &[f64],
-    u_imag: &[f64],
-    ring_order_limits: &[usize],
-) -> bool {
-    debug_assert_eq!(q_real.len(), q_imag.len());
-    debug_assert_eq!(q_real.len(), u_real.len());
-    debug_assert_eq!(q_real.len(), u_imag.len());
-    debug_assert_eq!(q_real.len(), ring_order_limits.len());
-    ring_order_limits.iter().all(|&limit| m <= limit)
-        && q_real.iter().all(|value| value.is_normal())
-        && q_imag.iter().all(|value| value.is_normal())
-        && u_real.iter().all(|value| value.is_normal())
-        && u_imag.iter().all(|value| value.is_normal())
-}
-
-struct SpinAnalysisAccumulation<'a> {
-    q_real: &'a [f64],
-    q_imag: &'a [f64],
-    u_real: &'a [f64],
-    u_imag: &'a [f64],
-    plus: &'a [f64],
-    minus: &'a [f64],
-    alpha_norm: f64,
+struct SpinAnalysisAccumulation<'a, T> {
+    q_real: &'a [T],
+    q_imag: &'a [T],
+    u_real: &'a [T],
+    u_imag: &'a [T],
+    plus: &'a [T],
+    minus: &'a [T],
+    alpha_norm: T,
     include_b: bool,
 }
 
-impl WithSimd for SpinAnalysisAccumulation<'_> {
-    type Output = (Complex64, Complex64);
+impl<T: SpinAnalysisPrecision> WithSimd for SpinAnalysisAccumulation<'_, T> {
+    type Output = (Complex<T>, Complex<T>);
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
@@ -531,12 +682,12 @@ impl WithSimd for SpinAnalysisAccumulation<'_> {
             alpha_norm,
             include_b,
         } = self;
-        let (q_real_vectors, q_real_tail) = S::as_simd_f64s(q_real);
-        let (q_imag_vectors, q_imag_tail) = S::as_simd_f64s(q_imag);
-        let (u_real_vectors, u_real_tail) = S::as_simd_f64s(u_real);
-        let (u_imag_vectors, u_imag_tail) = S::as_simd_f64s(u_imag);
-        let (plus_vectors, plus_tail) = S::as_simd_f64s(plus);
-        let (minus_vectors, minus_tail) = S::as_simd_f64s(minus);
+        let (q_real_vectors, q_real_tail) = T::as_simd::<S>(q_real);
+        let (q_imag_vectors, q_imag_tail) = T::as_simd::<S>(q_imag);
+        let (u_real_vectors, u_real_tail) = T::as_simd::<S>(u_real);
+        let (u_imag_vectors, u_imag_tail) = T::as_simd::<S>(u_imag);
+        let (plus_vectors, plus_tail) = T::as_simd::<S>(plus);
+        let (minus_vectors, minus_tail) = T::as_simd::<S>(minus);
         let vector_count = plus_vectors.len();
         debug_assert_eq!(q_real_vectors.len(), vector_count);
         debug_assert_eq!(q_imag_vectors.len(), vector_count);
@@ -544,73 +695,87 @@ impl WithSimd for SpinAnalysisAccumulation<'_> {
         debug_assert_eq!(u_imag_vectors.len(), vector_count);
         debug_assert_eq!(minus_vectors.len(), vector_count);
 
-        let alpha = simd.splat_f64s(alpha_norm);
-        let mut e_real_sum = simd.splat_f64s(0.0);
-        let mut e_imag_sum = simd.splat_f64s(0.0);
-        let mut b_real_sum = simd.splat_f64s(0.0);
-        let mut b_imag_sum = simd.splat_f64s(0.0);
+        let alpha = T::splat(simd, alpha_norm);
+        let zero = T::splat(simd, T::zero());
+        let mut e_real_sum = zero;
+        let mut e_imag_sum = zero;
+        let mut b_real_sum = zero;
+        let mut b_imag_sum = zero;
         for index in 0..vector_count {
-            let plus_value = simd.mul_f64s(plus_vectors[index], alpha);
-            let minus_value = simd.mul_f64s(minus_vectors[index], alpha);
-            let even_basis = simd.add_f64s(plus_value, minus_value);
-            let odd_basis = simd.sub_f64s(plus_value, minus_value);
-            e_real_sum = simd.add_f64s(
+            let plus_value = T::simd_mul(simd, plus_vectors[index], alpha);
+            let minus_value = T::simd_mul(simd, minus_vectors[index], alpha);
+            let even_basis = T::simd_add(simd, plus_value, minus_value);
+            let odd_basis = T::simd_sub(simd, plus_value, minus_value);
+            e_real_sum = T::simd_add(
+                simd,
                 e_real_sum,
-                simd.add_f64s(
-                    simd.mul_f64s(q_real_vectors[index], even_basis),
-                    simd.mul_f64s(u_imag_vectors[index], odd_basis),
+                T::simd_add(
+                    simd,
+                    T::simd_mul(simd, q_real_vectors[index], even_basis),
+                    T::simd_mul(simd, u_imag_vectors[index], odd_basis),
                 ),
             );
-            e_imag_sum = simd.add_f64s(
+            e_imag_sum = T::simd_add(
+                simd,
                 e_imag_sum,
-                simd.sub_f64s(
-                    simd.mul_f64s(q_imag_vectors[index], even_basis),
-                    simd.mul_f64s(u_real_vectors[index], odd_basis),
+                T::simd_sub(
+                    simd,
+                    T::simd_mul(simd, q_imag_vectors[index], even_basis),
+                    T::simd_mul(simd, u_real_vectors[index], odd_basis),
                 ),
             );
             if include_b {
-                b_real_sum = simd.add_f64s(
+                b_real_sum = T::simd_add(
+                    simd,
                     b_real_sum,
-                    simd.sub_f64s(
-                        simd.mul_f64s(u_real_vectors[index], even_basis),
-                        simd.mul_f64s(q_imag_vectors[index], odd_basis),
+                    T::simd_sub(
+                        simd,
+                        T::simd_mul(simd, u_real_vectors[index], even_basis),
+                        T::simd_mul(simd, q_imag_vectors[index], odd_basis),
                     ),
                 );
-                b_imag_sum = simd.add_f64s(
+                b_imag_sum = T::simd_add(
+                    simd,
                     b_imag_sum,
-                    simd.add_f64s(
-                        simd.mul_f64s(u_imag_vectors[index], even_basis),
-                        simd.mul_f64s(q_real_vectors[index], odd_basis),
+                    T::simd_add(
+                        simd,
+                        T::simd_mul(simd, u_imag_vectors[index], even_basis),
+                        T::simd_mul(simd, q_real_vectors[index], odd_basis),
                     ),
                 );
             }
         }
 
-        let mut e_real_tail_sum = 0.0;
-        let mut e_imag_tail_sum = 0.0;
-        let mut b_real_tail_sum = 0.0;
-        let mut b_imag_tail_sum = 0.0;
+        let mut e_real_tail_sum = T::zero();
+        let mut e_imag_tail_sum = T::zero();
+        let mut b_real_tail_sum = T::zero();
+        let mut b_imag_tail_sum = T::zero();
         for lane in 0..plus_tail.len() {
             let plus_value = plus_tail[lane] * alpha_norm;
             let minus_value = minus_tail[lane] * alpha_norm;
             let even_basis = plus_value + minus_value;
             let odd_basis = plus_value - minus_value;
-            e_real_tail_sum += q_real_tail[lane] * even_basis + u_imag_tail[lane] * odd_basis;
-            e_imag_tail_sum += q_imag_tail[lane] * even_basis - u_real_tail[lane] * odd_basis;
+            e_real_tail_sum =
+                e_real_tail_sum + q_real_tail[lane] * even_basis + u_imag_tail[lane] * odd_basis;
+            e_imag_tail_sum =
+                e_imag_tail_sum + q_imag_tail[lane] * even_basis - u_real_tail[lane] * odd_basis;
             if include_b {
-                b_real_tail_sum += u_real_tail[lane] * even_basis - q_imag_tail[lane] * odd_basis;
-                b_imag_tail_sum += u_imag_tail[lane] * even_basis + q_real_tail[lane] * odd_basis;
+                b_real_tail_sum = b_real_tail_sum + u_real_tail[lane] * even_basis
+                    - q_imag_tail[lane] * odd_basis;
+                b_imag_tail_sum = b_imag_tail_sum
+                    + u_imag_tail[lane] * even_basis
+                    + q_real_tail[lane] * odd_basis;
             }
         }
 
         (
-            Complex64::new(
-                simd.reduce_sum_f64s(e_real_sum) + e_real_tail_sum,
-                simd.reduce_sum_f64s(e_imag_sum) + e_imag_tail_sum,
+            Complex::new(
+                T::reduce_sum(simd, e_real_sum) + e_real_tail_sum,
+                T::reduce_sum(simd, e_imag_sum) + e_imag_tail_sum,
             ),
-            Complex64::new(
-                simd.reduce_sum_f64s(b_real_sum) + b_real_tail_sum,
-                simd.reduce_sum_f64s(b_imag_sum) + b_imag_tail_sum,
+            Complex::new(
+                T::reduce_sum(simd, b_real_sum) + b_real_tail_sum,
+                T::reduce_sum(simd, b_imag_sum) + b_imag_tail_sum,
             ),
         )
     }

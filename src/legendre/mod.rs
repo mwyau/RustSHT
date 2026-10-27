@@ -1994,7 +1994,7 @@ impl ShtScalar for f32 {
         u_imag: &[Self],
         ring_order_limits: &[usize],
     ) -> bool {
-        spin_f32::analysis_inputs_vectorizable(m, q_real, q_imag, u_real, u_imag, ring_order_limits)
+        spin::analysis_inputs_vectorizable(m, q_real, q_imag, u_real, u_imag, ring_order_limits)
     }
 
     fn accumulate_spin_analysis_block(
@@ -2013,7 +2013,7 @@ impl ShtScalar for f32 {
         ring_order_limits: &[usize],
         include_b: bool,
     ) -> (Complex<Self>, Complex<Self>) {
-        spin_f32::accumulate_analysis_dispatched(
+        spin::accumulate_analysis_dispatched(
             arch,
             vectorizable_inputs,
             m,

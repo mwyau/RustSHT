@@ -22,8 +22,11 @@ use std::f32::consts::PI;
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
 use std::sync::atomic::{AtomicU64, Ordering};
 
+#[cfg(test)]
 use num_complex::Complex32;
-use pulp::{Arch, Simd, WithSimd};
+#[cfg(test)]
+use pulp::WithSimd;
+use pulp::{Arch, Simd};
 
 use crate::error::ShtError;
 #[cfg(test)]
@@ -77,218 +80,6 @@ pub(crate) fn normalizer_profile() -> (u64, u64, u64, u64, u64) {
 }
 
 pub(crate) type SpinInitial32 = super::spin_factors::SpinInitial<f32>;
-
-pub(crate) fn analysis_inputs_vectorizable(
-    m: usize,
-    q_real: &[f32],
-    q_imag: &[f32],
-    u_real: &[f32],
-    u_imag: &[f32],
-    ring_order_limits: &[usize],
-) -> bool {
-    debug_assert_eq!(q_real.len(), q_imag.len());
-    debug_assert_eq!(q_real.len(), u_real.len());
-    debug_assert_eq!(q_real.len(), u_imag.len());
-    debug_assert_eq!(q_real.len(), ring_order_limits.len());
-    ring_order_limits.iter().all(|&limit| m <= limit)
-        && q_real.iter().all(|&value| is_normal_or_zero(value))
-        && q_imag.iter().all(|&value| is_normal_or_zero(value))
-        && u_real.iter().all(|&value| is_normal_or_zero(value))
-        && u_imag.iter().all(|&value| is_normal_or_zero(value))
-}
-
-#[inline]
-fn is_normal_or_zero(value: f32) -> bool {
-    value == 0.0 || value.is_normal()
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "Spin analysis accumulation receives lane spectra, two scaled bases and cutoff metadata."
-)]
-pub(crate) fn accumulate_analysis_dispatched(
-    arch: Arch,
-    vectorizable_inputs: bool,
-    m: usize,
-    q_real: &[f32],
-    q_imag: &[f32],
-    u_real: &[f32],
-    u_imag: &[f32],
-    plus: &[f32],
-    plus_exponents: &[i64],
-    minus: &[f32],
-    minus_exponents: &[i64],
-    alpha_norm: f32,
-    ring_order_limits: &[usize],
-    include_b: bool,
-) -> (Complex32, Complex32) {
-    debug_assert_eq!(q_real.len(), plus.len());
-    debug_assert_eq!(q_imag.len(), plus.len());
-    debug_assert_eq!(u_real.len(), plus.len());
-    debug_assert_eq!(u_imag.len(), plus.len());
-    debug_assert_eq!(plus_exponents.len(), plus.len());
-    debug_assert_eq!(minus.len(), plus.len());
-    debug_assert_eq!(minus_exponents.len(), plus.len());
-    debug_assert_eq!(ring_order_limits.len(), plus.len());
-
-    let vectorizable = vectorizable_inputs
-        && alpha_norm.is_normal()
-        && plus_exponents.iter().all(|&exponent| exponent == 0)
-        && minus_exponents.iter().all(|&exponent| exponent == 0)
-        && plus.iter().all(|&value| is_normal_or_zero(value))
-        && minus.iter().all(|&value| is_normal_or_zero(value));
-    if vectorizable {
-        let simd_sums = arch.dispatch(SpinAnalysisAccumulation32 {
-            q_real,
-            q_imag,
-            u_real,
-            u_imag,
-            plus,
-            minus,
-            alpha_norm,
-            include_b,
-        });
-        if [
-            simd_sums.0.re,
-            simd_sums.0.im,
-            simd_sums.1.re,
-            simd_sums.1.im,
-        ]
-        .into_iter()
-        .all(f32::is_finite)
-        {
-            return simd_sums;
-        }
-    }
-
-    // SIMD lane partials can overflow even when each input and basis value is
-    // finite. Recompute nonfinite results in the scalar accumulation order.
-    super::accumulate_spin_analysis_scalar_fallback::<f32>(
-        m,
-        q_real,
-        q_imag,
-        u_real,
-        u_imag,
-        plus,
-        plus_exponents,
-        minus,
-        minus_exponents,
-        alpha_norm,
-        ring_order_limits,
-        include_b,
-    )
-}
-
-struct SpinAnalysisAccumulation32<'a> {
-    q_real: &'a [f32],
-    q_imag: &'a [f32],
-    u_real: &'a [f32],
-    u_imag: &'a [f32],
-    plus: &'a [f32],
-    minus: &'a [f32],
-    alpha_norm: f32,
-    include_b: bool,
-}
-
-impl WithSimd for SpinAnalysisAccumulation32<'_> {
-    type Output = (Complex32, Complex32);
-
-    #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        let Self {
-            q_real,
-            q_imag,
-            u_real,
-            u_imag,
-            plus,
-            minus,
-            alpha_norm,
-            include_b,
-        } = self;
-        let (q_real_vectors, q_real_tail) = S::as_simd_f32s(q_real);
-        let (q_imag_vectors, q_imag_tail) = S::as_simd_f32s(q_imag);
-        let (u_real_vectors, u_real_tail) = S::as_simd_f32s(u_real);
-        let (u_imag_vectors, u_imag_tail) = S::as_simd_f32s(u_imag);
-        let (plus_vectors, plus_tail) = S::as_simd_f32s(plus);
-        let (minus_vectors, minus_tail) = S::as_simd_f32s(minus);
-        let vector_count = plus_vectors.len();
-        debug_assert_eq!(q_real_vectors.len(), vector_count);
-        debug_assert_eq!(q_imag_vectors.len(), vector_count);
-        debug_assert_eq!(u_real_vectors.len(), vector_count);
-        debug_assert_eq!(u_imag_vectors.len(), vector_count);
-        debug_assert_eq!(minus_vectors.len(), vector_count);
-
-        let alpha = simd.splat_f32s(alpha_norm);
-        let mut e_real_sum = simd.splat_f32s(0.0);
-        let mut e_imag_sum = simd.splat_f32s(0.0);
-        let mut b_real_sum = simd.splat_f32s(0.0);
-        let mut b_imag_sum = simd.splat_f32s(0.0);
-        for index in 0..vector_count {
-            let plus_value = simd.mul_f32s(plus_vectors[index], alpha);
-            let minus_value = simd.mul_f32s(minus_vectors[index], alpha);
-            let even_basis = simd.add_f32s(plus_value, minus_value);
-            let odd_basis = simd.sub_f32s(plus_value, minus_value);
-            e_real_sum = simd.add_f32s(
-                e_real_sum,
-                simd.add_f32s(
-                    simd.mul_f32s(q_real_vectors[index], even_basis),
-                    simd.mul_f32s(u_imag_vectors[index], odd_basis),
-                ),
-            );
-            e_imag_sum = simd.add_f32s(
-                e_imag_sum,
-                simd.sub_f32s(
-                    simd.mul_f32s(q_imag_vectors[index], even_basis),
-                    simd.mul_f32s(u_real_vectors[index], odd_basis),
-                ),
-            );
-            if include_b {
-                b_real_sum = simd.add_f32s(
-                    b_real_sum,
-                    simd.sub_f32s(
-                        simd.mul_f32s(u_real_vectors[index], even_basis),
-                        simd.mul_f32s(q_imag_vectors[index], odd_basis),
-                    ),
-                );
-                b_imag_sum = simd.add_f32s(
-                    b_imag_sum,
-                    simd.add_f32s(
-                        simd.mul_f32s(u_imag_vectors[index], even_basis),
-                        simd.mul_f32s(q_real_vectors[index], odd_basis),
-                    ),
-                );
-            }
-        }
-
-        let mut e_real_tail_sum = 0.0_f32;
-        let mut e_imag_tail_sum = 0.0_f32;
-        let mut b_real_tail_sum = 0.0_f32;
-        let mut b_imag_tail_sum = 0.0_f32;
-        for lane in 0..plus_tail.len() {
-            let plus_value = plus_tail[lane] * alpha_norm;
-            let minus_value = minus_tail[lane] * alpha_norm;
-            let even_basis = plus_value + minus_value;
-            let odd_basis = plus_value - minus_value;
-            e_real_tail_sum += q_real_tail[lane] * even_basis + u_imag_tail[lane] * odd_basis;
-            e_imag_tail_sum += q_imag_tail[lane] * even_basis - u_real_tail[lane] * odd_basis;
-            if include_b {
-                b_real_tail_sum += u_real_tail[lane] * even_basis - q_imag_tail[lane] * odd_basis;
-                b_imag_tail_sum += u_imag_tail[lane] * even_basis + q_real_tail[lane] * odd_basis;
-            }
-        }
-
-        (
-            Complex32::new(
-                simd.reduce_sum_f32s(e_real_sum) + e_real_tail_sum,
-                simd.reduce_sum_f32s(e_imag_sum) + e_imag_tail_sum,
-            ),
-            Complex32::new(
-                simd.reduce_sum_f32s(b_real_sum) + b_real_tail_sum,
-                simd.reduce_sum_f32s(b_imag_sum) + b_imag_tail_sum,
-            ),
-        )
-    }
-}
 
 #[expect(
     clippy::too_many_arguments,
@@ -565,7 +356,7 @@ mod tests {
             alpha_norm: f32,
             include_b: bool,
         ) -> (Complex32, Complex32) {
-            let vectorizable_inputs = analysis_inputs_vectorizable(
+            let vectorizable_inputs = super::super::spin::analysis_inputs_vectorizable::<f32>(
                 m,
                 &self.q_real,
                 &self.q_imag,
@@ -573,7 +364,7 @@ mod tests {
                 &self.u_imag,
                 &self.limits,
             );
-            accumulate_analysis_dispatched(
+            super::super::spin::accumulate_analysis_dispatched::<f32>(
                 arch,
                 vectorizable_inputs,
                 m,
@@ -712,7 +503,7 @@ mod tests {
         for count in [64, 61] {
             let lanes = AnalysisLanes32::new(count);
             let expected = lanes.scalar_reference(4, 0.75, true);
-            assert!(analysis_inputs_vectorizable(
+            assert!(super::super::spin::analysis_inputs_vectorizable::<f32>(
                 4,
                 &lanes.q_real,
                 &lanes.q_imag,
@@ -748,7 +539,7 @@ mod tests {
             lanes.minus[lane] = 0.5;
         }
 
-        assert!(analysis_inputs_vectorizable(
+        assert!(super::super::spin::analysis_inputs_vectorizable::<f32>(
             4,
             &lanes.q_real,
             &lanes.q_imag,
@@ -769,7 +560,7 @@ mod tests {
         lanes.plus_exponents[11] = -800;
         lanes.limits[7] = 3;
         let expected = lanes.scalar_reference(4, 0.75, true);
-        assert!(!analysis_inputs_vectorizable(
+        assert!(!super::super::spin::analysis_inputs_vectorizable::<f32>(
             4,
             &lanes.q_real,
             &lanes.q_imag,
@@ -787,10 +578,20 @@ mod tests {
         lanes.u_imag[9] = -0.0;
         lanes.plus[12] = 0.0;
         lanes.minus[17] = -0.0;
-        assert!(lanes.plus.iter().all(|&value| is_normal_or_zero(value)));
-        assert!(lanes.minus.iter().all(|&value| is_normal_or_zero(value)));
+        assert!(
+            lanes
+                .plus
+                .iter()
+                .all(|&value| value == 0.0 || value.is_normal())
+        );
+        assert!(
+            lanes
+                .minus
+                .iter()
+                .all(|&value| value == 0.0 || value.is_normal())
+        );
         let zero_expected = lanes.scalar_reference(4, 0.75, true);
-        assert!(analysis_inputs_vectorizable(
+        assert!(super::super::spin::analysis_inputs_vectorizable::<f32>(
             4,
             &lanes.q_real,
             &lanes.q_imag,
@@ -806,8 +607,13 @@ mod tests {
 
         lanes.q_real[4] = f32::from_bits(1);
         lanes.plus[4] = f32::from_bits(1);
-        assert!(!lanes.plus.iter().all(|&value| is_normal_or_zero(value)));
-        assert!(!analysis_inputs_vectorizable(
+        assert!(
+            !lanes
+                .plus
+                .iter()
+                .all(|&value| value == 0.0 || value.is_normal())
+        );
+        assert!(!super::super::spin::analysis_inputs_vectorizable::<f32>(
             4,
             &lanes.q_real,
             &lanes.q_imag,
