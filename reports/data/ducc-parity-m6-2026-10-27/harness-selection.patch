@@ -1,0 +1,110 @@
+--- a/scripts/benchmark_ducc_spin1_native.py
++++ b/scripts/benchmark_ducc_spin1_m6.py
+@@ -147 +147 @@
+-        "rustsht": ROOT / "target/release/examples/ducc_spin1_full_transform_parity",
++        "rustsht": pathlib.Path(os.environ.get("CARGO_TARGET_DIR", str(ROOT / "target"))) / "release/examples/ducc_spin1_full_transform_parity",
+@@ -199 +199 @@
+-        "rustsht": ROOT / "target/release/examples/ducc_spin1_full_transform_parity",
++        "rustsht": pathlib.Path(os.environ.get("CARGO_TARGET_DIR", str(ROOT / "target"))) / "release/examples/ducc_spin1_full_transform_parity",
+@@ -207 +207,16 @@
+-    cases = make_cases(lmax_values, grids, args.smoke)
++    all_m6_cases = make_cases([720, 1023], ["GL", "CC"], False)
++    m6_specs = {
++        ("GL", 720, 720, 721, "exact", "even-smooth"): (["analysis"], [1, 8]),
++        ("GL", 1023, 1023, 1024, "exact", "even-smooth"): (["synthesis"], [1, 8]),
++        ("CC", 720, 180, 722, "exact", "even-smooth"): (["synthesis"], [1]),
++        ("GL", 720, 180, 1441, "overresolved", "even-smooth"): (["synthesis"], [8]),
++    }
++    cases = []
++    for case in all_m6_cases:
++        key = (case["grid"], case["lmax"], case["mmax"], case["ntheta"],
++               case["latitude_mode"], case["longitude_mode"])
++        if key in m6_specs:
++            case["_m6_operations"], case["_m6_threads"] = m6_specs[key]
++            cases.append(case)
++    if len(cases) != len(m6_specs):
++        raise RuntimeError(f"M6 case selection mismatch: found {len(cases)} of {len(m6_specs)}")
+@@ -243 +258 @@
+-        total = len(cases) * 4
++        total = sum(len(case["_m6_operations"]) * len(case["_m6_threads"]) for case in cases)
+@@ -251 +266 @@
+-            for threads in (1, 8):
++            for threads in case.get("_m6_threads", (1, 8)):
+@@ -253 +268 @@
+-                for operation in ("analysis", "synthesis"):
++                for operation in case.get("_m6_operations", ("analysis", "synthesis")):
+--- a/scripts/benchmark_ducc_f32_native.py
++++ b/scripts/benchmark_ducc_f32_m6.py
+@@ -7,0 +8 @@
++import hashlib
+@@ -160,0 +162,19 @@
++def scheduler_totals(pid: int) -> tuple[int, int] | None:
++    task_dir = Path(f"/proc/{pid}/task")
++    try:
++        tasks = list(task_dir.iterdir())
++    except OSError:
++        return None
++    runtime_ns = wait_ns = 0
++    found = False
++    for task in tasks:
++        try:
++            fields = (task / "schedstat").read_text().split()
++            runtime_ns += int(fields[0])
++            wait_ns += int(fields[1])
++            found = True
++        except (OSError, ValueError, IndexError):
++            continue
++    return (runtime_ns, wait_ns) if found else None
++
++
+@@ -172,0 +193 @@
++    command = ["taskset", "-c", cpus, *args]
+@@ -174,2 +195,16 @@
+-    command = ["taskset", "-c", cpus, *args]
+-    completed = subprocess.run(command, text=True, capture_output=True, env=env)
++    process = subprocess.Popen(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
++    freq_values = []
++    snapshots = []
++    freq_paths = [Path(f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_cur_freq")
++                  for cpu in cpus.split(",")]
++    while process.poll() is None:
++        for path in freq_paths:
++            try:
++                freq_values.append(int(path.read_text().strip()) / 1e6)
++            except (OSError, ValueError):
++                pass
++        snapshot = scheduler_totals(process.pid)
++        if snapshot is not None:
++            snapshots.append(snapshot)
++        time.sleep(0.05)
++    stdout, stderr = process.communicate()
+@@ -177,3 +212,3 @@
+-    if completed.returncode != 0:
+-        raise RuntimeError(f"{backend} worker failed for {case}: {completed.stderr}\n{completed.stdout}")
+-    output = json.loads(completed.stdout.strip().splitlines()[-1])
++    if process.returncode != 0:
++        raise RuntimeError(f"{backend} worker failed for {case}: {stderr}\n{stdout}")
++    output = json.loads(stdout.strip().splitlines()[-1])
+@@ -181,0 +217,2 @@
++    output["output_sha256"] = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
++                                for path in outputs if path.exists()}
+@@ -182,0 +220,8 @@
++    wait_fraction = None
++    if len(snapshots) >= 2:
++        runtime_ns = max(0, snapshots[-1][0] - snapshots[0][0])
++        wait_ns = max(0, snapshots[-1][1] - snapshots[0][1])
++        wait_fraction = wait_ns / max(runtime_ns + wait_ns, 1)
++    output["host_diagnostics"] = {"schedstat_wait_fraction": wait_fraction,
++                                  "frequency_ghz_samples": freq_values,
++                                  "scheduler_samples": len(snapshots)}
+@@ -200 +245,6 @@
+-    cases = default_cases(args.smoke)
++    nphi = smooth_even_at_least(2 * 720 + 2)
++    cases = [
++        {"grid": "GL", "ntheta": 721, "nphi": nphi, "lmax": 720, "mmax": 720,
++         "longitude": "even", "spin": spin, "operation": operation, "threads": threads}
++        for spin in (0, 1) for operation in ("analysis", "synthesis") for threads in (1, 8)
++    ]
+@@ -269 +319 @@
+-            "rust_release_profile": "Cargo release profile, no target-cpu override; Pulp runtime dispatch",
++            "rust_release_profile": "Cargo release profile with x86-64-v3 target-cpu; Pulp runtime dispatch",
