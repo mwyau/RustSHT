@@ -1,0 +1,22 @@
+Candidate base source: 3189fe8ee49f125d0d4569549fb880a6b6468bb8
+DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+
+Commands and results (isolated CARGO_HOME and CARGO_TARGET_DIR under the experiment scratch root):
+- cargo test --locked --release --all-features --lib f32_fused_synthesis_keeps_normal_vectors_when_another_seed_is_scaled -- --nocapture
+  1 passed, 338 filtered out.
+- cargo test --locked --release --all-features --lib scalar --quiet
+  169 passed, 16 ignored, 154 filtered out.
+- cargo test --locked --release --all-features --test f32 --quiet
+  11 passed, 1 ignored.
+- cargo fmt --all -- --check
+  passed.
+- git diff --check
+  passed.
+- cargo clippy --locked --release --all-features --lib -- -D warnings
+  passed.
+- 4 GL T720 spin-0 synthesis cells (full/reduced mmax, q1/q8), 3 interleaved parent/candidate/DUCC triplets per cell:
+  all 36 workers passed finite-output, repeat, and reset checks.
+
+A separate tiny worker smoke command completed parent/candidate/DUCC transforms and passed the same output/repeat/reset assertions; its final diagnostic print encountered missing Rust-only runtime metadata in the DUCC result. The benchmark runner does not read that metadata, and the complete 36-worker screen succeeded.
+
+The candidate patch was saved as candidate.patch.gz, verified with `git apply --reverse --check` before removal, then verified to apply cleanly against the parent after removal. No full workspace/Python suite was run; the experiment changes no public API or bindings.
