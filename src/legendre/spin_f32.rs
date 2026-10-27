@@ -29,7 +29,8 @@ use crate::error::ShtError;
 #[cfg(test)]
 use crate::legendre::LegendrePrecision;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, ScaledValue as BinaryScaledValue, scalar_f32::scale_binary,
+    LATITUDE_BLOCK_SIZE, ScaledValue as BinaryScaledValue,
+    numeric::scale_binary_f32 as scale_binary,
 };
 
 type ScaledValue = BinaryScaledValue<f32>;

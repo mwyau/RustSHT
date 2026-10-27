@@ -38,6 +38,7 @@ const ANALYSIS_SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
 const ANALYSIS_FBIGHALF: f64 = f64::from_bits(1423_u64 << 52);
 const ANALYSIS_MAX_SCALE_EPOCH: f64 = 4.5e15;
 const PAIRED_FACTOR_LIMIT: f64 = f64::from_bits(1151_u64 << 52);
+pub(crate) const PAIRED_FACTOR_LIMIT_F32: f32 = f32::from_bits(143_u32 << 23);
 #[cfg(feature = "parallel")]
 pub(crate) const HEMISPHERE_PAIR_DEGREE_TILE: usize = 8;
 
@@ -836,9 +837,12 @@ use synthesis::{FusedSynthesisPairBlock, OriginalSynthesisPairCoefficients};
 
 #[cfg(test)]
 pub(crate) use synthesis::synthesize_order_block_dispatched;
+#[cfg(test)]
+pub(crate) use synthesis::synthesize_paired_scalar_order_prepared_f32;
 pub(crate) use synthesis::{
     synthesize_hemisphere_pair_block_dispatched, synthesize_order_block_partitioned_dispatched,
     synthesize_order_block_precomputed_dispatched, synthesize_order_pair_block_dispatched,
+    synthesize_paired_scalar_block_partitioned_f32,
     synthesize_prepared_order_pair_block_dispatched,
     try_synthesize_order_pair_transition_dispatched,
     try_synthesize_prepared_order_pair_transition_dispatched,

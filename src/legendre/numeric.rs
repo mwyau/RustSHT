@@ -198,6 +198,18 @@ macro_rules! define_scale_binary {
 
 pub(crate) use define_scale_binary;
 
+define_scale_binary! {
+    pub(crate) fn scale_binary_f32 {
+        float: f32,
+        bits: u32,
+        mantissa_bits: 23,
+        exponent_field_mask: 0xff,
+        maximum_exponent: 0xff,
+        upper_chunk: 127,
+        lower_chunk: -126,
+    }
+}
+
 /// Generates exponent-bit restoration for each native complex precision,
 /// keeping the mantissa width and finite exponent range typed.
 macro_rules! define_scale_complex_normal_binary {

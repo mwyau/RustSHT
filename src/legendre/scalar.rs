@@ -22,8 +22,10 @@
 #[cfg(test)]
 use std::f64::consts::PI;
 
-use num_complex::Complex64;
+use num_complex::{Complex32, Complex64};
 use pulp::{Arch, Simd, WithSimd};
+
+use super::scalar_paired::PairedScalarRecurrencePrecision;
 
 use crate::error::ShtError;
 use crate::legendre::{
@@ -39,6 +41,18 @@ const SCALE_UP: f64 = <f64 as LegendrePrecision>::SCALE_UP;
 const SCALE_DOWN: f64 = <f64 as LegendrePrecision>::SCALE_DOWN;
 const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
 pub(crate) const LATITUDE_BLOCK_SIZE: usize = 64;
+
+// Native-f32 policy and arithmetic leaves used by the shared scalar traversals.
+type ScaledValueF32 = BinaryScaledValue<f32>;
+
+const BIG_F32: f32 = <f32 as LegendrePrecision>::BIG;
+const SMALL_F32: f32 = <f32 as LegendrePrecision>::SMALL;
+#[cfg(test)]
+const SCALE_UP_F32: f32 = <f32 as LegendrePrecision>::SCALE_UP;
+#[cfg(test)]
+const SCALE_DOWN_F32: f32 = <f32 as LegendrePrecision>::SCALE_DOWN;
+const NORMAL_RANGE_SKIP_LMAX_T1023: usize = 1023;
+const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
 
 #[inline]
 pub(super) fn scalar_value_in_normal_range(value: f64) -> bool {
@@ -235,6 +249,158 @@ impl ScalarRecurrencePrecision for f64 {
     #[inline(always)]
     fn needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
         pair_lanes_need_scaling(simd, previous, current)
+    }
+}
+
+impl ScalarRecurrencePrecision for f32 {
+    #[inline(always)]
+    fn allow_normal_range_skip(lmax: usize) -> bool {
+        matches!(
+            lmax,
+            NORMAL_RANGE_SKIP_LMAX_T1023 | NORMAL_RANGE_SKIP_LMAX_T1279
+        )
+    }
+
+    #[inline(always)]
+    fn initialize_recurrence(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        super::numeric::initialize_scalar_recurrence_lanes(
+            m,
+            sin_theta,
+            sectoral_norm,
+            super::numeric::ScalarRecurrenceBuffers {
+                previous,
+                current,
+                exponents,
+            },
+            scaled_power_f32,
+            normalize_value_f32,
+        )
+    }
+
+    #[inline(always)]
+    fn step<S: Simd>(
+        simd: S,
+        epsilon: &[Self],
+        degree: usize,
+        current: &[Self],
+        previous: &[Self],
+        cosine: &[Self],
+        next: &mut [Self],
+    ) {
+        scalar_recurrence_step!(
+            simd,
+            S,
+            epsilon,
+            degree,
+            current,
+            previous,
+            cosine,
+            next,
+            splat_f32s,
+            as_simd_f32s,
+            as_mut_simd_f32s,
+            mul_f32s,
+            sub_f32s,
+            div_f32s
+        );
+    }
+
+    #[inline(always)]
+    fn normalize_pair(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        normalize_pair_lanes_f32(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn normalize_pair_with_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        normalize_pair_lanes_with_state_f32(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
+        pair_lanes_need_scaling_f32(simd, previous, current)
+    }
+}
+
+impl PairedScalarRecurrencePrecision for f32 {
+    #[inline(always)]
+    fn initialize_pair_state(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        super::numeric::initialize_scalar_recurrence_lanes(
+            m,
+            sin_theta,
+            sectoral_norm,
+            super::numeric::ScalarRecurrenceBuffers {
+                previous,
+                current,
+                exponents,
+            },
+            scaled_power_f32,
+            normalize_value_f32,
+        )
+    }
+
+    #[inline(always)]
+    fn step_pair<S: Simd>(
+        simd: S,
+        coefficient_a: Self,
+        coefficient_b: Self,
+        cosine: &[Self],
+        previous: &[Self],
+        current: &[Self],
+        next: &mut [Self],
+    ) {
+        let (current_vectors, current_tail) = S::as_simd_f32s(current);
+        let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+        let (cos_vectors, cos_tail) = S::as_simd_f32s(cosine);
+        let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+        let a = simd.splat_f32s(coefficient_a);
+        let b = simd.splat_f32s(coefficient_b);
+        for index in 0..current_vectors.len() {
+            let cos_squared = simd.mul_f32s(cos_vectors[index], cos_vectors[index]);
+            let leading = simd.mul_add_f32s(a, cos_squared, b);
+            next_vectors[index] =
+                simd.mul_add_f32s(leading, current_vectors[index], previous_vectors[index]);
+        }
+        for index in 0..current_tail.len() {
+            let cos_squared = cos_tail[index] * cos_tail[index];
+            let leading = coefficient_a.mul_add(cos_squared, coefficient_b);
+            next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+        }
+    }
+
+    #[inline(always)]
+    fn normalize_pair_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        normalize_pair_lanes_with_state_f32(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn pair_state_needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
+        pair_lanes_need_scaling_f32(simd, previous, current)
     }
 }
 
@@ -952,6 +1118,195 @@ fn scale_normal_binary(value: f64, exponent: i64) -> f64 {
         return f64::from_bits((bits & !exponent_mask) | ((scaled_exponent as u64) << 52));
     }
     scale_binary(value, exponent)
+}
+
+pub(crate) fn multiply_complex_scaled_f32(
+    value: Complex32,
+    factor: f32,
+    exponent: i64,
+) -> Complex32 {
+    if factor.is_normal() {
+        if value.re.is_normal() && value.im.is_normal() {
+            let product = Complex32::new(value.re * factor, value.im * factor);
+            if product.re.is_normal()
+                && product.im.is_normal()
+                && let Some(scaled) = scale_complex_normal_binary_f32(product, exponent)
+            {
+                return scaled;
+            }
+        }
+        Complex32::new(
+            multiply_component_scaled_with_normal_factor_f32(value.re, factor, exponent),
+            multiply_component_scaled_with_normal_factor_f32(value.im, factor, exponent),
+        )
+    } else {
+        Complex32::new(
+            multiply_component_scaled_f32(value.re, factor, exponent),
+            multiply_component_scaled_f32(value.im, factor, exponent),
+        )
+    }
+}
+
+define_scale_complex_normal_binary!(
+    scale_complex_normal_binary_f32,
+    Complex32,
+    f32,
+    u32,
+    23,
+    0xff,
+    512,
+);
+
+fn multiply_component_scaled_with_normal_factor_f32(value: f32, factor: f32, exponent: i64) -> f32 {
+    if value.is_normal() {
+        let product = value * factor;
+        if product.is_normal()
+            && let Some(scaled) = scale_normal_binary_f32(product, exponent)
+        {
+            return scaled;
+        }
+    }
+    if value == 0.0 || !value.is_finite() {
+        return super::numeric::scale_binary_f32(value * factor, exponent);
+    }
+    let (value_mantissa, value_exponent) = split_binary_f32(value);
+    let (factor_mantissa, factor_exponent) = split_binary_f32(factor);
+    super::numeric::scale_binary_f32(
+        value_mantissa * factor_mantissa,
+        exponent
+            .saturating_add(value_exponent)
+            .saturating_add(factor_exponent),
+    )
+}
+
+fn multiply_component_scaled_f32(value: f32, factor: f32, exponent: i64) -> f32 {
+    if value.is_normal() && factor.is_normal() {
+        let product = value * factor;
+        if product.is_normal()
+            && let Some(scaled) = scale_normal_binary_f32(product, exponent)
+        {
+            return scaled;
+        }
+    }
+    if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
+        return super::numeric::scale_binary_f32(value * factor, exponent);
+    }
+    let (value_mantissa, value_exponent) = split_binary_f32(value);
+    let (factor_mantissa, factor_exponent) = split_binary_f32(factor);
+    super::numeric::scale_binary_f32(
+        value_mantissa * factor_mantissa,
+        exponent
+            .saturating_add(value_exponent)
+            .saturating_add(factor_exponent),
+    )
+}
+
+fn split_binary_f32(value: f32) -> (f32, i64) {
+    let bits = value.to_bits();
+    let sign = bits & (1_u32 << 31);
+    let raw_exponent = ((bits >> 23) & 0xff) as i64;
+    let fraction = bits & ((1_u32 << 23) - 1);
+    if raw_exponent == 0 {
+        let scaled = value * 2.0_f32.powi(24);
+        let (mantissa, exponent) = split_normal_f32(scaled);
+        (mantissa, exponent - 24)
+    } else {
+        let mantissa = f32::from_bits(sign | (126_u32 << 23) | fraction);
+        (mantissa, raw_exponent - 126)
+    }
+}
+
+fn split_normal_f32(value: f32) -> (f32, i64) {
+    let bits = value.to_bits();
+    let sign = bits & (1_u32 << 31);
+    let raw_exponent = ((bits >> 23) & 0xff) as i64;
+    let fraction = bits & ((1_u32 << 23) - 1);
+    (
+        f32::from_bits(sign | (126_u32 << 23) | fraction),
+        raw_exponent - 126,
+    )
+}
+
+#[inline(always)]
+fn scaled_power_f32(base: f32, exponent: usize) -> Result<ScaledValueF32, ShtError> {
+    super::numeric::scaled_power(base, exponent, "scalar recurrence scale")
+}
+
+#[inline(always)]
+fn normalize_value_f32(value: f32, exponent: i64) -> Result<ScaledValueF32, ShtError> {
+    super::numeric::normalize_scaled_value(value, exponent, "scalar recurrence scale")
+}
+
+#[inline(always)]
+fn normalize_pair_lanes_f32(
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<(), ShtError> {
+    super::numeric::normalize_pair_lanes_f32::<false>(
+        previous,
+        current,
+        exponents,
+        "scalar recurrence scale",
+    )
+    .map(|_| ())
+}
+
+#[inline(always)]
+fn normalize_pair_lanes_with_state_f32(
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    let mut normal_range = true;
+    for lane in 0..previous.len() {
+        let (maximum_bits, _) = super::numeric::normalize_pair_lane_f32(
+            &mut previous[lane],
+            &mut current[lane],
+            &mut exponents[lane],
+            "scalar recurrence scale",
+        )?;
+        normal_range &= exponents[lane] == 0
+            && maximum_bits <= BIG_F32.to_bits()
+            && (maximum_bits == 0 || maximum_bits >= SMALL_F32.to_bits());
+    }
+    Ok(normal_range)
+}
+
+#[inline(always)]
+#[cfg(test)]
+fn pair_is_in_normal_range_f32(previous: f32, current: f32) -> bool {
+    let maximum = previous.abs().max(current.abs());
+    maximum <= BIG_F32 && (maximum == 0.0 || maximum >= SMALL_F32)
+}
+
+#[inline(always)]
+fn pair_lanes_need_scaling_f32<S: Simd>(simd: S, previous: &[f32], current: &[f32]) -> bool {
+    super::numeric::f32_pair_lanes_need_scaling::<S, true>(simd, previous, current)
+}
+
+fn scale_normal_binary_f32(value: f32, exponent: i64) -> Option<f32> {
+    debug_assert!(value.is_normal());
+    if exponent == 0 {
+        return Some(value);
+    }
+    if exponent > 4096 {
+        return None;
+    }
+    if exponent < -4096 {
+        return None;
+    }
+
+    let bits = value.to_bits();
+    let raw_exponent = ((bits >> 23) & 0xff) as i64;
+    let scaled_exponent = raw_exponent + exponent;
+    if (1..0xff).contains(&scaled_exponent) {
+        let exponent_mask = 0xff_u32 << 23;
+        return Some(f32::from_bits(
+            (bits & !exponent_mask) | ((scaled_exponent as u32) << 23),
+        ));
+    }
+    None
 }
 
 #[cfg(test)]
@@ -3045,6 +3400,668 @@ mod tests {
         assert!(values[..3].iter().all(|value| value.is_nan()));
         for (l, &value) in values.iter().enumerate().skip(3) {
             assert_eq!(value, epsilon(l, 3));
+        }
+    }
+}
+
+#[cfg(test)]
+mod f32_tests {
+    use super::super::numeric::scale_binary_f32 as scale_binary;
+    use super::super::scalar_paired::synthesize_paired_scalar_order_prepared_f32;
+    use super::*;
+    use super::{
+        BIG_F32 as BIG, SCALE_DOWN_F32 as SCALE_DOWN, SCALE_UP_F32 as SCALE_UP, SMALL_F32 as SMALL,
+        multiply_complex_scaled_f32 as multiply_complex_scaled,
+        multiply_component_scaled_f32 as multiply_component_scaled,
+        normalize_pair_lanes_f32 as normalize_pair_lanes,
+        normalize_pair_lanes_with_state_f32 as normalize_pair_lanes_with_state,
+        pair_is_in_normal_range_f32 as pair_is_in_normal_range,
+        pair_lanes_need_scaling_f32 as pair_lanes_need_scaling,
+        scale_normal_binary_f32 as scale_normal_binary, split_binary_f32 as split_binary,
+    };
+    use std::f32::consts::PI;
+
+    fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError> {
+        super::super::numeric::sectoral_normalizations(mmax)
+    }
+
+    fn fill_epsilon(m: usize, lmax: usize, output: &mut [f32]) {
+        super::super::numeric::fill_epsilon(m, lmax, output);
+    }
+
+    fn fill_paired_scalar_factors(
+        m: usize,
+        lmax: usize,
+        epsilon: &[f32],
+        alpha: &mut [f32],
+        coefficient_a: &mut [f32],
+        coefficient_b: &mut [f32],
+    ) -> bool {
+        super::super::scalar_paired::fill_factors_typed(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            coefficient_a,
+            coefficient_b,
+            super::super::scalar_paired::PAIRED_FACTOR_LIMIT_F32,
+        )
+    }
+
+    struct PairRangeCheck<'a> {
+        previous: &'a [f32],
+        current: &'a [f32],
+    }
+
+    impl WithSimd for PairRangeCheck<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            pair_lanes_need_scaling(simd, self.previous, self.current)
+        }
+    }
+
+    fn reference_multiply_component_scaled(value: f32, factor: f32, exponent: i64) -> f32 {
+        if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
+            return scale_binary(value * factor, exponent);
+        }
+        let (value_mantissa, value_exponent) = split_binary(value);
+        let (factor_mantissa, factor_exponent) = split_binary(factor);
+        scale_binary(
+            value_mantissa * factor_mantissa,
+            exponent
+                .saturating_add(value_exponent)
+                .saturating_add(factor_exponent),
+        )
+    }
+
+    fn reference_scale_binary(mut value: f32, mut exponent: i64) -> f32 {
+        if value == 0.0 || !value.is_finite() {
+            return value;
+        }
+        if exponent > 4096 {
+            return value.signum() * f32::INFINITY;
+        }
+        if exponent < -4096 {
+            return 0.0_f32.copysign(value);
+        }
+        while exponent > 127 {
+            value *= 2.0_f32.powi(127);
+            exponent -= 127;
+            if !value.is_finite() {
+                return value;
+            }
+        }
+        while exponent < -126 {
+            value *= 2.0_f32.powi(-126);
+            exponent += 126;
+            if value == 0.0 {
+                return value;
+            }
+        }
+        value * 2.0_f32.powi(exponent as i32)
+    }
+
+    fn reference_normalize_pair_lanes(
+        previous: &mut [f32],
+        current: &mut [f32],
+        exponents: &mut [i64],
+    ) {
+        for lane in 0..previous.len() {
+            let mut maximum = previous[lane].abs().max(current[lane].abs());
+            while maximum > BIG {
+                previous[lane] *= SCALE_DOWN;
+                current[lane] *= SCALE_DOWN;
+                exponents[lane] += 80;
+                maximum *= SCALE_DOWN;
+            }
+            while maximum != 0.0 && maximum < SMALL {
+                previous[lane] *= SCALE_UP;
+                current[lane] *= SCALE_UP;
+                exponents[lane] -= 80;
+                maximum *= SCALE_UP;
+            }
+        }
+    }
+
+    #[test]
+    fn f32_pair_normalization_matches_float_magnitude_reference() {
+        let initial_previous = [
+            0.0,
+            f32::from_bits(1),
+            f32::from_bits(SMALL.to_bits() - 1),
+            -f32::from_bits(BIG.to_bits() + 1),
+            f32::MAX,
+            f32::MIN_POSITIVE,
+            -0.5,
+            0.0,
+        ];
+        let initial_current = [
+            -0.0,
+            0.0,
+            0.0,
+            BIG,
+            f32::MIN_POSITIVE,
+            -f32::from_bits(1),
+            0.25,
+            SMALL,
+        ];
+        let mut actual_previous = initial_previous;
+        let mut actual_current = initial_current;
+        let mut actual_exponents = [0; 8];
+        let mut expected_previous = initial_previous;
+        let mut expected_current = initial_current;
+        let mut expected_exponents = [0; 8];
+
+        normalize_pair_lanes(
+            &mut actual_previous,
+            &mut actual_current,
+            &mut actual_exponents,
+        )
+        .unwrap();
+        reference_normalize_pair_lanes(
+            &mut expected_previous,
+            &mut expected_current,
+            &mut expected_exponents,
+        );
+
+        for lane in 0..initial_previous.len() {
+            assert_eq!(
+                actual_previous[lane].to_bits(),
+                expected_previous[lane].to_bits()
+            );
+            assert_eq!(
+                actual_current[lane].to_bits(),
+                expected_current[lane].to_bits()
+            );
+            assert_eq!(actual_exponents[lane], expected_exponents[lane]);
+        }
+    }
+
+    #[test]
+    fn f32_normal_range_check_covers_simd_lanes_and_tail() {
+        for (previous_value, current_value) in [
+            (0.0, 0.0),
+            (0.0, SMALL / 2.0),
+            (BIG, SMALL / 2.0),
+            (BIG * 2.0, 0.0),
+            (SMALL, BIG),
+            (f32::NAN, BIG),
+            (BIG, f32::NAN),
+            (f32::NAN, SMALL / 2.0),
+            (f32::NAN, f32::NAN),
+            (f32::INFINITY, f32::NAN),
+        ] {
+            let previous = [previous_value; 17];
+            let current = [current_value; 17];
+            let expected = !pair_is_in_normal_range(previous_value, current_value);
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = arch.dispatch(PairRangeCheck {
+                    previous: &previous,
+                    current: &current,
+                });
+                assert_eq!(actual, expected, "{previous_value:?}, {current_value:?}");
+            }
+        }
+
+        let mut previous = vec![0.25_f32; 17];
+        let mut current = vec![0.5_f32; 17];
+        let mut exponents = vec![0_i64; 17];
+        previous[0] = 0.0;
+        current[0] = -0.0;
+        previous[1] = SMALL;
+        current[1] = 0.0;
+        previous[2] = BIG;
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let needs_scaling = |previous: &[f32], current: &[f32]| {
+                arch.dispatch(PairRangeCheck { previous, current })
+            };
+            assert!(!needs_scaling(&previous, &current));
+
+            let mut normal_previous = previous.clone();
+            let mut normal_current = current.clone();
+            let mut normal_exponents = exponents.clone();
+            assert!(
+                normalize_pair_lanes_with_state(
+                    &mut normal_previous,
+                    &mut normal_current,
+                    &mut normal_exponents,
+                )
+                .unwrap()
+            );
+            assert_eq!(normal_previous, previous);
+            assert_eq!(normal_current, current);
+
+            let mut below = current.clone();
+            below[3] = f32::from_bits(SMALL.to_bits() - 1);
+            let mut below_previous = previous.clone();
+            below_previous[3] = 0.0;
+            assert!(needs_scaling(&below_previous, &below));
+
+            let mut above = current.clone();
+            above[16] = f32::from_bits(BIG.to_bits() + 1);
+            assert!(needs_scaling(&previous, &above));
+        }
+
+        exponents[8] = 1;
+        assert!(
+            !normalize_pair_lanes_with_state(&mut previous, &mut current, &mut exponents).unwrap()
+        );
+    }
+
+    #[test]
+    fn f32_binary_scaling_matches_staged_products() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.0,
+            -1.5,
+            f32::MIN_POSITIVE,
+            f32::from_bits(0x00ff_ffff),
+            f32::from_bits(1),
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            f32::NAN,
+        ];
+        let exponents = [
+            -4097, -512, -254, -127, -126, -81, -1, 0, 1, 81, 126, 127, 512, 4097,
+        ];
+        for value in values {
+            for exponent in exponents {
+                let actual = scale_binary(value, exponent);
+                let expected = reference_scale_binary(value, exponent);
+                assert_eq!(actual.to_bits(), expected.to_bits());
+                if value.is_normal() {
+                    let scaled = scale_normal_binary(value, exponent);
+                    let raw_exponent = i64::from((value.to_bits() >> 23) & 0xff);
+                    let scaled_exponent = raw_exponent + exponent;
+                    let should_use_fast_path = (1..0xff).contains(&scaled_exponent);
+                    assert_eq!(scaled.is_some(), should_use_fast_path);
+                    if let Some(scaled) = scaled {
+                        assert_eq!(scaled.to_bits(), expected.to_bits());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f32_scaled_complex_multiply_matches_split_reference() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.0,
+            -1.5,
+            f32::MIN_POSITIVE,
+            -f32::MAX,
+            f32::from_bits(0x017f_ffff),
+            f32::from_bits(1),
+            f32::from_bits(0x6e46_ed13),
+        ];
+        let factors = [
+            0.5,
+            -0.75,
+            1.125,
+            f32::MAX,
+            f32::MIN_POSITIVE,
+            f32::from_bits(1),
+            0.0,
+            f32::INFINITY,
+            f32::from_bits(0x21d3_bb30),
+        ];
+        let exponents = [-4097, -512, -255, -127, -126, -1, 0, 1, 126, 127, 512, 4097];
+
+        let boundary_value = f32::from_bits(0x017f_ffff);
+        assert_eq!((boundary_value * 0.5).to_bits(), 0x00ff_ffff);
+        let boundary_actual =
+            multiply_complex_scaled(Complex32::new(boundary_value, -boundary_value), 0.5, -1);
+        let boundary_expected = Complex32::new(
+            reference_multiply_component_scaled(boundary_value, 0.5, -1),
+            reference_multiply_component_scaled(-boundary_value, 0.5, -1),
+        );
+        assert_eq!(boundary_actual.re.to_bits(), boundary_expected.re.to_bits());
+        assert_eq!(boundary_actual.im.to_bits(), boundary_expected.im.to_bits());
+
+        for value in values {
+            for factor in factors {
+                for exponent in exponents {
+                    let actual = multiply_component_scaled(value, factor, exponent);
+                    let expected = reference_multiply_component_scaled(value, factor, exponent);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "value={value:e}, factor={factor:e}, exponent={exponent}"
+                    );
+                    let complex = Complex32::new(value, -value);
+                    let actual = multiply_complex_scaled(complex, factor, exponent);
+                    let expected = Complex32::new(
+                        reference_multiply_component_scaled(value, factor, exponent),
+                        reference_multiply_component_scaled(-value, factor, exponent),
+                    );
+                    assert_eq!(actual.re.to_bits(), expected.re.to_bits());
+                    assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+                }
+            }
+        }
+
+        for (complex, factor, exponent) in [
+            (Complex32::new(1.5, 0.25), 0.75, 2),
+            (Complex32::new(f32::MIN_POSITIVE, -1.5), 0.5, -1),
+            (Complex32::new(f32::MAX, 0.25), 2.0, 0),
+        ] {
+            let actual = multiply_complex_scaled(complex, factor, exponent);
+            let expected = Complex32::new(
+                reference_multiply_component_scaled(complex.re, factor, exponent),
+                reference_multiply_component_scaled(complex.im, factor, exponent),
+            );
+            assert_eq!(actual.re.to_bits(), expected.re.to_bits());
+            assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+        }
+    }
+
+    fn values_over_rings(arch: Arch, m: usize, lmax: usize, theta: &[f32]) -> Vec<Vec<f32>> {
+        let sin_theta = theta.iter().map(|value| value.sin()).collect::<Vec<_>>();
+        let cos_theta = theta.iter().map(|value| value.cos()).collect::<Vec<_>>();
+        values_over_geometry(arch, m, lmax, &sin_theta, &cos_theta)
+    }
+
+    fn values_over_geometry(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[f32],
+        cos_theta: &[f32],
+    ) -> Vec<Vec<f32>> {
+        let mut epsilon = vec![0.0; lmax + 1];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+        let mut previous = vec![0.0; scratch_len];
+        let mut current = vec![0.0; scratch_len];
+        let mut next = vec![0.0; scratch_len];
+        let mut exponents = vec![0; scratch_len];
+        let mut result = vec![vec![0.0; sin_theta.len()]; lmax - m + 1];
+        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+        crate::legendre::scalar::for_each_y_lm_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            &epsilon,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |degree, ring_start, values, exponents| {
+                for lane in 0..values.len() {
+                    result[degree - m][ring_start + lane] =
+                        scale_binary(values[lane], exponents[lane]);
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+        result
+    }
+
+    #[test]
+    fn f32_paired_accumulator_matches_direct_synthesis_and_declines_polar_orders() {
+        assert!(<f32 as crate::legendre::ShtScalar>::supports_paired_scalar());
+        assert!(!<f32 as crate::legendre::ShtScalar>::supports_paired_spin());
+
+        let sine_samples = [
+            0.0_f32,
+            f32::from_bits(1),
+            1.0e-12,
+            1.0e-5,
+            0.01,
+            0.1,
+            0.3,
+            0.7,
+            1.0,
+        ];
+        let mut sin_theta = Vec::with_capacity(81);
+        let mut cos_theta = Vec::with_capacity(81);
+        for lane in 0..81 {
+            let sample = lane % sine_samples.len();
+            let sine = sine_samples[sample];
+            let cosine = (1.0 - sine * sine).sqrt();
+            sin_theta.push(sine);
+            cos_theta.push(if sample.is_multiple_of(3) {
+                -cosine
+            } else {
+                cosine
+            });
+        }
+
+        for m in [0, 1, 2, 4, 15, 31] {
+            for degree_span in [8, 9] {
+                let lmax = m + degree_span;
+                let expected = values_over_geometry(Arch::Scalar, m, lmax, &sin_theta, &cos_theta);
+                let coefficients: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex32::new(
+                            (0.31_f32 * degree as f32 + 0.73_f32 * m as f32).sin(),
+                            (0.19_f32 * degree as f32 - 0.41_f32 * m as f32).cos(),
+                        )
+                    })
+                    .collect();
+                let mut epsilon = vec![0.0; lmax + 4];
+                fill_epsilon(m, lmax, &mut epsilon);
+                let factor_count = lmax / 2 + 2;
+                let mut alpha = vec![0.0; factor_count];
+                let mut coefficient_a = vec![0.0; factor_count];
+                let mut coefficient_b = vec![0.0; factor_count];
+                assert!(fill_paired_scalar_factors(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &mut alpha,
+                    &mut coefficient_a,
+                    &mut coefficient_b,
+                ));
+                let pair_count = (lmax - m + 2) / 2;
+                let mut coefficient_even = vec![Complex32::new(0.0, 0.0); pair_count];
+                let mut coefficient_odd = coefficient_even.clone();
+                assert!(super::super::scalar_paired::prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &coefficients,
+                    &mut coefficient_even,
+                    &mut coefficient_odd,
+                ));
+
+                let spectrum_len = m + 1;
+                let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+                for arch in [Arch::Scalar, Arch::new()] {
+                    let seed = Complex32::new(0.125, -0.25);
+                    let mut spectra = vec![seed; sin_theta.len() * spectrum_len];
+                    let before = spectra.clone();
+                    let ring_order_limits = vec![m; sin_theta.len()];
+                    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+                    let mut previous = vec![0.0; scratch_len];
+                    let mut current = vec![0.0; scratch_len];
+                    let mut next = vec![0.0; scratch_len];
+                    let mut exponents = vec![0; scratch_len];
+                    let mut staged_real = vec![0.0; sin_theta.len()];
+                    let mut staged_imag = vec![0.0; sin_theta.len()];
+                    assert!(
+                        synthesize_paired_scalar_order_prepared_f32(
+                            arch,
+                            m,
+                            m,
+                            lmax,
+                            &sin_theta,
+                            &cos_theta,
+                            sectoral_norm,
+                            &coefficient_a,
+                            &coefficient_b,
+                            &coefficient_even,
+                            &coefficient_odd,
+                            &ring_order_limits,
+                            spectrum_len,
+                            &mut spectra,
+                            &mut previous,
+                            &mut current,
+                            &mut next,
+                            &mut exponents,
+                            &mut staged_real,
+                            &mut staged_imag,
+                        )
+                        .unwrap()
+                    );
+
+                    for ring in 0..sin_theta.len() {
+                        let mut direct_sum = Complex32::new(0.0, 0.0);
+                        for (offset, basis) in expected.iter().enumerate() {
+                            direct_sum += coefficients[offset] * basis[ring];
+                        }
+                        let paired_sum = spectra[ring * spectrum_len + m];
+                        let expected_sum = before[ring * spectrum_len + m] + direct_sum;
+                        let tolerance = 5.0e-5_f32 * (1.0 + direct_sum.norm());
+                        assert!(
+                            paired_sum.re.is_finite()
+                                && paired_sum.im.is_finite()
+                                && (paired_sum - expected_sum).norm() <= tolerance,
+                            "arch={arch:?}, m={m}, lmax={lmax}, ring={ring}: paired={paired_sum:?}, direct={expected_sum:?}"
+                        );
+                    }
+
+                    if m > 0 {
+                        let mut declined = vec![seed; sin_theta.len() * spectrum_len];
+                        let original = declined.clone();
+                        let mut polar_limits = vec![m; sin_theta.len()];
+                        polar_limits[0] = m - 1;
+                        assert!(
+                            !synthesize_paired_scalar_order_prepared_f32(
+                                arch,
+                                m,
+                                m,
+                                lmax,
+                                &sin_theta,
+                                &cos_theta,
+                                sectoral_norm,
+                                &coefficient_a,
+                                &coefficient_b,
+                                &coefficient_even,
+                                &coefficient_odd,
+                                &polar_limits,
+                                spectrum_len,
+                                &mut declined,
+                                &mut previous,
+                                &mut current,
+                                &mut next,
+                                &mut exponents,
+                                &mut staged_real,
+                                &mut staged_imag,
+                            )
+                            .unwrap()
+                        );
+                        assert_eq!(declined, original);
+                    }
+
+                    if m == 0 && degree_span == 8 {
+                        let too_large_even = vec![Complex32::new(f32::MAX, 0.0); pair_count];
+                        let too_large_odd = too_large_even.clone();
+                        let mut declined = vec![seed; sin_theta.len() * spectrum_len];
+                        let original = declined.clone();
+                        assert!(
+                            !synthesize_paired_scalar_order_prepared_f32(
+                                arch,
+                                m,
+                                m,
+                                lmax,
+                                &sin_theta,
+                                &cos_theta,
+                                sectoral_norm,
+                                &coefficient_a,
+                                &coefficient_b,
+                                &too_large_even,
+                                &too_large_odd,
+                                &ring_order_limits,
+                                spectrum_len,
+                                &mut declined,
+                                &mut previous,
+                                &mut current,
+                                &mut next,
+                                &mut exponents,
+                                &mut staged_real,
+                                &mut staged_imag,
+                            )
+                            .unwrap()
+                        );
+                        assert_eq!(declined, original);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f32_paired_factor_limit_covers_supported_lmax_for_every_order() {
+        for lmax in [255, 511, 720, 1023] {
+            let mut epsilon = vec![0.0; lmax + 4];
+            let factor_count = lmax / 2 + 2;
+            let mut alpha = vec![0.0; factor_count];
+            let mut coefficient_a = vec![0.0; factor_count];
+            let mut coefficient_b = vec![0.0; factor_count];
+
+            for m in 0..=lmax {
+                fill_epsilon(m, lmax, &mut epsilon);
+                assert!(
+                    fill_paired_scalar_factors(
+                        m,
+                        lmax,
+                        &epsilon,
+                        &mut alpha,
+                        &mut coefficient_a,
+                        &mut coefficient_b,
+                    ),
+                    "m={m}, lmax={lmax}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn runtime_simd_recurrence_matches_scalar_fallback_across_blocks_and_tails() {
+        let mut theta = (0..129)
+            .map(|ring| PI * (ring as f32 + 0.5) / 129.0)
+            .collect::<Vec<_>>();
+        theta[0] = 1.0e-6;
+        theta[1] = 1.0e-3;
+        theta[127] = PI - 1.0e-3;
+        theta[128] = PI - 1.0e-6;
+
+        for m in [0, 1, 2, 31, 96] {
+            let expected = values_over_rings(Arch::Scalar, m, 127, &theta);
+            let actual = values_over_rings(Arch::new(), m, 127, &theta);
+            for (degree_offset, (expected_values, actual_values)) in
+                expected.iter().zip(&actual).enumerate()
+            {
+                for (ring, (&expected, &actual)) in
+                    expected_values.iter().zip(actual_values).enumerate()
+                {
+                    assert!(
+                        actual.is_finite(),
+                        "m={m}, l={}, ring={ring}: non-finite result {actual}",
+                        m + degree_offset
+                    );
+                    assert!(
+                        (actual - expected).abs() <= 5.0e-6,
+                        "m={m}, l={}, ring={ring}: actual {actual:.9e}, scalar {expected:.9e}",
+                        m + degree_offset
+                    );
+                }
+            }
         }
     }
 }

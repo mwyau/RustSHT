@@ -18,6 +18,185 @@
  */
 
 use super::*;
+use num_complex::Complex32;
+
+/// Accumulates one prepared native-f32 paired scalar order transactionally.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The prepared order kernel receives plan data and caller-owned recurrence scratch."
+)]
+pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+    arch: Arch,
+    m: usize,
+    output_order: usize,
+    lmax: usize,
+    sin_theta: &[f32],
+    cos_theta: &[f32],
+    sectoral_norm: f32,
+    coefficient_a: &[f32],
+    coefficient_b: &[f32],
+    coefficient_even: &[Complex32],
+    coefficient_odd: &[Complex32],
+    ring_order_limits: &[usize],
+    spectrum_len: usize,
+    spectra: &mut [Complex32],
+    previous: &mut [f32],
+    current: &mut [f32],
+    next: &mut [f32],
+    exponents: &mut [i64],
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
+) -> Result<bool, ShtError> {
+    let Some(spectrum_count) = sin_theta.len().checked_mul(spectrum_len) else {
+        return Ok(false);
+    };
+    if m > lmax
+        || sin_theta.is_empty()
+        || sin_theta.len() != cos_theta.len()
+        || sin_theta.len() != ring_order_limits.len()
+        || spectra.len() != spectrum_count
+        || output_order >= spectrum_len
+        || ring_order_limits.iter().any(|&limit| m > limit)
+        || staged_real.len() < sin_theta.len()
+        || staged_imag.len() < sin_theta.len()
+    {
+        return Ok(false);
+    }
+
+    let pair_count = (lmax - m + 2) / 2;
+    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+    if coefficient_a.len() < pair_count
+        || coefficient_b.len() < pair_count
+        || coefficient_even.len() < pair_count
+        || coefficient_odd.len() < pair_count
+        || previous.len() < scratch_len
+        || current.len() < scratch_len
+        || next.len() < scratch_len
+        || exponents.len() < scratch_len
+    {
+        return Ok(false);
+    }
+
+    for ring in 0..sin_theta.len() {
+        let spectrum = spectra[ring * spectrum_len + output_order];
+        if !spectrum.re.is_finite() || !spectrum.im.is_finite() {
+            return Ok(false);
+        }
+        staged_real[ring] = spectrum.re;
+        staged_imag[ring] = spectrum.im;
+    }
+
+    let mut finite_sums = true;
+    let recurrence_result = for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        next,
+        exponents,
+        |degree, ring_start, basis, lane_exponents, _normal_range| {
+            if !finite_sums {
+                return Ok(());
+            }
+            let pair = (degree - m) / 2;
+            let even = coefficient_even[pair];
+            let odd = coefficient_odd[pair];
+            for lane in 0..basis.len() {
+                let ring = ring_start + lane;
+                let coefficient = Complex32::new(
+                    odd.re.mul_add(cos_theta[ring], even.re),
+                    odd.im.mul_add(cos_theta[ring], even.im),
+                );
+                let contribution = super::super::scalar::multiply_complex_scaled_f32(
+                    coefficient,
+                    basis[lane],
+                    lane_exponents[lane],
+                );
+                let real = staged_real[ring] + contribution.re;
+                let imag = staged_imag[ring] + contribution.im;
+                if !real.is_finite() || !imag.is_finite() {
+                    finite_sums = false;
+                    break;
+                }
+                staged_real[ring] = real;
+                staged_imag[ring] = imag;
+            }
+            Ok(())
+        },
+    );
+    if recurrence_result.is_err() || !finite_sums {
+        return Ok(false);
+    }
+    for ring in 0..sin_theta.len() {
+        let spectrum_index = ring * spectrum_len + output_order;
+        spectra[spectrum_index] = Complex32::new(staged_real[ring], staged_imag[ring]);
+    }
+    Ok(true)
+}
+
+/// Runs the paired f32 order kernel for a block with no polar-excluded lanes.
+/// Mixed blocks decline before touching spectra and use the scalar fallback.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The block adapter passes existing recurrence and lane-staging scratch."
+)]
+pub(crate) fn synthesize_paired_scalar_block_partitioned_f32(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f32],
+    cos_theta: &[f32],
+    sectoral_norm: f32,
+    coefficient_a: &[f32],
+    coefficient_b: &[f32],
+    coefficient_even: &[Complex32],
+    coefficient_odd: &[Complex32],
+    ring_order_limits: &[usize],
+    spectrum_len: usize,
+    spectra: &mut [Complex32],
+    previous: &mut [f32],
+    current: &mut [f32],
+    next: &mut [f32],
+    exponents: &mut [i64],
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
+    _compact_ring_indices: &mut [usize],
+) -> Result<bool, ShtError> {
+    if sin_theta.len() != cos_theta.len()
+        || sin_theta.len() != ring_order_limits.len()
+        || ring_order_limits.iter().any(|&limit| m > limit)
+    {
+        return Ok(false);
+    }
+    synthesize_paired_scalar_order_prepared_f32(
+        arch,
+        m,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        coefficient_even,
+        coefficient_odd,
+        ring_order_limits,
+        spectrum_len,
+        spectra,
+        previous,
+        current,
+        next,
+        exponents,
+        staged_real,
+        staged_imag,
+    )
+}
 
 /// Tries a register-resident scalar synthesis block for ordinary recurrence values.
 ///

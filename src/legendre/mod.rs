@@ -4,7 +4,6 @@
 mod numeric;
 pub mod pointwise;
 mod scalar;
-mod scalar_f32;
 pub(crate) mod scalar_ordered;
 mod scalar_paired;
 mod scalar_table;
@@ -2051,7 +2050,7 @@ impl ShtScalar for f32 {
     }
 
     fn sectoral_normalizations(mmax: usize) -> Result<Vec<Self>, ShtError> {
-        scalar_f32::sectoral_normalizations(mmax)
+        numeric::sectoral_normalizations(mmax)
     }
 
     fn polar_order_limit(lmax: usize, spin: usize, sin_theta: Self, cos_theta: Self) -> usize {
@@ -2059,7 +2058,7 @@ impl ShtScalar for f32 {
     }
 
     fn fill_epsilon(m: usize, lmax: usize, output: &mut [Self]) {
-        scalar_f32::fill_epsilon(m, lmax, output);
+        numeric::fill_epsilon(m, lmax, output);
     }
 
     fn fill_paired_scalar_factors(
@@ -2070,13 +2069,14 @@ impl ShtScalar for f32 {
         coefficient_a: &mut [Self],
         coefficient_b: &mut [Self],
     ) -> bool {
-        scalar_f32::fill_paired_scalar_factors(
+        scalar_paired::fill_factors_typed(
             m,
             lmax,
             epsilon,
             alpha,
             coefficient_a,
             coefficient_b,
+            scalar_paired::PAIRED_FACTOR_LIMIT_F32,
         )
     }
 
@@ -2122,7 +2122,7 @@ impl ShtScalar for f32 {
         compact_theta_cos: &mut [Self],
         compact_ring_indices: &mut [usize],
     ) -> Result<bool, ShtError> {
-        scalar_f32::synthesize_paired_scalar_block_partitioned_f32(
+        scalar_paired::synthesize_paired_scalar_block_partitioned_f32(
             arch,
             m,
             lmax,
@@ -2192,12 +2192,12 @@ impl ShtScalar for f32 {
         current: &mut [Self],
         next: &mut [Self],
         exponents: &mut [i64],
-        visit: F,
+        mut visit: F,
     ) -> Result<bool, ShtError>
     where
         F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>,
     {
-        scalar_f32::for_each_y_lm_paired_dispatched(
+        scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
             arch,
             m,
             lmax,
@@ -2210,7 +2210,9 @@ impl ShtScalar for f32 {
             current,
             next,
             exponents,
-            visit,
+            |degree, ring_start, basis, lane_exponents, _normal_range| {
+                visit(degree, ring_start, basis, lane_exponents)
+            },
         )?;
         Ok(true)
     }
@@ -2233,7 +2235,7 @@ impl ShtScalar for f32 {
     where
         F: FnMut(usize, usize, &[Self], &[i64], bool) -> Result<(), ShtError>,
     {
-        scalar_f32::for_each_y_lm_paired_status_dispatched(
+        scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
             arch,
             m,
             lmax,
@@ -2252,7 +2254,7 @@ impl ShtScalar for f32 {
     }
 
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
-        scalar_f32::multiply_complex_scaled(value, factor, exponent)
+        scalar::multiply_complex_scaled_f32(value, factor, exponent)
     }
 
     fn fill_spin_factors(
