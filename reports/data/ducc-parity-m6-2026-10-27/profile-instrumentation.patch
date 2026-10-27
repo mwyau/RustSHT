@@ -1,0 +1,356 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 5556330c..0c0920a0 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -72,0 +73,4 @@ required-features = ["parallel"]
++
++[[example]]
++name = "m6_spin1_analysis_callgrind"
++required-features = ["parallel"]
+diff --git a/examples/m6_spin1_analysis_callgrind.rs b/examples/m6_spin1_analysis_callgrind.rs
+new file mode 100644
+index 00000000..bc2421d6
+--- /dev/null
++++ b/examples/m6_spin1_analysis_callgrind.rs
+@@ -0,0 +1,48 @@
++use std::error::Error;
++use std::fs;
++use std::io::Write;
++use std::time::Instant;
++use rustsht::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan, ShtWorkspace};
++unsafe extern "C" { fn m6_callgrind_zero(); fn m6_callgrind_start(); fn m6_callgrind_stop(); }
++fn read_f64(path: &str, count: usize) -> Result<Vec<f64>, Box<dyn Error>> {
++    let bytes = fs::read(path)?;
++    if bytes.len() != count * 8 { return Err(format!("wrong f64 length in {path}").into()); }
++    Ok(bytes.chunks_exact(8).map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap())).collect())
++}
++fn write_complex(path: &str, values: &[Complex64]) -> Result<(), Box<dyn Error>> {
++    let mut file = fs::File::create(path)?;
++    for value in values { file.write_all(&value.re.to_le_bytes())?; file.write_all(&value.im.to_le_bytes())?; }
++    Ok(())
++}
++fn same_bits(a: &[Complex64], b: &[Complex64]) -> bool {
++    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.re.to_bits() == y.re.to_bits() && x.im.to_bits() == y.im.to_bits())
++}
++fn run_once(plan: &ShtPlan, map0: &[f64], map1: &[f64], e: &mut [Complex64], b: &mut [Complex64], workspace: &mut ShtWorkspace) -> Result<(), Box<dyn Error>> {
++    plan.analysis_spin_into(map0, map1, e, b, workspace)?;
++    std::hint::black_box((&*e, &*b));
++    Ok(())
++}
++fn main() -> Result<(), Box<dyn Error>> {
++    let args: Vec<String> = std::env::args().collect();
++    if args.len() != 12 || args[1] != "--worker" { return Err("usage: --worker THREADS NTHETA NPHI LMAX MMAX PHI0 MAP0 MAP1 OUTE OUTB".into()); }
++    let threads: usize = args[2].parse()?; let ntheta: usize = args[3].parse()?; let nphi: usize = args[4].parse()?;
++    let lmax: usize = args[5].parse()?; let mmax: usize = args[6].parse()?; let phi0: f64 = args[7].parse()?;
++    let nalm = (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) / 2; let map_count = ntheta * nphi;
++    let map0 = read_f64(&args[8], map_count)?; let map1 = read_f64(&args[9], map_count)?;
++    let mut e = vec![Complex64::new(0.0, 0.0); nalm]; let mut b = vec![Complex64::new(0.0, 0.0); nalm];
++    rayon::ThreadPoolBuilder::new().num_threads(threads).build_global()?;
++    let plan = ShtPlan::new(GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0)?, HarmonicSpec::new(lmax, mmax, 1)?)?;
++    let mut workspace = plan.workspace()?; plan.prepare_workspace(&mut workspace, threads)?;
++    run_once(&plan, &map0, &map1, &mut e, &mut b, &mut workspace)?;
++    let expected_e = e.clone(); let expected_b = b.clone();
++    for _ in 0..2 { run_once(&plan, &map0, &map1, &mut e, &mut b, &mut workspace)?; assert!(same_bits(&expected_e, &e) && same_bits(&expected_b, &b), "warm analysis changed output"); }
++    let started = Instant::now();
++    unsafe { m6_callgrind_zero(); m6_callgrind_start(); }
++    run_once(&plan, &map0, &map1, &mut e, &mut b, &mut workspace)?;
++    unsafe { m6_callgrind_stop(); }
++    let elapsed_ms = started.elapsed().as_secs_f64() * 1.0e3;
++    assert!(same_bits(&expected_e, &e) && same_bits(&expected_b, &b), "profiled analysis changed output");
++    write_complex(&args[10], &e)?; write_complex(&args[11], &b)?;
++    eprintln!("PROFILE_DONE backend=rustsht q={threads} elapsed_ms={elapsed_ms:.3} nalm={nalm}");
++    Ok(())
++}
+diff --git a/reports/data/plan15-spin1-native-baseline-2026-10-21/ducc_spin1_full_transform_parity.cpp b/reports/data/plan15-spin1-native-baseline-2026-10-21/ducc_spin1_full_transform_parity.cpp
+index 62ad632e..26e70c79 100644
+--- a/reports/data/plan15-spin1-native-baseline-2026-10-21/ducc_spin1_full_transform_parity.cpp
++++ b/reports/data/plan15-spin1-native-baseline-2026-10-21/ducc_spin1_full_transform_parity.cpp
+@@ -9,0 +10 @@
++#include <cstdlib>
+@@ -18,0 +20 @@
++#include <valgrind/callgrind.h>
+@@ -159,0 +162,22 @@ void worker(int argc, char **argv) {
++  if (!repeat_consistent || !reset_consistent) throw std::runtime_error("repeat/reset output mismatch");
++  if (std::getenv("RUSTSHT_CALLGRIND_PROFILE") != nullptr) {
++    CALLGRIND_ZERO_STATS;
++    CALLGRIND_START_INSTRUMENTATION;
++    run_once();
++    CALLGRIND_STOP_INSTRUMENTATION;
++    if (operation == "analysis") {
++      std::vector<Complex> out_e(nalm), out_b(nalm);
++      std::copy_n(alm_output.begin() + prefix, nalm, out_e.begin());
++      std::copy_n(alm_output.begin() + padded_alm_count + prefix, nalm, out_b.begin());
++      write_values(argv[16], out_e);
++      write_values(argv[17], out_b);
++    } else {
++      std::vector<double> out0(map_output.begin(), map_output.begin() + map_count);
++      std::vector<double> out1(map_output.begin() + map_count, map_output.end());
++      write_values(argv[14], out0);
++      write_values(argv[15], out1);
++    }
++    std::cerr << "PROFILE_DONE backend=ducc q=" << threads << " nalm=" << nalm << '\n';
++    return;
++  }
++
+diff --git a/src/transform/spin/analysis.rs b/src/transform/spin/analysis.rs
+index 2250374e..227d23d1 100644
+--- a/src/transform/spin/analysis.rs
++++ b/src/transform/spin/analysis.rs
+@@ -649,0 +650,4 @@ impl<T: ShtScalar> ShtPlan<T> {
++            #[cfg(all(test, feature = "parallel"))]
++            let mut profile_safety_scan_passes = 0_usize;
++            #[cfg(all(test, feature = "parallel"))]
++            let mut profile_safety_scan_lane_inputs = 0_u128;
+@@ -709,0 +714,5 @@ impl<T: ShtScalar> ShtPlan<T> {
++            #[cfg(all(test, feature = "parallel"))]
++            if profiling {
++                profile_safety_scan_passes += 2;
++                profile_safety_scan_lane_inputs += (2 * block_len) as u128;
++            }
+@@ -724,0 +734,8 @@ impl<T: ShtScalar> ShtPlan<T> {
++                #[cfg(all(test, feature = "parallel"))]
++                {
++                    recurrence.record_spin1_analysis_safety_scans(
++                        profile_safety_scan_passes,
++                        profile_safety_scan_lane_inputs,
++                    );
++                    recurrence.record_spin1_analysis_pair_decline();
++                }
+@@ -774,0 +792,5 @@ impl<T: ShtScalar> ShtPlan<T> {
++            #[cfg(all(test, feature = "parallel"))]
++            if profiling {
++                profile_safety_scan_passes += 2;
++                profile_safety_scan_lane_inputs += (2 * lane_count) as u128;
++            }
+@@ -789,0 +812,8 @@ impl<T: ShtScalar> ShtPlan<T> {
++                #[cfg(all(test, feature = "parallel"))]
++                {
++                    recurrence.record_spin1_analysis_safety_scans(
++                        profile_safety_scan_passes,
++                        profile_safety_scan_lane_inputs,
++                    );
++                    recurrence.record_spin1_analysis_pair_decline();
++                }
+@@ -849,0 +880,2 @@ impl<T: ShtScalar> ShtPlan<T> {
++            #[cfg(all(test, feature = "parallel"))]
++            let mut generic_pair_fallback = false;
+@@ -883,0 +916,5 @@ impl<T: ShtScalar> ShtPlan<T> {
++                        recurrence.record_spin1_analysis_safety_scans(
++                            profile_safety_scan_passes,
++                            profile_safety_scan_lane_inputs,
++                        );
++                        recurrence.record_spin1_analysis_pair_decline();
+@@ -888,0 +926,4 @@ impl<T: ShtScalar> ShtPlan<T> {
++                #[cfg(all(test, feature = "parallel"))]
++                {
++                    generic_pair_fallback = true;
++                }
+@@ -891,0 +933,11 @@ impl<T: ShtScalar> ShtPlan<T> {
++                recurrence.record_spin1_analysis_safety_scans(
++                    profile_safety_scan_passes,
++                    profile_safety_scan_lane_inputs,
++                );
++                recurrence.record_spin1_analysis_pair_block(
++                    m,
++                    scalar_lmax,
++                    lane_count,
++                    fused_block,
++                    generic_pair_fallback,
++                );
+diff --git a/src/transform/spin/tests.rs b/src/transform/spin/tests.rs
+index e5e20c7a..d4ec7e4b 100644
+--- a/src/transform/spin/tests.rs
++++ b/src/transform/spin/tests.rs
+@@ -10561,0 +10562 @@ fn profile_spin1_standard_analysis_phases() {
++    let work_probe = workspace.observe_analysis_leaves();
+@@ -10574,0 +10576 @@ fn profile_spin1_standard_analysis_phases() {
++        work_probe.lock().unwrap().clear();
+@@ -10580,0 +10583,92 @@ fn profile_spin1_standard_analysis_phases() {
++        let observations = work_probe.lock().unwrap().clone();
++        let mut by_worker = std::collections::BTreeMap::<
++            usize,
++            (
++                u128,
++                u128,
++                u128,
++                u128,
++                usize,
++                usize,
++                usize,
++                usize,
++                usize,
++                usize,
++                u128,
++                usize,
++            ),
++        >::new();
++        for observation in &observations {
++            let Some(worker) = observation.worker else {
++                continue;
++            };
++            let counters = by_worker.entry(worker).or_default();
++            counters.0 += observation.active_ring_order_pairs;
++            counters.1 += observation.estimated_work;
++            counters.2 += observation.pair_lane_degree_states;
++            counters.3 += observation.component_channel_accumulations;
++            counters.4 += observation.normal_blocks;
++            counters.5 += observation.scaled_blocks;
++            counters.6 += observation.mixed_blocks;
++            counters.7 += observation.fused_pair_blocks;
++            counters.8 += observation.generic_pair_blocks;
++            counters.9 += observation.pair_declines;
++            counters.10 += observation.safety_scan_lane_inputs;
++            counters.11 += observation.safety_scan_passes;
++        }
++        let total_pair_declines = observations.iter().map(|x| x.pair_declines).sum::<usize>();
++        let total_generic_blocks = observations
++            .iter()
++            .map(|x| x.generic_pair_blocks)
++            .sum::<usize>();
++        eprintln!(
++            "PROFILE_WORK,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},jobs={},active_ring_order_pairs={},physical_ring_degree_updates={},pair_lane_degree_states={},component_channel_accumulations={},normal_blocks={},scaled_blocks={},mixed_blocks={},fused_pair_blocks={},generic_pair_blocks={},pair_declines={},safety_scan_passes={},safety_scan_lane_inputs={}",
++            observations.len(),
++            observations
++                .iter()
++                .map(|x| x.active_ring_order_pairs)
++                .sum::<u128>(),
++            observations.iter().map(|x| x.estimated_work).sum::<u128>(),
++            observations
++                .iter()
++                .map(|x| x.pair_lane_degree_states)
++                .sum::<u128>(),
++            observations
++                .iter()
++                .map(|x| x.component_channel_accumulations)
++                .sum::<u128>(),
++            observations.iter().map(|x| x.normal_blocks).sum::<usize>(),
++            observations.iter().map(|x| x.scaled_blocks).sum::<usize>(),
++            observations.iter().map(|x| x.mixed_blocks).sum::<usize>(),
++            observations
++                .iter()
++                .map(|x| x.fused_pair_blocks)
++                .sum::<usize>(),
++            total_generic_blocks,
++            total_pair_declines,
++            observations
++                .iter()
++                .map(|x| x.safety_scan_passes)
++                .sum::<usize>(),
++            observations
++                .iter()
++                .map(|x| x.safety_scan_lane_inputs)
++                .sum::<u128>(),
++        );
++        for (worker, counters) in by_worker {
++            eprintln!(
++                "PROFILE_WORKER,{worker},active_ring_order_pairs={},physical_ring_degree_updates={},pair_lane_degree_states={},component_channel_accumulations={},normal_blocks={},scaled_blocks={},mixed_blocks={},fused_pair_blocks={},generic_pair_blocks={},pair_declines={},safety_scan_lane_inputs={},safety_scan_passes={}",
++                counters.0,
++                counters.1,
++                counters.2,
++                counters.3,
++                counters.4,
++                counters.5,
++                counters.6,
++                counters.7,
++                counters.8,
++                counters.9,
++                counters.10,
++                counters.11
++            );
++        }
+diff --git a/src/workspace.rs b/src/workspace.rs
+index d9a4d6ee..1564719d 100644
+--- a/src/workspace.rs
++++ b/src/workspace.rs
+@@ -145,0 +146,14 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
++    profile_pair_lane_degree_states: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    profile_component_channel_accumulations: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    profile_fused_pair_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    profile_generic_pair_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    profile_pair_declines: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    profile_safety_scan_passes: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    profile_safety_scan_lane_inputs: u128,
++    #[cfg(all(test, feature = "parallel"))]
+@@ -254,0 +269,7 @@ pub(crate) struct AnalysisLeafObservation {
++    pub(crate) pair_lane_degree_states: u128,
++    pub(crate) component_channel_accumulations: u128,
++    pub(crate) fused_pair_blocks: usize,
++    pub(crate) generic_pair_blocks: usize,
++    pub(crate) pair_declines: usize,
++    pub(crate) safety_scan_passes: usize,
++    pub(crate) safety_scan_lane_inputs: u128,
+@@ -465,0 +487,14 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
++            profile_pair_lane_degree_states: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            profile_component_channel_accumulations: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            profile_fused_pair_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            profile_generic_pair_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            profile_pair_declines: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            profile_safety_scan_passes: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            profile_safety_scan_lane_inputs: 0,
++            #[cfg(all(test, feature = "parallel"))]
+@@ -615,0 +651,45 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
++        self.profile_pair_lane_degree_states = 0;
++        self.profile_component_channel_accumulations = 0;
++        self.profile_fused_pair_blocks = 0;
++        self.profile_generic_pair_blocks = 0;
++        self.profile_pair_declines = 0;
++        self.profile_safety_scan_passes = 0;
++        self.profile_safety_scan_lane_inputs = 0;
++    }
++
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) fn record_spin1_analysis_safety_scans(&mut self, passes: usize, lane_inputs: u128) {
++        if self.analysis_leaf_probe.is_some() {
++            self.profile_safety_scan_passes += passes;
++            self.profile_safety_scan_lane_inputs += lane_inputs;
++        }
++    }
++
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) fn record_spin1_analysis_pair_block(
++        &mut self,
++        m: usize,
++        scalar_lmax: usize,
++        lane_count: usize,
++        fused: bool,
++        generic_fallback: bool,
++    ) {
++        if self.analysis_leaf_probe.is_none() {
++            return;
++        }
++        let pair_count = (scalar_lmax - m + 2) / 2;
++        let degree_states = lane_count as u128 * (2 * pair_count) as u128;
++        self.profile_pair_lane_degree_states += degree_states;
++        self.profile_component_channel_accumulations += 2 * degree_states;
++        if fused {
++            self.profile_fused_pair_blocks += 1;
++        } else if generic_fallback {
++            self.profile_generic_pair_blocks += 1;
++        }
++    }
++
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) fn record_spin1_analysis_pair_decline(&mut self) {
++        if self.analysis_leaf_probe.is_some() {
++            self.profile_pair_declines += 1;
++        }
+@@ -667,0 +748,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
++            pair_lane_degree_states: self.profile_pair_lane_degree_states,
++            component_channel_accumulations: self.profile_component_channel_accumulations,
++            fused_pair_blocks: self.profile_fused_pair_blocks,
++            generic_pair_blocks: self.profile_generic_pair_blocks,
++            pair_declines: self.profile_pair_declines,
++            safety_scan_passes: self.profile_safety_scan_passes,
++            safety_scan_lane_inputs: self.profile_safety_scan_lane_inputs,
