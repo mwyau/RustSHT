@@ -1,5 +1,7 @@
 # Active plan — per-cell f64 DUCC performance parity
 
+**STATUS (2026-10-27 04:14 UTC):** This is a **focused f64 profiling/reference document** under the [active f64/f32 DUCC-parity continuation plan](ducc-performance-parity-continuation-2026-10-27.md). The Legendre f32/f64 algorithm and tests layout refactor has completed. Recheck all dated paths/hotspot measurements against latest `dev` and rerun only essential matched cells before claiming current parity. **Do not merge `dev` into `main` yet.** Absolute NO SOL policy, cleanup and one-writer Git rules in `AGENTS.md` apply. f32 is part of the overall parity objective; the earlier deferral of f32 optimization is not a permanent exemption.
+
 ## Acceptance
 
 Match or beat pinned native DUCC 0.42.0 (`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`) for every supported representative f64 spin-0 and spin-1 GL/CC/F1 analysis, synthesis, and distinct adjoint (S/A/S*/A*) cell at T255/511/720/1023, full/reduced mmax, and q1/q2/q4/q8. Measure matched whole transforms on a quiet host. Preserve numerical, adjoint, extreme-value, pole/phase/Nyquist, and scratch-reset guarantees. No averaging across cases; label unsupported, noisy, and unmeasured cells explicitly.
