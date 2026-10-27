@@ -1,5 +1,7 @@
 # RustSHT — current f64 / pinned DUCC performance
 
+**ACTIVE POST-REFACTOR OBJECTIVE (2026-10-27 04:14 UTC):** Continue performance work until **per-cell matched DUCC parity**, not just green tests, architectural completion, or an average win. See [active f64/f32 parity continuation plan](plans/ducc-performance-parity-continuation-2026-10-27.md). The shared f32/f64 scalar/spin and unit-test-layout refactor is complete at `b7bb2ac4`, but **a new comprehensive benchmark of current `dev` has NOT yet been run**. The values below are selected dated-source measurements and must not be presented as measured at that new HEAD. Preserve per-cell PASS/GAP/INCONCLUSIVE/UNMEASURED labels; measure f32 native DUCC reference under a validated equivalent workload, do not substitute old pre-refactor f32 timings. `main` is not ready to merge solely on this refactor.
+
 **OPEN (2026-10-26):** Full per-cell parity is **not** established. Reference: native DUCC 0.42.0, commit `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`; host AMD Ryzen 9 5950X, x86-64-v3/AVX2/FMA. Comparisons below are selected matched, warm whole-transforms in milliseconds; **q1/q8 are thread counts**, not an average across configurations. Lower is better. Do not treat historical rows as a current full matrix.
 
 | f64 spin-1 workload | Rust ms | DUCC ms | Rust/DUCC | Standing and evidence |
