@@ -38,6 +38,10 @@ After the last duplicate whole-body implementation is replaced or cleanly specia
 
 **Milestone B:** f32/f64 direct spin and relevant converted scalar workflows pass focused mathematical/polar/nonfinite/adjoint/reuse controls; document each remaining specialized SIMD leaf and true precision difference.
 
+## Mandatory test-layout follow-up (separate from numerical source changes)
+
+**Owner decision 2026-10-27 02:19 UTC:** [One Rust unit-test layout](../docs/TEST_LAYOUT.md) is required. **No inline test bodies and no sibling `*_tests.rs` files** in the final Rust crate. For each production source module, use only `#[cfg(test)] mod tests;` with test bodies under its natural `<module>/tests.rs` path; large suites may put narrower test-only child modules under that test folder. Keep root `tests/*.rs` as Cargo integration tests. **Complete the current spin-family numerical consolidation first; only then mechanically migrate the existing internal tests in a separate commit without changing algorithms or numerical assertions.** Compare test counts/feature paths; do not benchmark pure test moves. Never call Sol.
+
 ## Validation/performance cadence
 
 - Source-only relocation or a few precise lines: `cargo check --locked --lib`, fmt; no benchmark. Group related edits, avoid repeated full suites.
