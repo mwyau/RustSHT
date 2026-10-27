@@ -1,0 +1,30 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index 451942e5..a0cfc90e 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -2977,8 +2977,23 @@ fn fused_analysis_two_pair_steps_with_simd<
+     }
+ 
+     if ROTATE_SEQUENTIAL_STATES {
+-        for (values, snapshot) in pair_vector_inputs!().zip(snapshot_vectors.iter_mut()) {
+-            update_pair_vector!(values, snapshot);
++        for index in 0..current_vectors.len() {
++            // SAFETY: The length checks above establish that every vector
++            // slice used here, including the snapshot slice, has this same
++            // length. The loop index is bounded by `current_vectors.len()`.
++            unsafe {
++                update_analysis_pair_vector!(
++                    previous_vectors.get_unchecked_mut(index),
++                    current_vectors.get_unchecked_mut(index),
++                    same_real_vectors.get_unchecked(index),
++                    same_imag_vectors.get_unchecked(index),
++                    opposite_real_vectors.get_unchecked(index),
++                    opposite_imag_vectors.get_unchecked(index),
++                    cosine_vectors.get_unchecked(index),
++                    cosine_squared_vectors.get_unchecked(index),
++                    snapshot_vectors.get_unchecked_mut(index)
++                );
++            }
+         }
+     } else {
+         for values in pair_vector_inputs!() {

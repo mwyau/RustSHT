@@ -6,6 +6,19 @@ The patch was tested by copying the checked scripts into a clean directory and a
 
 The Phase B profile also used temporary, test-only work counters and a dedicated Callgrind example. Their exact source diff from RustSHT `feb46e5f` is preserved in [profile-instrumentation.patch](profile-instrumentation.patch), SHA-256 `ef6991cc0f736971642f0c7f34cdf28a13287a813bdf0a0d199cc8ee826d3c92`. It includes the profile-only edits to `Cargo.toml`, spin-analysis diagnostics/tests/workspace counters, and the temporary `m6_spin1_analysis_callgrind` example. It is a zero-context patch: apply with `git apply --unidiff-zero` (or `patch -p1`). Forward application was checked against the current source tree and reverse application against the instrumented worktree; none of it is production code. The pinned DUCC checkout was clean at `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Whole-call profile hashes and measured values are in [the Phase B report](../../DUCC_PARITY_M6.md) and [machine-readable profile CSV](../ducc-parity-m6-2026-10-27-profile.csv).
 
+### Phase C indexed-loop candidate
+
+The checked-length unchecked-index variant was tested against exact parent `1af82adb5190264e89586219c50d61e30b223822` and pinned DUCC at q1/q8, 15 interleaved triplets per thread count. It had bitwise-identical Rust outputs but no supported timing gain and was removed; see the [Phase C decision and focused tests](../../DUCC_PARITY_M6.md#phase-c-indexed-loop-screen--candidate-removed).
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate source patch](indexed-loop-candidate.patch) | `1c5a867b641dec243b3754d03a69d8964123d675e8ce3f1ad43609e7f588cce0` | Exact 15-line source change based on parent `1af82adb`. |
+| [Triplet results JSON](indexed-loop-triplets.json) | `5902d6fef2a478fa08753bf193697dd8207f064aba2b279cfdd92d6dd4bf6acf` | Compact per-triplet medians, validation, numerical errors, and per-backend output hashes, plus source/build/fixture provenance. |
+| [Triplet summary CSV](indexed-loop-triplets.csv) | `bd587ecd970a804c1a12e9c61b186dc70de54886556a1a58d70db1f3f9a381b3` | One row per q1/q8 triplet with paired ratios, median latencies, and summarized wait/frequency diagnostics. |
+| [Triplet runner](indexed-loop-runner.py) | `84bc7ac6c14e500482fbcd2e737ba5c78cbb2b4a838dee33e37dee742f00374f` | Portable version using the checked RustSHT worker-command, fixture and host-diagnostic helpers. |
+
+The executed scratch runner SHA-256 is retained in the JSON. The archived runner resolves the repository root through `RUSTSHT_REPO` or its location in the evidence tree; its measurement logic matches the executed copy. The checked harness source hashes are `e8364e3a18996bac98daa68cba348ccb0d6803576d26c167f63ce79d111ecabe` for `benchmark_ducc_spin1_native.py` and `8a364bd8f6caf1eb5c98f832cd5a28aa7446145b1a3455996cda5f35bcd86843` for `benchmark_ducc_full_transform_parity.py`.
+
 ## Reproduction outline
 
 Use a fresh scratch root, current source `26941cf45564a9637b72b0eca87ff880472c3505`, and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Copy the two checked benchmark scripts into the clean source worktree, then apply `harness-selection.patch` from the repository root:
