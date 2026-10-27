@@ -23,6 +23,10 @@ All 16 GL T720 full/reduced scalar and spin-1 A/S q1/q8 cells are **GAP**. Rust/
 
 The existing Phase B GL T720 analysis profile remains applicable: the diff from source `26941cf4` to `98adf1e6` contains no `src/`, `Cargo.toml`, or `Cargo.lock` changes. Its q1/q8 Callgrind totals were 1.4899×/1.4990× DUCC Ir; the reflected fused recurrence and accumulation dominate. This is instruction attribution, not cycles or a timing claim. See the [profile](#phase-b-profile--current-source-feb46e5f).
 
+## Current analysis-path candidate screen — 2026-10-27
+
+The cached-proof post-recurrence scan candidate (ledger B44) was not promoted. Candidate and parent outputs matched byte-for-byte; the focused spin-1 test suite passed (49 passed, 4 ignored). GL T720 full spin-1 analysis paired C/P was `0.98331 [0.97886,0.99329]` q1 and `1.01836 [0.97894,1.09460]` q8 on the alternate core set. On the first set the medians were `0.99202` q1 and `0.94441` q8, with wide uncertainty and elevated q8 scheduler wait. The direction changed across core sets, so no stable q1/q8 gain is established. The current 1.249×/1.298× DUCC analysis gaps remain open; production source is unchanged. See the [screen report](data/ducc-parity-m6-2026-10-27/analysis-range-proof-scan-2026-10-27/README.md), [machine-readable results](data/ducc-parity-m6-2026-10-27/analysis-range-proof-scan-2026-10-27/screen-results.json), and [candidate patch](data/ducc-parity-m6-2026-10-27/analysis-range-proof-scan-2026-10-27/candidate.patch.gz).
+
 ## Historical first screen at source `26941cf4`
 
 The section below preserves the initial M6 baseline and the subsequent experiment history. Its performance rows are historical and do not replace the `98adf1e6` current-head cells above.
@@ -236,4 +240,4 @@ Three interleaved parent/candidate/DUCC triplets per q ran for CC T720 reduced-m
 
 **Decision:** reject the extra cache plumbing. CC results were effectively neutral, and the small GL q1 lead did not repeat at q8; the q1 CC workers also had about 10% scheduler wait. These three-triplet screens have no confidence intervals. Full provenance, source hashes, triplet details, and cleanup are in the [screen report](data/ducc-parity-m6-2026-10-27/prepared-safety-cache-screen-2026-10-27.md) and [evidence index](data/ducc-parity-m6-2026-10-27/README.md).
 
-M6 remains open. The current-head baseline confirms a GL T720 f64 spin-1 analysis gap at q1/q8 and broad f32 performance gaps; the T1023 f64 synthesis controls remain ahead of DUCC. Next use current-source attribution to select one distinct recurrence/dataflow candidate, retaining the CC T720 reduced q1/q8 and GL T1023 controls. Do not retry cached-safe range-check skipping without new branch-range attribution or a stronger proof.
+M6 remains open. The current-head baseline confirms a GL T720 f64 spin-1 analysis gap at q1/q8 and broad f32 performance gaps; the T1023 f64 synthesis controls remain ahead of DUCC. B44 did not establish a stable q1/q8 gain. Next profile the largest native-f32 gap, GL T720 full-mmax scalar synthesis q8, then choose a distinct source candidate from that attribution while retaining the f64 analysis and T1023 controls.
