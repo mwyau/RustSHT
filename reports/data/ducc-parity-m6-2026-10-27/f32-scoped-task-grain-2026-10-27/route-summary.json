@@ -1,0 +1,446 @@
+{
+  "schema": "rustsht-m6-fallback-route-profile-v1",
+  "source_base": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+  "candidate_patch_sha256": "c7c0a9c87e4002ae7c4643086df0970721c825d0a7abb9aadf9ecc556969e0e9",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cases": {
+    "M180-q1": {
+      "route_counts": {
+        "total_blocks": 2172,
+        "inactive_blocks": 28,
+        "mixed_blocks": 152,
+        "prepared_normal_seed_blocks": 922,
+        "fused_success_blocks": 922,
+        "fused_decline_blocks": 0,
+        "prepared_scaled_seed_blocks": 1070,
+        "transition_attempts": 0,
+        "transition_successes": 0,
+        "replay_blocks": 0,
+        "prepared_staged_lanes": 122647
+      },
+      "route_counts_identical_across_three_runs": true,
+      "fallback_work": {
+        "mixed_polar": {
+          "callbacks": 44106,
+          "lane_pair_visits": 1688440,
+          "recurrence_updates": 1682590,
+          "exp0_visits": 413105,
+          "exp_nonzero_visits": 1275335,
+          "scan_ns": 15691,
+          "recurrence_ns": 98550514,
+          "blocks": 152,
+          "actual_scaled_helper_calls": 3376880
+        },
+        "all_active_scaled": {
+          "callbacks": 332931,
+          "lane_pair_visits": 19769180,
+          "recurrence_updates": 19705306,
+          "exp0_visits": 17070395,
+          "exp_nonzero_visits": 2698785,
+          "scan_ns": 0,
+          "recurrence_ns": 148252243,
+          "blocks": 1070,
+          "actual_scaled_helper_calls": 2698785
+        }
+      },
+      "group_profile_instrumented": [
+        {
+          "run": 0,
+          "by_worker": {},
+          "active_workers": 1,
+          "max_min_group_time_ratio": null
+        },
+        {
+          "run": 1,
+          "by_worker": {},
+          "active_workers": 1,
+          "max_min_group_time_ratio": null
+        },
+        {
+          "run": 2,
+          "by_worker": {},
+          "active_workers": 1,
+          "max_min_group_time_ratio": null
+        }
+      ]
+    },
+    "M180-q8": {
+      "route_counts": {
+        "total_blocks": 2172,
+        "inactive_blocks": 28,
+        "mixed_blocks": 152,
+        "prepared_normal_seed_blocks": 922,
+        "fused_success_blocks": 922,
+        "fused_decline_blocks": 0,
+        "prepared_scaled_seed_blocks": 1070,
+        "transition_attempts": 0,
+        "transition_successes": 0,
+        "replay_blocks": 0,
+        "prepared_staged_lanes": 122647
+      },
+      "route_counts_identical_across_three_runs": true,
+      "fallback_work": {
+        "mixed_polar": {
+          "callbacks": 44106,
+          "lane_pair_visits": 1688440,
+          "recurrence_updates": 1682590,
+          "exp0_visits": 413105,
+          "exp_nonzero_visits": 1275335,
+          "scan_ns": 16828,
+          "recurrence_ns": 98448971,
+          "blocks": 152,
+          "actual_scaled_helper_calls": 3376880
+        },
+        "all_active_scaled": {
+          "callbacks": 332931,
+          "lane_pair_visits": 19769180,
+          "recurrence_updates": 19705306,
+          "exp0_visits": 17070395,
+          "exp_nonzero_visits": 2698785,
+          "scan_ns": 0,
+          "recurrence_ns": 149233505,
+          "blocks": 1070,
+          "actual_scaled_helper_calls": 2698785
+        }
+      },
+      "group_profile_instrumented": [
+        {
+          "run": 0,
+          "by_worker": {
+            "0": {
+              "jobs": 1,
+              "group_ms": 98.975
+            },
+            "1": {
+              "jobs": 2,
+              "group_ms": 65.943
+            },
+            "2": {
+              "jobs": 1,
+              "group_ms": 11.021
+            },
+            "3": {
+              "jobs": 1,
+              "group_ms": 25.971
+            },
+            "4": {
+              "jobs": 1,
+              "group_ms": 22.867
+            },
+            "5": {
+              "jobs": 3,
+              "group_ms": 19.719
+            },
+            "6": {
+              "jobs": 1,
+              "group_ms": 17.179
+            },
+            "7": {
+              "jobs": 2,
+              "group_ms": 36.131
+            }
+          },
+          "active_workers": 8,
+          "max_min_group_time_ratio": 8.980412070400842
+        },
+        {
+          "run": 1,
+          "by_worker": {
+            "0": {
+              "jobs": 1,
+              "group_ms": 99.352
+            },
+            "1": {
+              "jobs": 2,
+              "group_ms": 18.953
+            },
+            "2": {
+              "jobs": 1,
+              "group_ms": 10.965
+            },
+            "3": {
+              "jobs": 1,
+              "group_ms": 22.616
+            },
+            "4": {
+              "jobs": 1,
+              "group_ms": 26.313
+            },
+            "5": {
+              "jobs": 2,
+              "group_ms": 36.115
+            },
+            "6": {
+              "jobs": 3,
+              "group_ms": 67.716
+            },
+            "7": {
+              "jobs": 1,
+              "group_ms": 16.068
+            }
+          },
+          "active_workers": 8,
+          "max_min_group_time_ratio": 9.060523685496873
+        },
+        {
+          "run": 2,
+          "by_worker": {
+            "0": {
+              "jobs": 1,
+              "group_ms": 99.802
+            },
+            "1": {
+              "jobs": 2,
+              "group_ms": 29.75
+            },
+            "2": {
+              "jobs": 3,
+              "group_ms": 14.261
+            },
+            "3": {
+              "jobs": 2,
+              "group_ms": 25.694
+            },
+            "4": {
+              "jobs": 1,
+              "group_ms": 26.013
+            },
+            "5": {
+              "jobs": 1,
+              "group_ms": 23.036
+            },
+            "6": {
+              "jobs": 1,
+              "group_ms": 64.625
+            },
+            "7": {
+              "jobs": 1,
+              "group_ms": 16.008
+            }
+          },
+          "active_workers": 8,
+          "max_min_group_time_ratio": 6.998328424421159
+        }
+      ]
+    },
+    "M720-q1": {
+      "route_counts": {
+        "total_blocks": 8652,
+        "inactive_blocks": 1937,
+        "mixed_blocks": 1216,
+        "prepared_normal_seed_blocks": 1744,
+        "fused_success_blocks": 1744,
+        "fused_decline_blocks": 0,
+        "prepared_scaled_seed_blocks": 3755,
+        "transition_attempts": 0,
+        "transition_successes": 0,
+        "replay_blocks": 0,
+        "prepared_staged_lanes": 347095
+      },
+      "route_counts_identical_across_three_runs": true,
+      "fallback_work": {
+        "mixed_polar": {
+          "callbacks": 188465,
+          "lane_pair_visits": 6293674,
+          "recurrence_updates": 6253504,
+          "exp0_visits": 1020840,
+          "exp_nonzero_visits": 5272834,
+          "scan_ns": 117144,
+          "recurrence_ns": 393582092,
+          "blocks": 1216,
+          "actual_scaled_helper_calls": 12587348
+        },
+        "all_active_scaled": {
+          "callbacks": 749130,
+          "lane_pair_visits": 46405916,
+          "recurrence_updates": 46170202,
+          "exp0_visits": 38513920,
+          "exp_nonzero_visits": 7891996,
+          "scan_ns": 0,
+          "recurrence_ns": 386476491,
+          "blocks": 3755,
+          "actual_scaled_helper_calls": 7891996
+        }
+      },
+      "group_profile_instrumented": [
+        {
+          "run": 0,
+          "by_worker": {},
+          "active_workers": 1,
+          "max_min_group_time_ratio": null
+        },
+        {
+          "run": 1,
+          "by_worker": {},
+          "active_workers": 1,
+          "max_min_group_time_ratio": null
+        },
+        {
+          "run": 2,
+          "by_worker": {},
+          "active_workers": 1,
+          "max_min_group_time_ratio": null
+        }
+      ]
+    },
+    "M720-q8": {
+      "route_counts": {
+        "total_blocks": 8652,
+        "inactive_blocks": 1937,
+        "mixed_blocks": 1216,
+        "prepared_normal_seed_blocks": 1744,
+        "fused_success_blocks": 1744,
+        "fused_decline_blocks": 0,
+        "prepared_scaled_seed_blocks": 3755,
+        "transition_attempts": 0,
+        "transition_successes": 0,
+        "replay_blocks": 0,
+        "prepared_staged_lanes": 347095
+      },
+      "route_counts_identical_across_three_runs": true,
+      "fallback_work": {
+        "mixed_polar": {
+          "callbacks": 188465,
+          "lane_pair_visits": 6293674,
+          "recurrence_updates": 6253504,
+          "exp0_visits": 1020840,
+          "exp_nonzero_visits": 5272834,
+          "scan_ns": 122482,
+          "recurrence_ns": 404405940,
+          "blocks": 1216,
+          "actual_scaled_helper_calls": 12587348
+        },
+        "all_active_scaled": {
+          "callbacks": 749130,
+          "lane_pair_visits": 46405916,
+          "recurrence_updates": 46170202,
+          "exp0_visits": 38513920,
+          "exp_nonzero_visits": 7891996,
+          "scan_ns": 0,
+          "recurrence_ns": 390334293,
+          "blocks": 3755,
+          "actual_scaled_helper_calls": 7891996
+        }
+      },
+      "group_profile_instrumented": [
+        {
+          "run": 0,
+          "by_worker": {
+            "0": {
+              "jobs": 1,
+              "group_ms": 146.383
+            },
+            "1": {
+              "jobs": 2,
+              "group_ms": 162.505
+            },
+            "2": {
+              "jobs": 1,
+              "group_ms": 55.567
+            },
+            "3": {
+              "jobs": 1,
+              "group_ms": 138.028
+            },
+            "4": {
+              "jobs": 1,
+              "group_ms": 129.909
+            },
+            "5": {
+              "jobs": 2,
+              "group_ms": 76.604
+            },
+            "6": {
+              "jobs": 3,
+              "group_ms": 122.629
+            },
+            "7": {
+              "jobs": 1,
+              "group_ms": 101.686
+            }
+          },
+          "active_workers": 8,
+          "max_min_group_time_ratio": 2.9245049347481986
+        },
+        {
+          "run": 1,
+          "by_worker": {
+            "0": {
+              "jobs": 1,
+              "group_ms": 144.569
+            },
+            "1": {
+              "jobs": 2,
+              "group_ms": 121.992
+            },
+            "2": {
+              "jobs": 1,
+              "group_ms": 130.999
+            },
+            "3": {
+              "jobs": 1,
+              "group_ms": 137.302
+            },
+            "4": {
+              "jobs": 3,
+              "group_ms": 89.461
+            },
+            "5": {
+              "jobs": 1,
+              "group_ms": 89.541
+            },
+            "6": {
+              "jobs": 2,
+              "group_ms": 75.303
+            },
+            "7": {
+              "jobs": 1,
+              "group_ms": 145.594
+            }
+          },
+          "active_workers": 8,
+          "max_min_group_time_ratio": 1.9334508128806394
+        },
+        {
+          "run": 2,
+          "by_worker": {
+            "0": {
+              "jobs": 1,
+              "group_ms": 147.887
+            },
+            "1": {
+              "jobs": 4,
+              "group_ms": 82.476
+            },
+            "2": {
+              "jobs": 1,
+              "group_ms": 55.427
+            },
+            "3": {
+              "jobs": 1,
+              "group_ms": 130.075
+            },
+            "4": {
+              "jobs": 1,
+              "group_ms": 135.816
+            },
+            "5": {
+              "jobs": 2,
+              "group_ms": 150.178
+            },
+            "6": {
+              "jobs": 1,
+              "group_ms": 90.057
+            },
+            "7": {
+              "jobs": 1,
+              "group_ms": 146.367
+            }
+          },
+          "active_workers": 8,
+          "max_min_group_time_ratio": 2.709480153938575
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema": "rustsht-m6-current-f32-synthesis-callgrind-v1",
+  "source": {
+    "commit": "3189fe8ee49f125d0d4569549fb880a6b6468bb8",
+    "branch": "dev",
+    "production_files_unchanged_for_profile": true,
+    "sha256": {
+      "src/legendre/scalar_paired/synthesis.rs": "f9bac2f2e6420953ac1279dcdc9366534a76ad21a079c0ea2816bac4705c4597",
+      "src/legendre/scalar_paired.rs": "1db422a449c3d1dd068ceeb7e2c6af84597340cf5f35bf92c69d3ea3e07aa19e",
+      "src/legendre/scalar.rs": "7b922b33a1d4cae729033d620faa9d2c3aa3c97a83a28537c509034330f92d0e"
+    }
+  },
+  "case": {
+    "precision": "f32",
+    "grid": "GL",
+    "spin": 0,
+    "operation": "synthesis",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.23,
+    "threads": 8,
+    "affinity_cpus": "0-7"
+  },
+  "reference": {
+    "name": "DUCC",
+    "version": "0.42.0",
+    "commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "profiled": false
+  },
+  "fixture": {
+    "generator": "scripts/benchmark_ducc_f32_native.py",
+    "alm0_sha256": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96"
+  },
+  "profile": {
+    "tool": "Callgrind 3.26.0",
+    "events": "Ir",
+    "total_ir": 8366416331,
+    "configuration": "--instr-atstart=no --cache-sim=no --branch-sim=no --dump-instr=yes --collect-jumps=yes; affinity applied outside Valgrind",
+    "instrumented_region": "one warmed synthesis_into call after repeat and poisoned-output reset checks",
+    "aggregate_rayon_threads": true,
+    "elapsed_time_interpreted": false
+  },
+  "attribution": {
+    "paired_fallback_iterator": {
+      "calls": 3755,
+      "inclusive_ir": 4193034063,
+      "whole_percent": 50.12
+    },
+    "paired_synthesis_callback_self_ir": 1442677480,
+    "paired_callback_exponent_zero_iterations": 92811832,
+    "paired_callback_scaled_helper_calls": 7891996,
+    "paired_callback_scaled_helper_inclusive_ir": 1656593973,
+    "outer_scaled_helper_calls": 12587348,
+    "outer_scaled_helper_inclusive_ir": 3067466895,
+    "fused_v3_kernel_calls": 1744,
+    "fused_v3_kernel_inclusive_ir": 161306736,
+    "fused_v3_kernel_whole_percent": 1.93,
+    "powisf2_ir": 13767682
+  },
+  "output": {
+    "sha256": "260e35799c6f8d3c505fc9d6f2cc5bdbd5443e03d4e75e4d488044904066d45d",
+    "finite": true,
+    "matches_prior_fixture_output_sha256": true
+  },
+  "build": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "llvm": "23.1.1",
+    "cargo": "1.99.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 plus temporary native Callgrind shim search path",
+    "release_debug_info": 2,
+    "pulp_backend": "V3 / AVX2",
+    "host_cpu": "AMD Ryzen 9 5950X",
+    "binary_sha256": "e91953a0ccdc6ddbff478ef333fd49bb4ac7594a8a8f38842d7b4b7751e2dc17",
+    "harness_sha256": "911d6dcecb5df511a66691674098113735d318374d81c2a8ab763c75abbd672c",
+    "shim_sha256": "6caa936803f86a346742c49fc205e4cc2c63053e1bd6dda70d478abba8e282ee"
+  },
+  "interpretation_limits": [
+    "Ir are instruction references, not cycles or elapsed time.",
+    "Nested traversal and helper inclusive costs overlap; do not add them.",
+    "The separate outer helper callsite and paired callback helper callsite are disjoint call contexts.",
+    "No DUCC Callgrind profile was collected; no current whole-transform timing was collected in this profile experiment."
+  ]
+}

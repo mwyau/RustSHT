@@ -1,0 +1,13 @@
+low_modes analytic_rel_l2=7.232041528e-8 analytic_max_abs=5.960464478e-8 coefficient_rel_l2=4.497791710e-5 coefficient_max_abs=4.589557648e-6 adjoint_rel_error=2.105192135e-5 repeated_bitwise=true
+sectoral_l720 analytic_rel_l2=1.071352716e-5 analytic_max_abs=5.888938904e-5 finite=true
+extreme_min_positive finite=true checksum=3.485846733e-33
+extreme_smallest_subnormal finite=true checksum=1.473070169e-39
+extreme_large_finite finite=true checksum=2.965431044e35
+extreme_max_finite finite=true checksum=1.009083796e44
+
+low_modes analytic_rel_l2=7.232041528e-8 analytic_max_abs=5.960464478e-8 coefficient_rel_l2=4.497791710e-5 coefficient_max_abs=4.589557648e-6 adjoint_rel_error=2.105192135e-5 repeated_bitwise=true
+sectoral_l720 analytic_rel_l2=1.071352716e-5 analytic_max_abs=5.888938904e-5 finite=true
+extreme_min_positive finite=true checksum=3.485846733e-33
+extreme_smallest_subnormal finite=true checksum=1.473070169e-39
+extreme_large_finite finite=true checksum=2.965431044e35
+extreme_max_finite finite=true checksum=1.009083796e44
