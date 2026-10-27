@@ -1,0 +1,50 @@
+scope,threads,backend,metric,value,unit,definition
+whole_call,1,rust,program_ir,639742202,instructions,Callgrind Ir for one warm whole transform
+whole_call,1,ducc,program_ir,429390692,instructions,Callgrind Ir for one warm whole transform
+whole_call,8,rust,program_ir,643881097,instructions,Callgrind Ir for one warm whole transform
+whole_call,8,ducc,program_ir,429534467,instructions,Callgrind Ir for one warm whole transform
+whole_call,1,rust_ducc,ir_ratio,1.4899,ratio,Rust whole-call Ir divided by DUCC whole-call Ir
+whole_call,8,rust_ducc,ir_ratio,1.4990,ratio,Rust whole-call Ir divided by DUCC whole-call Ir
+legendre_stage,1,rust,reflected_order_inclusive_ir,534633890,instructions,Inclusive analyze_spin_scalar_reflected_order cost; overlaps callees
+legendre_stage,8,rust,reflected_order_inclusive_ir,534626783,instructions,Inclusive analyze_spin_scalar_reflected_order cost; overlaps callees
+paired_kernel,1,rust,fused_pair_inclusive_ir,260221946,instructions,Inclusive FusedScalarAnalysisPair Pulp specialization cost; 2971 calls
+paired_kernel,8,rust,fused_pair_inclusive_ir,260221946,instructions,Inclusive FusedScalarAnalysisPair Pulp specialization cost; 2971 calls
+paired_kernel,1,rust,zip_source_attribution_ir,36024856,instructions,Exclusive source attribution to core iterator zip in fused specialization; upper bound on loop overhead
+paired_kernel,8,rust,zip_source_attribution_ir,36024856,instructions,Exclusive source attribution to core iterator zip in fused specialization; upper bound on loop overhead
+paired_kernel,1,rust,main_vector_iterations,3996655,iterations,Executed basic-block iterations at PC 0x1d3212
+paired_kernel,8,rust,main_vector_iterations,3996655,iterations,Executed basic-block iterations at PC 0x1d3212
+paired_kernel,1,rust,second_channel_vector_iterations,1849862,iterations,Executed basic-block iterations at PC 0x1d3ab5
+paired_kernel,8,rust,second_channel_vector_iterations,1849862,iterations,Executed basic-block iterations at PC 0x1d3ab5
+checked_prefix,1,rust,checked_false_calls,577,calls,FusedCheckedScaledAnalysisPairChannels false specialization
+checked_prefix,1,rust,checked_true_calls,22,calls,FusedCheckedScaledAnalysisPairChannels true specialization
+checked_prefix,1,rust,checked_false_source_attribution_ir,32682944,instructions,Exclusive source attribution; do not add to nested inclusive costs
+ducc_kernel,1,ducc,calc_map2alm_inclusive_ir,227226660,instructions,Inclusive calc_map2alm cost; overlaps map2alm_kernel and iter_to_ieee
+ducc_kernel,8,ducc,calc_map2alm_inclusive_ir,227226660,instructions,Inclusive calc_map2alm cost; overlaps map2alm_kernel and iter_to_ieee
+ducc_kernel,1,ducc,map2alm_kernel_inclusive_ir,223149132,instructions,Inclusive map2alm_kernel cost across all calls
+ducc_kernel,8,ducc,map2alm_kernel_inclusive_ir,223149132,instructions,Inclusive map2alm_kernel cost across all calls
+ducc_kernel,1,ducc,map_kernel_vector_iterations,9934482,iterations,Executed basic-block iterations at PC 0x67cab0
+ducc_kernel,8,ducc,map_kernel_vector_iterations,9934482,iterations,Executed basic-block iterations at PC 0x67cab0
+ducc_kernel,1,ducc,calc_map2alm_calls,2280,calls,Executed calc_map2alm call count
+ducc_kernel,8,ducc,calc_map2alm_calls,2280,calls,Executed calc_map2alm call count
+work_counter,1,rust,active_ring_order_pairs,387673,pairs,Test-only per-worker geometry counters on random finite maps
+work_counter,8,rust,active_ring_order_pairs,387673,pairs,Test-only per-worker geometry counters aggregated across workers
+work_counter,1,rust,reflected_pair_lane_degree_states,81083602,states,One recurrence state per reflected latitude pair lane and degree
+work_counter,8,rust,reflected_pair_lane_degree_states,81083602,states,One recurrence state per reflected latitude pair lane and degree
+work_counter,1,rust,physical_ring_degree_updates,161324575,updates,Geometry-derived north/south physical ring updates
+work_counter,8,rust,physical_ring_degree_updates,161324575,updates,Geometry-derived north/south physical ring updates
+work_counter,1,rust,component_channel_accumulations,162167204,accumulations,Two component-channel accumulations per reflected pair-lane degree state
+work_counter,8,rust,component_channel_accumulations,162167204,accumulations,Two component-channel accumulations per reflected pair-lane degree state
+work_counter,1,rust,fused_blocks,3579,blocks,All fused pair blocks in the test-only counter run
+work_counter,8,rust,fused_blocks,3579,blocks,All fused pair blocks in the test-only counter run
+work_counter,1,rust,safety_scan_passes,14316,passes,Four Q/U input scans per fused block
+work_counter,8,rust,safety_scan_passes,14316,passes,Four Q/U input scans per fused block
+work_counter,1,rust,safety_scan_lane_inputs,813340,inputs,Lane inputs examined by safety scans
+work_counter,8,rust,safety_scan_lane_inputs,813340,inputs,Lane inputs examined by safety scans
+normalized_work,1,rust,pair_lane_states_per_ir,0.1268,states_per_ir,Reflected pair-lane degree states divided by whole-call Ir; cross-source context only
+normalized_work,1,ducc,ringdata_updates_per_ir,0.1850,updates_per_ir,"Callgrind vector iterations times four AVX2 lanes times two degree updates, divided by whole-call Ir"
+normalized_work,8,rust,pair_lane_states_per_ir,0.1259,states_per_ir,Reflected pair-lane degree states divided by whole-call Ir; cross-source context only
+normalized_work,8,ducc,ringdata_updates_per_ir,0.1850,updates_per_ir,"Callgrind vector iterations times four AVX2 lanes times two degree updates, divided by whole-call Ir"
+profile_artifact,1,rust,callgrind_sha256,092a91da4a4a8bad9e8d17f0b79a27d975083566f1988230f299379921e220e,sha256,q1 Rust Callgrind profile
+profile_artifact,1,ducc,callgrind_sha256,4110614f0e0602ac8b80ec8c23cfcddff8ba016c840be2b1e63f72abd09e86f2,sha256,q1 DUCC Callgrind profile
+profile_artifact,8,rust,callgrind_sha256,052e0fafaec957a96ab03404349ee4eab60a6eee7a9b92dae045004d74f26fec,sha256,q8 Rust Callgrind profile
+profile_artifact,8,ducc,callgrind_sha256,933285ef080ef42e1a46ae845ee186ce64d498c936fd8c111d9c1425e4c4708d,sha256,q8 DUCC Callgrind profile
