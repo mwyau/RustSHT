@@ -1,0 +1,8 @@
+Parent: 899ebab41c57332f7aafaf5e8a3221b508a5ba81
+DUCC 0.42.0: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+
+Candidate source was isolated in a detached worktree. The focused f32 helper-order test passed (1 passed). Release all-features scalar library tests passed (169 passed, 16 ignored). Release all-features f32 integration tests passed (11 passed, 1 ignored). Formatting and git diff whitespace checks passed.
+
+The matched whole-transform process was interrupted after the third GL T720 full-mmax q1 triplet. The three completed candidate/parent ratios were 1.007648, 1.001708, and 1.002920. Parent and candidate outputs were bitwise identical. All nine completed parent/candidate/DUCC workers passed finite, repeated-call, and workspace-reset checks. No other workload cells were completed.
+
+No production source change was committed or retained. The partial timings are not used as a performance conclusion.

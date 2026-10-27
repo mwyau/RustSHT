@@ -1,5 +1,9 @@
 # M6 — DUCC parity engineering and repository consolidation
 
+## Current owner direction — 2026-10-27
+
+The generic f32/f64 fused scalar-synthesis kernel milestone is **complete**: shared recurrence/accumulation, zero-exponent paths, and native-f32 SIMD leaves are implemented and validated. Do not restart that work. The M6 goal remains open because exact-parent GL T720 f32 scalar-synthesis ratios are `37.86×`/`119.88×` DUCC at full mmax q1/q8 and `25.74×`/`90.59×` at reduced mmax q1/q8. The highest-priority next task is to profile the outer polar/mixed-block fallback on current `origin/dev`, classify useful recurrence work, scaled contributions, scans/staging/retries, and q8 worker distribution, then design one fallback-preserving route change from those counts. Do not repeat the rejected per-vector retry, mixed-lane mask, or caller-level scalar shortcuts. Maintain the single current M6 performance ledger in `reports/DUCC_PARITY_M6.md`; update it with exact source provenance and measured cells.
+
 **New owner goal — 2026-10-27 04:46 UTC.** The former Luna session's “goal achieved” applied **only** to algorithm convergence and unit-test layout. It was completed and pushed at `b7bb2ac49b3b673bd344ad1caf154e52d3130070`, with 317 workspace tests passing, 37 ignored, zero failed, and temporary builds cleaned. **This new M6 goal is not achieved, and must not be declared achieved, by clean CI, successful profiling, documentation work, or completing a handful of short screens.**
 
 **Current starting Git ref:** Fetch latest `origin/dev` before acting (at this plan's creation: `7629d25a5b4df928f9237158ca3cbbb872c42e6d`). Work on `dev` directly. `main` must not be modified or merged until the owner requests it.

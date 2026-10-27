@@ -1,0 +1,23 @@
+{
+  "candidate_parent_bitwise_equal": true,
+  "candidate_parent_ratio_samples": [
+    1.007648,
+    1.001708,
+    1.002920
+  ],
+  "candidate_ducc_ratio_samples": [
+    38.403279,
+    38.024802,
+    36.655081
+  ],
+  "candidate_ducc_relative_l2": 0.000172343,
+  "completed_cells": [
+    "GL T720 full M720 scalar synthesis q1"
+  ],
+  "completed_triplets": 3,
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "parent_sha": "899ebab41c57332f7aafaf5e8a3221b508a5ba81",
+  "screen_status": "interrupted_before_remaining_cells",
+  "timing_samples_preserved": false,
+  "worker_guard_failures": 0
+}
