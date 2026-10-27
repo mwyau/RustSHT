@@ -1,12 +1,39 @@
 # M6 — current-head DUCC parity triage
 
+**Latest current-head baseline:** RustSHT `98adf1e6b5334021bfe6ae9abb618c6be167a822` on `dev`; pinned DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Host: AMD Ryzen 9 5950X; rustc/Cargo 1.99.1, LLVM 23.1.1; GCC 15.2.0. The detailed [22-cell report](data/ducc-parity-m6-2026-10-27/current-head-rebaseline-98adf1e6/README.md), [machine-readable results](data/ducc-parity-m6-2026-10-27/current-head-rebaseline-98adf1e6/current-head-rebaseline.json), and [per-cell ledger](data/ducc-parity-m6-2026-10-27.csv) record all timings, pair ratios, hashes, errors, and worker diagnostics.
+
+This fresh baseline covers six f64 spin-1 controls and all 16 native-f32 GL T720 scalar/spin-1 analysis/synthesis full/reduced q1/q8 cells. Three interleaved fresh-process pairs ran per cell; the ranges below are descriptive triage ranges, not confidence intervals. All 22 cells passed finite, repeat, and reset checks. The existing f32 integration suite passed: 11 passed, 1 ignored, 0 failed. No production code changed in this baseline.
+
+## Latest f64 cells
+
+| Workload | Rust ms | DUCC ms | Rust/DUCC | Three-pair range | Status | Max relative L2 |
+|---|---:|---:|---:|---:|---|---:|
+| GL T720 full spin-1 analysis q1 | 36.569 | 29.234 | 1.249× | 1.234–1.271× | **GAP** | 4.76e-14 |
+| GL T720 full spin-1 analysis q8 | 5.372 | 4.260 | 1.298× | 1.220–1.307× | **GAP** | 4.76e-14 |
+| GL T1023 full spin-1 synthesis q1 | 87.990 | 121.330 | 0.734× | 0.721–0.745× | **PASS** | 2.60e-13 |
+| GL T1023 full spin-1 synthesis q8 | 14.080 | 19.775 | 0.715× | 0.696–0.716× | **PASS** | 2.60e-13 |
+| CC T720 reduced m180 spin-1 synthesis q1 | 30.010 | 18.644 | 1.608× | 1.600–1.704× | **GAP** | 3.62e-13 |
+| GL T720 reduced m180 over-resolved synthesis q8 | 4.255 | 4.677 | 0.911× | 0.902–0.912× | **PASS** | 2.27e-13 |
+
+The T720 analysis target remains open: all three q1 and q8 pair ratios were above parity. Rust q1 scheduler wait was 6.4–6.7% (DUCC below 0.1%); q8 Rust wait was 0.4–1.1%. T1023 synthesis retains its speed advantage. CC reduced synthesis is a separate gap with elevated q1 Rust wait around 9.8–10.3%.
+
+## Latest native-f32 result
+
+All 16 GL T720 full/reduced scalar and spin-1 A/S q1/q8 cells are **GAP**. Rust/DUCC ratios range from **30.391× to 139.613×**; the current worst is full-mmax scalar synthesis q8. The observed DUCC-relative L2 range is `1.17e-5` to `2.73e-4`; the benchmark does not impose a T720-specific numeric threshold. The f32 integration tests cover independent DUCC references, analytic fields, and adjoints at other sizes/grids, but do not establish T720-specific acceptance. See the full table and limits in the [current-head report](data/ducc-parity-m6-2026-10-27/current-head-rebaseline-98adf1e6/README.md).
+
+The existing Phase B GL T720 analysis profile remains applicable: the diff from source `26941cf4` to `98adf1e6` contains no `src/`, `Cargo.toml`, or `Cargo.lock` changes. Its q1/q8 Callgrind totals were 1.4899×/1.4990× DUCC Ir; the reflected fused recurrence and accumulation dominate. This is instruction attribution, not cycles or a timing claim. See the [profile](#phase-b-profile--current-source-feb46e5f).
+
+## Historical first screen at source `26941cf4`
+
+The section below preserves the initial M6 baseline and the subsequent experiment history. Its performance rows are historical and do not replace the `98adf1e6` current-head cells above.
+
 **Source:** `26941cf45564a9637b72b0eca87ff880472c3505` on `dev`<br>
 **DUCC:** 0.42.0, `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`<br>
 **Host:** AMD Ryzen 9 5950X, Linux x86-64; rustc/Cargo 1.99.1, LLVM 23.1.1; GCC 15.2.0.
 
 This first M6 screen covers 14 selected warm whole-transform cells: GL T720 spin-1 analysis, protected T1023 synthesis controls, two reduced synthesis routes, and native-f32 GL T720 scalar/spin-1 analysis and synthesis. The rest of the agreed matrix remains unmeasured. No production algorithm changed during this screen.
 
-## Method
+### Method
 
 Both Rust workers were built in release mode with `-C target-cpu=x86-64-v3 -Aunexpected_cfgs`; the f32 worker reported Pulp V3 and eight f32 lanes. DUCC numerical sources used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; both C++ drivers used `-O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3`. The pinned DUCC tree was clean at the exact source SHA. Binary and fixture SHA-256 values are recorded in the [per-cell CSV](data/ducc-parity-m6-2026-10-27.csv).
 
@@ -14,7 +41,7 @@ Each cell used three interleaved fresh-process pairs with shared deterministic f
 
 Three pairs give a triage range, not a confidence interval. The ledger retains each pair's Rust and DUCC medians, ratio, correctness data, fixture hashes, binary hashes, scheduler wait, and frequency samples. f64 comparisons passed finite, repeat, and reset checks. f32 comparisons passed finite, repeat, reset, and output-length checks; the f32 harness records DUCC-relative errors without enforcing a tolerance. Its broader independent-reference, adjoint, and exceptional-value gate remains open.
 
-## f64 cells
+### Historical f64 cells
 
 | Workload | Rust ms | DUCC ms | Rust/DUCC | Three-pair range | Status | Max relative L2 |
 |---|---:|---:|---:|---:|---|---:|
@@ -27,7 +54,7 @@ Three pairs give a triage range, not a confidence interval. The ledger retains e
 
 The T720 analysis gap is present at both thread counts. Rust q1 scheduler wait was 6.5–6.9% across its three analysis runs, while DUCC wait was low; all paired ratios exceeded 1.23. The CC reduced q1 Rust runs also had about 10% wait, and all three ratios remained above 1.59. The q8 analysis runs had low wait. The T1023 synthesis controls preserve the established speed advantage.
 
-## Native-f32 cells
+### Historical native-f32 cells
 
 All cells use GL T720 full `mmax`, `ntheta=721`, `nphi=1458`.
 
@@ -44,9 +71,6 @@ All cells use GL T720 full `mmax`, `ntheta=721`, `nphi=1458`.
 
 The q1 f32 runs had low scheduler wait. q8 scalar analysis/synthesis saw median wait of about 14.6%/10.5%; spin-1 q8 wait was lower but variable. Those conditions widen the q8 ratios, while every observed f32 ratio remains at least 17× DUCC. The timing classification is a clear **GAP**; the dedicated f32 numerical acceptance gate remains pending.
 
-## Next
-
-The two-vector SIMD recurrence interleave candidate has now been screened at GL T720 spin-1 analysis q1/q8 against the exact parent and pinned DUCC. Across three triplets per q, parent/candidate outputs were bitwise identical and finite/repeat/reset checks passed, but paired candidate/parent medians were 1.105232 at q1 and 1.077169 at q8; all six pairs favored the parent. q1 wait was balanced, and one q8 candidate had 1.42% wait. The candidate was removed. See the [screen report](data/ducc-parity-m6-2026-10-27/two-vector-pipeline-screen-2026-10-27.md) and [evidence index](data/ducc-parity-m6-2026-10-27/README.md). The f64 M6 gap remains open. A focused CC T720 reduced-synthesis q1 profile attributes the large phase to recurrence and spectral accumulation, not resampling or inverse FFTs. See the [route profile](data/ducc-parity-m6-2026-10-27/cc-t720-reduced-q1-route-profile-2026-10-27.md); any next source candidate needs a distinct recurrence/dataflow mechanism.
 ## Phase B profile — current source `feb46e5f`
 
 The release worker uses the same GL T720/full-mmax geometry and seeded finite maps as the M6 harness. Source files in the profile worktree match production source at `26941cf4`; only test-gated work counters were added for the separate work-count helper. Rust used rustc/Cargo 1.99.1, LLVM 23.1.1, release debug symbols, `-C target-cpu=x86-64-v3 -Aunexpected_cfgs`, and Pulp V3. Pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` used GCC 15.2 with `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; its driver added `-fno-fast-math -ffp-contract=fast`. Valgrind/Callgrind was 3.26.0. Each worker warmed three times and then measured one transform between Callgrind START/STOP controls; setup and output I/O were outside the measured region. Callgrind reported a `brk segment overflow` warning but completed all four profiles. `perf` was unavailable at `perf_event_paranoid=4`; system settings were left unchanged.
@@ -212,4 +236,4 @@ Three interleaved parent/candidate/DUCC triplets per q ran for CC T720 reduced-m
 
 **Decision:** reject the extra cache plumbing. CC results were effectively neutral, and the small GL q1 lead did not repeat at q8; the q1 CC workers also had about 10% scheduler wait. These three-triplet screens have no confidence intervals. Full provenance, source hashes, triplet details, and cleanup are in the [screen report](data/ducc-parity-m6-2026-10-27/prepared-safety-cache-screen-2026-10-27.md) and [evidence index](data/ducc-parity-m6-2026-10-27/README.md).
 
-M6 remains open. The indexed traversal and safety-check cache candidates did not establish a gain. Next pursue a distinct synthesis recurrence/dataflow mechanism, retaining the CC T720 reduced q1/q8 and GL T1023 f64 controls.
+M6 remains open. The current-head baseline confirms a GL T720 f64 spin-1 analysis gap at q1/q8 and broad f32 performance gaps; the T1023 f64 synthesis controls remain ahead of DUCC. Next use current-source attribution to select one distinct recurrence/dataflow candidate, retaining the CC T720 reduced q1/q8 and GL T1023 controls. Do not retry cached-safe range-check skipping without new branch-range attribution or a stronger proof.
