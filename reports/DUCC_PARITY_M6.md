@@ -195,3 +195,21 @@ The exact parent `f70d9845edf6bba617b9d034b1f5e1d628c429e0` was profiled with Ca
 ## Prepared paired-synthesis indexed traversal — rejected
 
 The candidate changed only `FusedPreparedSynthesisPairBlock::with_simd`, replacing nested zip/enumerate traversal with ordered index reads for both SIMD vectors and the scalar tail. Parent `f70d9845` and candidate outputs were bitwise equal. Focused tests passed (49, 4 ignored); all 12 CC T720 reduced / GL T1023 full-mmax q1/q8 triplets passed finite, repeat, and reset checks. Candidate/DUCC maximum relative-L2 was `3.619e-13` on CC and `2.602e-13` on GL. Matched CC q1 Callgrind fell from 613,507,756 to 612,782,575 Ir, only 0.1182%; the candidate moved much of the zip source count into bounds/comparison code. q8 paired median C/P was `1.014293` on CC (0/3 faster) and `1.011036` on GL (1/3 faster). GL q1 had a small unconfirmed lead; all timing screens had n=3 and no confidence intervals. **Decision:** reject; no supported whole-transform gain, and the q8 results favor the parent. Full triplets, profiles, patch, hashes, and scratch cleanup are in the [screen report](data/ducc-parity-m6-2026-10-27/indexed-pair-screen-2026-10-27.md) and [evidence index](data/ducc-parity-m6-2026-10-27/README.md).
+
+
+## Prepared synthesis safety-check cache — screened and rejected
+
+The isolated candidate memoized the prepared-pair coefficient range check across adjacent latitude blocks in one prepared run. It computes the result lazily only after the ordinary fused route declines, leaving successful fused blocks unchanged; the low-level transition API retains its direct check. Exact parent was `f70d9845edf6bba617b9d034b1f5e1d628c429e0`; candidate patch SHA-256 was `36553db57b80244ac39325f8049097fa5d9c405b8a9449412c8c3b6380f3c341`. It was never applied to production.
+
+Three interleaved parent/candidate/DUCC triplets per q ran for CC T720 reduced-mmax synthesis and GL T1023 full-mmax synthesis. Parent/candidate outputs were bitwise identical across all 12 triplets; all 36 workers passed finite, repeat, and reset checks. Focused transition tests and the release all-features spin-1 suite passed (49 passed, 4 ignored). Candidate/DUCC maximum relative-L2 and maximum absolute error were `3.619e-13` / `3.025e-9` for CC and `2.602e-13` / `5.410e-9` for GL.
+
+| Case | q | Median C/P | Median parent / candidate / DUCC time (ms) | Parent/candidate wait |
+|---|---:|---:|---:|---:|
+| CC T720 reduced synthesis | 1 | 1.001844 | 27.833 / 27.884 / 18.621 | 10.35% / 10.30% |
+| CC T720 reduced synthesis | 8 | 1.000910 | 4.406 / 4.414 / 2.648 | 1.25% / 0.47% |
+| GL T1023 full synthesis | 1 | 0.991833 | 88.352 / 87.818 / 119.909 | 2.09% / 2.07% |
+| GL T1023 full synthesis | 8 | 1.000487 | 14.164 / 14.291 / 19.579 | 0.72% / 0.72% |
+
+**Decision:** reject the extra cache plumbing. CC results were effectively neutral, and the small GL q1 lead did not repeat at q8; the q1 CC workers also had about 10% scheduler wait. These three-triplet screens have no confidence intervals. Full provenance, source hashes, triplet details, and cleanup are in the [screen report](data/ducc-parity-m6-2026-10-27/prepared-safety-cache-screen-2026-10-27.md) and [evidence index](data/ducc-parity-m6-2026-10-27/README.md).
+
+M6 remains open. The indexed traversal and safety-check cache candidates did not establish a gain. Next pursue a distinct synthesis recurrence/dataflow mechanism, retaining the CC T720 reduced q1/q8 and GL T1023 f64 controls.

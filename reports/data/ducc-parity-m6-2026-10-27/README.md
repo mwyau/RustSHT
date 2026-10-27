@@ -232,3 +232,19 @@ The candidate replaced the nested zip/enumerate traversal with ordered index rea
 | Candidate Callgrind profile (local, untracked) | `c72c6f4d8cb9a0d6b25a61b221cd62245178ba3130b2e8d1cc2edff4cfafb91d` | Same harness and inputs as parent. |
 
 Cleanup removed the exact 2,113,777,626-byte scratch root and its two worktrees after verification; `temporary filesystem` available space rose by 2,138,640,384 bytes and free inodes by 11,546. No worker remains.
+
+
+### Prepared synthesis safety-check cache — rejected
+
+The isolated candidate memoized the prepared-pair coefficient safety scan across adjacent latitude blocks, evaluating it only after the ordinary fused route declined. It passed focused transition tests and the release spin-1 suite (49 passed, 4 ignored); all 12 CC/GL q1/q8 triplets were bitwise equal to the parent and passed finite, repeat, and reset checks. CC median candidate/parent ratios were 1.001844 q1 and 1.000910 q8. GL T1023 q1 had a small unconfirmed lead (0.991833), which did not repeat at q8 (1.000487). **Rejected; no production source changed.** See the [screen report](prepared-safety-cache-screen-2026-10-27.md).
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate source patch](prepared-safety-cache-candidate.patch) | `36553db57b80244ac39325f8049097fa5d9c405b8a9449412c8c3b6380f3c341` | Exact-parent isolated diff; not applied to production. |
+| [CC triplet CSV](prepared-safety-cache-cc-triplets.csv) | `bcb2216aa7395fbd19eadd17d56c67c6c2609a3df1310ef708829874f2d6e869` | Three q1/q8 triplets for CC T720 reduced synthesis, with timing and diagnostics. |
+| [CC triplet JSON](prepared-safety-cache-cc-triplets.json) | `3e71a8d6e3083bc07630380090120d1ebc50ea6e3bc8df400c50e5a69f1f3d44` | Sanitized source, build, fixture, binary, output, and per-worker provenance. |
+| [GL triplet CSV](prepared-safety-cache-gl-triplets.csv) | `a1650c23fc984152d6b3c5595bb9dbfeb795b04aa1ed0c1ba0a1bbeabba00e64` | Three q1/q8 triplets for GL T1023 full synthesis, with timing and diagnostics. |
+| [GL triplet JSON](prepared-safety-cache-gl-triplets.json) | `26324165ccfd669b632f62c5dc0d16cb44fab77cf38588f0c836d1224c83b619` | Sanitized source, build, fixture, binary, output, and per-worker provenance. |
+| [Screen report](prepared-safety-cache-screen-2026-10-27.md) | `1a41d06250a070ecc84de1600b1e61c11fc69b6a1fac620523f812dfe6311074` | Candidate, validation, measurements, decision, provenance, and exact cleanup record. |
+
+Cleanup removed only the owned experiment scratch and its two worktrees after verifying the durable evidence. The scratch contained 10,791 paths and 1,568,382,753 apparent bytes; temporary-filesystem available space increased by 1,591,410,688 bytes and free inodes by 10,791. No experiment process or worktree remains.

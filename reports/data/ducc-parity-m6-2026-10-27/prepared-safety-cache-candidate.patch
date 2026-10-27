@@ -1,0 +1,224 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index 26f4da22..4f8ba007 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -564,6 +564,7 @@ pub(crate) trait ShtScalar:
+         _first_odd: &[Complex<Self>],
+         _second_even: &[Complex<Self>],
+         _second_odd: &[Complex<Self>],
++        _coefficients_are_safe: Option<bool>,
+         _previous: &mut [Self],
+         _current: &mut [Self],
+         _next: &mut [Self],
+@@ -575,6 +576,15 @@ pub(crate) trait ShtScalar:
+     ) -> Result<bool, ShtError> {
+         Ok(false)
+     }
++    fn prepared_paired_scalar_synthesis_coefficients_are_safe(
++        _pair_count: usize,
++        _first_even: &[Complex<Self>],
++        _first_odd: &[Complex<Self>],
++        _second_even: &[Complex<Self>],
++        _second_odd: &[Complex<Self>],
++    ) -> bool {
++        false
++    }
+     #[expect(
+         clippy::too_many_arguments,
+         reason = "The paired recurrence receives order factors and caller-owned lane scratch explicitly."
+@@ -1624,6 +1634,7 @@ impl ShtScalar for f64 {
+         first_odd: &[Complex<Self>],
+         second_even: &[Complex<Self>],
+         second_odd: &[Complex<Self>],
++        coefficients_are_safe: Option<bool>,
+         previous: &mut [Self],
+         current: &mut [Self],
+         next: &mut [Self],
+@@ -1646,6 +1657,7 @@ impl ShtScalar for f64 {
+             first_odd,
+             second_even,
+             second_odd,
++            coefficients_are_safe,
+             previous,
+             current,
+             next,
+@@ -1657,6 +1669,22 @@ impl ShtScalar for f64 {
+         )
+     }
+ 
++    fn prepared_paired_scalar_synthesis_coefficients_are_safe(
++        pair_count: usize,
++        first_even: &[Complex<Self>],
++        first_odd: &[Complex<Self>],
++        second_even: &[Complex<Self>],
++        second_odd: &[Complex<Self>],
++    ) -> bool {
++        scalar_paired::prepared_synthesis_pair_coefficients_are_safe(
++            pair_count,
++            first_even,
++            first_odd,
++            second_even,
++            second_odd,
++        )
++    }
++
+     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
+         scalar::multiply_complex_scaled(value, factor, exponent)
+     }
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 464a12ec..c0042f2e 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -832,6 +832,22 @@ fn try_accumulate_scaled_pair_vector<S: Simd>(
+ 
+ mod synthesis;
+ 
++pub(crate) fn prepared_synthesis_pair_coefficients_are_safe(
++    pair_count: usize,
++    first_even: &[Complex64],
++    first_odd: &[Complex64],
++    second_even: &[Complex64],
++    second_odd: &[Complex64],
++) -> bool {
++    synthesis::prepared_pair_coefficients_are_safe(
++        pair_count,
++        first_even,
++        first_odd,
++        second_even,
++        second_odd,
++    )
++}
++
+ #[cfg(test)]
+ use synthesis::{FusedSynthesisPairBlock, OriginalSynthesisPairCoefficients};
+ 
+diff --git a/src/legendre/scalar_paired/analysis/tests.rs b/src/legendre/scalar_paired/analysis/tests.rs
+index 3d8a055c..d2575e75 100644
+--- a/src/legendre/scalar_paired/analysis/tests.rs
++++ b/src/legendre/scalar_paired/analysis/tests.rs
+@@ -2708,6 +2708,7 @@ fn prepared_order_pair_transition_matches_original_coefficients() {
+         &first_odd[..pair_count],
+         &second_even[..pair_count],
+         &second_odd[..pair_count],
++        None,
+         &mut prepared_previous,
+         &mut prepared_current,
+         &mut prepared_next,
+@@ -2813,6 +2814,7 @@ fn prepared_order_pair_transition_promotes_scaled_simd_vector() {
+         &first_odd,
+         &second_even,
+         &second_odd,
++        None,
+         &mut prepared_previous,
+         &mut prepared_current,
+         &mut prepared_next,
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index cfc81f3d..46a590ad 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -811,6 +811,7 @@ pub(crate) fn try_synthesize_prepared_order_pair_transition_dispatched(
+     first_odd: &[Complex64],
+     second_even: &[Complex64],
+     second_odd: &[Complex64],
++    coefficients_are_safe: Option<bool>,
+     previous: &mut [f64],
+     current: &mut [f64],
+     next: &mut [f64],
+@@ -842,15 +843,16 @@ pub(crate) fn try_synthesize_prepared_order_pair_transition_dispatched(
+ 
+     let pair_count = (lmax - m + 2) / 2;
+     let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
+-    if !maximum_sum_bound.is_finite()
+-        || !prepared_pair_coefficients_are_safe(
++    let coefficients_are_safe = coefficients_are_safe.unwrap_or_else(|| {
++        prepared_pair_coefficients_are_safe(
+             pair_count,
+             first_even,
+             first_odd,
+             second_even,
+             second_odd,
+         )
+-    {
++    });
++    if !maximum_sum_bound.is_finite() || !coefficients_are_safe {
+         return Ok(false);
+     }
+ 
+@@ -1028,7 +1030,7 @@ impl SynthesisPairCoefficientSource for PreparedSynthesisPairCoefficients<'_> {
+     }
+ }
+ 
+-fn prepared_pair_coefficients_are_safe(
++pub(super) fn prepared_pair_coefficients_are_safe(
+     pair_count: usize,
+     first_even: &[Complex64],
+     first_odd: &[Complex64],
+diff --git a/src/transform/spin/synthesis.rs b/src/transform/spin/synthesis.rs
+index 4a19614e..c717b49a 100644
+--- a/src/transform/spin/synthesis.rs
++++ b/src/transform/spin/synthesis.rs
+@@ -1555,6 +1555,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+                             } else {
+                                 None
+                             };
++                            let mut prepared_pair_transition_coefficients_safe = None;
+                             for block_start in
+                                 (block_start..run_end).step_by(crate::legendre::LATITUDE_BLOCK_SIZE)
+                             {
+@@ -1580,6 +1581,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+                                     &mut q_spectra[spectrum_start..spectrum_end],
+                                     &mut u_spectra[spectrum_start..spectrum_end],
+                                     pair_coefficients_prepared,
++                                    &mut prepared_pair_transition_coefficients_safe,
+                                 )?;
+                             }
+                             block_start = run_end;
+@@ -1769,6 +1771,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         q_spectra: &mut [Complex<T>],
+         u_spectra: &mut [Complex<T>],
+     ) -> Result<(), ShtError> {
++        let mut prepared_pair_transition_coefficients_safe = None;
+         self.synthesize_spin1_scalar_block_to_order(
+             m,
+             scalar_lmax,
+@@ -1785,6 +1788,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+             q_spectra,
+             u_spectra,
+             None,
++            &mut prepared_pair_transition_coefficients_safe,
+         )
+     }
+ 
+@@ -1809,6 +1813,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         q_spectra: &mut [Complex<T>],
+         u_spectra: &mut [Complex<T>],
+         pair_coefficients_prepared: Option<bool>,
++        prepared_pair_transition_coefficients_safe: &mut Option<bool>,
+     ) -> Result<(), ShtError> {
+         let block_len = theta_sin.len();
+         debug_assert_eq!(theta_cos.len(), block_len);
+@@ -2192,6 +2197,16 @@ impl<T: ShtScalar> ShtPlan<T> {
+         let mut staged_pair =
+             if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX && !split_transition_attempted {
+                 if prepared_pair_for_transition {
++                    let coefficients_are_safe = *prepared_pair_transition_coefficients_safe
++                        .get_or_insert_with(|| {
++                            T::prepared_paired_scalar_synthesis_coefficients_are_safe(
++                                coefficient_pair_count,
++                                &recurrence.fast_spin_first[..coefficient_pair_count],
++                                &recurrence.fast_spin_second[..coefficient_pair_count],
++                                &recurrence.fast_spin_pair_first[..coefficient_pair_count],
++                                &recurrence.fast_spin_pair_second[..coefficient_pair_count],
++                            )
++                        });
+                     T::try_synthesize_prepared_paired_scalar_transition_dispatched(
+                         arch,
+                         m,
+@@ -2205,6 +2220,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+                         &recurrence.fast_spin_second,
+                         &recurrence.fast_spin_pair_first,
+                         &recurrence.fast_spin_pair_second,
++                        Some(coefficients_are_safe),
+                         &mut recurrence.previous[..fallback_len],
+                         &mut recurrence.current[..fallback_len],
+                         &mut recurrence.next[..fallback_len],
