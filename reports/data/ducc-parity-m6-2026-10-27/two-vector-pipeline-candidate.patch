@@ -1,0 +1,111 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index 451942e5..1c0529b3 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -2979 +2979,105 @@ fn fused_analysis_two_pair_steps_with_simd<
+-    if ROTATE_SEQUENTIAL_STATES {
++    if OPPOSITE_COSINE_WEIGHTED
++        && !CHECK_GROUP_RANGE
++        && !TRACK_STATE_RANGE
++        && ACCUMULATE
++        && ROTATE_SEQUENTIAL_STATES
++    {
++        macro_rules! first_leading_for {
++            ($cosine_squared:expr) => {{
++                #[cfg(rustsht_rematerialize_analysis_coefficients)]
++                {
++                    simd.mul_add_f64s(
++                        simd.splat_f64s(first_coefficient_a),
++                        $cosine_squared,
++                        simd.splat_f64s(first_coefficient_b),
++                    )
++                }
++                #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
++                {
++                    simd.mul_add_f64s(first_a, $cosine_squared, first_b)
++                }
++            }};
++        }
++        macro_rules! second_leading_for {
++            ($cosine_squared:expr) => {{
++                #[cfg(rustsht_rematerialize_analysis_coefficients)]
++                {
++                    simd.mul_add_f64s(
++                        simd.splat_f64s(second_coefficient_a),
++                        $cosine_squared,
++                        simd.splat_f64s(second_coefficient_b),
++                    )
++                }
++                #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
++                {
++                    simd.mul_add_f64s(second_a, $cosine_squared, second_b)
++                }
++            }};
++        }
++        macro_rules! accumulate_first_degree {
++            ($index:expr, $basis:expr) => {{
++                first_same_re = simd.mul_add_f64s(same_real_vectors[$index], $basis, first_same_re);
++                first_same_im = simd.mul_add_f64s(same_imag_vectors[$index], $basis, first_same_im);
++                first_opposite_re =
++                    simd.mul_add_f64s(opposite_real_vectors[$index], $basis, first_opposite_re);
++                first_opposite_im =
++                    simd.mul_add_f64s(opposite_imag_vectors[$index], $basis, first_opposite_im);
++            }};
++        }
++        macro_rules! accumulate_second_degree {
++            ($index:expr, $basis:expr) => {{
++                second_same_re =
++                    simd.mul_add_f64s(same_real_vectors[$index], $basis, second_same_re);
++                second_same_im =
++                    simd.mul_add_f64s(same_imag_vectors[$index], $basis, second_same_im);
++                second_opposite_re =
++                    simd.mul_add_f64s(opposite_real_vectors[$index], $basis, second_opposite_re);
++                second_opposite_im =
++                    simd.mul_add_f64s(opposite_imag_vectors[$index], $basis, second_opposite_im);
++            }};
++        }
++
++        let paired_vector_count = current_vectors.len() / 2 * 2;
++        for index in (0..paired_vector_count).step_by(2) {
++            let second_index = index + 1;
++            let previous_0 = previous_vectors[index];
++            let previous_1 = previous_vectors[second_index];
++            let current_0 = current_vectors[index];
++            let current_1 = current_vectors[second_index];
++            let cosine_squared_0 = cosine_squared_vectors[index];
++            let cosine_squared_1 = cosine_squared_vectors[second_index];
++
++            let first_leading_0 = first_leading_for!(cosine_squared_0);
++            let first_leading_1 = first_leading_for!(cosine_squared_1);
++            accumulate_first_degree!(index, current_0);
++            accumulate_first_degree!(second_index, current_1);
++            let first_next_0 = simd.mul_add_f64s(first_leading_0, current_0, previous_0);
++            let first_next_1 = simd.mul_add_f64s(first_leading_1, current_1, previous_1);
++
++            accumulate_second_degree!(index, first_next_0);
++            accumulate_second_degree!(second_index, first_next_1);
++            let second_leading_0 = second_leading_for!(cosine_squared_0);
++            let second_leading_1 = second_leading_for!(cosine_squared_1);
++            let second_next_0 = simd.mul_add_f64s(second_leading_0, first_next_0, current_0);
++            let second_next_1 = simd.mul_add_f64s(second_leading_1, first_next_1, current_1);
++
++            snapshot_vectors[index] = first_next_0;
++            snapshot_vectors[second_index] = first_next_1;
++            previous_vectors[index] = second_next_0;
++            previous_vectors[second_index] = second_next_1;
++        }
++        if paired_vector_count < current_vectors.len() {
++            let index = paired_vector_count;
++            update_analysis_pair_vector!(
++                &mut previous_vectors[index],
++                &mut current_vectors[index],
++                &same_real_vectors[index],
++                &same_imag_vectors[index],
++                &opposite_real_vectors[index],
++                &opposite_imag_vectors[index],
++                &cosine_vectors[index],
++                &cosine_squared_vectors[index],
++                &mut snapshot_vectors[index]
++            );
++        }
++    } else if ROTATE_SEQUENTIAL_STATES {

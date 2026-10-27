@@ -143,3 +143,16 @@ The checked-scaled prefix/update fusion was based on exact parent `67eb85151d0e9
 | [Screen report](checked-prefix-fusion-screen-2026-10-27.md) | — | Method, result, validation, decision and limitations. |
 
 The original runner capture is retained locally and untracked at SHA-256 `1efc83e1ec8ca4681c4fc8d1a8ebd9d7af0c7986b68daa5a30caa071bd411ad0`. After verifying the compact evidence, cleanup removed only the experiment-owned scratch root `rustsht-m6-checked-prefix-fusion.gMZMJ8I2` and its two worktrees. It held 9,007 files and 924,896,044 apparent bytes; `/tmp` available space rose by 930,566,144 bytes and free inodes increased by 10,380 to 949,018. No worker remained.
+
+### Two-vector recurrence pipeline candidate — screened and removed
+
+The two-vector pipeline candidate followed exact parent `30a17ee82154d761ccbbb40a256e27a97d3c2946` and was rejected after three GL T720 full-mmax spin-1 analysis triplets at each q. It was slower in all six pairs despite bitwise-equal parent/candidate outputs, finite results, and passing focused tests. See the [screen report](two-vector-pipeline-screen-2026-10-27.md).
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate source patch](two-vector-pipeline-candidate.patch) | `f786de45bb2e09854146ad1259324e89619b4278b0fdb423351802f8e69f18a6` | Recoverable zero-context diff; not applied to production. |
+| [Triplet summary JSON](two-vector-pipeline-triplets.json) | `332bc3b5061099d9ee16a4f6fac031123bd38d2126e085a84ea48e91c76f5f8c` | Six triplet medians, ratios, correctness/error summaries and source/binary/fixture/output provenance; no worker snapshots or batch-level samples. |
+| [Triplet summary CSV](two-vector-pipeline-triplets.csv) | `392ecf7328a0677bc550fac3dc0ffa18ba9d0991e06b3306ebb2aa432f5b6d20` | One row per triplet with medians, paired ratios, checks, DUCC errors and summarized scheduler-wait diagnostics. |
+| [Screen report](two-vector-pipeline-screen-2026-10-27.md) | — | Method, result, validation, decision and limitations. |
+
+The original runner capture is retained locally and untracked at SHA-256 `95312da1c6130384f5d055584c048de1727c461861f2df705753b3f9b4f0f060`. After verifying the compact evidence, cleanup removed only the experiment-owned scratch root `rustsht-m6-two-vector-pipeline.6ZaMVKzS` and its two worktrees. It held 9,557 files and 1,697,144,643 apparent bytes; `/tmp` available space rose by 1,667,055,616 bytes and free inodes increased by 11,004 to 949,016. No worker remained.
