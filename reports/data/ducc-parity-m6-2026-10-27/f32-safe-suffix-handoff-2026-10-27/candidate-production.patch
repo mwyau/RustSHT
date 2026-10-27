@@ -1,0 +1,930 @@
+diff --git a/src/legendre/scalar/tests/f32.rs b/src/legendre/scalar/tests/f32.rs
+index ddfeab27..f188f606 100644
+--- a/src/legendre/scalar/tests/f32.rs
++++ b/src/legendre/scalar/tests/f32.rs
+@@ -595,6 +595,80 @@ fn f32_paired_accumulator_matches_direct_synthesis_and_declines_polar_orders() {
+     }
+ }
+ 
++#[test]
++fn f32_paired_handoff_preserves_the_rotated_recurrence_state() {
++    let m = 0;
++    let lmax = 8;
++    let sin_theta = (0..9)
++        .map(|ring| 0.2_f32 + 0.07 * ring as f32)
++        .collect::<Vec<_>>();
++    let cos_theta = sin_theta
++        .iter()
++        .map(|sine| (1.0 - sine * sine).sqrt())
++        .collect::<Vec<_>>();
++    let mut epsilon = vec![0.0_f32; lmax + 4];
++    fill_epsilon(m, lmax, &mut epsilon);
++    let factor_count = lmax / 2 + 2;
++    let mut alpha = vec![0.0_f32; factor_count];
++    let mut coefficient_a = vec![0.0_f32; factor_count];
++    let mut coefficient_b = vec![0.0_f32; factor_count];
++    assert!(fill_paired_scalar_factors(
++        m,
++        lmax,
++        &epsilon,
++        &mut alpha,
++        &mut coefficient_a,
++        &mut coefficient_b,
++    ));
++    let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
++
++    for arch in [Arch::Scalar, Arch::new()] {
++        for pair_start in [1, 2, 3] {
++            let mut previous = vec![0.0_f32; sin_theta.len()];
++            let mut current = vec![0.0_f32; sin_theta.len()];
++            let mut next = vec![0.0_f32; sin_theta.len()];
++            let mut exponents = vec![0_i64; sin_theta.len()];
++            let mut saved_previous = None;
++            let mut saved_current = None;
++            let completed = super::super::super::scalar_paired::for_each_y_lm_paired_status_until_dispatched_typed::<f32, _>(
++                arch,
++                m,
++                lmax,
++                &sin_theta,
++                &cos_theta,
++                sectoral_norm,
++                &coefficient_a,
++                &coefficient_b,
++                &mut previous,
++                &mut current,
++                &mut next,
++                &mut exponents,
++                |degree, _ring_start, pair_previous, pair_current, lane_exponents, normal_range| {
++                    if (degree - m) / 2 == pair_start {
++                        assert!(normal_range);
++                        assert!(lane_exponents.iter().all(|&exponent| exponent == 0));
++                        saved_previous = Some(pair_previous.to_vec());
++                        saved_current = Some(pair_current.to_vec());
++                        Ok(false)
++                    } else {
++                        Ok(true)
++                    }
++                },
++            )
++            .unwrap();
++
++            assert!(!completed);
++            let (rotated_previous, rotated_current) = match pair_start % 3 {
++                0 => (&previous, &current),
++                1 => (&current, &next),
++                _ => (&next, &previous),
++            };
++            assert_eq!(saved_previous.as_deref(), Some(rotated_previous.as_slice()));
++            assert_eq!(saved_current.as_deref(), Some(rotated_current.as_slice()));
++        }
++    }
++}
++
+ #[test]
+ fn f32_fused_synthesis_matches_reference_and_declines_overflowing_sums() {
+     let m = 0;
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 464a12ec..58f22eb3 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -1060,6 +1060,51 @@ pub(crate) fn for_each_y_lm_paired_status_dispatched_typed<T, F>(
+ where
+     T: PairedScalarRecurrencePrecision,
+     F: FnMut(usize, usize, &[T], &[i64], bool) -> Result<(), ShtError>,
++{
++    let _ = for_each_y_lm_paired_status_until_dispatched_typed::<T, _>(
++        arch,
++        m,
++        lmax,
++        sin_theta,
++        cos_theta,
++        sectoral_norm,
++        coefficient_a,
++        coefficient_b,
++        previous,
++        current,
++        next,
++        exponents,
++        |degree, ring_start, _, current, exponents, normal_range| {
++            visit(degree, ring_start, current, exponents, normal_range)?;
++            Ok(true)
++        },
++    )?;
++    Ok(())
++}
++
++/// Visits paired values and recurrence state until the callback requests a handoff.
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The recurrence uses plan factors, geometry and caller-owned lane scratch."
++)]
++pub(crate) fn for_each_y_lm_paired_status_until_dispatched_typed<T, F>(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    sin_theta: &[T],
++    cos_theta: &[T],
++    sectoral_norm: T,
++    coefficient_a: &[T],
++    coefficient_b: &[T],
++    previous: &mut [T],
++    current: &mut [T],
++    next: &mut [T],
++    exponents: &mut [i64],
++    mut visit: F,
++) -> Result<bool, ShtError>
++where
++    T: PairedScalarRecurrencePrecision,
++    F: FnMut(usize, usize, &[T], &[T], &[i64], bool) -> Result<bool, ShtError>,
+ {
+     debug_assert!(m <= lmax);
+     debug_assert_eq!(sin_theta.len(), cos_theta.len());
+@@ -1075,7 +1120,7 @@ where
+     for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
+         let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
+         let block_len = ring_end - ring_start;
+-        arch.dispatch(ForEachPairedYlm {
++        let continue_traversal = arch.dispatch(ForEachPairedYlm {
+             ring_start,
+             m,
+             lmax,
+@@ -1091,8 +1136,11 @@ where
+             visit: &mut visit,
+             _precision: PhantomData,
+         })?;
++        if !continue_traversal {
++            return Ok(false);
++        }
+     }
+-    Ok(())
++    Ok(true)
+ }
+ 
+ struct ForEachPairedYlm<'a, T, F> {
+@@ -1115,9 +1163,9 @@ struct ForEachPairedYlm<'a, T, F> {
+ impl<T, F> WithSimd for ForEachPairedYlm<'_, T, F>
+ where
+     T: PairedScalarRecurrencePrecision,
+-    F: FnMut(usize, usize, &[T], &[i64], bool) -> Result<(), ShtError>,
++    F: FnMut(usize, usize, &[T], &[T], &[i64], bool) -> Result<bool, ShtError>,
+ {
+-    type Output = Result<(), ShtError>;
++    type Output = Result<bool, ShtError>;
+ 
+     #[inline(always)]
+     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+@@ -1145,7 +1193,16 @@ where
+         let mut normal_range = T::normalize_pair_state(previous, current, exponents)?;
+ 
+         for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
+-            visit(degree, ring_start, current, exponents, normal_range)?;
++            if !visit(
++                degree,
++                ring_start,
++                previous,
++                current,
++                exponents,
++                normal_range,
++            )? {
++                return Ok(false);
++            }
+             if degree + 2 > lmax {
+                 break;
+             }
+@@ -1166,6 +1223,6 @@ where
+                 normal_range = T::normalize_pair_state(previous, current, exponents)?;
+             }
+         }
+-        Ok(())
++        Ok(true)
+     }
+ }
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index 40fe438f..2d154490 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -77,6 +77,8 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+         return Ok(false);
+     }
+ 
++    #[cfg(m6_polar_profile)]
++    crate::m6_profile::add(crate::m6_profile::PREP_STAGED_LANES, sin_theta.len() as u64);
+     for ring in 0..sin_theta.len() {
+         let spectrum = spectra[ring * spectrum_len + output_order];
+         if !spectrum.re.is_finite() || !spectrum.im.is_finite() {
+@@ -95,20 +97,35 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+             &mut current[..sin_theta.len()],
+             &mut exponents[..sin_theta.len()],
+         )?;
++        #[cfg(m6_polar_profile)]
++        crate::m6_profile::add(crate::m6_profile::PREP_SEED_LANES, sin_theta.len() as u64);
+         let all_normal = <f32 as PairedScalarRecurrencePrecision>::normalize_pair_state(
+             &mut previous[..sin_theta.len()],
+             &mut current[..sin_theta.len()],
+             &mut exponents[..sin_theta.len()],
+         )?;
++        #[cfg(m6_polar_profile)]
++        crate::m6_profile::add(
++            if all_normal {
++                crate::m6_profile::PREP_ALL_NORMAL_BLOCKS
++            } else {
++                crate::m6_profile::PREP_SCALED_BLOCKS
++            },
++            1,
++        );
+         if all_normal {
+-            let fused = arch.dispatch(FusedSynthesisBlock::<f32, true, false> {
++            #[cfg(m6_polar_profile)]
++            crate::m6_profile::add(crate::m6_profile::PREP_FUSED_ATTEMPTS, 1);
++            let fused = arch.dispatch(FusedSynthesisBlock::<f32, true, false, true> {
+                 m,
+                 lmax,
++                pair_start: 0,
+                 cos_theta,
+                 coefficient_a,
+                 coefficient_b,
+                 coefficient_even,
+                 coefficient_odd,
++                previous_start: &[],
+                 current: &current[..sin_theta.len()],
+                 sum_re: staged_real,
+                 sum_im: staged_imag,
+@@ -118,13 +135,39 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+                     .iter()
+                     .chain(&staged_imag[..sin_theta.len()])
+                     .all(|value| value.is_finite());
++            #[cfg(m6_polar_profile)]
++            {
++                crate::m6_profile::add(
++                    crate::m6_profile::PREP_CHECKED_COMPONENTS,
++                    (2 * sin_theta.len()) as u64,
++                );
++                if !finite_fused_sums {
++                    crate::m6_profile::add(crate::m6_profile::PREP_FUSED_DECLINES, 1);
++                }
++            }
+             if finite_fused_sums {
++                #[cfg(m6_polar_profile)]
++                {
++                    crate::m6_profile::add(
++                        crate::m6_profile::PREP_FUSED_DEGREE_LANE_VISITS,
++                        (pair_count * sin_theta.len()) as u64,
++                    );
++                    crate::m6_profile::add(
++                        crate::m6_profile::PREP_COMMIT_LANES,
++                        sin_theta.len() as u64,
++                    );
++                }
+                 for ring in 0..sin_theta.len() {
+                     let spectrum_index = ring * spectrum_len + output_order;
+                     spectra[spectrum_index] = Complex32::new(staged_real[ring], staged_imag[ring]);
+                 }
+                 return Ok(true);
+             }
++            #[cfg(m6_polar_profile)]
++            crate::m6_profile::add(
++                crate::m6_profile::PREP_RESTORED_LANES,
++                sin_theta.len() as u64,
++            );
+             for ring in 0..sin_theta.len() {
+                 let spectrum = spectra[ring * spectrum_len + output_order];
+                 staged_real[ring] = spectrum.re;
+@@ -133,8 +176,17 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+         }
+     }
+ 
++    #[cfg(m6_polar_profile)]
++    crate::m6_profile::add(crate::m6_profile::PREP_FALLBACK_BLOCKS, 1);
+     let mut finite_sums = true;
+-    let recurrence_result = for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
++    let mut fused_suffix = None;
++    #[cfg(m6_polar_profile)]
++    let mut m6_first_normal_pair = None;
++    #[cfg(m6_polar_profile)]
++    let mut m6_normal_reentries = 0u64;
++    #[cfg(m6_polar_profile)]
++    let mut m6_seen_normal = false;
++    let recurrence_result = for_each_y_lm_paired_status_until_dispatched_typed::<f32, _>(
+         arch,
+         m,
+         lmax,
+@@ -147,44 +199,303 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+         current,
+         next,
+         exponents,
+-        |degree, ring_start, basis, lane_exponents, _normal_range| {
++        |degree, ring_start, _, basis, lane_exponents, normal_range| {
+             if !finite_sums {
+-                return Ok(());
++                return Ok(false);
+             }
+             let pair = (degree - m) / 2;
+-            let even = coefficient_even[pair];
+-            let odd = coefficient_odd[pair];
+-            for lane in 0..basis.len() {
+-                let ring = ring_start + lane;
+-                let coefficient = Complex32::new(
+-                    odd.re.mul_add(cos_theta[ring], even.re),
+-                    odd.im.mul_add(cos_theta[ring], even.im),
++            #[cfg(m6_polar_profile)]
++            {
++                crate::m6_profile::add(crate::m6_profile::PREP_FALLBACK_PAIR_STEPS, 1);
++                crate::m6_profile::add(
++                    crate::m6_profile::PREP_FALLBACK_DEGREE_LANE_VISITS,
++                    basis.len() as u64,
+                 );
+-                let exponent = lane_exponents[lane];
+-                let contribution = if exponent == 0 {
+-                    Complex32::new(coefficient.re * basis[lane], coefficient.im * basis[lane])
++                if normal_range {
++                    crate::m6_profile::add(crate::m6_profile::PREP_NORMAL_PAIR_STEPS, 1);
++                    crate::m6_profile::add(
++                        crate::m6_profile::PREP_NORMAL_DEGREE_LANE_VISITS,
++                        basis.len() as u64,
++                    );
++                    if m6_first_normal_pair.is_none() {
++                        m6_first_normal_pair = Some(pair);
++                    }
++                    m6_seen_normal = true;
+                 } else {
+-                    super::super::scalar::multiply_complex_scaled_f32(
+-                        coefficient,
+-                        basis[lane],
+-                        exponent,
+-                    )
+-                };
+-                let real = staged_real[ring] + contribution.re;
+-                let imag = staged_imag[ring] + contribution.im;
+-                if !real.is_finite() || !imag.is_finite() {
+-                    finite_sums = false;
+-                    break;
++                    crate::m6_profile::add(crate::m6_profile::PREP_SCALED_PAIR_STEPS, 1);
++                    crate::m6_profile::add(
++                        crate::m6_profile::PREP_SCALED_DEGREE_LANE_VISITS,
++                        basis.len() as u64,
++                    );
++                    if m6_seen_normal {
++                        m6_normal_reentries += 1;
++                    }
+                 }
+-                staged_real[ring] = real;
+-                staged_imag[ring] = imag;
+             }
+-            Ok(())
++            if normal_range && (pair > 0 || sin_theta.len() > LATITUDE_BLOCK_SIZE) {
++                fused_suffix = Some((pair, ring_start, basis.len()));
++                return Ok(false);
++            }
++            #[cfg(m6_polar_profile)]
++            {
++                let mut exp0 = 0u64;
++                let mut exp_nonzero = 0u64;
++                for &exponent in lane_exponents {
++                    if exponent == 0 {
++                        exp0 += 1;
++                    } else {
++                        exp_nonzero += 1;
++                    }
++                }
++                crate::m6_profile::add(crate::m6_profile::PREP_FALLBACK_EXP0_LANES, exp0);
++                crate::m6_profile::add(
++                    crate::m6_profile::PREP_FALLBACK_EXPNONZERO_LANES,
++                    exp_nonzero,
++                );
++                crate::m6_profile::add(
++                    crate::m6_profile::PREP_FALLBACK_SCALED_HELPER_CALLS,
++                    exp_nonzero,
++                );
++            }
++            finite_sums = accumulate_prepared_scalar_pair_f32(
++                m,
++                degree,
++                ring_start,
++                basis,
++                lane_exponents,
++                cos_theta,
++                coefficient_even,
++                coefficient_odd,
++                staged_real,
++                staged_imag,
++            );
++            Ok(finite_sums)
+         },
+     );
++    #[cfg(m6_polar_profile)]
++    if let Some(first_normal_pair) = m6_first_normal_pair {
++        crate::m6_profile::add(crate::m6_profile::PREP_BLOCKS_ENTER_NORMAL, 1);
++        crate::m6_profile::add(
++            crate::m6_profile::PREP_FIRST_NORMAL_PAIR_SUM,
++            first_normal_pair as u64,
++        );
++        crate::m6_profile::add(
++            crate::m6_profile::PREP_TAIL_PAIR_STEPS,
++            pair_count.saturating_sub(first_normal_pair) as u64,
++        );
++        crate::m6_profile::add(
++            crate::m6_profile::PREP_NORMAL_REENTRIES,
++            m6_normal_reentries,
++        );
++        if m6_normal_reentries == 0 {
++            crate::m6_profile::add(crate::m6_profile::PREP_MONOTONE_NORMAL_SUFFIX_BLOCKS, 1);
++        }
++    }
+     if recurrence_result.is_err() || !finite_sums {
+         return Ok(false);
+     }
++    if let Some((pair_start, block_start, block_len)) = fused_suffix {
++        #[cfg(m6_polar_profile)]
++        crate::m6_profile::add(crate::m6_profile::PREP_SUFFIX_FUSED_ATTEMPTS, 1);
++        let block_end = block_start + block_len;
++        let (previous_state, current_state) = match pair_start % 3 {
++            0 => (&previous[..block_len], &current[..block_len]),
++            1 => (&current[..block_len], &next[..block_len]),
++            _ => (&next[..block_len], &previous[..block_len]),
++        };
++        let fused = arch.dispatch(FusedSynthesisBlock::<f32, true, false, false> {
++            m,
++            lmax,
++            pair_start,
++            cos_theta: &cos_theta[block_start..block_end],
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous_start: previous_state,
++            current: current_state,
++            sum_re: &mut staged_real[block_start..block_end],
++            sum_im: &mut staged_imag[block_start..block_end],
++        });
++        let fused_sums_finite = staged_real[block_start..block_end]
++            .iter()
++            .chain(&staged_imag[block_start..block_end])
++            .all(|value| value.is_finite());
++        let finite_fused_sums = fused && fused_sums_finite;
++        #[cfg(m6_polar_profile)]
++        {
++            crate::m6_profile::add(
++                crate::m6_profile::PREP_SUFFIX_FUSED_PAIR_LANE_VISITS,
++                ((pair_count - pair_start) * block_len) as u64,
++            );
++            if finite_fused_sums {
++                crate::m6_profile::add(crate::m6_profile::PREP_SUFFIX_FUSED_SUCCESSES, 1);
++            } else {
++                crate::m6_profile::add(crate::m6_profile::PREP_SUFFIX_FUSED_DECLINES, 1);
++                crate::m6_profile::add(crate::m6_profile::PREP_SUFFIX_REPLAY_BLOCKS, 1);
++                crate::m6_profile::add(
++                    if fused {
++                        crate::m6_profile::PREP_SUFFIX_NONFINITE_DECLINES
++                    } else {
++                        crate::m6_profile::PREP_SUFFIX_RANGE_DECLINES
++                    },
++                    1,
++                );
++            }
++        }
++        if finite_fused_sums {
++            finite_sums = true;
++            if block_end < sin_theta.len() {
++                let tail_result = for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
++                    arch,
++                    m,
++                    lmax,
++                    &sin_theta[block_end..],
++                    &cos_theta[block_end..],
++                    sectoral_norm,
++                    coefficient_a,
++                    coefficient_b,
++                    previous,
++                    current,
++                    next,
++                    exponents,
++                    |degree, ring_start, basis, lane_exponents, _normal_range| {
++                        #[cfg(m6_polar_profile)]
++                        {
++                            crate::m6_profile::add(crate::m6_profile::PREP_FALLBACK_PAIR_STEPS, 1);
++                            crate::m6_profile::add(
++                                crate::m6_profile::PREP_FALLBACK_DEGREE_LANE_VISITS,
++                                basis.len() as u64,
++                            );
++                        }
++                        if finite_sums {
++                            #[cfg(m6_polar_profile)]
++                            {
++                                let mut exp0 = 0u64;
++                                let mut exp_nonzero = 0u64;
++                                for &exponent in lane_exponents {
++                                    if exponent == 0 {
++                                        exp0 += 1;
++                                    } else {
++                                        exp_nonzero += 1;
++                                    }
++                                }
++                                crate::m6_profile::add(
++                                    crate::m6_profile::PREP_FALLBACK_EXP0_LANES,
++                                    exp0,
++                                );
++                                crate::m6_profile::add(
++                                    crate::m6_profile::PREP_FALLBACK_EXPNONZERO_LANES,
++                                    exp_nonzero,
++                                );
++                                crate::m6_profile::add(
++                                    crate::m6_profile::PREP_FALLBACK_SCALED_HELPER_CALLS,
++                                    exp_nonzero,
++                                );
++                            }
++                            finite_sums = accumulate_prepared_scalar_pair_f32(
++                                m,
++                                degree,
++                                block_end + ring_start,
++                                basis,
++                                lane_exponents,
++                                cos_theta,
++                                coefficient_even,
++                                coefficient_odd,
++                                staged_real,
++                                staged_imag,
++                            );
++                        }
++                        Ok(())
++                    },
++                );
++                if tail_result.is_err() || !finite_sums {
++                    return Ok(false);
++                }
++            }
++        } else {
++            for ring in 0..sin_theta.len() {
++                let spectrum = spectra[ring * spectrum_len + output_order];
++                staged_real[ring] = spectrum.re;
++                staged_imag[ring] = spectrum.im;
++            }
++
++            finite_sums = true;
++            let replay_result = for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
++                arch,
++                m,
++                lmax,
++                sin_theta,
++                cos_theta,
++                sectoral_norm,
++                coefficient_a,
++                coefficient_b,
++                previous,
++                current,
++                next,
++                exponents,
++                |degree, ring_start, basis, lane_exponents, _normal_range| {
++                    #[cfg(m6_polar_profile)]
++                    {
++                        crate::m6_profile::add(crate::m6_profile::PREP_SUFFIX_REPLAY_PAIR_STEPS, 1);
++                        crate::m6_profile::add(
++                            crate::m6_profile::PREP_SUFFIX_REPLAY_PAIR_LANE_VISITS,
++                            basis.len() as u64,
++                        );
++                        crate::m6_profile::add(crate::m6_profile::PREP_FALLBACK_PAIR_STEPS, 1);
++                        crate::m6_profile::add(
++                            crate::m6_profile::PREP_FALLBACK_DEGREE_LANE_VISITS,
++                            basis.len() as u64,
++                        );
++                    }
++                    if finite_sums {
++                        #[cfg(m6_polar_profile)]
++                        {
++                            let mut exp0 = 0u64;
++                            let mut exp_nonzero = 0u64;
++                            for &exponent in lane_exponents {
++                                if exponent == 0 {
++                                    exp0 += 1;
++                                } else {
++                                    exp_nonzero += 1;
++                                }
++                            }
++                            crate::m6_profile::add(
++                                crate::m6_profile::PREP_FALLBACK_EXP0_LANES,
++                                exp0,
++                            );
++                            crate::m6_profile::add(
++                                crate::m6_profile::PREP_FALLBACK_EXPNONZERO_LANES,
++                                exp_nonzero,
++                            );
++                            crate::m6_profile::add(
++                                crate::m6_profile::PREP_FALLBACK_SCALED_HELPER_CALLS,
++                                exp_nonzero,
++                            );
++                        }
++                        finite_sums = accumulate_prepared_scalar_pair_f32(
++                            m,
++                            degree,
++                            ring_start,
++                            basis,
++                            lane_exponents,
++                            cos_theta,
++                            coefficient_even,
++                            coefficient_odd,
++                            staged_real,
++                            staged_imag,
++                        );
++                    }
++                    Ok(())
++                },
++            );
++            if replay_result.is_err() || !finite_sums {
++                return Ok(false);
++            }
++        }
++    }
++    #[cfg(m6_polar_profile)]
++    crate::m6_profile::add(crate::m6_profile::PREP_COMMIT_LANES, sin_theta.len() as u64);
+     for ring in 0..sin_theta.len() {
+         let spectrum_index = ring * spectrum_len + output_order;
+         spectra[spectrum_index] = Complex32::new(staged_real[ring], staged_imag[ring]);
+@@ -192,6 +503,48 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+     Ok(true)
+ }
+ 
++#[inline(always)]
++fn accumulate_prepared_scalar_pair_f32(
++    m: usize,
++    degree: usize,
++    ring_start: usize,
++    basis: &[f32],
++    exponents: &[i64],
++    cos_theta: &[f32],
++    coefficient_even: &[Complex32],
++    coefficient_odd: &[Complex32],
++    staged_real: &mut [f32],
++    staged_imag: &mut [f32],
++) -> bool {
++    let pair = (degree - m) / 2;
++    let even = coefficient_even[pair];
++    let odd = coefficient_odd[pair];
++    for lane in 0..basis.len() {
++        let ring = ring_start + lane;
++        let coefficient = Complex32::new(
++            odd.re.mul_add(cos_theta[ring], even.re),
++            odd.im.mul_add(cos_theta[ring], even.im),
++        );
++        let contribution = if exponents[lane] == 0 {
++            Complex32::new(coefficient.re * basis[lane], coefficient.im * basis[lane])
++        } else {
++            super::super::scalar::multiply_complex_scaled_f32(
++                coefficient,
++                basis[lane],
++                exponents[lane],
++            )
++        };
++        let real = staged_real[ring] + contribution.re;
++        let imag = staged_imag[ring] + contribution.im;
++        if !real.is_finite() || !imag.is_finite() {
++            return false;
++        }
++        staged_real[ring] = real;
++        staged_imag[ring] = imag;
++    }
++    true
++}
++
+ /// Runs the paired f32 order kernel for a block with no polar-excluded lanes.
+ /// Mixed blocks decline before touching spectra and use the scalar fallback.
+ #[expect(
+@@ -220,10 +573,78 @@ pub(crate) fn synthesize_paired_scalar_block_partitioned_f32(
+     staged_imag: &mut [f32],
+     _compact_ring_indices: &mut [usize],
+ ) -> Result<bool, ShtError> {
+-    if sin_theta.len() != cos_theta.len()
+-        || sin_theta.len() != ring_order_limits.len()
+-        || ring_order_limits.iter().any(|&limit| m > limit)
+-    {
++    if sin_theta.len() != cos_theta.len() || sin_theta.len() != ring_order_limits.len() {
++        return Ok(false);
++    }
++    #[cfg(m6_polar_profile)]
++    let mut m6_partition_checks = 0u64;
++    let has_polar_lane = ring_order_limits.iter().any(|&limit| {
++        #[cfg(m6_polar_profile)]
++        {
++            m6_partition_checks += 1;
++        }
++        m > limit
++    });
++    #[cfg(m6_polar_profile)]
++    crate::m6_profile::add(
++        crate::m6_profile::PARTITIONED_PREDICATES,
++        m6_partition_checks,
++    );
++    if has_polar_lane {
++        #[cfg(m6_polar_profile)]
++        {
++            let mut scan = 0;
++            let pair_count = (lmax - m + 2) / 2;
++            while scan < sin_theta.len() {
++                while scan < sin_theta.len() && m > ring_order_limits[scan] {
++                    scan += 1;
++                }
++                let span_start = scan;
++                while scan < sin_theta.len() && m <= ring_order_limits[scan] {
++                    scan += 1;
++                }
++                let span_end = scan;
++                if span_start == span_end {
++                    continue;
++                }
++
++                let span_len = span_end - span_start;
++                let mut span_previous = [0.0_f32; LATITUDE_BLOCK_SIZE];
++                let mut span_current = [0.0_f32; LATITUDE_BLOCK_SIZE];
++                let mut span_exponents = [0_i64; LATITUDE_BLOCK_SIZE];
++                let initialized = <f32 as PairedScalarRecurrencePrecision>::initialize_pair_state(
++                    m,
++                    &sin_theta[span_start..span_end],
++                    sectoral_norm,
++                    &mut span_previous[..span_len],
++                    &mut span_current[..span_len],
++                    &mut span_exponents[..span_len],
++                );
++                let mut previous_normal = false;
++                for lane in 0..span_len {
++                    let normal = initialized.is_ok()
++                        && <f32 as PairedScalarRecurrencePrecision>::normalize_pair_state(
++                            &mut span_previous[lane..lane + 1],
++                            &mut span_current[lane..lane + 1],
++                            &mut span_exponents[lane..lane + 1],
++                        )
++                        .unwrap_or(false);
++                    if normal {
++                        crate::m6_profile::add(crate::m6_profile::MIXED_SEED_NORMAL_LANES, 1);
++                        crate::m6_profile::add(
++                            crate::m6_profile::MIXED_POTENTIAL_FUSED_PAIR_VISITS,
++                            pair_count as u64,
++                        );
++                        if !previous_normal {
++                            crate::m6_profile::add(crate::m6_profile::MIXED_SEED_NORMAL_SPANS, 1);
++                        }
++                    } else {
++                        crate::m6_profile::add(crate::m6_profile::MIXED_SEED_SCALED_LANES, 1);
++                    }
++                    previous_normal = normal;
++                }
++            }
++        }
+         return Ok(false);
+     }
+     synthesize_paired_scalar_order_prepared_f32(
+@@ -369,14 +790,16 @@ pub(crate) fn synthesize_order_block_precomputed_dispatched(
+         return Ok(false);
+     }
+ 
+-    let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true> {
++    let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true, true> {
+         m,
+         lmax,
++        pair_start: 0,
+         cos_theta,
+         coefficient_a,
+         coefficient_b,
+         coefficient_even,
+         coefficient_odd,
++        previous_start: &[],
+         current: &current[..sin_theta.len()],
+         sum_re: &mut previous[..sin_theta.len()],
+         sum_im: &mut next[..sin_theta.len()],
+@@ -447,14 +870,16 @@ pub(crate) fn synthesize_order_block_partitioned_dispatched(
+         &mut exponents[..sin_theta.len()],
+     )?;
+     if all_normal {
+-        let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true> {
++        let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true, true> {
+             m,
+             lmax,
++            pair_start: 0,
+             cos_theta,
+             coefficient_a,
+             coefficient_b,
+             coefficient_even,
+             coefficient_odd,
++            previous_start: &[],
+             current: &current[..sin_theta.len()],
+             sum_re: &mut previous[..sin_theta.len()],
+             sum_im: &mut next[..sin_theta.len()],
+@@ -495,14 +920,16 @@ pub(crate) fn synthesize_order_block_partitioned_dispatched(
+         }
+     }
+     debug_assert_eq!(compact_count, normal_count);
+-    let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true> {
++    let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true, true> {
+         m,
+         lmax,
++        pair_start: 0,
+         cos_theta: &compact_theta_cos[..normal_count],
+         coefficient_a,
+         coefficient_b,
+         coefficient_even,
+         coefficient_odd,
++        previous_start: &[],
+         current: &current[..normal_count],
+         sum_re: &mut previous[..normal_count],
+         sum_im: &mut next[..normal_count],
+@@ -1647,24 +2074,31 @@ impl FusedSynthesisPrecision for f64 {
+     }
+ }
+ 
+-struct FusedSynthesisBlock<'a, T, const CHECK_RANGE: bool, const INITIALIZE_SUMS: bool>
+-where
++struct FusedSynthesisBlock<
++    'a,
++    T,
++    const CHECK_RANGE: bool,
++    const INITIALIZE_SUMS: bool,
++    const INITIALIZE_PREVIOUS: bool,
++> where
+     T: FusedSynthesisPrecision,
+ {
+     m: usize,
+     lmax: usize,
++    pair_start: usize,
+     cos_theta: &'a [T],
+     coefficient_a: &'a [T],
+     coefficient_b: &'a [T],
+     coefficient_even: &'a [Complex<T>],
+     coefficient_odd: &'a [Complex<T>],
++    previous_start: &'a [T],
+     current: &'a [T],
+     sum_re: &'a mut [T],
+     sum_im: &'a mut [T],
+ }
+ 
+-impl<T, const CHECK_RANGE: bool, const INITIALIZE_SUMS: bool> WithSimd
+-    for FusedSynthesisBlock<'_, T, CHECK_RANGE, INITIALIZE_SUMS>
++impl<T, const CHECK_RANGE: bool, const INITIALIZE_SUMS: bool, const INITIALIZE_PREVIOUS: bool>
++    WithSimd for FusedSynthesisBlock<'_, T, CHECK_RANGE, INITIALIZE_SUMS, INITIALIZE_PREVIOUS>
+ where
+     T: FusedSynthesisPrecision,
+ {
+@@ -1675,16 +2109,23 @@ where
+         let FusedSynthesisBlock {
+             m,
+             lmax,
++            pair_start,
+             cos_theta,
+             coefficient_a,
+             coefficient_b,
+             coefficient_even,
+             coefficient_odd,
++            previous_start,
+             current,
+             sum_re,
+             sum_im,
+         } = self;
+         let (cosine_vectors, cosine_tail) = T::as_simd::<S>(cos_theta);
++        let (previous_start_vectors, previous_start_tail) = if INITIALIZE_PREVIOUS {
++            (&[][..], &[][..])
++        } else {
++            T::as_simd::<S>(previous_start)
++        };
+         let (initial_vectors, initial_tail) = T::as_simd::<S>(current);
+         let (sum_re_vectors, sum_re_tail) = T::as_mut_simd::<S>(sum_re);
+         let (sum_im_vectors, sum_im_tail) = T::as_mut_simd::<S>(sum_im);
+@@ -1692,7 +2133,11 @@ where
+ 
+         for lane_block in 0..cosine_vectors.len() {
+             let cosine = cosine_vectors[lane_block];
+-            let mut previous = T::splat(simd, T::zero());
++            let mut previous = if INITIALIZE_PREVIOUS {
++                T::splat(simd, T::zero())
++            } else {
++                previous_start_vectors[lane_block]
++            };
+             let mut current = initial_vectors[lane_block];
+             let mut accumulated_re = if INITIALIZE_SUMS {
+                 T::splat(simd, T::zero())
+@@ -1704,7 +2149,7 @@ where
+             } else {
+                 sum_im_vectors[lane_block]
+             };
+-            for pair in 0..pair_count {
++            for pair in pair_start..pair_count {
+                 let coefficient_even = coefficient_even[pair];
+                 let coefficient_odd = coefficient_odd[pair];
+                 let coefficient_re = T::simd_mul_add(
+@@ -1744,7 +2189,11 @@ where
+ 
+         for lane in 0..cosine_tail.len() {
+             let cosine = cosine_tail[lane];
+-            let mut previous = T::zero();
++            let mut previous = if INITIALIZE_PREVIOUS {
++                T::zero()
++            } else {
++                previous_start_tail[lane]
++            };
+             let mut current = initial_tail[lane];
+             let mut accumulated_re = if INITIALIZE_SUMS {
+                 T::zero()
+@@ -1756,7 +2205,7 @@ where
+             } else {
+                 sum_im_tail[lane]
+             };
+-            for pair in 0..pair_count {
++            for pair in pair_start..pair_count {
+                 let coefficient_even = coefficient_even[pair];
+                 let coefficient_odd = coefficient_odd[pair];
+                 accumulated_re = current.mul_add(

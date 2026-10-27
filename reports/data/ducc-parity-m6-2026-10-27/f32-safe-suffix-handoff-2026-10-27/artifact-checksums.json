@@ -1,0 +1,26 @@
+{
+  "README.md": {
+    "bytes": 9723,
+    "sha256": "cf8d3bc1b40e32bef6ab8270e5285eb2df91034a3d7b0118e60109ce332c4991"
+  },
+  "candidate-production.patch": {
+    "bytes": 36750,
+    "sha256": "c05e0e349169804e1a9f1aae01b6538e8f2b11538f0f0240f09f9c254a2cfd61"
+  },
+  "group-timings.csv": {
+    "bytes": 340,
+    "sha256": "646bf80597572a5001dae275267f08b25072c9a3043c939e57ae953d54fe8603"
+  },
+  "route-counters.json": {
+    "bytes": 3059,
+    "sha256": "234fe8c5f31392712f9b3ce2407154c644a32c88d6906a2fcbcc0adbc84b2e4a"
+  },
+  "triad-results.csv": {
+    "bytes": 3733,
+    "sha256": "c2c9a2d56ccb32624698201411239d69bef90764a8b4676ae85c92740722d2b7"
+  },
+  "triad-results.json": {
+    "bytes": 251897,
+    "sha256": "be67f6c13502c396b2ff466e4f5a67dd985c58c8db054f6f0770b36f187ef827"
+  }
+}
