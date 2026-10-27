@@ -86,6 +86,53 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
         staged_imag[ring] = spectrum.im;
     }
 
+    if sin_theta.len() <= LATITUDE_BLOCK_SIZE {
+        <f32 as PairedScalarRecurrencePrecision>::initialize_pair_state(
+            m,
+            sin_theta,
+            sectoral_norm,
+            &mut previous[..sin_theta.len()],
+            &mut current[..sin_theta.len()],
+            &mut exponents[..sin_theta.len()],
+        )?;
+        let all_normal = <f32 as PairedScalarRecurrencePrecision>::normalize_pair_state(
+            &mut previous[..sin_theta.len()],
+            &mut current[..sin_theta.len()],
+            &mut exponents[..sin_theta.len()],
+        )?;
+        if all_normal {
+            let fused = arch.dispatch(FusedSynthesisBlock::<f32, true, false> {
+                m,
+                lmax,
+                cos_theta,
+                coefficient_a,
+                coefficient_b,
+                coefficient_even,
+                coefficient_odd,
+                current: &current[..sin_theta.len()],
+                sum_re: staged_real,
+                sum_im: staged_imag,
+            });
+            let finite_fused_sums = fused
+                && staged_real[..sin_theta.len()]
+                    .iter()
+                    .chain(&staged_imag[..sin_theta.len()])
+                    .all(|value| value.is_finite());
+            if finite_fused_sums {
+                for ring in 0..sin_theta.len() {
+                    let spectrum_index = ring * spectrum_len + output_order;
+                    spectra[spectrum_index] = Complex32::new(staged_real[ring], staged_imag[ring]);
+                }
+                return Ok(true);
+            }
+            for ring in 0..sin_theta.len() {
+                let spectrum = spectra[ring * spectrum_len + output_order];
+                staged_real[ring] = spectrum.re;
+                staged_imag[ring] = spectrum.im;
+            }
+        }
+    }
+
     let mut finite_sums = true;
     let recurrence_result = for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
         arch,
@@ -317,7 +364,7 @@ pub(crate) fn synthesize_order_block_precomputed_dispatched(
         return Ok(false);
     }
 
-    arch.dispatch(FusedSynthesisBlock {
+    let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true> {
         m,
         lmax,
         cos_theta,
@@ -329,6 +376,7 @@ pub(crate) fn synthesize_order_block_precomputed_dispatched(
         sum_re: &mut previous[..sin_theta.len()],
         sum_im: &mut next[..sin_theta.len()],
     });
+    debug_assert!(fused);
     for ring in 0..sin_theta.len() {
         spectra[ring * spectrum_len + output_order] += Complex64::new(previous[ring], next[ring]);
     }
@@ -394,7 +442,7 @@ pub(crate) fn synthesize_order_block_partitioned_dispatched(
         &mut exponents[..sin_theta.len()],
     )?;
     if all_normal {
-        arch.dispatch(FusedSynthesisBlock {
+        let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true> {
             m,
             lmax,
             cos_theta,
@@ -406,6 +454,7 @@ pub(crate) fn synthesize_order_block_partitioned_dispatched(
             sum_re: &mut previous[..sin_theta.len()],
             sum_im: &mut next[..sin_theta.len()],
         });
+        debug_assert!(fused);
         for ring in 0..sin_theta.len() {
             spectra[ring * spectrum_len + m] += Complex64::new(previous[ring], next[ring]);
         }
@@ -441,7 +490,7 @@ pub(crate) fn synthesize_order_block_partitioned_dispatched(
         }
     }
     debug_assert_eq!(compact_count, normal_count);
-    arch.dispatch(FusedSynthesisBlock {
+    let fused = arch.dispatch(FusedSynthesisBlock::<f64, false, true> {
         m,
         lmax,
         cos_theta: &compact_theta_cos[..normal_count],
@@ -453,6 +502,7 @@ pub(crate) fn synthesize_order_block_partitioned_dispatched(
         sum_re: &mut previous[..normal_count],
         sum_im: &mut next[..normal_count],
     });
+    debug_assert!(fused);
     for compact_ring in 0..normal_count {
         let ring = compact_ring_indices[compact_ring];
         spectra[ring * spectrum_len + m] +=
@@ -1426,24 +1476,197 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransiti
     }
 }
 
-struct FusedSynthesisBlock<'a> {
-    m: usize,
-    lmax: usize,
-    cos_theta: &'a [f64],
-    coefficient_a: &'a [f64],
-    coefficient_b: &'a [f64],
-    coefficient_even: &'a [Complex64],
-    coefficient_odd: &'a [Complex64],
-    current: &'a [f64],
-    sum_re: &'a mut [f64],
-    sum_im: &'a mut [f64],
+trait FusedSynthesisPrecision: PairedScalarRecurrencePrecision {
+    type Vector<S: Simd>: Copy;
+
+    fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]);
+    fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]);
+    fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S>;
+    fn simd_mul<S: Simd>(simd: S, left: Self::Vector<S>, right: Self::Vector<S>)
+    -> Self::Vector<S>;
+    fn simd_mul_add<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+        addend: Self::Vector<S>,
+    ) -> Self::Vector<S>;
+    fn vector_pair_needs_scaling<S: Simd>(
+        simd: S,
+        previous: Self::Vector<S>,
+        current: Self::Vector<S>,
+    ) -> bool;
+    fn value_in_normal_range(value: Self) -> bool;
 }
 
-impl WithSimd for FusedSynthesisBlock<'_> {
-    type Output = ();
+impl FusedSynthesisPrecision for f32 {
+    type Vector<S: Simd> = S::f32s;
 
     #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) {
+    fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]) {
+        S::as_simd_f32s(values)
+    }
+
+    #[inline(always)]
+    fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]) {
+        S::as_mut_simd_f32s(values)
+    }
+
+    #[inline(always)]
+    fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S> {
+        simd.splat_f32s(value)
+    }
+
+    #[inline(always)]
+    fn simd_mul<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+    ) -> Self::Vector<S> {
+        simd.mul_f32s(left, right)
+    }
+
+    #[inline(always)]
+    fn simd_mul_add<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+        addend: Self::Vector<S>,
+    ) -> Self::Vector<S> {
+        simd.mul_add_f32s(left, right, addend)
+    }
+
+    #[inline(always)]
+    fn vector_pair_needs_scaling<S: Simd>(
+        simd: S,
+        previous: Self::Vector<S>,
+        current: Self::Vector<S>,
+    ) -> bool {
+        let zero = simd.splat_f32s(0.0);
+        let small = simd.splat_f32s(Self::SMALL);
+        let big = simd.splat_f32s(Self::BIG);
+        let previous_magnitude = simd.abs_f32s(previous);
+        let current_magnitude = simd.abs_f32s(current);
+        let previous_valid = simd.and_m32s(
+            simd.less_than_or_equal_f32s(previous_magnitude, big),
+            simd.or_m32s(
+                simd.equal_f32s(previous_magnitude, zero),
+                simd.greater_than_or_equal_f32s(previous_magnitude, small),
+            ),
+        );
+        let current_valid = simd.and_m32s(
+            simd.less_than_or_equal_f32s(current_magnitude, big),
+            simd.or_m32s(
+                simd.equal_f32s(current_magnitude, zero),
+                simd.greater_than_or_equal_f32s(current_magnitude, small),
+            ),
+        );
+        let invalid = simd.or_m32s(simd.not_m32s(previous_valid), simd.not_m32s(current_valid));
+        simd.first_true_m32s(invalid) != S::F32_LANES
+    }
+
+    #[inline(always)]
+    fn value_in_normal_range(value: Self) -> bool {
+        value == 0.0 || (value.is_finite() && (Self::SMALL..=Self::BIG).contains(&value.abs()))
+    }
+}
+
+impl FusedSynthesisPrecision for f64 {
+    type Vector<S: Simd> = S::f64s;
+
+    #[inline(always)]
+    fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]) {
+        S::as_simd_f64s(values)
+    }
+
+    #[inline(always)]
+    fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]) {
+        S::as_mut_simd_f64s(values)
+    }
+
+    #[inline(always)]
+    fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S> {
+        simd.splat_f64s(value)
+    }
+
+    #[inline(always)]
+    fn simd_mul<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+    ) -> Self::Vector<S> {
+        simd.mul_f64s(left, right)
+    }
+
+    #[inline(always)]
+    fn simd_mul_add<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+        addend: Self::Vector<S>,
+    ) -> Self::Vector<S> {
+        simd.mul_add_f64s(left, right, addend)
+    }
+
+    #[inline(always)]
+    fn vector_pair_needs_scaling<S: Simd>(
+        simd: S,
+        previous: Self::Vector<S>,
+        current: Self::Vector<S>,
+    ) -> bool {
+        let zero = simd.splat_f64s(0.0);
+        let small = simd.splat_f64s(Self::SMALL);
+        let big = simd.splat_f64s(Self::BIG);
+        let previous_magnitude = simd.abs_f64s(previous);
+        let current_magnitude = simd.abs_f64s(current);
+        let previous_valid = simd.and_m64s(
+            simd.less_than_or_equal_f64s(previous_magnitude, big),
+            simd.or_m64s(
+                simd.equal_f64s(previous_magnitude, zero),
+                simd.greater_than_or_equal_f64s(previous_magnitude, small),
+            ),
+        );
+        let current_valid = simd.and_m64s(
+            simd.less_than_or_equal_f64s(current_magnitude, big),
+            simd.or_m64s(
+                simd.equal_f64s(current_magnitude, zero),
+                simd.greater_than_or_equal_f64s(current_magnitude, small),
+            ),
+        );
+        let invalid = simd.or_m64s(simd.not_m64s(previous_valid), simd.not_m64s(current_valid));
+        simd.first_true_m64s(invalid) != S::F64_LANES
+    }
+
+    #[inline(always)]
+    fn value_in_normal_range(value: Self) -> bool {
+        value == 0.0 || (value.is_finite() && (Self::SMALL..=Self::BIG).contains(&value.abs()))
+    }
+}
+
+struct FusedSynthesisBlock<'a, T, const CHECK_RANGE: bool, const INITIALIZE_SUMS: bool>
+where
+    T: FusedSynthesisPrecision,
+{
+    m: usize,
+    lmax: usize,
+    cos_theta: &'a [T],
+    coefficient_a: &'a [T],
+    coefficient_b: &'a [T],
+    coefficient_even: &'a [Complex<T>],
+    coefficient_odd: &'a [Complex<T>],
+    current: &'a [T],
+    sum_re: &'a mut [T],
+    sum_im: &'a mut [T],
+}
+
+impl<T, const CHECK_RANGE: bool, const INITIALIZE_SUMS: bool> WithSimd
+    for FusedSynthesisBlock<'_, T, CHECK_RANGE, INITIALIZE_SUMS>
+where
+    T: FusedSynthesisPrecision,
+{
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> bool {
         let FusedSynthesisBlock {
             m,
             lmax,
@@ -1456,42 +1679,56 @@ impl WithSimd for FusedSynthesisBlock<'_> {
             sum_re,
             sum_im,
         } = self;
-        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
-        let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
-        let (sum_re_vectors, sum_re_tail) = S::as_mut_simd_f64s(sum_re);
-        let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
+        let (cosine_vectors, cosine_tail) = T::as_simd::<S>(cos_theta);
+        let (initial_vectors, initial_tail) = T::as_simd::<S>(current);
+        let (sum_re_vectors, sum_re_tail) = T::as_mut_simd::<S>(sum_re);
+        let (sum_im_vectors, sum_im_tail) = T::as_mut_simd::<S>(sum_im);
         let pair_count = (lmax - m + 2) / 2;
 
         for lane_block in 0..cosine_vectors.len() {
             let cosine = cosine_vectors[lane_block];
-            let mut previous = simd.splat_f64s(0.0);
+            let mut previous = T::splat(simd, T::zero());
             let mut current = initial_vectors[lane_block];
-            let mut accumulated_re = simd.splat_f64s(0.0);
-            let mut accumulated_im = simd.splat_f64s(0.0);
+            let mut accumulated_re = if INITIALIZE_SUMS {
+                T::splat(simd, T::zero())
+            } else {
+                sum_re_vectors[lane_block]
+            };
+            let mut accumulated_im = if INITIALIZE_SUMS {
+                T::splat(simd, T::zero())
+            } else {
+                sum_im_vectors[lane_block]
+            };
             for pair in 0..pair_count {
                 let coefficient_even = coefficient_even[pair];
                 let coefficient_odd = coefficient_odd[pair];
-                let coefficient_re = simd.mul_add_f64s(
-                    simd.splat_f64s(coefficient_odd.re),
+                let coefficient_re = T::simd_mul_add(
+                    simd,
+                    T::splat(simd, coefficient_odd.re),
                     cosine,
-                    simd.splat_f64s(coefficient_even.re),
+                    T::splat(simd, coefficient_even.re),
                 );
-                let coefficient_im = simd.mul_add_f64s(
-                    simd.splat_f64s(coefficient_odd.im),
+                let coefficient_im = T::simd_mul_add(
+                    simd,
+                    T::splat(simd, coefficient_odd.im),
                     cosine,
-                    simd.splat_f64s(coefficient_even.im),
+                    T::splat(simd, coefficient_even.im),
                 );
-                accumulated_re = simd.mul_add_f64s(current, coefficient_re, accumulated_re);
-                accumulated_im = simd.mul_add_f64s(current, coefficient_im, accumulated_im);
+                accumulated_re = T::simd_mul_add(simd, current, coefficient_re, accumulated_re);
+                accumulated_im = T::simd_mul_add(simd, current, coefficient_im, accumulated_im);
 
                 if pair + 1 < pair_count {
-                    let cosine_squared = simd.mul_f64s(cosine, cosine);
-                    let leading = simd.mul_add_f64s(
-                        simd.splat_f64s(coefficient_a[pair]),
+                    let cosine_squared = T::simd_mul(simd, cosine, cosine);
+                    let leading = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, coefficient_a[pair]),
                         cosine_squared,
-                        simd.splat_f64s(coefficient_b[pair]),
+                        T::splat(simd, coefficient_b[pair]),
                     );
-                    let next = simd.mul_add_f64s(leading, current, previous);
+                    let next = T::simd_mul_add(simd, leading, current, previous);
+                    if CHECK_RANGE && T::vector_pair_needs_scaling(simd, current, next) {
+                        return false;
+                    }
                     previous = current;
                     current = next;
                 }
@@ -1502,10 +1739,18 @@ impl WithSimd for FusedSynthesisBlock<'_> {
 
         for lane in 0..cosine_tail.len() {
             let cosine = cosine_tail[lane];
-            let mut previous = 0.0;
+            let mut previous = T::zero();
             let mut current = initial_tail[lane];
-            let mut accumulated_re = 0.0;
-            let mut accumulated_im = 0.0;
+            let mut accumulated_re = if INITIALIZE_SUMS {
+                T::zero()
+            } else {
+                sum_re_tail[lane]
+            };
+            let mut accumulated_im = if INITIALIZE_SUMS {
+                T::zero()
+            } else {
+                sum_im_tail[lane]
+            };
             for pair in 0..pair_count {
                 let coefficient_even = coefficient_even[pair];
                 let coefficient_odd = coefficient_odd[pair];
@@ -1521,6 +1766,11 @@ impl WithSimd for FusedSynthesisBlock<'_> {
                 if pair + 1 < pair_count {
                     let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
                     let next = leading.mul_add(current, previous);
+                    if CHECK_RANGE
+                        && (!T::value_in_normal_range(current) || !T::value_in_normal_range(next))
+                    {
+                        return false;
+                    }
                     previous = current;
                     current = next;
                 }
@@ -1528,6 +1778,7 @@ impl WithSimd for FusedSynthesisBlock<'_> {
             sum_re_tail[lane] = accumulated_re;
             sum_im_tail[lane] = accumulated_im;
         }
+        true
     }
 }
 

@@ -596,6 +596,155 @@ fn f32_paired_accumulator_matches_direct_synthesis_and_declines_polar_orders() {
 }
 
 #[test]
+fn f32_fused_synthesis_matches_reference_and_declines_overflowing_sums() {
+    let m = 0;
+    let lmax = 8;
+    let sin_theta = (0..17)
+        .map(|ring| 0.25_f32 + 0.1 * (ring % 6) as f32)
+        .collect::<Vec<_>>();
+    let cos_theta = sin_theta
+        .iter()
+        .map(|sine| (1.0 - sine * sine).sqrt())
+        .collect::<Vec<_>>();
+    let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+    let mut seed_previous = vec![0.0_f32; sin_theta.len()];
+    let mut seed_current = vec![0.0_f32; sin_theta.len()];
+    let mut seed_exponents = vec![0_i64; sin_theta.len()];
+    <f32 as crate::legendre::scalar_paired::PairedScalarRecurrencePrecision>::initialize_pair_state(
+        m,
+        &sin_theta,
+        sectoral_norm,
+        &mut seed_previous,
+        &mut seed_current,
+        &mut seed_exponents,
+    )
+    .unwrap();
+    assert!(
+        <f32 as crate::legendre::scalar_paired::PairedScalarRecurrencePrecision>::normalize_pair_state(
+            &mut seed_previous,
+            &mut seed_current,
+            &mut seed_exponents,
+        )
+        .unwrap()
+    );
+
+    let expected_basis = values_over_geometry(Arch::Scalar, m, lmax, &sin_theta, &cos_theta);
+    let coefficients = (0..=lmax)
+        .map(|degree| Complex32::new(0.17 * (degree + 1) as f32, 0.0))
+        .collect::<Vec<_>>();
+    let mut epsilon = vec![0.0_f32; lmax + 4];
+    fill_epsilon(m, lmax, &mut epsilon);
+    let factor_count = lmax / 2 + 2;
+    let mut alpha = vec![0.0_f32; factor_count];
+    let mut coefficient_a = vec![0.0_f32; factor_count];
+    let mut coefficient_b = vec![0.0_f32; factor_count];
+    assert!(fill_paired_scalar_factors(
+        m,
+        lmax,
+        &epsilon,
+        &mut alpha,
+        &mut coefficient_a,
+        &mut coefficient_b,
+    ));
+    let pair_count = (lmax - m + 2) / 2;
+    let mut coefficient_even = vec![Complex32::new(0.0, 0.0); pair_count];
+    let mut coefficient_odd = coefficient_even.clone();
+    assert!(
+        super::super::super::scalar_paired::prepare_synthesis_coefficients(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &coefficients,
+            &mut coefficient_even,
+            &mut coefficient_odd,
+        )
+    );
+
+    let spectrum_len = m + 1;
+    let ring_order_limits = vec![m; sin_theta.len()];
+    let seed = Complex32::new(0.125, -0.25);
+    let original_spectra = vec![seed; sin_theta.len() * spectrum_len];
+    for arch in [Arch::Scalar, Arch::new()] {
+        let mut spectra = original_spectra.clone();
+        let mut previous = vec![0.0_f32; sin_theta.len()];
+        let mut current = vec![0.0_f32; sin_theta.len()];
+        let mut next = vec![0.0_f32; sin_theta.len()];
+        let mut exponents = vec![0_i64; sin_theta.len()];
+        let mut staged_real = vec![0.0_f32; sin_theta.len()];
+        let mut staged_imag = vec![0.0_f32; sin_theta.len()];
+        assert!(
+            synthesize_paired_scalar_order_prepared_f32(
+                arch,
+                m,
+                m,
+                lmax,
+                &sin_theta,
+                &cos_theta,
+                sectoral_norm,
+                &coefficient_a,
+                &coefficient_b,
+                &coefficient_even,
+                &coefficient_odd,
+                &ring_order_limits,
+                spectrum_len,
+                &mut spectra,
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+                &mut staged_real,
+                &mut staged_imag,
+            )
+            .unwrap()
+        );
+        for ring in 0..sin_theta.len() {
+            let direct = coefficients
+                .iter()
+                .zip(&expected_basis)
+                .fold(Complex32::new(0.0, 0.0), |sum, (&coefficient, basis)| {
+                    sum + coefficient * basis[ring]
+                });
+            let expected = original_spectra[ring * spectrum_len + m] + direct;
+            let actual = spectra[ring * spectrum_len + m];
+            assert!(
+                (actual - expected).norm() <= 2.0e-5 * (1.0 + expected.norm()),
+                "arch={arch:?}, ring={ring}, actual={actual:?}, expected={expected:?}"
+            );
+        }
+
+        let too_large = vec![Complex32::new(f32::MAX, 0.0); pair_count];
+        let mut declined = original_spectra.clone();
+        assert!(
+            !synthesize_paired_scalar_order_prepared_f32(
+                arch,
+                m,
+                m,
+                lmax,
+                &sin_theta,
+                &cos_theta,
+                sectoral_norm,
+                &coefficient_a,
+                &coefficient_b,
+                &too_large,
+                &too_large,
+                &ring_order_limits,
+                spectrum_len,
+                &mut declined,
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+                &mut staged_real,
+                &mut staged_imag,
+            )
+            .unwrap()
+        );
+        assert_eq!(declined, original_spectra);
+    }
+}
+
+#[test]
 fn f32_paired_factor_limit_covers_supported_lmax_for_every_order() {
     for lmax in [255, 511, 720, 1023] {
         let mut epsilon = vec![0.0; lmax + 4];
