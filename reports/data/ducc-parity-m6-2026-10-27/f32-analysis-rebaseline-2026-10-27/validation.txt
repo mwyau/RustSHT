@@ -1,0 +1,11 @@
+Parent source: 8c4dba98fbc4cf7fe3499c7353cde6c18b7d457f
+Current production source: 3189fe8ee49f125d0d4569549fb880a6b6468bb8
+Current build worktree: 3c4df77e43a46eac5d38d6c94b01e161f2477fe7
+DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+
+- Parent and current Rust release f32 workers built successfully with all features.
+- Pinned DUCC 0.42.0 C++ worker configured and built successfully.
+- Eight GL T720 scalar/spin-1 analysis full/reduced q1/q8 cells completed, with three interleaved parent/current/DUCC triplets per cell.
+- All 72 worker runs passed finite-output, repeat, and workspace-reset checks.
+- Current and parent output files were bitwise identical in every triplet.
+- No production source or test files changed during this rebaseline; no test suite was rerun.
