@@ -27,7 +27,7 @@ The executed scratch runner SHA-256 is retained in the JSON. The archived runner
 | [Pre-screen checkpoint](pair-safety-prescreen.md) | — | Focused validation passed. Two runner setup failures produced no retained timing data; the second ran one parent q1 worker through its batches before output serialization failed. Exact scratch and worktrees were removed. |
 | [Pre-screen details JSON](pair-safety-prescreen.json) | — | Compact build, fixture, attempt, and cleanup provenance; no worker snapshots or local paths. |
 
-Retry the matched q1/q8 screen in a fresh scratch root after fixing the runner's eager fallback path evaluation. The candidate has not been accepted or rejected on performance.
+The pre-screen record is retained as setup history. The corrected matched screen completed; see the final result section below.
 
 ## Reproduction outline
 
@@ -82,3 +82,19 @@ python3 scripts/benchmark_ducc_f32_native.py \
 ```
 
 The q8 f32 scalar cases had elevated runqueue wait. Preserve that telemetry when comparing later runs; three pairs are a triage screen, not a confidence interval.
+
+
+### Paired Q/U safety scan candidate — final matched screen
+
+The corrected runner completed three balanced parent/candidate/DUCC triplets at q1 and q8. The candidate was rejected after near-parity medians and no supported repeatable gain. Exact source patch SHA-256 is c71b5e36e5c953dbfbfcafdc389226ab045d242292cd17dafb76318093757071. The measured parent was d3aeb208222d4142217f4c59b83f712b0945d4a6; its production source matches 469f175a905df34b4514a9f21db391a424adbe15, the patch's originating parent. Full method, decision and limitations are in the [screen report](pair-safety-screen-2026-10-27.md).
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Triplet results JSON](pair-safety-triplets.json) | 64f1efbb34ac173c894b8480dd9d6c62839e90cb032f52e6f1fbb3fde5bd015f | Six triplets of process medians, correctness, numerical errors, output hashes and build provenance; host and worker snapshots omitted. |
+| [Triplet summary CSV](pair-safety-triplets.csv) | 7172c3431e6f19607fce88fbebf3969f1fcc22774c0c7181aefc43d188e0ad63 | One row per q1/q8 triplet with timings, ratios, checks, errors, wait, frequency and output hashes. |
+| [Triplet runner](pair-safety-triplet-runner.py) | 925a928a68f10797bf3be64dc22a989737e247043f9b25069c35c84d3493eaac | Corrected portable runner used for the final screen; creates its results directory before workers start. |
+| [Candidate source patch](pair-safety-candidate.patch) | c71b5e36e5c953dbfbfcafdc389226ab045d242292cd17dafb76318093757071 | Recoverable zero-context source diff; not applied to production. |
+
+The run used the GL T720 full-mmax spin-1 analysis case and pinned DUCC 0.42.0. Rust parent/candidate outputs were bitwise identical in all six triplets. The M6 timing gap remains open.
+
+Cleanup removed only scratch root rustsht-m6-pair-safety-final.65icJ7y4 and its two registered worktrees after evidence verification. It contained 55,863 files (1,756,628 KiB allocated; 1,620,623 KiB apparent). The root and worktree registrations are absent; tmpfs available space rose by 1,798,787,072 bytes and free inodes by 65,223. No experiment worker remained.
