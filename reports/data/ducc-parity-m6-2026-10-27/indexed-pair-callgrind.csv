@@ -1,0 +1,12 @@
+backend,scope,label,instruction_references,percent_of_program,notes
+parent,inclusive,program total,613507756,100.00,"One warmed CC T720 reduced synthesis transform; inclusive lines overlap"
+candidate,inclusive,program total,612782575,100.00,"One warmed CC T720 reduced synthesis transform; inclusive lines overlap"
+delta,program,whole program Ir reduction,-725181,-0.1182,"Candidate minus parent; reduction is 0.1182%"
+parent,direct,core iter/adapters/zip.rs in FusedPrepared V3 vectorizer,61710544,10.06,"Attributed to nested zip iterator body"
+candidate,direct,core iter/adapters/zip.rs in FusedPrepared V3 vectorizer,0,0.00,"No zip.rs row in candidate Callgrind annotation"
+candidate,direct,core cmp.rs in FusedPrepared V3 vectorizer,52922528,8.64,"Indexed access / comparison path"
+candidate,direct,core iter/range.rs in FusedPrepared V3 vectorizer,8883496,1.45,"Indexed pair loop path"
+parent,direct,core x86 fma.rs in FusedPrepared V3 vectorizer,167416720,27.29,"Vector arithmetic"
+candidate,direct,core x86 fma.rs in FusedPrepared V3 vectorizer,167416720,27.32,"Vector arithmetic unchanged"
+parent,direct,scalar_paired/synthesis.rs FusedPrepared with_simd,18730472,3.05,"Direct source attribution"
+candidate,direct,scalar_paired/synthesis.rs FusedPrepared with_simd,19180096,3.13,"Direct source attribution"

@@ -1,0 +1,17 @@
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index cfc81f3d..1725cf30 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -699,8 +699,10 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+     });
+     for ring in 0..sin_theta.len() {
+         let spectrum_index = ring * spectrum_len + output_order;
+-        first_spectra[spectrum_index] += Complex64::new(first_sum_re[ring], first_sum_im[ring]);
+-        second_spectra[spectrum_index] += Complex64::new(second_sum_re[ring], second_sum_im[ring]);
++        first_spectra[spectrum_index] =
++            Complex64::new(0.0 + first_sum_re[ring], 0.0 + first_sum_im[ring]);
++        second_spectra[spectrum_index] =
++            Complex64::new(0.0 + second_sum_re[ring], 0.0 + second_sum_im[ring]);
+     }
+     Ok(true)
+ }

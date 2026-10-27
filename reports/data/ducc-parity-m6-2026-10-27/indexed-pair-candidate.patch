@@ -1,0 +1,84 @@
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index cfc81f3d..9a1340e9 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -1588,14 +1588,6 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+         let (first_sum_im_vectors, first_sum_im_tail) = S::as_mut_simd_f64s(first_sum_im);
+         let (second_sum_re_vectors, second_sum_re_tail) = S::as_mut_simd_f64s(second_sum_re);
+         let (second_sum_im_vectors, second_sum_im_tail) = S::as_mut_simd_f64s(second_sum_im);
+-        let coefficient_pairs = coefficient_a
+-            .iter()
+-            .zip(coefficient_b)
+-            .zip(first_even)
+-            .zip(first_odd)
+-            .zip(second_even)
+-            .zip(second_odd)
+-            .enumerate();
+         for lane_block in 0..cosine_vectors.len() {
+             let cosine = cosine_vectors[lane_block];
+             let mut previous = simd.splat_f64s(0.0);
+@@ -1604,14 +1596,13 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             let mut first_im = simd.splat_f64s(0.0);
+             let mut second_re = simd.splat_f64s(0.0);
+             let mut second_im = simd.splat_f64s(0.0);
+-            for (
+-                pair,
+-                (
+-                    ((((coefficient_a, coefficient_b), first_even), first_odd), second_even),
+-                    second_odd,
+-                ),
+-            ) in coefficient_pairs.clone()
+-            {
++            for pair in 0..pair_count {
++                let coefficient_a = coefficient_a[pair];
++                let coefficient_b = coefficient_b[pair];
++                let first_even = first_even[pair];
++                let first_odd = first_odd[pair];
++                let second_even = second_even[pair];
++                let second_odd = second_odd[pair];
+                 let first_coefficient_re = simd.mul_add_f64s(
+                     simd.splat_f64s(first_odd.re),
+                     cosine,
+@@ -1640,9 +1631,9 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+                 if pair + 1 < pair_count {
+                     let cosine_squared = simd.mul_f64s(cosine, cosine);
+                     let leading = simd.mul_add_f64s(
+-                        simd.splat_f64s(*coefficient_a),
++                        simd.splat_f64s(coefficient_a),
+                         cosine_squared,
+-                        simd.splat_f64s(*coefficient_b),
++                        simd.splat_f64s(coefficient_b),
+                     );
+                     let next = simd.mul_add_f64s(leading, current, previous);
+                     previous = current;
+@@ -1663,14 +1654,13 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             let mut first_im = 0.0;
+             let mut second_re = 0.0;
+             let mut second_im = 0.0;
+-            for (
+-                pair,
+-                (
+-                    ((((coefficient_a, coefficient_b), first_even), first_odd), second_even),
+-                    second_odd,
+-                ),
+-            ) in coefficient_pairs.clone()
+-            {
++            for pair in 0..pair_count {
++                let coefficient_a = coefficient_a[pair];
++                let coefficient_b = coefficient_b[pair];
++                let first_even = first_even[pair];
++                let first_odd = first_odd[pair];
++                let second_even = second_even[pair];
++                let second_odd = second_odd[pair];
+                 first_re = current.mul_add(first_odd.re.mul_add(cosine, first_even.re), first_re);
+                 first_im = current.mul_add(first_odd.im.mul_add(cosine, first_even.im), first_im);
+                 second_re =
+@@ -1679,7 +1669,7 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+                     current.mul_add(second_odd.im.mul_add(cosine, second_even.im), second_im);
+ 
+                 if pair + 1 < pair_count {
+-                    let leading = coefficient_a.mul_add(cosine * cosine, *coefficient_b);
++                    let leading = coefficient_a.mul_add(cosine * cosine, coefficient_b);
+                     let next = leading.mul_add(current, previous);
+                     previous = current;
+                     current = next;

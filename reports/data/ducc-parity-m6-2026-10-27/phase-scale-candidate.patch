@@ -1,0 +1,57 @@
+diff --git a/src/transform/spin/analysis.rs b/src/transform/spin/analysis.rs
+index 2250374e..f5892fd9 100644
+--- a/src/transform/spin/analysis.rs
++++ b/src/transform/spin/analysis.rs
+@@ -3,6 +3,14 @@
+ 
+ use super::*;
+ 
++#[inline(always)]
++fn rotate_spectrum_by_phase<T: ShtScalar>(spectrum: Complex<T>, phase: Complex<T>) -> Complex<T> {
++    Complex::new(
++        spectrum.re.mul_add(phase.re, -(spectrum.im * phase.im)),
++        spectrum.im.mul_add(phase.re, spectrum.re * phase.im),
++    )
++}
++
+ #[allow(private_bounds)]
+ impl<T: ShtScalar> ShtPlan<T> {
+     #[expect(
+@@ -660,23 +668,33 @@ impl<T: ShtScalar> ShtPlan<T> {
+ 
+                 let north_spectrum_start = north_ring * spectrum_len + m;
+                 let south_spectrum_start = south_ring * spectrum_len + m;
++                let north_phase = if north_active {
++                    phase * ring_scales[north_ring]
++                } else {
++                    Complex::new(T::zero(), T::zero())
++                };
++                let south_phase = if south_active {
++                    phase * ring_scales[south_ring]
++                } else {
++                    Complex::new(T::zero(), T::zero())
++                };
+                 let north_q = if north_active {
+-                    q_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
++                    rotate_spectrum_by_phase(q_spectra[north_spectrum_start], north_phase)
+                 } else {
+                     Complex::new(T::zero(), T::zero())
+                 };
+                 let south_q = if south_active {
+-                    q_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
++                    rotate_spectrum_by_phase(q_spectra[south_spectrum_start], south_phase)
+                 } else {
+                     Complex::new(T::zero(), T::zero())
+                 };
+                 let north_u = if north_active {
+-                    u_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
++                    rotate_spectrum_by_phase(u_spectra[north_spectrum_start], north_phase)
+                 } else {
+                     Complex::new(T::zero(), T::zero())
+                 };
+                 let south_u = if south_active {
+-                    u_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
++                    rotate_spectrum_by_phase(u_spectra[south_spectrum_start], south_phase)
+                 } else {
+                     Complex::new(T::zero(), T::zero())
+                 };

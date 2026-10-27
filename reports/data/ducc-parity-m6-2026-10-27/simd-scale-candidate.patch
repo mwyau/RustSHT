@@ -1,0 +1,106 @@
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index cfc81f3d..a17e3322 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -681,6 +681,9 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+     )? {
+         return Ok(false);
+     }
++    for ring in 0..sin_theta.len() {
++        previous[ring] = sin_theta[ring].recip();
++    }
+ 
+     arch.dispatch(FusedPreparedSynthesisPairBlock {
+         pair_count,
+@@ -692,6 +695,7 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+         second_even,
+         second_odd,
+         current: &current[..sin_theta.len()],
++        inverse_sine: &previous[..sin_theta.len()],
+         first_sum_re: &mut first_sum_re[..sin_theta.len()],
+         first_sum_im: &mut first_sum_im[..sin_theta.len()],
+         second_sum_re: &mut second_sum_re[..sin_theta.len()],
+@@ -1556,6 +1560,7 @@ struct FusedPreparedSynthesisPairBlock<'a> {
+     second_even: &'a [Complex64],
+     second_odd: &'a [Complex64],
+     current: &'a [f64],
++    inverse_sine: &'a [f64],
+     first_sum_re: &'a mut [f64],
+     first_sum_im: &'a mut [f64],
+     second_sum_re: &'a mut [f64],
+@@ -1577,6 +1582,7 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             second_even,
+             second_odd,
+             current,
++            inverse_sine,
+             first_sum_re,
+             first_sum_im,
+             second_sum_re,
+@@ -1584,6 +1590,7 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+         } = self;
+         let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+         let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
++        let (inverse_sine_vectors, inverse_sine_tail) = S::as_simd_f64s(inverse_sine);
+         let (first_sum_re_vectors, first_sum_re_tail) = S::as_mut_simd_f64s(first_sum_re);
+         let (first_sum_im_vectors, first_sum_im_tail) = S::as_mut_simd_f64s(first_sum_im);
+         let (second_sum_re_vectors, second_sum_re_tail) = S::as_mut_simd_f64s(second_sum_re);
+@@ -1598,6 +1605,7 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             .enumerate();
+         for lane_block in 0..cosine_vectors.len() {
+             let cosine = cosine_vectors[lane_block];
++            let inverse_sine = inverse_sine_vectors[lane_block];
+             let mut previous = simd.splat_f64s(0.0);
+             let mut current = initial_vectors[lane_block];
+             let mut first_re = simd.splat_f64s(0.0);
+@@ -1649,14 +1657,15 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+                     current = next;
+                 }
+             }
+-            first_sum_re_vectors[lane_block] = first_re;
+-            first_sum_im_vectors[lane_block] = first_im;
+-            second_sum_re_vectors[lane_block] = second_re;
+-            second_sum_im_vectors[lane_block] = second_im;
++            first_sum_re_vectors[lane_block] = simd.mul_f64s(first_re, inverse_sine);
++            first_sum_im_vectors[lane_block] = simd.mul_f64s(first_im, inverse_sine);
++            second_sum_re_vectors[lane_block] = simd.mul_f64s(second_re, inverse_sine);
++            second_sum_im_vectors[lane_block] = simd.mul_f64s(second_im, inverse_sine);
+         }
+ 
+         for lane in 0..cosine_tail.len() {
+             let cosine = cosine_tail[lane];
++            let inverse_sine = inverse_sine_tail[lane];
+             let mut previous = 0.0;
+             let mut current = initial_tail[lane];
+             let mut first_re = 0.0;
+@@ -1685,10 +1694,10 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+                     current = next;
+                 }
+             }
+-            first_sum_re_tail[lane] = first_re;
+-            first_sum_im_tail[lane] = first_im;
+-            second_sum_re_tail[lane] = second_re;
+-            second_sum_im_tail[lane] = second_im;
++            first_sum_re_tail[lane] = first_re * inverse_sine;
++            first_sum_im_tail[lane] = first_im * inverse_sine;
++            second_sum_re_tail[lane] = second_re * inverse_sine;
++            second_sum_im_tail[lane] = second_im * inverse_sine;
+         }
+     }
+ }
+diff --git a/src/transform/spin/synthesis.rs b/src/transform/spin/synthesis.rs
+index 4a19614e..1dee9c09 100644
+--- a/src/transform/spin/synthesis.rs
++++ b/src/transform/spin/synthesis.rs
+@@ -1991,12 +1991,6 @@ impl<T: ShtScalar> ShtPlan<T> {
+                         profile.ordinary_fused_lane_pair_work +=
+                             (block_len * coefficient_pair_count) as u128;
+                     }
+-                    for (ring, &sin_theta) in theta_sin.iter().enumerate() {
+-                        let spectrum_index = ring * spectrum_len + output_order;
+-                        let inverse_sine = sin_theta.recip();
+-                        q_spectra[spectrum_index] *= inverse_sine;
+-                        u_spectra[spectrum_index] *= inverse_sine;
+-                    }
+                     return Ok(());
+                 }
+             }
