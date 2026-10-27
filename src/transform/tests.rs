@@ -5082,6 +5082,19 @@ fn fine_synthesis_groups_follow_the_measured_spin_and_grid_policy() {
     assert_eq!(reduced_order.fine_synthesis_ring_group_size(8), None);
     assert_eq!(reduced_workspace.ring_group_size, 64);
 
+    let f32_scalar_t720: ShtPlan<f32> = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, 721, 1443, 0.37).unwrap(),
+        HarmonicSpec::scalar(720, 180).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(f32_scalar_t720.fine_synthesis_ring_group_size(1), None);
+    assert_eq!(f32_scalar_t720.fine_synthesis_ring_group_size(8), Some(32));
+    let f32_workspace = eight_threads
+        .install(|| f32_scalar_t720.workspace())
+        .unwrap();
+    assert_eq!(f32_workspace.ring_group_size, 64);
+    assert_eq!(f32_workspace.recurrence_workers.len(), 23);
+
     let cc_plan = make_cc_plan(720, 720, 722, 1443, 0.37);
     let cc_workspace = eight_threads.install(|| cc_plan.workspace()).unwrap();
     assert_eq!(cc_plan.fine_synthesis_ring_group_size(8), None);

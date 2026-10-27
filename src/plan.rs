@@ -439,12 +439,34 @@ impl<T: ShtScalar> ShtPlan<T> {
         execution_capacity: usize,
     ) -> Option<usize> {
         let lmax = self.harmonics.lmax();
-        if !T::supports_precomputed_scalar()
-            || self.grid.kind() != crate::grid::GridKind::GaussLegendre
+        if self.grid.kind() != crate::grid::GridKind::GaussLegendre
             || self.grid.ntheta() != lmax + 1
-            || self.harmonics.mmax() != lmax
             || !(511..=720).contains(&lmax)
         {
+            return None;
+        }
+
+        // At GL T720, the measured native-f32 scalar-synthesis q8 work is
+        // strongly uneven across 64-ring jobs. Split those jobs in half only
+        // when the existing f32 policy already schedules one group per task.
+        // The recurrence and scaled/polar fallback stay unchanged, and
+        // prepare_workspace uses this selector to reserve worker scratch.
+        if !T::supports_precomputed_scalar() {
+            if self.harmonics.spin() != 0 || lmax != 720 || execution_capacity < 8 {
+                return None;
+            }
+            let base_group_size = ShtWorkspace::<T>::ring_group_size_for_capacity(
+                self.grid.ntheta(),
+                execution_capacity,
+            )
+            .ok()?;
+            let base_group_count = self.grid.ntheta().div_ceil(base_group_size);
+            return (base_group_size == 64
+                && T::prefers_fine_scalar_synthesis_groups(base_group_count, execution_capacity))
+            .then_some(32);
+        }
+
+        if self.harmonics.mmax() != lmax {
             return None;
         }
 
