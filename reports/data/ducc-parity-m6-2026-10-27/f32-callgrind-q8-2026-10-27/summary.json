@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-27",
+  "workload": {
+    "operation": "synthesis",
+    "spin": 0,
+    "grid": "GL",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.23,
+    "parallelism": 8,
+    "output_samples": 1051218,
+    "precision": "f32"
+  },
+  "sources": {
+    "rustsht_parent": "972bacdaef57388509738d1c2cdebbb7973b89be",
+    "rustsht_current": "a30537bdcfa0fc5273985abfd592998325a608de",
+    "ducc_version": "0.42.0",
+    "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b"
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 5950X",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "gxx": "15.2.0",
+    "cmake": "4.2.3",
+    "valgrind": "3.26.0",
+    "target_cpu": "x86-64-v3",
+    "rust_flags": "--locked --release --features parallel --example ducc_f32_full_transform_parity; CARGO_PROFILE_RELEASE_DEBUG=2",
+    "ducc_flags": "-O3 -DNDEBUG -g -ffast-math -ffp-contract=fast -march=x86-64-v3; adapter retained -fno-fast-math"
+  },
+  "fixture_sha256": {
+    "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+    "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+  },
+  "profiles": [
+    {"label": "parent", "file": "profiles/parent-T720-q8.callgrind.gz", "Ir": 9609850325},
+    {"label": "current", "file": "profiles/current-T720-q8.callgrind.gz", "Ir": 8465515501},
+    {"label": "current_instruction_detail", "file": "profiles/current-T720-q8-instr.callgrind.gz", "Ir": 8465208796},
+    {"label": "ducc", "file": "profiles/ducc-T720-q8.callgrind.gz", "Ir": 252805383},
+    {"label": "ducc_instruction_detail", "file": "profiles/ducc-T720-q8-instr.callgrind.gz", "Ir": 252805704}
+  ],
+  "derived": {
+    "current_vs_parent_ir_ratio": 0.880920640249,
+    "current_ir_reduction_percent_vs_parent": 11.907936,
+    "current_vs_ducc_ir_ratio": 33.486294478943,
+    "parent_vs_ducc_ir_ratio": 38.012839010631,
+    "current_ir_per_output_sample": 8053.054172398,
+    "ducc_ir_per_output_sample": 240.488065273
+  },
+  "output_map0": {
+    "bytes": 4204872,
+    "parent_sha256": "55ae238d9ec96e66b7d888fdd99646dedf28be1dff0d93261200c0195f93b8b2",
+    "current_sha256": "260e35799c6f8d3c505fc9d6f2cc5bdbd5443e03d4e75e4d488044904066d45d",
+    "ducc_sha256": "8b0ebf91d2af1961a2fc66eacb82329b7612f11813f2850daa28c5b28cae77d4",
+    "all_finite": true,
+    "parent_vs_current_relative_l2": 3.940015492582086e-7,
+    "parent_vs_current_max_abs": 7.197260856628418e-6,
+    "current_vs_ducc_relative_l2": 1.7234307359793145e-4,
+    "current_vs_ducc_max_abs": 9.644031524658203e-4
+  },
+  "attribution": {
+    "multiply_complex_scaled_f32_calls": 20886428,
+    "multiply_complex_scaled_f32_inclusive_Ir": 3314613059,
+    "multiply_complex_scaled_f32_share_percent": 39.15,
+    "fallback_traversal_inclusive_Ir_approx": 3450000000,
+    "fallback_traversal_share_percent_approx": 40.78,
+    "ducc_calc_alm2map_calls": 1139,
+    "ducc_calc_alm2map_inclusive_subtree_Ir": 150669396
+  },
+  "notes": [
+    "Ir are Callgrind instruction references, not cycles or elapsed time.",
+    "The full-profile and instruction-detail totals are not additive; their small difference is profile variation.",
+    "Nested and inlined source costs overlap and must not be summed.",
+    "Valgrind logs show a non-fatal Rust brk segment overflow warning; collected totals agree with profile files.",
+    "The all-normal fused-block route count of 1744/5499 comes from a separate trace at parent 972bacda, not this current-source profile."
+  ]
+}

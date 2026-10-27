@@ -4,6 +4,12 @@
 
 **Latest accepted source slice:** RustSHT `a30537bdcfa0fc5273985abfd592998325a608de`, exact parent `972bacdaef57388509738d1c2cdebbb7973b89be`. This focused GL T720 scalar-synthesis screen shares the degree-pair recurrence and complex accumulation across f32/f64 while retaining typed SIMD leaves and transactional f32 fallback. Across full/reduced mmax, q1 candidate/DUCC was 47.66×/34.36×; q8 was 140.90×/117.24×. The four cells remain substantial f32 DUCC gaps; the [focused report](data/ducc-parity-m6-2026-10-27/f32-fused-synthesis-2026-10-27/README.md) contains matched medians, errors, validation, and provenance. This slice is not a current full-matrix baseline.
 
+## GL T720 f32 scalar-synthesis q8 Callgrind attribution — 2026-10-27
+
+One warmed transform was profiled at current source `a30537bd` against exact parent `972bacda` and pinned DUCC `42ce8ab5`. The current whole-call profile collected **8,465,515,501 Ir**, versus **9,609,850,325** for the parent and **252,805,383** for DUCC. This is an 11.91% instruction-count reduction from the parent, not a cycle or elapsed-time measurement. The separate whole-transform timing screen recorded candidate/parent `0.9846` and candidate/DUCC `140.90×` for this q8 cell; parity remains far off. Output stayed finite; candidate/parent relative L2 was `3.9400e-7`, and candidate/DUCC was `1.72343e-4`. The [evidence folder](data/ducc-parity-m6-2026-10-27/f32-callgrind-q8-2026-10-27/README.md) preserves compressed valid profiles, temporary instrumentation patch, disassembly, source/fixture/output hashes, and Valgrind warning details.
+
+`multiply_complex_scaled_f32` accounts for 39.15% inclusive Ir, while the paired fallback traversal is about 40.78% inclusive, including nested calls; do not add these nested counts. The all-normal fused SIMD block executes but admits only fully normal blocks. A separate trace at parent `972bacda` saw 1,744/5,499 blocks eligible. Next investigate a per-lane safe mask for mixed blocks, preserving full fallback for unsafe lanes and transactional output.
+
 This fresh baseline covers six f64 spin-1 controls and all 16 native-f32 GL T720 scalar/spin-1 analysis/synthesis full/reduced q1/q8 cells. Three interleaved fresh-process pairs ran per cell; the ranges below are descriptive triage ranges, not confidence intervals. All 22 cells passed finite, repeat, and reset checks. The existing f32 integration suite passed: 11 passed, 1 ignored, 0 failed. No production code changed in this baseline.
 
 ## Latest f64 cells
