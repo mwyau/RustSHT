@@ -1,0 +1,129 @@
+{
+  "schema": "rustsht-m6-callgrind-profile-v1",
+  "production_source": {
+    "commit": "98adf1e6b5334021bfe6ae9abb618c6be167a822",
+    "changed_for_profile": false,
+    "sha256": {
+      "src/legendre/scalar.rs": "8aa0bdf308cb433757717608fd5178afd4b1ef3510f390e259127b2d7cb1081a",
+      "src/legendre/scalar_paired/synthesis.rs": "1870d0f166b8c06f9b20a5e13e32744246abffe9ebc118991f9a39557cbee560",
+      "src/legendre/numeric.rs": "931b89154bd560d0f083630b86c5dc67e5b60793b4f79cb9e31b79c5ab17dc0f"
+    }
+  },
+  "case": {
+    "precision": "f32",
+    "grid": "GL",
+    "spin": 0,
+    "operation": "synthesis",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.23,
+    "threads": 8,
+    "affinity": "fixed 8-CPU set; identifiers omitted"
+  },
+  "current_head_baseline": {
+    "source_commit": "98adf1e6b5334021bfe6ae9abb618c6be167a822",
+    "rust_median_ms": 373.029917,
+    "ducc_median_ms": 2.659961125,
+    "rust_to_ducc_ratio": 139.61267049225432,
+    "max_relative_l2": 0.0001723423314440394,
+    "max_absolute_error": 0.0009644031524658203,
+    "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_profiled_this_experiment": false
+  },
+  "fixtures": {
+    "generator": "scripts/benchmark_ducc_f32_native.py",
+    "generator_sha256": "70033f7251358128783f35d7aefa527fa957abce5513571db1142e92e6e38ff0",
+    "alm0_sha256": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96"
+  },
+  "profile": {
+    "tool": "Callgrind",
+    "version": "3.26.0",
+    "events": "Ir",
+    "total_ir": 13863893209,
+    "raw_profile_sha256": "b8eca1f1e064102b178cf62050ac15d46002dfbb886eb72758b7b440076d86e9",
+    "raw_profile_bytes": 97741,
+    "instrumented_region": "one synthesis_into call; plan, workspace setup, warmup, repeat/reset checks and output writing outside the collection window",
+    "configuration": "--instr-atstart=no --cache-sim=no --branch-sim=no; Callgrind client requests zero counters, start instrumentation, then stop instrumentation",
+    "counts_aggregate_all_rayon_threads": true,
+    "elapsed_time_interpreted": false
+  },
+  "build": {
+    "cargo": "1.99.1",
+    "rustc": "1.99.1",
+    "llvm": "23.1.1",
+    "command": "cargo build --locked --release --features parallel --example m6_f32_scalar_synthesis_callgrind",
+    "release_debug_info": 1,
+    "codegen_flags": "no target-cpu override; RUSTFLAGS supplied only a native static-link search path for the Callgrind shim",
+    "binary_sha256": "453e8b3df402cc6c2d78c70652054f62ba9efb47bd5141146a7e0a6c16ae4267",
+    "harness_sha256": "911d6dcecb5df511a66691674098113735d318374d81c2a8ab763c75abbd672c",
+    "shim_sha256": "6caa936803f86a346742c49fc205e4cc2c63053e1bd6dda70d478abba8e282ee"
+  },
+  "checks": {
+    "finite_output": true,
+    "two_repeat_outputs_bitwise_equal": true,
+    "poisoned_workspace_reset_bitwise_equal": true,
+    "profiled_output_matches_unprofiled_output": true,
+    "rust_output_matches_current_head_baseline_pair1_sha256": true,
+    "rust_output_sha256": "55ae238d9ec96e66b7d888fdd99646dedf28be1dff0d93261200c0195f93b8b2"
+  },
+  "self_ir_attribution": [
+    {
+      "source_symbol": "multiply_complex_scaled_f32, inlined f32 operations",
+      "ir": 2606224716,
+      "percent": 18.8
+    },
+    {
+      "source_symbol": "synthesize_paired_scalar_order_prepared_f32 callback",
+      "ir": 2026698576,
+      "percent": 14.62
+    },
+    {
+      "source_symbol": "multiply_component_scaled_with_normal_factor_f32, scalar.rs attribution",
+      "ir": 1364505382,
+      "percent": 9.84
+    },
+    {
+      "source_symbol": "multiply_complex_scaled_f32, scalar.rs attribution",
+      "ir": 991906060,
+      "percent": 7.15
+    },
+    {
+      "source_symbol": "synthesize_paired_scalar_order_prepared_f32 callback, inlined core operations",
+      "ir": 967238519,
+      "percent": 6.98
+    },
+    {
+      "source_symbol": "multiply_component_scaled_with_normal_factor_f32, numeric.rs attribution",
+      "ir": 738563194,
+      "percent": 5.33
+    },
+    {
+      "source_symbol": "compiler fmaf",
+      "ir": 595223704,
+      "percent": 4.29
+    },
+    {
+      "source_symbol": "compiler __powisf2",
+      "ir": 440077336,
+      "percent": 3.17
+    },
+    {
+      "source_symbol": "multiply_component_scaled_with_normal_factor_f32, inlined f32 operations",
+      "ir": 407291006,
+      "percent": 2.94
+    },
+    {
+      "source_symbol": "multiply_complex_scaled_f32, numeric.rs attribution",
+      "ir": 367329430,
+      "percent": 2.65
+    }
+  ],
+  "interpretation_limits": [
+    "Callgrind counts are instructions, not cycles or elapsed time.",
+    "Inclusive Rayon worker rows include descendant tasks and are not idle-wait estimates.",
+    "Source/inlining rows are attribution views; inclusive rows overlap and must not be summed.",
+    "No DUCC instruction profile was collected; the DUCC timing and numerical values are the existing same-source M6 baseline."
+  ]
+}
