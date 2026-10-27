@@ -1,0 +1,155 @@
+{
+  "callgrind_parent_vs_ducc_instructions": {
+    "ducc_ir": 252802007,
+    "ratio": 33.09432174721619,
+    "rust_ir": 8366310958,
+    "unit": "Callgrind Ir; instruction counts are not elapsed time and candidate Ir was not measured"
+  },
+  "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+  "candidate_f32_binary_sha256": "5ed89947e700c80c3a6d8e45cddcffec06c85abf899d90773f4b938ad7eb3f4b",
+  "candidate_patch_sha256": "5cf0bbaafbd132dbc2943dda12decebcce44831ae68e905f639ea7bb80f7b12a",
+  "candidate_profile_schedule": {
+    "active_worker_count_by_run": [
+      8,
+      8,
+      8
+    ],
+    "group_count": 12,
+    "profile_wall_elapsed_ms": [
+      684.432,
+      700.063,
+      523.533
+    ],
+    "warning": "per-block instrumentation substantially inflated wall elapsed; use job counts and within-run group distribution only, not these wall times as candidate production timings",
+    "worker_runs": [
+      {
+        "group_jobs_by_worker": {
+          "0": 2,
+          "1": 1,
+          "2": 1,
+          "3": 1,
+          "4": 2,
+          "5": 2,
+          "6": 1,
+          "7": 2
+        },
+        "max_min_worker_group_time_ratio": 2.988590520808688,
+        "profile_run": 0,
+        "worker_group_time_ms": {
+          "0": 224.387981,
+          "1": 670.603793,
+          "2": 468.820658,
+          "3": 416.636467,
+          "4": 239.970478,
+          "5": 402.548657,
+          "6": 651.327,
+          "7": 316.423753
+        }
+      },
+      {
+        "group_jobs_by_worker": {
+          "0": 2,
+          "1": 3,
+          "2": 2,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 1,
+          "7": 1
+        },
+        "max_min_worker_group_time_ratio": 2.9624589219584556,
+        "profile_run": 1,
+        "worker_group_time_ms": {
+          "0": 271.87421,
+          "1": 417.73779,
+          "2": 230.683466,
+          "3": 248.046951,
+          "4": 683.390292,
+          "5": 657.713828,
+          "6": 626.912202,
+          "7": 384.129936
+        }
+      },
+      {
+        "group_jobs_by_worker": {
+          "0": 1,
+          "1": 2,
+          "2": 3,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 2,
+          "7": 1
+        },
+        "max_min_worker_group_time_ratio": 2.325126234079468,
+        "profile_run": 2,
+        "worker_group_time_ms": {
+          "0": 490.416155,
+          "1": 361.367022,
+          "2": 294.914008,
+          "3": 333.951387,
+          "4": 506.026474,
+          "5": 217.633979,
+          "6": 367.796499,
+          "7": 479.455198
+        }
+      }
+    ]
+  },
+  "decision": "reject global GL one-group schedule because the protected f64 T1023 spin-1 synthesis q8 control was 3/3 slower, median candidate/parent 1.03384; test an f32-scoped fine-grain policy next",
+  "ducc_f32_binary_sha256": "9ff1e51c906f17f31f6e80c3928276b41acb576d5aef4681bebaacf4949ca3b8",
+  "ducc_flags": "DUCC numerical sources -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "mixed_route": {
+    "callbacks": 188465,
+    "exponent_zero_visits": 1020840,
+    "mixed_blocks": 1216,
+    "nonzero_exponent_visits": 5272834,
+    "pair_lane_visits": 6293674,
+    "profile_run": 0,
+    "recurrence_and_callback_elapsed_ms_in_instrumented_profile": 1470.798349,
+    "recurrence_lane_updates": 6253504,
+    "safe_lane_pair_states": 999875,
+    "scaled_helper_calls": 12587348,
+    "scan_elapsed_ms_in_instrumented_profile": 0.325497
+  },
+  "parent_f32_binary_sha256": "99b108efcb6eb9362535a4e2ec2532f8946d5cfb6cdff7b329c81da71dd56fc0",
+  "parent_profile_schedule": {
+    "active_worker_count": 4,
+    "group_count": 12,
+    "group_jobs_each_worker": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "max_min_skew": [
+      7.481,
+      7.354,
+      7.406
+    ],
+    "worker_group_time_ms_by_run": [
+      [
+        317.471,
+        88.033,
+        258.686,
+        42.437
+      ],
+      [
+        318.144,
+        88.598,
+        43.258,
+        259.099
+      ],
+      [
+        317.487,
+        89.265,
+        42.871,
+        261.892
+      ]
+    ]
+  },
+  "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+  "route_counts_identical_across_runs": false,
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+}

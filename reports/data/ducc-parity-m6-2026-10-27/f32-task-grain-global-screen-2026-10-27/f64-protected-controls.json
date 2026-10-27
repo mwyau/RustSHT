@@ -1,0 +1,1500 @@
+{
+  "cells": [
+    {
+      "pairs": [
+        {
+          "candidate_over_ducc": 0.7688859829029266,
+          "candidate_over_parent": 1.003250085847803,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "scalar-T720-S",
+            "grid": "GL",
+            "input_sha256": {
+              "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+              "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+            },
+            "lmax": 720,
+            "longitude_mode": "even_smooth",
+            "mmax": 720,
+            "nphi": 1458,
+            "ntheta": 721
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605308,
+            "relative_l2": 4.405014032298958e-14
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605298,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "pair": 1,
+          "threads": 1,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                14.9848835,
+                15.0723785,
+                15.0531375,
+                14.979183,
+                15.0509785,
+                15.3056885,
+                15.198406,
+                14.89518,
+                14.842936,
+                15.133148
+              ],
+              "median_ms": 15.052057999999999,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.07415874831893576
+            },
+            "ducc": {
+              "batch_ms": [
+                19.62,
+                19.5837,
+                19.4578,
+                19.7016,
+                19.5231,
+                19.4442,
+                19.6485,
+                19.5692,
+                19.4629,
+                20.0591
+              ],
+              "median_ms": 19.57645,
+              "output_sha256": [
+                "423e1b75d88895f007f9ca36a9927c3ee61a9e1b74bcc458c90f76e89db2eaf2"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0
+            },
+            "parent": {
+              "batch_ms": [
+                15.03584,
+                15.039356,
+                14.9047775,
+                14.9297145,
+                15.0718625,
+                15.138383,
+                14.9173815,
+                14.868474,
+                15.076431,
+                14.970752
+              ],
+              "median_ms": 15.003295999999999,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0769582879426221
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.7511015736244477,
+          "candidate_over_parent": 0.9896687810449317,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "scalar-T720-S",
+            "grid": "GL",
+            "input_sha256": {
+              "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+              "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+            },
+            "lmax": 720,
+            "longitude_mode": "even_smooth",
+            "mmax": 720,
+            "nphi": 1458,
+            "ntheta": 721
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605308,
+            "relative_l2": 4.405014032298958e-14
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605298,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "pair": 2,
+          "threads": 1,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                15.3127165,
+                15.395122,
+                15.4268015,
+                15.515023,
+                15.4732095,
+                15.3090895,
+                15.491253,
+                15.2870985,
+                15.43108,
+                15.6032395
+              ],
+              "median_ms": 15.428940749999999,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.09580645646293212
+            },
+            "ducc": {
+              "batch_ms": [
+                20.9714,
+                22.3977,
+                21.4313,
+                19.7124,
+                19.9934,
+                20.4679,
+                21.6696,
+                20.3915,
+                20.6156,
+                20.2396
+              ],
+              "median_ms": 20.54175,
+              "output_sha256": [
+                "423e1b75d88895f007f9ca36a9927c3ee61a9e1b74bcc458c90f76e89db2eaf2"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.008499159630868653
+            },
+            "parent": {
+              "batch_ms": [
+                16.9298,
+                15.3906085,
+                15.3529425,
+                15.652137,
+                16.5721355,
+                15.706479,
+                15.527872,
+                15.5221715,
+                15.771351,
+                15.3931885
+              ],
+              "median_ms": 15.5900045,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.043436003297306465
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.6812073203602126,
+          "candidate_over_parent": 0.9493414285706259,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "scalar-T720-S",
+            "grid": "GL",
+            "input_sha256": {
+              "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+              "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+            },
+            "lmax": 720,
+            "longitude_mode": "even_smooth",
+            "mmax": 720,
+            "nphi": 1458,
+            "ntheta": 721
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605308,
+            "relative_l2": 4.405014032298958e-14
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605298,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "pair": 3,
+          "threads": 1,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                14.743213,
+                14.6903335,
+                14.8469235,
+                14.7493595,
+                14.785127,
+                14.856121,
+                14.8888175,
+                14.784516,
+                14.9121115,
+                14.7844655
+              ],
+              "median_ms": 14.7848215,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.07449985995631114
+            },
+            "ducc": {
+              "batch_ms": [
+                23.7955,
+                24.5261,
+                21.673,
+                20.3069,
+                19.9853,
+                20.7227,
+                22.9606,
+                23.5731,
+                21.7347,
+                19.816
+              ],
+              "median_ms": 21.70385,
+              "output_sha256": [
+                "423e1b75d88895f007f9ca36a9927c3ee61a9e1b74bcc458c90f76e89db2eaf2"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0
+            },
+            "parent": {
+              "batch_ms": [
+                15.627044,
+                33.4882755,
+                15.923453,
+                14.8897945,
+                15.870889,
+                15.4564225,
+                15.5204885,
+                18.7842915,
+                15.29056,
+                15.3246495
+              ],
+              "median_ms": 15.57376625,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0744038646857889
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "binary_sha256": {
+          "candidate_scalar": "d95d7ed4fc06a73dc0be24885b3a55636683c9621b488aa866d24c62137a4877",
+          "candidate_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0",
+          "ducc_scalar": "7ab927634fa2a0826c9d7717b9aa6b009da9e1444788173834b7df903ec20733",
+          "ducc_spin": "9b13f9b872ee0621535566c57033b5e9b7bb940f10387b7edd49c6829def2a38",
+          "parent_scalar": "5081ffb5f613e92aa76425f47f6cce5c0c167831e59481a60a6852ecb5156979",
+          "parent_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0"
+        },
+        "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "ducc_flags": "DUCC numerical source -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides fast math",
+        "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+        "pairs": 3,
+        "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "q1_cpus": [
+          0
+        ],
+        "q8_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+      },
+      "summary": {
+        "all_bitwise": true,
+        "candidate_faster_pairs": 2,
+        "candidate_ms": 15.052057999999999,
+        "case_id": "scalar-T720-S",
+        "ducc_ms": 20.54175,
+        "max_candidate_ducc_abs": 3.5146285881637596e-10,
+        "max_candidate_ducc_l2": 4.405014032298958e-14,
+        "median_candidate_over_parent": 0.9896687810449317,
+        "parent_ms": 15.57376625,
+        "threads": 1
+      }
+    },
+    {
+      "pairs": [
+        {
+          "candidate_over_ducc": 0.799290951586134,
+          "candidate_over_parent": 1.0135129395230145,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "scalar-T720-S",
+            "grid": "GL",
+            "input_sha256": {
+              "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+              "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+            },
+            "lmax": 720,
+            "longitude_mode": "even_smooth",
+            "mmax": 720,
+            "nphi": 1458,
+            "ntheta": 721
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605308,
+            "relative_l2": 4.405014032298958e-14
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605298,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "pair": 1,
+          "threads": 8,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                2.541458778,
+                2.577981,
+                2.539674333,
+                2.552666556,
+                2.518800556,
+                2.547748444,
+                2.594748111,
+                2.537623778,
+                2.542639889,
+                2.553520444
+              ],
+              "median_ms": 2.5451941665,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.10478773086929945
+            },
+            "ducc": {
+              "batch_ms": [
+                3.1912,
+                3.1322,
+                3.18015,
+                3.20418,
+                3.14307,
+                3.16571,
+                3.20109,
+                3.15807,
+                3.18848,
+                3.22773
+              ],
+              "median_ms": 3.184315,
+              "output_sha256": [
+                "423e1b75d88895f007f9ca36a9927c3ee61a9e1b74bcc458c90f76e89db2eaf2"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.035999390270732186
+            },
+            "parent": {
+              "batch_ms": [
+                2.507596,
+                2.546811111,
+                2.503639667,
+                2.495854,
+                2.512436333,
+                2.518166,
+                2.510083,
+                2.497090667,
+                2.521603556,
+                2.518389778
+              ],
+              "median_ms": 2.5112596665,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0902696394933568
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.8513930236521734,
+          "candidate_over_parent": 1.0141852220652012,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "scalar-T720-S",
+            "grid": "GL",
+            "input_sha256": {
+              "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+              "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+            },
+            "lmax": 720,
+            "longitude_mode": "even_smooth",
+            "mmax": 720,
+            "nphi": 1458,
+            "ntheta": 721
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605308,
+            "relative_l2": 4.405014032298958e-14
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605298,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "pair": 2,
+          "threads": 8,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                3.05137975,
+                2.65155475,
+                2.841866,
+                2.723157375,
+                2.5341335,
+                2.544052125,
+                2.67473975,
+                2.625833875,
+                2.710121375,
+                2.67036525
+              ],
+              "median_ms": 2.6725525,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.12199328933486825
+            },
+            "ducc": {
+              "batch_ms": [
+                3.09312,
+                3.13456,
+                3.14351,
+                3.21492,
+                3.15524,
+                3.10878,
+                3.10847,
+                3.3144,
+                3.22362,
+                3.11704
+              ],
+              "median_ms": 3.139035,
+              "output_sha256": [
+                "423e1b75d88895f007f9ca36a9927c3ee61a9e1b74bcc458c90f76e89db2eaf2"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.12774018694343311
+            },
+            "parent": {
+              "batch_ms": [
+                2.57382825,
+                2.937108125,
+                2.73638725,
+                2.58013275,
+                2.768896125,
+                2.61681425,
+                2.509679875,
+                2.671201875,
+                2.65352975,
+                2.614206875
+              ],
+              "median_ms": 2.635172,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.12528274318434618
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.8201042706102633,
+          "candidate_over_parent": 0.9503940420213421,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "scalar-T720-S",
+            "grid": "GL",
+            "input_sha256": {
+              "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+              "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+            },
+            "lmax": 720,
+            "longitude_mode": "even_smooth",
+            "mmax": 720,
+            "nphi": 1458,
+            "ntheta": 721
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605308,
+            "relative_l2": 4.405014032298958e-14
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 1422.9827533605298,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "pair": 3,
+          "threads": 8,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                2.4953952,
+                2.5466829,
+                2.5538183,
+                2.5790819,
+                2.602978,
+                2.6013098,
+                2.5471407,
+                2.5506203,
+                2.587612,
+                2.5663961
+              ],
+              "median_ms": 2.5601072,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.1028696990375131
+            },
+            "ducc": {
+              "batch_ms": [
+                3.11646,
+                3.5254,
+                3.1064,
+                3.0903,
+                3.14119,
+                3.1843,
+                3.12691,
+                3.11379,
+                3.10713,
+                3.16769
+              ],
+              "median_ms": 3.1216850000000003,
+              "output_sha256": [
+                "423e1b75d88895f007f9ca36a9927c3ee61a9e1b74bcc458c90f76e89db2eaf2"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.12639706741550333
+            },
+            "parent": {
+              "batch_ms": [
+                2.760699375,
+                2.68537725,
+                2.64265925,
+                2.57839325,
+                2.818687375,
+                2.531986875,
+                2.749646,
+                2.7020875,
+                2.74683075,
+                2.676693375
+              ],
+              "median_ms": 2.693732375,
+              "output_sha256": [
+                "1a01217b81e76fb4d6d4a85b90831c7fcec40cc22002f50b4f5366856f0f6514"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.12054229954047278
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "binary_sha256": {
+          "candidate_scalar": "d95d7ed4fc06a73dc0be24885b3a55636683c9621b488aa866d24c62137a4877",
+          "candidate_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0",
+          "ducc_scalar": "7ab927634fa2a0826c9d7717b9aa6b009da9e1444788173834b7df903ec20733",
+          "ducc_spin": "9b13f9b872ee0621535566c57033b5e9b7bb940f10387b7edd49c6829def2a38",
+          "parent_scalar": "5081ffb5f613e92aa76425f47f6cce5c0c167831e59481a60a6852ecb5156979",
+          "parent_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0"
+        },
+        "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "ducc_flags": "DUCC numerical source -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides fast math",
+        "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+        "pairs": 3,
+        "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "q1_cpus": [
+          0
+        ],
+        "q8_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+      },
+      "summary": {
+        "all_bitwise": true,
+        "candidate_faster_pairs": 1,
+        "candidate_ms": 2.5601072,
+        "case_id": "scalar-T720-S",
+        "ducc_ms": 3.139035,
+        "max_candidate_ducc_abs": 3.5146285881637596e-10,
+        "max_candidate_ducc_l2": 4.405014032298958e-14,
+        "median_candidate_over_parent": 1.0135129395230145,
+        "parent_ms": 2.635172,
+        "threads": 8
+      }
+    },
+    {
+      "pairs": [
+        {
+          "candidate_over_ducc": 0.7281814733035964,
+          "candidate_over_parent": 0.9860741143013461,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "spin1-T1023-S",
+            "grid": "GL",
+            "input_sha256": {
+              "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+              "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+              "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+              "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+            },
+            "lmax": 1023,
+            "longitude_mode": "even_smooth",
+            "mmax": 1023,
+            "nphi": 2048,
+            "ntheta": 1024
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 5.410356607171707e-09,
+            "max_relative_above_1e-12_peak": 1.3761822147669033e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.273895623256,
+            "relative_l2": 2.6017741886311986e-13
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.2738956231578,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "pair": 1,
+          "threads": 1,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                90.460992,
+                90.351165,
+                89.752557,
+                90.482833,
+                90.713758,
+                90.496249,
+                90.453468,
+                90.550761,
+                90.49644799999999,
+                90.79103400000001
+              ],
+              "median_ms": 90.489541,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.020363114768528423
+            },
+            "ducc": {
+              "batch_ms": [
+                121.634349,
+                124.489901,
+                124.267843,
+                121.822092,
+                125.663284
+              ],
+              "median_ms": 124.267843,
+              "output_sha256": [
+                "2d6c881f9e7ef6a9706f71e2277fa56e9843c852a9d93d3cd2b1040b8d9357d9",
+                "2ecd9587347335067e5d3360ba4cd8df468209630ff060f6539f9dc3980a1b8a"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 1.5968724021735103e-05
+            },
+            "parent": {
+              "batch_ms": [
+                90.555059,
+                90.42778,
+                91.648861,
+                91.828651,
+                91.797832,
+                91.873024,
+                92.219087,
+                91.73713699999999,
+                91.943237,
+                90.985881
+              ],
+              "median_ms": 91.7674845,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.019736793345047292
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.7420045385803232,
+          "candidate_over_parent": 1.020860096073661,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "spin1-T1023-S",
+            "grid": "GL",
+            "input_sha256": {
+              "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+              "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+              "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+              "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+            },
+            "lmax": 1023,
+            "longitude_mode": "even_smooth",
+            "mmax": 1023,
+            "nphi": 2048,
+            "ntheta": 1024
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 5.410356607171707e-09,
+            "max_relative_above_1e-12_peak": 1.3761822147669033e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.273895623256,
+            "relative_l2": 2.6017741886311986e-13
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.2738956231578,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "pair": 2,
+          "threads": 1,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                90.791625,
+                91.190848,
+                90.737043,
+                90.800002,
+                90.68273,
+                90.747502,
+                90.448568,
+                90.920979,
+                91.117369,
+                91.123632
+              ],
+              "median_ms": 90.79581350000001,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.020422513381082606
+            },
+            "ducc": {
+              "batch_ms": [
+                121.690064,
+                123.289098,
+                122.365577,
+                123.714089,
+                121.16812
+              ],
+              "median_ms": 122.365577,
+              "output_sha256": [
+                "2d6c881f9e7ef6a9706f71e2277fa56e9843c852a9d93d3cd2b1040b8d9357d9",
+                "2ecd9587347335067e5d3360ba4cd8df468209630ff060f6539f9dc3980a1b8a"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.00039135751490606657
+            },
+            "parent": {
+              "batch_ms": [
+                89.25699300000001,
+                89.13933,
+                89.28734,
+                88.893959,
+                88.987053,
+                88.553055,
+                88.59014499999999,
+                87.97414400000001,
+                88.553837,
+                89.88974499999999
+              ],
+              "median_ms": 88.940506,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.02118102642895575
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.7606284772793886,
+          "candidate_over_parent": 0.9989978159260741,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "spin1-T1023-S",
+            "grid": "GL",
+            "input_sha256": {
+              "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+              "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+              "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+              "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+            },
+            "lmax": 1023,
+            "longitude_mode": "even_smooth",
+            "mmax": 1023,
+            "nphi": 2048,
+            "ntheta": 1024
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 5.410356607171707e-09,
+            "max_relative_above_1e-12_peak": 1.3761822147669033e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.273895623256,
+            "relative_l2": 2.6017741886311986e-13
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.2738956231578,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "pair": 3,
+          "threads": 1,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                92.93662900000001,
+                92.36048299999999,
+                92.506598,
+                92.278619,
+                92.002979,
+                92.92517699999999,
+                92.58645899999999,
+                90.839596,
+                90.384007,
+                91.51683200000001
+              ],
+              "median_ms": 92.31955099999999,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0196900471205953
+            },
+            "ducc": {
+              "batch_ms": [
+                120.51629,
+                123.967727,
+                121.372725,
+                121.9959,
+                121.273288
+              ],
+              "median_ms": 121.372725,
+              "output_sha256": [
+                "2d6c881f9e7ef6a9706f71e2277fa56e9843c852a9d93d3cd2b1040b8d9357d9",
+                "2ecd9587347335067e5d3360ba4cd8df468209630ff060f6539f9dc3980a1b8a"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0005946882076368998
+            },
+            "parent": {
+              "batch_ms": [
+                92.73762400000001,
+                92.605264,
+                92.73819499999999,
+                97.358565,
+                103.85182499999999,
+                91.65239799999999,
+                91.654422,
+                91.551298,
+                91.678578,
+                92.219066
+              ],
+              "median_ms": 92.412165,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.020436334540389355
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "binary_sha256": {
+          "candidate_scalar": "d95d7ed4fc06a73dc0be24885b3a55636683c9621b488aa866d24c62137a4877",
+          "candidate_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0",
+          "ducc_scalar": "7ab927634fa2a0826c9d7717b9aa6b009da9e1444788173834b7df903ec20733",
+          "ducc_spin": "9b13f9b872ee0621535566c57033b5e9b7bb940f10387b7edd49c6829def2a38",
+          "parent_scalar": "5081ffb5f613e92aa76425f47f6cce5c0c167831e59481a60a6852ecb5156979",
+          "parent_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0"
+        },
+        "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "ducc_flags": "DUCC numerical source -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides fast math",
+        "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+        "pairs": 3,
+        "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "q1_cpus": [
+          0
+        ],
+        "q8_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+      },
+      "summary": {
+        "all_bitwise": true,
+        "candidate_faster_pairs": 2,
+        "candidate_ms": 90.79581350000001,
+        "case_id": "spin1-T1023-S",
+        "ducc_ms": 122.365577,
+        "max_candidate_ducc_abs": 5.410356607171707e-09,
+        "max_candidate_ducc_l2": 2.6017741886311986e-13,
+        "median_candidate_over_parent": 0.9989978159260741,
+        "parent_ms": 91.7674845,
+        "threads": 1
+      }
+    },
+    {
+      "pairs": [
+        {
+          "candidate_over_ducc": 0.6954444214939716,
+          "candidate_over_parent": 1.033839956274953,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "spin1-T1023-S",
+            "grid": "GL",
+            "input_sha256": {
+              "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+              "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+              "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+              "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+            },
+            "lmax": 1023,
+            "longitude_mode": "even_smooth",
+            "mmax": 1023,
+            "nphi": 2048,
+            "ntheta": 1024
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 5.410356607171707e-09,
+            "max_relative_above_1e-12_peak": 1.3761822147669033e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.273895623256,
+            "relative_l2": 2.6017741886311986e-13
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.2738956231578,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "pair": 1,
+          "threads": 8,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                18.561967,
+                18.325922000000002,
+                18.4189675,
+                18.094540499999997,
+                18.10209,
+                18.0384955,
+                17.9295045,
+                17.6150065,
+                19.6634585,
+                19.4162025
+              ],
+              "median_ms": 18.214006,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.08733300757273872
+            },
+            "ducc": {
+              "batch_ms": [
+                25.8969445,
+                27.6717755,
+                26.5473105,
+                23.758523,
+                24.1529315,
+                24.6715945,
+                25.662182,
+                28.481527,
+                26.483966,
+                26.6744
+              ],
+              "median_ms": 26.19045525,
+              "output_sha256": [
+                "2d6c881f9e7ef6a9706f71e2277fa56e9843c852a9d93d3cd2b1040b8d9357d9",
+                "2ecd9587347335067e5d3360ba4cd8df468209630ff060f6539f9dc3980a1b8a"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.19805611474711085
+            },
+            "parent": {
+              "batch_ms": [
+                18.272441,
+                17.7643935,
+                17.591337499999998,
+                17.5533855,
+                17.445893,
+                17.2620565,
+                18.7875775,
+                17.6717885,
+                17.366213,
+                17.644302
+              ],
+              "median_ms": 17.61781975,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.0929051049231661
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.7335146042791831,
+          "candidate_over_parent": 1.0089071741293796,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "spin1-T1023-S",
+            "grid": "GL",
+            "input_sha256": {
+              "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+              "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+              "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+              "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+            },
+            "lmax": 1023,
+            "longitude_mode": "even_smooth",
+            "mmax": 1023,
+            "nphi": 2048,
+            "ntheta": 1024
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 5.410356607171707e-09,
+            "max_relative_above_1e-12_peak": 1.3761822147669033e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.273895623256,
+            "relative_l2": 2.6017741886311986e-13
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.2738956231578,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "pair": 2,
+          "threads": 8,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                19.3409005,
+                19.698089,
+                19.6216295,
+                19.381767500000002,
+                17.7468505,
+                19.745789,
+                19.193277000000002,
+                19.282885999999998,
+                19.318643,
+                22.3317035
+              ],
+              "median_ms": 19.361334,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.128163898935312
+            },
+            "ducc": {
+              "batch_ms": [
+                26.818798,
+                27.311816,
+                26.396422,
+                26.102266,
+                23.826887,
+                24.430976,
+                26.712998,
+                26.394167,
+                26.574347,
+                24.362958
+              ],
+              "median_ms": 26.3952945,
+              "output_sha256": [
+                "2d6c881f9e7ef6a9706f71e2277fa56e9843c852a9d93d3cd2b1040b8d9357d9",
+                "2ecd9587347335067e5d3360ba4cd8df468209630ff060f6539f9dc3980a1b8a"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.2046767686935729
+            },
+            "parent": {
+              "batch_ms": [
+                19.331663,
+                19.133349000000003,
+                19.2469135,
+                19.367155,
+                19.222312,
+                18.995223499999998,
+                19.4491845,
+                19.1575145,
+                19.1584915,
+                19.127834
+              ],
+              "median_ms": 19.19040175,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.13218668291078206
+            }
+          }
+        },
+        {
+          "candidate_over_ducc": 0.7544966492384466,
+          "candidate_over_parent": 1.049472857939015,
+          "candidate_parent_bitwise_equal": true,
+          "case": {
+            "case_id": "spin1-T1023-S",
+            "grid": "GL",
+            "input_sha256": {
+              "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+              "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+              "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+              "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+            },
+            "lmax": 1023,
+            "longitude_mode": "even_smooth",
+            "mmax": 1023,
+            "nphi": 2048,
+            "ntheta": 1024
+          },
+          "error_candidate_vs_ducc": {
+            "absolute_max": 5.410356607171707e-09,
+            "max_relative_above_1e-12_peak": 1.3761822147669033e-07,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.273895623256,
+            "relative_l2": 2.6017741886311986e-13
+          },
+          "error_candidate_vs_parent": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "metrics_finite": true,
+            "near_zero_reference_count": 0,
+            "reference_peak": 2039.2738956231578,
+            "relative_l2": 0.0
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "pair": 3,
+          "threads": 8,
+          "workers": {
+            "candidate": {
+              "batch_ms": [
+                20.136305,
+                20.425735500000002,
+                19.410431499999998,
+                19.8561015,
+                20.8826365,
+                20.726808,
+                19.0965445,
+                20.514833499999998,
+                19.001651000000003,
+                18.998725
+              ],
+              "median_ms": 19.99620325,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.1494595778784188
+            },
+            "ducc": {
+              "batch_ms": [
+                27.901999,
+                26.714651,
+                26.65553,
+                27.704758,
+                26.386091,
+                26.216733,
+                26.57085,
+                26.399968,
+                25.797552,
+                26.434563
+              ],
+              "median_ms": 26.502706500000002,
+              "output_sha256": [
+                "2d6c881f9e7ef6a9706f71e2277fa56e9843c852a9d93d3cd2b1040b8d9357d9",
+                "2ecd9587347335067e5d3360ba4cd8df468209630ff060f6539f9dc3980a1b8a"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.2298221729453968
+            },
+            "parent": {
+              "batch_ms": [
+                19.895761500000003,
+                18.273142999999997,
+                20.370782000000002,
+                19.098784000000002,
+                19.095081999999998,
+                18.840522,
+                18.8313495,
+                20.483894999999997,
+                18.847901,
+                19.0120555
+              ],
+              "median_ms": 19.053568749999997,
+              "output_sha256": [
+                "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+                "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+              ],
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "scheduler_wait_fraction": 0.12373789020888086
+            }
+          }
+        }
+      ],
+      "provenance": {
+        "binary_sha256": {
+          "candidate_scalar": "d95d7ed4fc06a73dc0be24885b3a55636683c9621b488aa866d24c62137a4877",
+          "candidate_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0",
+          "ducc_scalar": "7ab927634fa2a0826c9d7717b9aa6b009da9e1444788173834b7df903ec20733",
+          "ducc_spin": "9b13f9b872ee0621535566c57033b5e9b7bb940f10387b7edd49c6829def2a38",
+          "parent_scalar": "5081ffb5f613e92aa76425f47f6cce5c0c167831e59481a60a6852ecb5156979",
+          "parent_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0"
+        },
+        "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "ducc_flags": "DUCC numerical source -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides fast math",
+        "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+        "pairs": 3,
+        "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+        "q1_cpus": [
+          0
+        ],
+        "q8_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+      },
+      "summary": {
+        "all_bitwise": true,
+        "candidate_faster_pairs": 0,
+        "candidate_ms": 19.361334,
+        "case_id": "spin1-T1023-S",
+        "ducc_ms": 26.3952945,
+        "max_candidate_ducc_abs": 5.410356607171707e-09,
+        "max_candidate_ducc_l2": 2.6017741886311986e-13,
+        "median_candidate_over_parent": 1.033839956274953,
+        "parent_ms": 19.053568749999997,
+        "threads": 8
+      }
+    }
+  ],
+  "provenance": {
+    "binary_sha256": {
+      "candidate_scalar": "d95d7ed4fc06a73dc0be24885b3a55636683c9621b488aa866d24c62137a4877",
+      "candidate_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0",
+      "ducc_scalar": "7ab927634fa2a0826c9d7717b9aa6b009da9e1444788173834b7df903ec20733",
+      "ducc_spin": "9b13f9b872ee0621535566c57033b5e9b7bb940f10387b7edd49c6829def2a38",
+      "parent_scalar": "5081ffb5f613e92aa76425f47f6cce5c0c167831e59481a60a6852ecb5156979",
+      "parent_spin": "e4f2f69d1ece90054e27db946f0228f0dfa87383957720b3046e9a079aa1f1e0"
+    },
+    "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+    "ducc_flags": "DUCC numerical source -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides fast math",
+    "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "pairs": 3,
+    "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+    "q1_cpus": [
+      0
+    ],
+    "q8_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+  }
+}

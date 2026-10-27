@@ -2,7 +2,7 @@
 
 ## Decision
 
-This is a route profile, not a production change. It confirms that the mixed polar fallback contains normal lane islands, but only a small portion can be handed to the existing width-eight fused kernel as disjoint contiguous suffix spans. Do not implement another mixed safe-span route from these counts. The stronger measured lead is q8 scheduling: the current 12-group schedule uses four of eight Rayon workers, with a repeatable 7.35–7.48× max/min summed group-time skew. Test a smaller f32 GL group grain against the exact parent before changing the inner recurrence.
+This is a route profile, not a production change. It confirms that the mixed polar fallback contains normal lane islands, but only a small portion can be handed to the existing width-eight fused kernel as disjoint contiguous suffix spans. Do not implement another mixed safe-span route from these counts. The stronger measured lead was q8 scheduling: the current 12-group schedule used four of eight Rayon workers, with repeatable 7.35–7.48× max/min summed group-time skew. A global one-group screen used all eight workers and substantially improved f32 q8 synthesis, but was rejected because protected f64 GL T1023 spin-1 synthesis q8 slowed in all three pairs. The next candidate scopes finer grain to f32 GL scalar synthesis only; results are in the [task-grain screen](../f32-task-grain-global-screen-2026-10-27/README.md).
 
 The active M6 performance ledger is [reports/DUCC_PARITY_M6.md](../../../DUCC_PARITY_M6.md). The previous matched parent/candidate/DUCC screen, including DUCC algorithm and assembly observations, is in the [safe-suffix report](../f32-safe-suffix-handoff-2026-10-27/README.md).
 
@@ -64,4 +64,4 @@ DUCC's f32 adapter promotes the recurrence and accumulation to f64. Its paired r
 
 ## Next bounded experiment
 
-First compare min_groups_per_task=1 for the affected f32 GL scalar-synthesis schedule against exact parent 0677b5bf, with the same fixtures, compiler/ISA, output checks and pinned DUCC. Start with q8 triage; expand to the required full/reduced q1/q8 matrix and protected f64/adjacent controls only if it shows a repeatable material gain. This changes scheduling only and leaves the shared recurrence, f32 scaled fallback, polar cutoff, and f64 routing untouched. Keep M6 active; the overall per-cell target remains at or below 1.00× DUCC.
+Compare min_groups_per_task=1 only for native-f32 GL scalar synthesis against exact parent `0677b5bf`, using the same fixtures, compiler/ISA, output checks and pinned DUCC. The global screen showed why this must not change scalar analysis or f64 scheduling. The scoped candidate still needs the full/reduced q1/q8 matrix and adjacent/protected controls. It must leave the shared recurrence, f32 scaled fallback and polar cutoff unchanged. Keep M6 active; the overall per-cell target remains at or below 1.00× DUCC.
