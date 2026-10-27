@@ -1,8 +1,9 @@
-522db450ac1caaf5bae392c52ed1c3476da25cfa5d16188c0d75927e094cabd5  ./README.md
+2c2708ed82d752ec4cb44e197deb476f7c667aaa80983ef97cddb82d943cbfd4  ./README.md
 109bdae2858d0756d704cbf2eb85ed59e5c3135d6bd3a97303c7a1f996f9ca6c  ./analytic-checks.txt
 ae7f86b8b193de9a6a1da2867fb5b6edab3448e2fab08877519e4d9768f8a599  ./candidate.patch.gz
 9bc081963f3b31d05ab361f8e238b79098e4add23553db6de2b9a723de0b328e  ./instrumentation.patch.gz
 8159f03d9fb0ad0a439c7dc3ad2d36712f8c13a76d18d3892d48d04896b63f80  ./promoted-source.patch.gz
+b446d840144c499b067550a288427de7c6be5372792ae056a9d23854cf0a6591  ./rejected-helper-partial-control.json
 1520140fe454cb9aaccd389ec9c9dcada34f49e2cae73451b0c1966315996cf8  ./rejected-helper-variant.json
 b3c8adcd3476c4c8ec76b504b60cca61e4ec7cc1e9acc1d7cce0c2ebad15a82b  ./rejected-helper-variant.patch.gz
 678445a9a2924c142d62b4bf1258be56e4142eccabc9d3788501aceb7e093cb0  ./route-profile.tar.gz

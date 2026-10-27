@@ -1,0 +1,184 @@
+{
+  "schema": "rustsht-m6-rejected-helper-partial-control-v1",
+  "variant": "out_of_line_policy_v2",
+  "status": "INCOMPLETE",
+  "stop_reason": "The screen stopped after adjacent f32 spin-1 analysis q8 regressed in all three pairs.",
+  "provenance": {
+    "parent_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+    "candidate_base_sha": "0677b5bfe98117c1d1a5d5204b0a710828fcb9c8",
+    "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "q1_cpu": "0",
+    "q8_cpus": "0-7",
+    "pairs": 3,
+    "target_ms": 10.0,
+    "binary_sha256": {
+      "parent": "eb9797f1099d0ee93f442d91f6cc7799f9805c46a5ec25c062c08c2cfa5e2a90",
+      "candidate": "f58989b26cf67eaa3d193bd1bd4eb0967ed2fb245e1c4041add6116ebb615b6e",
+      "ducc": "8b7e8d7beabea3836901874221ce72c4e25f148a1eedce25329dae07db698683"
+    }
+  },
+  "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+  "fixture_sha256": {
+    "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+    "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+    "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+    "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "candidate_over_parent": 1.017657148418576,
+      "candidate_over_ducc": 37.275491569562334,
+      "candidate_parent_bitwise_equal": true,
+      "workers": {
+        "parent": {
+          "median_ms": 1494.938445,
+          "batch_ms": [
+            1518.8360539999999,
+            1498.827731,
+            1494.938445,
+            1492.342342,
+            1483.337605
+          ],
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "output_sha256": [
+            "f18dbfbd0dd359e9d909b3933d3c85701442715400d3ce0d12f056555b518313",
+            "dfd33e17fd97c163a01355eaa68dc3904934486f6c6183a426ee6c006d24bd9d"
+          ]
+        },
+        "candidate": {
+          "median_ms": 1521.334795,
+          "batch_ms": [
+            1521.789761,
+            1514.9882670000002,
+            1520.728584,
+            1521.334795,
+            1530.2301570000002
+          ],
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "output_sha256": [
+            "f18dbfbd0dd359e9d909b3933d3c85701442715400d3ce0d12f056555b518313",
+            "dfd33e17fd97c163a01355eaa68dc3904934486f6c6183a426ee6c006d24bd9d"
+          ]
+        },
+        "ducc": {
+          "median_ms": 40.8132725,
+          "batch_ms": [
+            41.297428,
+            40.571271,
+            40.770036,
+            40.388638,
+            41.195566,
+            40.555552,
+            41.709693,
+            40.856509,
+            40.547908,
+            40.952739
+          ],
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "output_sha256": [
+            "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+            "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+          ]
+        }
+      },
+      "error_candidate_vs_ducc": {
+        "output_values": 2102436,
+        "relative_l2": 0.0001426412049337804,
+        "absolute_l2": 0.04760734751744492,
+        "max_absolute": 0.0011716485023498535,
+        "reference_rms": 0.23018000443253994,
+        "finite": true
+      }
+    },
+    {
+      "pair": 2,
+      "order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "candidate_over_parent": 0.986177136652993,
+      "candidate_over_ducc": 36.55145970684426,
+      "candidate_parent_bitwise_equal": true,
+      "workers": {
+        "parent": {
+          "median_ms": 1523.005507,
+          "batch_ms": [
+            1531.792244,
+            1507.501645,
+            1523.86293,
+            1523.005507,
+            1508.312291
+          ],
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "output_sha256": [
+            "f18dbfbd0dd359e9d909b3933d3c85701442715400d3ce0d12f056555b518313",
+            "dfd33e17fd97c163a01355eaa68dc3904934486f6c6183a426ee6c006d24bd9d"
+          ]
+        },
+        "candidate": {
+          "median_ms": 1501.95321,
+          "batch_ms": [
+            1501.6452500000003,
+            1509.043465,
+            1502.636675,
+            1496.5515389999998,
+            1501.95321
+          ],
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "output_sha256": [
+            "f18dbfbd0dd359e9d909b3933d3c85701442715400d3ce0d12f056555b518313",
+            "dfd33e17fd97c163a01355eaa68dc3904934486f6c6183a426ee6c006d24bd9d"
+          ]
+        },
+        "ducc": {
+          "median_ms": 41.09147,
+          "batch_ms": [
+            40.899809,
+            42.280216,
+            39.814278,
+            40.296595,
+            42.034644,
+            41.359695,
+            40.769285,
+            40.135302,
+            41.283131,
+            41.924728
+          ],
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "output_sha256": [
+            "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+            "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+          ]
+        }
+      },
+      "error_candidate_vs_ducc": {
+        "output_values": 2102436,
+        "relative_l2": 0.0001426412049337804,
+        "absolute_l2": 0.04760734751744492,
+        "max_absolute": 0.0011716485023498535,
+        "reference_rms": 0.23018000443253994,
+        "finite": true
+      }
+    }
+  ]
+}

@@ -221,7 +221,10 @@ retained only as
 [`rejected-helper-variant.patch.gz`](rejected-helper-variant.patch.gz)
 and [`rejected-helper-variant.json`](rejected-helper-variant.json). Its
 primary q8 gains were comparable; the inline policy used by the promoted
-candidate avoids this neighboring-path regression.
+candidate avoids this neighboring-path regression. A separate f32 spin-1
+synthesis q1 control stopped after two pairs (candidate/parent `1.0177` and
+`0.9862`) and is inconclusive; the partial samples are preserved in
+[`rejected-helper-partial-control.json`](rejected-helper-partial-control.json).
 
 ## Numerical and validation checks
 
