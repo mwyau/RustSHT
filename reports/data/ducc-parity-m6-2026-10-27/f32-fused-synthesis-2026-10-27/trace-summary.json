@@ -1,0 +1,148 @@
+{
+  "schema": "rustsht-f32-synthesis-range-trace-v1",
+  "source_parent_commit": "972bacdaef57388509738d1c2cdebbb7973b89be",
+  "production_source_scope": "no production trace changes; only the parent source was instrumented in an isolated worktree",
+  "instrumented_synthesis_source_sha256": "e3429c8f0329973125980dfdc1d47526f5ba3b8f33c898c1e4ea66cd628ded4a",
+  "instrumentation_patch_sha256": "4dd89267fa1ff4109f5e23866001f35539a2abaa4e973e5546a0d3f32c9c618e",
+  "instrumented_worker_sha256": "9a8754820de8e5daf96d1366b29fb1a6ee08dd8ff88ab5233f11bb097ffb5f94",
+  "output_sha256": "55ae238d9ec96e66b7d888fdd99646dedf28be1dff0d93261200c0195f93b8b2",
+  "fixture_sha256": {
+    "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+    "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+  },
+  "case": {
+    "grid": "GL",
+    "precision": "f32",
+    "spin": 0,
+    "operation": "synthesis",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "threads": 8,
+    "phi0": 0.23,
+    "one_transform_call": true
+  },
+  "instrumentation": {
+    "trace_lines": 5499,
+    "instrumentation_changes_timing_and_no_trace_timing_is_used": true,
+    "counts": "per degree and latitude lane; normal_range is the recurrence visitor all-lane state; exponent histogram exact",
+    "class_order": [
+      "zero",
+      "normal",
+      "subnormal",
+      "nonfinite"
+    ],
+    "multiply_route_order": [
+      "zero_exponent_direct",
+      "scaled_normal_product",
+      "normal_factor_component_fallback",
+      "non_normal_factor_fallback"
+    ]
+  },
+  "totals": {
+    "rings": 347095,
+    "visits": 74402963,
+    "normal_range": 59376532,
+    "scaled_range": 15026431,
+    "exponent_zero": 66510967,
+    "exponent_nonzero": 7891996,
+    "eligible_normal_fused": 59376532,
+    "coefficient_class_0": 260281,
+    "coefficient_class_1": 148545645,
+    "coefficient_class_2": 0,
+    "coefficient_class_3": 0,
+    "basis_class_0": 0,
+    "basis_class_1": 74402963,
+    "basis_class_2": 0,
+    "basis_class_3": 0,
+    "multiply_route_0": 66510967,
+    "multiply_route_1": 4633295,
+    "multiply_route_2": 3258701,
+    "multiply_route_3": 0
+  },
+  "exponent_histogram": {
+    "-800": 204,
+    "-720": 934,
+    "-640": 2854,
+    "-560": 7970,
+    "-480": 26793,
+    "-400": 92658,
+    "-320": 288790,
+    "-240": 777428,
+    "-160": 1912433,
+    "-80": 4781932,
+    "0": 66510967
+  },
+  "initially_eligible_blocks": 1744,
+  "initially_eligible_block_fraction": 0.3171485724677214,
+  "initially_eligible_contributions": 27997047,
+  "initially_eligible_contribution_fraction": 0.3762894093344105,
+  "fully_eligible_blocks": 1744,
+  "fully_eligible_block_fraction": 0.3171485724677214,
+  "by_order_band": [
+    {
+      "m_min": 0,
+      "m_max": 63,
+      "blocks": 768,
+      "initially_eligible_blocks": 486,
+      "fully_eligible_blocks": 486,
+      "visits": 15919680,
+      "normal_range_visits": 14184852,
+      "exponent_zero_visits": 15406460
+    },
+    {
+      "m_min": 64,
+      "m_max": 127,
+      "blocks": 718,
+      "initially_eligible_blocks": 277,
+      "fully_eligible_blocks": 277,
+      "visits": 13829011,
+      "normal_range_visits": 11160256,
+      "exponent_zero_visits": 12465933
+    },
+    {
+      "m_min": 128,
+      "m_max": 180,
+      "blocks": 506,
+      "initially_eligible_blocks": 159,
+      "fully_eligible_blocks": 159,
+      "visits": 9200256,
+      "normal_range_visits": 7748864,
+      "exponent_zero_visits": 8377769
+    },
+    {
+      "m_min": 181,
+      "m_max": 255,
+      "blocks": 675,
+      "initially_eligible_blocks": 225,
+      "fully_eligible_blocks": 225,
+      "visits": 10875456,
+      "normal_range_visits": 8748032,
+      "exponent_zero_visits": 9697861
+    },
+    {
+      "m_min": 256,
+      "m_max": 511,
+      "blocks": 1905,
+      "initially_eligible_blocks": 388,
+      "fully_eligible_blocks": 388,
+      "visits": 21104320,
+      "normal_range_visits": 15261696,
+      "exponent_zero_visits": 17690007
+    },
+    {
+      "m_min": 512,
+      "m_max": 720,
+      "blocks": 927,
+      "initially_eligible_blocks": 209,
+      "fully_eligible_blocks": 209,
+      "visits": 3474240,
+      "normal_range_visits": 2272832,
+      "exponent_zero_visits": 2872937
+    }
+  ],
+  "limitations": "Block all-normal eligibility is measured from the existing normalization contract. Per-process CPU wait was not measured. This run is route-distribution evidence, not a performance benchmark."
+}

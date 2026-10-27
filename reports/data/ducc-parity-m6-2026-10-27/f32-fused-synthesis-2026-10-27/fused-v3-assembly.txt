@@ -1,0 +1,394 @@
+
+candidate-target/release/examples/ducc_f32_full_transform_parity:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000208610 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>>:
+  208610:	push   %rbp
+  208611:	push   %r15
+  208613:	push   %r14
+  208615:	push   %r13
+  208617:	push   %r12
+  208619:	push   %rbx
+  20861a:	sub    $0xe8,%rsp
+  208621:	mov    0x88(%rdi),%r13
+  208628:	mov    (%rdi),%r10
+  20862b:	mov    0x8(%rdi),%r12
+  20862f:	mov    0x10(%rdi),%rax
+  208633:	mov    %rax,0x60(%rsp)
+  208638:	mov    0x18(%rdi),%rax
+  20863c:	mov    %rax,0x70(%rsp)
+  208641:	mov    0x20(%rdi),%r15
+  208645:	mov    0x28(%rdi),%rax
+  208649:	mov    %rax,0x68(%rsp)
+  20864e:	mov    0x30(%rdi),%rcx
+  208652:	mov    0x38(%rdi),%r8
+  208656:	mov    0x40(%rdi),%rdx
+  20865a:	mov    0x48(%rdi),%r9
+  20865e:	mov    0x50(%rdi),%rax
+  208662:	mov    %rax,0x18(%rsp)
+  208667:	mov    0x58(%rdi),%rbx
+  20866b:	mov    0x60(%rdi),%r14
+  20866f:	sub    0x80(%rdi),%r13
+  208676:	mov    0x68(%rdi),%rbp
+  20867a:	mov    0x70(%rdi),%rax
+  20867e:	mov    %rax,0x58(%rsp)
+  208683:	mov    0x78(%rdi),%rax
+  208687:	mov    %r12,%r11
+  20868a:	shr    $0x3,%r11
+  20868e:	mov    %r12,0x90(%rsp)
+  208696:	and    $0x7,%r12d
+  20869a:	mov    %r12,0x28(%rsp)
+  20869f:	mov    %rbx,0x48(%rsp)
+  2086a4:	mov    %ebx,%edi
+  2086a6:	and    $0x7,%edi
+  2086a9:	mov    %rdi,0x20(%rsp)
+  2086ae:	mov    %rbp,0x38(%rsp)
+  2086b3:	and    $0x7,%ebp
+  2086b6:	mov    %rbp,0x10(%rsp)
+  2086bb:	mov    %rax,0x40(%rsp)
+  2086c0:	and    $0x7,%eax
+  2086c3:	mov    %rax,0x8(%rsp)
+  2086c8:	add    $0x2,%r13
+  2086cc:	shr    $1,%r13
+  2086cf:	mov    %r11,0x50(%rsp)
+  2086d4:	test   %r11,%r11
+  2086d7:	je     2088f5 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x2e5>
+  2086dd:	mov    0x48(%rsp),%rbx
+  2086e2:	shr    $0x3,%rbx
+  2086e6:	mov    0x38(%rsp),%rsi
+  2086eb:	shr    $0x3,%rsi
+  2086ef:	mov    0x40(%rsp),%rdi
+  2086f4:	shr    $0x3,%rdi
+  2086f8:	test   %r13,%r13
+  2086fb:	mov    %rsi,0x30(%rsp)
+  208700:	je     208999 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x389>
+  208706:	xor    %r11d,%r11d
+  208709:	vpbroadcastd -0x1eab3a(%rip),%ymm0        # 1dbd8 <anon.4271c9e645f850ad3395a018fba165ba.97.llvm.2297298204261707366+0x888>
+  208712:	vmovdqu %ymm0,0xa0(%rsp)
+  20871b:	mov    %r10,0x88(%rsp)
+  208723:	mov    %r14,0x80(%rsp)
+  20872b:	mov    %rdi,0x78(%rsp)
+  208730:	mov    0x70(%rsp),%r12
+  208735:	mov    0x60(%rsp),%rbp
+  20873a:	vbroadcastss -0x1eae13(%rip),%ymm3        # 1d930 <anon.4271c9e645f850ad3395a018fba165ba.97.llvm.2297298204261707366+0x5e0>
+  208743:	vxorps %xmm8,%xmm8,%xmm8
+  208748:	jmp    208789 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x179>
+  20874a:	nopw   0x0(%rax,%rax,1)
+  208750:	vmovups %ymm6,(%r10)
+  208755:	mov    0x98(%rsp),%rax
+  20875d:	vmovups %ymm7,(%rax)
+  208761:	mov    %rdi,%r11
+  208764:	cmp    0x50(%rsp),%rdi
+  208769:	mov    0x88(%rsp),%r10
+  208771:	mov    0x80(%rsp),%r14
+  208779:	mov    0x78(%rsp),%rdi
+  20877e:	mov    0x30(%rsp),%rsi
+  208783:	je     2088f5 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x2e5>
+  208789:	cmp    %rbx,%r11
+  20878c:	je     208c9e <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x68e>
+  208792:	cmp    %rsi,%r11
+  208795:	mov    0x68(%rsp),%rsi
+  20879a:	je     208c86 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x676>
+  2087a0:	cmp    %rdi,%r11
+  2087a3:	je     208c73 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x663>
+  2087a9:	lea    0x1(%r11),%rdi
+  2087ad:	shl    $0x5,%r11
+  2087b1:	vmovups (%r10,%r11,1),%ymm5
+  2087b7:	mov    0x18(%rsp),%r10
+  2087bc:	vmovups (%r10,%r11,1),%ymm9
+  2087c2:	lea    (%r14,%r11,1),%r10
+  2087c6:	vmovups (%r10),%ymm6
+  2087cb:	mov    0x58(%rsp),%r14
+  2087d0:	lea    (%r14,%r11,1),%rax
+  2087d4:	mov    %rax,0x98(%rsp)
+  2087dc:	vmovups (%r14,%r11,1),%ymm7
+  2087e2:	vmulps %ymm5,%ymm5,%ymm0
+  2087e6:	vmovups %ymm0,0xc0(%rsp)
+  2087ef:	vxorps %xmm10,%xmm10,%xmm10
+  2087f4:	xor    %r14d,%r14d
+  2087f7:	jmp    20882a <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x21a>
+  2087f9:	nopl   0x0(%rax)
+  208800:	vmovaps %ymm9,%ymm15
+  208805:	vfmadd213ps %ymm13,%ymm5,%ymm11
+  20880a:	vfmadd213ps %ymm14,%ymm5,%ymm12
+  20880f:	vfmadd231ps %ymm11,%ymm9,%ymm6
+  208814:	vfmadd231ps %ymm12,%ymm9,%ymm7
+  208819:	mov    %r11,%r14
+  20881c:	vmovaps %ymm15,%ymm9
+  208821:	cmp    %r11,%r13
+  208824:	je     208750 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x140>
+  20882a:	cmp    %r14,%r8
+  20882d:	je     208bdf <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5cf>
+  208833:	cmp    %r14,%r9
+  208836:	je     208bc9 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5b9>
+  20883c:	vbroadcastss (%rdx,%r14,8),%ymm11
+  208842:	vbroadcastss (%rcx,%r14,8),%ymm13
+  208848:	vbroadcastss 0x4(%rdx,%r14,8),%ymm12
+  20884f:	lea    0x1(%r14),%r11
+  208853:	vbroadcastss 0x4(%rcx,%r14,8),%ymm14
+  20885a:	cmp    %r13,%r11
+  20885d:	jae    208800 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x1f0>
+  20885f:	cmp    %r12,%r14
+  208862:	jae    208bf5 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5e5>
+  208868:	cmp    %rsi,%r14
+  20886b:	jae    208c0b <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5fb>
+  208871:	vbroadcastss 0x0(%rbp,%r14,4),%ymm4
+  208878:	vbroadcastss (%r15,%r14,4),%ymm15
+  20887e:	vfmadd231ps 0xc0(%rsp),%ymm4,%ymm15
+  208888:	vfmadd213ps %ymm10,%ymm9,%ymm15
+  20888d:	vmovups 0xa0(%rsp),%ymm0
+  208896:	vandps %ymm0,%ymm9,%ymm4
+  20889a:	vandps %ymm0,%ymm15,%ymm10
+  20889e:	vcmple_oqps %ymm3,%ymm4,%ymm1
+  2088a3:	vcmpeqps %ymm4,%ymm8,%ymm2
+  2088a8:	vbroadcastss -0x1ead29(%rip),%ymm0        # 1db88 <anon.4271c9e645f850ad3395a018fba165ba.97.llvm.2297298204261707366+0x838>
+  2088b1:	vcmpge_oqps %ymm0,%ymm4,%ymm4
+  2088b6:	vorps  %ymm2,%ymm4,%ymm2
+  2088ba:	vandps %ymm1,%ymm2,%ymm1
+  2088be:	vcmple_oqps %ymm3,%ymm10,%ymm2
+  2088c3:	vandps %ymm2,%ymm1,%ymm1
+  2088c7:	vcmpeqps %ymm8,%ymm10,%ymm2
+  2088cd:	vcmpge_oqps %ymm0,%ymm10,%ymm4
+  2088d2:	vorps  %ymm2,%ymm4,%ymm2
+  2088d6:	vandps %ymm2,%ymm1,%ymm1
+  2088da:	vpcmpeqd %ymm0,%ymm0,%ymm0
+  2088de:	vptest %ymm0,%ymm1
+  2088e3:	vmovaps %ymm9,%ymm10
+  2088e8:	jb     208805 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x1f5>
+  2088ee:	xor    %eax,%eax
+  2088f0:	jmp    208bb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a4>
+  2088f5:	mov    0x28(%rsp),%rdi
+  2088fa:	test   %rdi,%rdi
+  2088fd:	je     208bb2 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a2>
+  208903:	test   %r13,%r13
+  208906:	je     208b5d <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x54d>
+  20890c:	movabs $0x1ffffffffffffff8,%rax
+  208916:	mov    0x90(%rsp),%rdi
+  20891e:	and    %rax,%rdi
+  208921:	lea    (%r10,%rdi,4),%rsi
+  208925:	mov    %rsi,0xc0(%rsp)
+  20892d:	mov    0x48(%rsp),%r10
+  208932:	and    %rax,%r10
+  208935:	mov    0x18(%rsp),%rdi
+  20893a:	lea    (%rdi,%r10,4),%rsi
+  20893e:	mov    %rsi,0xa0(%rsp)
+  208946:	mov    0x38(%rsp),%rdi
+  20894b:	and    %rax,%rdi
+  20894e:	lea    (%r14,%rdi,4),%r10
+  208952:	mov    0x40(%rsp),%rdi
+  208957:	and    %rax,%rdi
+  20895a:	mov    0x58(%rsp),%rax
+  20895f:	lea    (%rax,%rdi,4),%rdi
+  208963:	xor    %r11d,%r11d
+  208966:	vpxor  %xmm0,%xmm0,%xmm0
+  20896a:	vbroadcastss -0x1ead9b(%rip),%xmm1        # 1dbd8 <anon.4271c9e645f850ad3395a018fba165ba.97.llvm.2297298204261707366+0x888>
+  208973:	vmovss -0x1eadf3(%rip),%xmm2        # 1db88 <anon.4271c9e645f850ad3395a018fba165ba.97.llvm.2297298204261707366+0x838>
+  20897b:	vmovss -0x1eb053(%rip),%xmm3        # 1d930 <anon.4271c9e645f850ad3395a018fba165ba.97.llvm.2297298204261707366+0x5e0>
+  208983:	mov    0x70(%rsp),%r12
+  208988:	mov    0x68(%rsp),%rsi
+  20898d:	mov    0x60(%rsp),%rbp
+  208992:	mov    %r10,0x18(%rsp)
+  208997:	jmp    208a01 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x3f1>
+  208999:	cmp    %rbx,%rsi
+  20899c:	mov    %rbx,%rcx
+  20899f:	cmovb  %rsi,%rcx
+  2089a3:	cmp    %rdi,%rcx
+  2089a6:	cmovae %rdi,%rcx
+  2089aa:	mov    0x50(%rsp),%rdx
+  2089af:	dec    %rdx
+  2089b2:	cmp    %rdx,%rcx
+  2089b5:	mov    %rdx,%rax
+  2089b8:	cmovb  %rcx,%rdx
+  2089bc:	cmp    %rdx,%rbx
+  2089bf:	je     208c9e <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x68e>
+  2089c5:	cmp    %rdx,%rsi
+  2089c8:	je     208c86 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x676>
+  2089ce:	cmp    %rdx,%rdi
+  2089d1:	je     208c73 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x663>
+  2089d7:	cmp    %rcx,%rax
+  2089da:	jbe    208b53 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x543>
+  2089e0:	jmp    2089e0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x3d0>
+  2089e2:	mov    0x18(%rsp),%r10
+  2089e7:	vmovss %xmm7,(%r10,%r11,4)
+  2089ed:	vmovss %xmm8,(%rdi,%r11,4)
+  2089f3:	mov    %rbx,%r11
+  2089f6:	cmp    0x28(%rsp),%rbx
+  2089fb:	je     208bb2 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a2>
+  208a01:	cmp    0x20(%rsp),%r11
+  208a06:	je     208ce4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x6d4>
+  208a0c:	cmp    0x10(%rsp),%r11
+  208a11:	je     208ccc <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x6bc>
+  208a17:	cmp    0x8(%rsp),%r11
+  208a1c:	je     208cb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x6a4>
+  208a22:	lea    0x1(%r11),%rbx
+  208a26:	mov    0xc0(%rsp),%rax
+  208a2e:	vmovss (%rax,%r11,4),%xmm4
+  208a34:	mov    0xa0(%rsp),%rax
+  208a3c:	vmovss (%rax,%r11,4),%xmm6
+  208a42:	vmovss (%r10,%r11,4),%xmm7
+  208a48:	vmovss (%rdi,%r11,4),%xmm8
+  208a4e:	vmulss %xmm4,%xmm4,%xmm5
+  208a52:	vxorps %xmm11,%xmm11,%xmm11
+  208a57:	xor    %r10d,%r10d
+  208a5a:	jmp    208a7e <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x46e>
+  208a5c:	nopl   0x0(%rax)
+  208a60:	vmovaps %xmm6,%xmm12
+  208a64:	vfmadd213ss %xmm10,%xmm6,%xmm7
+  208a69:	vfmadd213ss %xmm9,%xmm6,%xmm8
+  208a6e:	mov    %r14,%r10
+  208a71:	vmovaps %xmm12,%xmm6
+  208a75:	cmp    %r14,%r13
+  208a78:	je     2089e2 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x3d2>
+  208a7e:	cmp    %r10,%r8
+  208a81:	je     208c1e <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x60e>
+  208a87:	cmp    %r10,%r9
+  208a8a:	je     208c34 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x624>
+  208a90:	vmovaps %xmm7,%xmm10
+  208a94:	vmovaps %xmm8,%xmm9
+  208a99:	lea    0x1(%r10),%r14
+  208a9d:	vmovss (%rdx,%r10,8),%xmm7
+  208aa3:	vfmadd213ss (%rcx,%r10,8),%xmm4,%xmm7
+  208aa9:	vmovss 0x4(%rdx,%r10,8),%xmm8
+  208ab0:	vfmadd213ss 0x4(%rcx,%r10,8),%xmm4,%xmm8
+  208ab7:	cmp    %r13,%r14
+  208aba:	jae    208a60 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x450>
+  208abc:	cmp    %r12,%r10
+  208abf:	jae    208c5d <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x64d>
+  208ac5:	cmp    %rsi,%r10
+  208ac8:	jae    208c4a <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x63a>
+  208ace:	vmovss 0x0(%rbp,%r10,4),%xmm12
+  208ad5:	vfmadd213ss (%r15,%r10,4),%xmm5,%xmm12
+  208adb:	vucomiss %xmm0,%xmm6
+  208adf:	jne    208ae3 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x4d3>
+  208ae1:	jnp    208b0f <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x4ff>
+  208ae3:	vmovd  %xmm6,%eax
+  208ae7:	add    %eax,%eax
+  208ae9:	cmp    $0xfeffffff,%eax
+  208aee:	ja     2088ee <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x2de>
+  208af4:	vandps %xmm1,%xmm6,%xmm13
+  208af8:	xor    %eax,%eax
+  208afa:	vucomiss %xmm2,%xmm13
+  208afe:	jb     208bb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a4>
+  208b04:	vucomiss %xmm13,%xmm3
+  208b09:	jb     208bb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a4>
+  208b0f:	vfmadd213ss %xmm11,%xmm6,%xmm12
+  208b14:	vucomiss %xmm0,%xmm12
+  208b18:	jne    208b25 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x515>
+  208b1a:	jp     208b25 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x515>
+  208b1c:	vmovaps %xmm6,%xmm11
+  208b20:	jmp    208a64 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x454>
+  208b25:	vmovd  %xmm12,%eax
+  208b29:	add    %eax,%eax
+  208b2b:	cmp    $0xfeffffff,%eax
+  208b30:	ja     2088ee <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x2de>
+  208b36:	vandps %xmm1,%xmm12,%xmm11
+  208b3a:	xor    %eax,%eax
+  208b3c:	vucomiss %xmm2,%xmm11
+  208b40:	jb     208bb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a4>
+  208b42:	vucomiss %xmm11,%xmm3
+  208b47:	vmovaps %xmm6,%xmm11
+  208b4b:	jae    208a64 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x454>
+  208b51:	jmp    208bb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a4>
+  208b53:	mov    0x28(%rsp),%rdi
+  208b58:	test   %rdi,%rdi
+  208b5b:	je     208bb2 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a2>
+  208b5d:	dec    %rdi
+  208b60:	mov    0x10(%rsp),%rax
+  208b65:	cmp    %rax,%rdi
+  208b68:	cmovb  %rdi,%rax
+  208b6c:	mov    0x20(%rsp),%rdx
+  208b71:	cmp    %rdx,%rax
+  208b74:	cmovae %rdx,%rax
+  208b78:	mov    0x8(%rsp),%rcx
+  208b7d:	cmp    %rcx,%rax
+  208b80:	cmovb  %rax,%rcx
+  208b84:	cmp    %rcx,%rdx
+  208b87:	je     208ce4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x6d4>
+  208b8d:	cmp    %ecx,0x10(%rsp)
+  208b91:	je     208ccc <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x6bc>
+  208b97:	cmp    %eax,0x8(%rsp)
+  208b9b:	jbe    208cb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x6a4>
+  208ba1:	mov    $0x1,%al
+  208ba3:	cmp    %ecx,%edi
+  208ba5:	je     208bb4 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a4>
+  208ba7:	nopw   0x0(%rax,%rax,1)
+  208bb0:	jmp    208bb0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::synthesis::FusedSynthesisBlock<f32, true, false>>>+0x5a0>
+  208bb2:	mov    $0x1,%al
+  208bb4:	add    $0xe8,%rsp
+  208bbb:	pop    %rbx
+  208bbc:	pop    %r12
+  208bbe:	pop    %r13
+  208bc0:	pop    %r14
+  208bc2:	pop    %r15
+  208bc4:	pop    %rbp
+  208bc5:	vzeroupper
+  208bc8:	ret
+  208bc9:	lea    0x85b38(%rip),%rdx        # 28e708 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x338>
+  208bd0:	mov    %r9,%rdi
+  208bd3:	mov    %r9,%rsi
+  208bd6:	vzeroupper
+  208bd9:	call   *0x8b9c9(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208bdf:	lea    0x85b0a(%rip),%rdx        # 28e6f0 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x320>
+  208be6:	mov    %r8,%rdi
+  208be9:	mov    %r8,%rsi
+  208bec:	vzeroupper
+  208bef:	call   *0x8b9b3(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208bf5:	lea    0x85b24(%rip),%rdx        # 28e720 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x350>
+  208bfc:	mov    %r14,%rdi
+  208bff:	mov    %r12,%rsi
+  208c02:	vzeroupper
+  208c05:	call   *0x8b99d(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c0b:	lea    0x85b26(%rip),%rdx        # 28e738 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x368>
+  208c12:	mov    %r14,%rdi
+  208c15:	vzeroupper
+  208c18:	call   *0x8b98a(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c1e:	lea    0x85a53(%rip),%rdx        # 28e678 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x2a8>
+  208c25:	mov    %r8,%rdi
+  208c28:	mov    %r8,%rsi
+  208c2b:	vzeroupper
+  208c2e:	call   *0x8b974(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c34:	lea    0x85a55(%rip),%rdx        # 28e690 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x2c0>
+  208c3b:	mov    %r9,%rdi
+  208c3e:	mov    %r9,%rsi
+  208c41:	vzeroupper
+  208c44:	call   *0x8b95e(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c4a:	lea    0x85a6f(%rip),%rdx        # 28e6c0 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x2f0>
+  208c51:	mov    %r10,%rdi
+  208c54:	vzeroupper
+  208c57:	call   *0x8b94b(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c5d:	lea    0x85a44(%rip),%rdx        # 28e6a8 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x2d8>
+  208c64:	mov    %r10,%rdi
+  208c67:	mov    %r12,%rsi
+  208c6a:	vzeroupper
+  208c6d:	call   *0x8b935(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c73:	lea    0x85b1e(%rip),%rdx        # 28e798 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x3c8>
+  208c7a:	mov    %rdi,%rsi
+  208c7d:	vzeroupper
+  208c80:	call   *0x8b922(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c86:	lea    0x85af3(%rip),%rdx        # 28e780 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x3b0>
+  208c8d:	mov    0x30(%rsp),%rdi
+  208c92:	mov    %rdi,%rsi
+  208c95:	vzeroupper
+  208c98:	call   *0x8b90a(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208c9e:	lea    0x85a33(%rip),%rdx        # 28e6d8 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x308>
+  208ca5:	mov    %rbx,%rdi
+  208ca8:	mov    %rbx,%rsi
+  208cab:	vzeroupper
+  208cae:	call   *0x8b8f4(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208cb4:	lea    0x85aad(%rip),%rdx        # 28e768 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x398>
+  208cbb:	mov    0x8(%rsp),%rdi
+  208cc0:	mov    %rdi,%rsi
+  208cc3:	vzeroupper
+  208cc6:	call   *0x8b8dc(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208ccc:	lea    0x85a7d(%rip),%rdx        # 28e750 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x380>
+  208cd3:	mov    0x10(%rsp),%rdi
+  208cd8:	mov    %rdi,%rsi
+  208cdb:	vzeroupper
+  208cde:	call   *0x8b8c4(%rip)        # 2945a8 <_DYNAMIC+0x268>
+  208ce4:	lea    0x85975(%rip),%rdx        # 28e660 <anon.3cc052be86ed0cc458e99a2b23266269.67.llvm.14225630778934354207+0x290>
+  208ceb:	mov    0x20(%rsp),%rdi
+  208cf0:	mov    %rdi,%rsi
+  208cf3:	vzeroupper
+  208cf6:	call   *0x8b8ac(%rip)        # 2945a8 <_DYNAMIC+0x268>

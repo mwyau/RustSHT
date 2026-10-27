@@ -1,0 +1,56 @@
+{
+  "candidate_commit": "a30537bdcfa0fc5273985abfd592998325a608de",
+  "exact_parent_commit": "972bacdaef57388509738d1c2cdebbb7973b89be",
+  "immutable_baseline_commit": "062218639bc2f097f004c617da0ce46a3a4d2941",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "host": {
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "architecture": "x86_64",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "g++": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+  },
+  "builds": {
+    "f32_runtime_simd_screen": "release + parallel; no explicit RUSTFLAGS; runtime Pulp selected V3",
+    "f32_fixed_isa_control": "release + parallel; RUSTFLAGS=-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "f64_control": "release + parallel; RUSTFLAGS=-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_native_workers": "pinned DUCC 0.42.0; -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "target_batch_ms": 25.0
+  },
+  "source_sha256": {
+    "src/legendre/scalar_paired/synthesis.rs": "0b71aacebfb16b7857ffba3284ee23112ca44ecdfc543255fd66c379837f7c91",
+    "src/legendre/scalar/tests/f32.rs": "2b73f631e34fa363c60233d2c1820c69d226b77783d6a17d44d1d5ba55326c92",
+    "candidate.patch": "1f31e89b2fa26e21e6ae0fb1e93afe417ab7e892a883c77b44f62d715fd515c7"
+  },
+  "artifact_sha256": {
+    "README.md": "38a7136c51587d165c429c515355dd9718abde9e1c91f4eab31d70e24ee5fa7d",
+    "candidate.patch.gz": "8ec6f899fbccc184a97b4b60ad9240024d8d3c06ef0b222757260035fe46981a",
+    "executed-runner-f32-controls.py.gz": "d00aecbb92b084892ffa6ec992d26a371aac30527040ad19be87fa75feedf3ec",
+    "executed-runner-f64-controls.py.gz": "f6eef364aaceca24b54eb668825a6d09ca7ce79dda07a10c031657a38e0ed515",
+    "executed-runner-fifteen-q8.py.gz": "9d2263b9a1829ac9bd38c2448ca4160e5eac50b34c04beb014349c18d89274e8",
+    "executed-runner-native-v3.py.gz": "991423865f7bc0df48ac691289b49c27e3ea6658da96e64f78b8abc62c2aaadb",
+    "executed-runner-three-triplets.py.gz": "e91e843f9bb28e525cbb2dcc6aca77c6daf04b0c05acbb2c49df554208d92d97",
+    "f32-adjacent-controls.json": "1769b9673f07a33cf143b6c529a07b5ed87b9e77d01edc6d1b63f0c8903060b6",
+    "f32-native-v3-control.json": "8580e161cf435d17d63fb97af60c3fabf7d9d92511e5bc017216b1eb4a4be9fd",
+    "f64-controls.json": "29027cc65b97fc6698da6ee65171e034d81c15a34a7160ee6d9552a3b784e6a2",
+    "fused-v3-assembly.txt": "78b7f08173a47279aac532cce45c5527dde563b0d82cb307064250e7fec88db0",
+    "screen-fifteen-q8-triplets.json": "a82fd8153c21e00afde63bf1ee2bf49179e42a7fd03f3533c61bac4003e056ea",
+    "screen-three-triplets.json": "a2e6457b44f971c01e716bc6dc229e27da857cc7031ce586225d74480cfe12a6",
+    "trace-instrumentation.patch.gz": "551ae22a4a40116a62b3965c12e6cabc00888f57af79910cbbd6d25879229d91",
+    "trace-summary.json": "d158476e618e44e4c1f4c3ced4483c32b016fd4dc47f476f399348226e3141e5",
+    "triplets.csv": "30965f1fc8a3f8da46f6b9285d7adb099437ee1e563114eb5c6b137a965da52b"
+  },
+  "triplet_count": 60,
+  "triplet_csv": "triplets.csv",
+  "cleanup": {
+    "owned_scratch_removed": true,
+    "apparent_bytes_before": 2493204587,
+    "files_before": 11784,
+    "registered_worktrees_removed": 2,
+    "available_bytes_delta": 2523496448,
+    "free_inodes_delta": 13987,
+    "scratch_and_worktree_registrations_absent": true,
+    "experiment_process_active_at_cleanup": false,
+    "scratch_root_label": "rustsht-exp-f32-fused-FsgPiGdK"
+  }
+}

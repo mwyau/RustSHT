@@ -1,0 +1,2342 @@
+{
+  "source_commit_parent_and_candidate": "972bacdaef57388509738d1c2cdebbb7973b89be",
+  "candidate_source_diff": "0b71aacebfb16b7857ffba3284ee23112ca44ecdfc543255fd66c379837f7c91",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "binary_sha256": {
+    "parent": "3acbc010522fde20acaaa980a376382b469c20fe217b766ecfb48e3207123b74",
+    "candidate": "f9d6df5c599354dd368a6a724ab5bb33965de25ccda49582889db1dcb306ddbe",
+    "ducc": "54d6b2e42e563ccb55b488ac1ccb02699bd2a42cf9e29bb24a937f3b6cc4912a"
+  },
+  "benchmark_script_sha256": "70033f7251358128783f35d7aefa527fa957abce5513571db1142e92e6e38ff0",
+  "runner_sha256": "c2ef8ec27bef0ce7acd3b7063f59987c3a79d7fc3115473c335b82053486a7fa",
+  "target_ms": 25.0,
+  "triplet_orders": [
+    [
+      "parent",
+      "candidate",
+      "ducc"
+    ],
+    [
+      "candidate",
+      "ducc",
+      "parent"
+    ],
+    [
+      "ducc",
+      "parent",
+      "candidate"
+    ]
+  ],
+  "cases": [
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "synthesis",
+      "threads": 1,
+      "case_id": "GL-T720-M720-even-s0-synthesis-q1",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "parent_batch_ms": [
+        1068.289999,
+        1074.6578579999998,
+        1063.730151,
+        1065.82259,
+        1069.387886,
+        1061.689981,
+        1065.726258,
+        1066.547041,
+        1077.1217900000001,
+        1041.836374,
+        1072.378084,
+        1082.556965,
+        1061.024561,
+        1083.274292,
+        1074.671905
+      ],
+      "candidate_batch_ms": [
+        907.8230739999999,
+        913.0470290000001,
+        906.9818429999999,
+        903.814129,
+        905.6985050000001,
+        912.849666,
+        903.7823189999999,
+        904.209468,
+        927.947784,
+        914.066288,
+        917.9904730000001,
+        910.131643,
+        906.237274,
+        901.8446220000001,
+        891.2617769999999
+      ],
+      "ducc_batch_ms": [
+        19.129497,
+        18.948865,
+        19.061563,
+        18.9164085,
+        19.013442,
+        19.2942435,
+        18.9982135,
+        19.0438345,
+        19.07582,
+        19.002812,
+        18.952767,
+        18.913533,
+        19.0172995,
+        19.0031425,
+        18.961594,
+        18.9761965,
+        18.887659,
+        18.984542,
+        18.9656015,
+        18.969599,
+        18.9750895,
+        18.989602,
+        18.9197845,
+        19.4548475,
+        19.0475065,
+        19.0559975,
+        19.030675,
+        19.2520335,
+        19.0802585,
+        19.523362
+      ],
+      "candidate_over_parent_triplet_ratios": [
+        0.8490034015566964,
+        0.8565517262501381,
+        0.8432687872304617
+      ],
+      "candidate_over_parent_median": 0.8490034015566964,
+      "parent_over_ducc_median": 56.18666799981722,
+      "candidate_over_ducc_median": 47.66404358966675,
+      "parent_vs_ducc_error_max_rel_l2": 0.0001723423314440394,
+      "candidate_vs_ducc_error_max_rel_l2": 0.00017234307359793145,
+      "parent_vs_ducc_error_max_abs": 0.0009644031524658203,
+      "candidate_vs_ducc_error_max_abs": 0.0009644031524658203,
+      "finite": true,
+      "triplets": [
+        {
+          "triplet": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "rust_parent_median_ms": 1068.289999,
+          "rust_candidate_median_ms": 906.9818429999999,
+          "ducc_median_ms": 19.02863825,
+          "candidate_over_parent": 0.8490034015566964,
+          "parent_over_ducc": 56.141169166427346,
+          "candidate_over_ducc": 47.66404358966675,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723423314440394,
+              "absolute_l2": 0.04063937255654654,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 1069.97617,
+              "warmup_ms": 1070.162212,
+              "setup_ms": 3.455809,
+              "pool_setup_ms": 0.113745,
+              "fixture_load_ms": 9.167717000000001,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                1068.289999,
+                1074.6578579999998,
+                1063.730151,
+                1065.82259,
+                1069.387886
+              ],
+              "batch_total_ms": [
+                1068.289999,
+                1074.6578579999998,
+                1063.730151,
+                1065.82259,
+                1069.387886
+              ],
+              "process_elapsed_s": 9.34792184503749,
+              "output_checksum": -14.598038157564588,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4766216
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 901.101056,
+              "warmup_ms": 902.773731,
+              "setup_ms": 3.287901,
+              "pool_setup_ms": 0.118955,
+              "fixture_load_ms": 9.322199999999999,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                907.8230739999999,
+                913.0470290000001,
+                906.9818429999999,
+                903.814129,
+                905.6985050000001
+              ],
+              "batch_total_ms": [
+                907.8230739999999,
+                913.0470290000001,
+                906.9818429999999,
+                903.814129,
+                905.6985050000001
+              ],
+              "process_elapsed_s": 8.008618507068604,
+              "output_checksum": -14.598041519639082,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4757177
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 21.074547,
+              "warmup_ms": 20.373671,
+              "setup_ms": 5.163851,
+              "fixture_load_ms": 8.273535,
+              "repetitions_per_batch": 2,
+              "batch_ms": [
+                19.129497,
+                18.948865,
+                19.061563,
+                18.9164085,
+                19.013442,
+                19.2942435,
+                18.9982135,
+                19.0438345,
+                19.07582,
+                19.002812
+              ],
+              "batch_total_ms": [
+                38.258994,
+                37.89773,
+                38.123126,
+                37.832817,
+                38.026884,
+                38.588487,
+                37.996427,
+                38.087669,
+                38.15164,
+                38.005624
+              ],
+              "process_elapsed_s": 0.504770171828568,
+              "output_checksum": -29.191114410059527,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4691381
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "rust_parent_median_ms": 1065.726258,
+          "rust_candidate_median_ms": 912.849666,
+          "ducc_median_ms": 18.967600249999997,
+          "candidate_over_parent": 0.8565517262501381,
+          "parent_over_ducc": 56.18666799981722,
+          "candidate_over_ducc": 48.126787467486835,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723423314440394,
+              "absolute_l2": 0.04063937255654654,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 1059.130607,
+              "warmup_ms": 1058.140775,
+              "setup_ms": 3.251112,
+              "pool_setup_ms": 0.112784,
+              "fixture_load_ms": 9.164831999999999,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                1061.689981,
+                1065.726258,
+                1066.547041,
+                1077.1217900000001,
+                1041.836374
+              ],
+              "batch_total_ms": [
+                1061.689981,
+                1065.726258,
+                1066.547041,
+                1077.1217900000001,
+                1041.836374
+              ],
+              "process_elapsed_s": 9.293758959043771,
+              "output_checksum": -14.598038157564588,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4741443
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 919.2100909999999,
+              "warmup_ms": 918.602973,
+              "setup_ms": 3.27655,
+              "pool_setup_ms": 0.110429,
+              "fixture_load_ms": 9.714882,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                912.849666,
+                903.7823189999999,
+                904.209468,
+                927.947784,
+                914.066288
+              ],
+              "batch_total_ms": [
+                912.849666,
+                903.7823189999999,
+                904.209468,
+                927.947784,
+                914.066288
+              ],
+              "process_elapsed_s": 8.09827900188975,
+              "output_checksum": -14.598041519639082,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4766269
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 21.151793,
+              "warmup_ms": 20.388008,
+              "setup_ms": 5.127092,
+              "fixture_load_ms": 8.289505,
+              "repetitions_per_batch": 2,
+              "batch_ms": [
+                18.952767,
+                18.913533,
+                19.0172995,
+                19.0031425,
+                18.961594,
+                18.9761965,
+                18.887659,
+                18.984542,
+                18.9656015,
+                18.969599
+              ],
+              "batch_total_ms": [
+                37.905534,
+                37.827066,
+                38.034599,
+                38.006285,
+                37.923188,
+                37.952393,
+                37.775318,
+                37.969084,
+                37.931203,
+                37.939198
+              ],
+              "process_elapsed_s": 0.5030723889358342,
+              "output_checksum": -29.191114410059527,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4691501
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "rust_parent_median_ms": 1074.671905,
+          "rust_candidate_median_ms": 906.237274,
+          "ducc_median_ms": 19.051752,
+          "candidate_over_parent": 0.8432687872304617,
+          "parent_over_ducc": 56.40803559693617,
+          "candidate_over_ducc": 47.56713576788108,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723423314440394,
+              "absolute_l2": 0.04063937255654654,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 1037.881059,
+              "warmup_ms": 1042.7677959999999,
+              "setup_ms": 3.232576,
+              "pool_setup_ms": 0.12229100000000001,
+              "fixture_load_ms": 9.184839,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                1072.378084,
+                1082.556965,
+                1061.024561,
+                1083.274292,
+                1074.671905
+              ],
+              "batch_total_ms": [
+                1072.378084,
+                1082.556965,
+                1061.024561,
+                1083.274292,
+                1074.671905
+              ],
+              "process_elapsed_s": 9.334525727201253,
+              "output_checksum": -14.598038157564588,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4741123
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 899.5562030000001,
+              "warmup_ms": 916.681145,
+              "setup_ms": 3.3667800000000003,
+              "pool_setup_ms": 0.10613,
+              "fixture_load_ms": 8.846279000000001,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                917.9904730000001,
+                910.131643,
+                906.237274,
+                901.8446220000001,
+                891.2617769999999
+              ],
+              "batch_total_ms": [
+                917.9904730000001,
+                910.131643,
+                906.237274,
+                901.8446220000001,
+                891.2617769999999
+              ],
+              "process_elapsed_s": 8.054843052988872,
+              "output_checksum": -14.598041519639082,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4666534
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 21.086189,
+              "warmup_ms": 20.224118,
+              "setup_ms": 4.91515,
+              "fixture_load_ms": 8.351743,
+              "repetitions_per_batch": 2,
+              "batch_ms": [
+                18.9750895,
+                18.989602,
+                18.9197845,
+                19.4548475,
+                19.0475065,
+                19.0559975,
+                19.030675,
+                19.2520335,
+                19.0802585,
+                19.523362
+              ],
+              "batch_total_ms": [
+                37.950179,
+                37.979204,
+                37.839569,
+                38.909695,
+                38.095013,
+                38.111995,
+                38.06135,
+                38.504067,
+                38.160517,
+                39.046724
+              ],
+              "process_elapsed_s": 0.5061193848960102,
+              "output_checksum": -29.191114410059527,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4716331
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "synthesis",
+      "threads": 8,
+      "case_id": "GL-T720-M720-even-s0-synthesis-q8",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "parent_batch_ms": [
+        385.570583,
+        378.485457,
+        380.584939,
+        381.077923,
+        380.053313,
+        386.436061,
+        384.11306499999995,
+        386.92864199999997,
+        386.068877,
+        388.071275,
+        388.87823199999997,
+        381.750596,
+        381.239347,
+        385.890869,
+        382.264929
+      ],
+      "candidate_batch_ms": [
+        379.584226,
+        378.755958,
+        371.268301,
+        378.056956,
+        371.714585,
+        372.247734,
+        371.989085,
+        376.067281,
+        380.638761,
+        372.03450100000003,
+        371.756584,
+        376.12383900000003,
+        372.63448500000004,
+        371.786451,
+        377.385676
+      ],
+      "ducc_batch_ms": [
+        2.6540068999999997,
+        2.6647753,
+        2.676809,
+        2.6692267000000003,
+        2.6677208,
+        2.6786886,
+        2.6850006,
+        2.6660457,
+        2.6789201,
+        2.6837121,
+        2.6659124,
+        2.6859352999999997,
+        2.6658593,
+        2.6632935,
+        2.6733765,
+        2.6813376,
+        2.6694541999999997,
+        2.672033,
+        2.6726231,
+        2.7163919,
+        2.6723776999999997,
+        2.6705742999999997,
+        2.7083037,
+        2.6934916,
+        2.679463,
+        2.6637133,
+        2.6882998000000002,
+        2.7164942,
+        2.6739005,
+        2.6702114999999997
+      ],
+      "candidate_over_parent_triplet_ratios": [
+        0.9933576378333773,
+        0.9632841537529283,
+        0.9748068858286502
+      ],
+      "candidate_over_parent_median": 0.9748068858286502,
+      "parent_over_ducc_median": 142.8129918695041,
+      "candidate_over_ducc_median": 139.2971697468056,
+      "parent_vs_ducc_error_max_rel_l2": 0.0001723423314440394,
+      "candidate_vs_ducc_error_max_rel_l2": 0.00017234307359793145,
+      "parent_vs_ducc_error_max_abs": 0.0009644031524658203,
+      "candidate_vs_ducc_error_max_abs": 0.0009644031524658203,
+      "finite": true,
+      "triplets": [
+        {
+          "triplet": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "rust_parent_median_ms": 380.584939,
+          "rust_candidate_median_ms": 378.056956,
+          "ducc_median_ms": 2.67301785,
+          "candidate_over_parent": 0.9933576378333773,
+          "parent_over_ducc": 142.3802459830188,
+          "candidate_over_ducc": 141.43450482382676,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723423314440394,
+              "absolute_l2": 0.04063937255654654,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 379.98771,
+              "warmup_ms": 382.451501,
+              "setup_ms": 3.39817,
+              "pool_setup_ms": 0.308844,
+              "fixture_load_ms": 8.958992,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                385.570583,
+                378.485457,
+                380.584939,
+                381.077923,
+                380.053313
+              ],
+              "batch_total_ms": [
+                385.570583,
+                378.485457,
+                380.584939,
+                381.077923,
+                380.053313
+              ],
+              "process_elapsed_s": 3.828382953070104,
+              "output_checksum": -14.598038157564588,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3878817,
+                  "1": 3869413,
+                  "2": 3838436,
+                  "3": 3892017,
+                  "4": 3862288,
+                  "5": 4796355,
+                  "6": 4397388,
+                  "7": 3806910
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 373.464857,
+              "warmup_ms": 372.53981699999997,
+              "setup_ms": 3.8446249999999997,
+              "pool_setup_ms": 0.328542,
+              "fixture_load_ms": 9.590587,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                379.584226,
+                378.755958,
+                371.268301,
+                378.056956,
+                371.714585
+              ],
+              "batch_total_ms": [
+                379.584226,
+                378.755958,
+                371.268301,
+                378.056956,
+                371.714585
+              ],
+              "process_elapsed_s": 3.776888384949416,
+              "output_checksum": -14.598041519639082,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3914006,
+                  "1": 3914343,
+                  "2": 3875911,
+                  "3": 3873302,
+                  "4": 4393815,
+                  "5": 4263190,
+                  "6": 3784132,
+                  "7": 3770650
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 4.962741,
+              "warmup_ms": 4.38127,
+              "setup_ms": 5.348601,
+              "fixture_load_ms": 8.521103,
+              "repetitions_per_batch": 10,
+              "batch_ms": [
+                2.6540068999999997,
+                2.6647753,
+                2.676809,
+                2.6692267000000003,
+                2.6677208,
+                2.6786886,
+                2.6850006,
+                2.6660457,
+                2.6789201,
+                2.6837121
+              ],
+              "batch_total_ms": [
+                26.540069,
+                26.647753,
+                26.76809,
+                26.692267,
+                26.677208,
+                26.786886,
+                26.850006,
+                26.660457,
+                26.789201,
+                26.837121
+              ],
+              "process_elapsed_s": 0.3485346750821918,
+              "output_checksum": -29.191114410059527,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3506769,
+                  "1": 3491877,
+                  "2": 3473333,
+                  "3": 3472966,
+                  "4": 3873312,
+                  "5": 3475475,
+                  "6": 3459062,
+                  "7": 3463441
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "rust_parent_median_ms": 386.436061,
+          "rust_candidate_median_ms": 372.247734,
+          "ducc_median_ms": 2.67232805,
+          "candidate_over_parent": 0.9632841537529283,
+          "parent_over_ducc": 144.60652052056258,
+          "candidate_over_ducc": 139.2971697468056,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723423314440394,
+              "absolute_l2": 0.04063937255654654,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 382.76559599999996,
+              "warmup_ms": 384.640553,
+              "setup_ms": 3.631993,
+              "pool_setup_ms": 0.36026199999999997,
+              "fixture_load_ms": 9.739457999999999,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                386.436061,
+                384.11306499999995,
+                386.92864199999997,
+                386.068877,
+                388.071275
+              ],
+              "batch_total_ms": [
+                386.436061,
+                384.11306499999995,
+                386.92864199999997,
+                386.068877,
+                388.071275
+              ],
+              "process_elapsed_s": 3.8768821919802576,
+              "output_checksum": -14.598038157564588,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3704668,
+                  "1": 3710741,
+                  "2": 3722055,
+                  "3": 3726952,
+                  "4": 3732897,
+                  "5": 4184696,
+                  "6": 4633753,
+                  "7": 4654921
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 384.806217,
+              "warmup_ms": 382.538466,
+              "setup_ms": 3.472851,
+              "pool_setup_ms": 0.336948,
+              "fixture_load_ms": 9.736142999999998,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                372.247734,
+                371.989085,
+                376.067281,
+                380.638761,
+                372.03450100000003
+              ],
+              "batch_total_ms": [
+                372.247734,
+                371.989085,
+                376.067281,
+                380.638761,
+                372.03450100000003
+              ],
+              "process_elapsed_s": 3.8020562981255352,
+              "output_checksum": -14.598041519639082,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3850449,
+                  "1": 3833918,
+                  "2": 3860561,
+                  "3": 3868476,
+                  "4": 4819479,
+                  "5": 4824103,
+                  "6": 3865038,
+                  "7": 3859769
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 5.45387,
+              "warmup_ms": 4.283055,
+              "setup_ms": 4.968752,
+              "fixture_load_ms": 8.91028,
+              "repetitions_per_batch": 10,
+              "batch_ms": [
+                2.6659124,
+                2.6859352999999997,
+                2.6658593,
+                2.6632935,
+                2.6733765,
+                2.6813376,
+                2.6694541999999997,
+                2.672033,
+                2.6726231,
+                2.7163919
+              ],
+              "batch_total_ms": [
+                26.659124,
+                26.859353,
+                26.658593,
+                26.632935,
+                26.733765,
+                26.813376,
+                26.694542,
+                26.72033,
+                26.726231,
+                27.163919
+              ],
+              "process_elapsed_s": 0.34883048408664763,
+              "output_checksum": -29.191114410059527,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3667640,
+                  "1": 3669017,
+                  "2": 4581066,
+                  "3": 4577388,
+                  "4": 4036888,
+                  "5": 4329724,
+                  "6": 3919635,
+                  "7": 3633514
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "rust_parent_median_ms": 382.264929,
+          "rust_candidate_median_ms": 372.63448500000004,
+          "ducc_median_ms": 2.67668175,
+          "candidate_over_parent": 0.9748068858286502,
+          "parent_over_ducc": 142.8129918695041,
+          "candidate_over_ducc": 139.21508786018362,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723423314440394,
+              "absolute_l2": 0.04063937255654654,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 381.002419,
+              "warmup_ms": 381.981542,
+              "setup_ms": 3.82636,
+              "pool_setup_ms": 0.34863,
+              "fixture_load_ms": 9.899402,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                388.87823199999997,
+                381.750596,
+                381.239347,
+                385.890869,
+                382.264929
+              ],
+              "batch_total_ms": [
+                388.87823199999997,
+                381.750596,
+                381.239347,
+                385.890869,
+                382.264929
+              ],
+              "process_elapsed_s": 3.866045837989077,
+              "output_checksum": -14.598038157564588,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3846776,
+                  "1": 3786055,
+                  "2": 3772078,
+                  "3": 4730546,
+                  "4": 3792530,
+                  "5": 4714096,
+                  "6": 3892809,
+                  "7": 3770958
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 370.579788,
+              "warmup_ms": 371.720175,
+              "setup_ms": 3.590925,
+              "pool_setup_ms": 0.36033099999999996,
+              "fixture_load_ms": 9.508460999999999,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                371.756584,
+                376.12383900000003,
+                372.63448500000004,
+                371.786451,
+                377.385676
+              ],
+              "batch_total_ms": [
+                371.756584,
+                376.12383900000003,
+                372.63448500000004,
+                371.786451,
+                377.385676
+              ],
+              "process_elapsed_s": 3.7661117538809776,
+              "output_checksum": -14.598041519639082,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3834039,
+                  "1": 3896656,
+                  "2": 3892610,
+                  "3": 3917984,
+                  "4": 4431264,
+                  "5": 4841696,
+                  "6": 3860760,
+                  "7": 3870285
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 4.976636,
+              "warmup_ms": 4.251565,
+              "setup_ms": 4.946731,
+              "fixture_load_ms": 8.496306,
+              "repetitions_per_batch": 10,
+              "batch_ms": [
+                2.6723776999999997,
+                2.6705742999999997,
+                2.7083037,
+                2.6934916,
+                2.679463,
+                2.6637133,
+                2.6882998000000002,
+                2.7164942,
+                2.6739005,
+                2.6702114999999997
+              ],
+              "batch_total_ms": [
+                26.723777,
+                26.705743,
+                27.083037,
+                26.934916,
+                26.79463,
+                26.637133,
+                26.882998,
+                27.164942,
+                26.739005,
+                26.702115
+              ],
+              "process_elapsed_s": 0.3492978890426457,
+              "output_checksum": -29.191114410059527,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3731237,
+                  "1": 3720685,
+                  "2": 4290339,
+                  "3": 3672366,
+                  "4": 4065129,
+                  "5": 4589713,
+                  "6": 3674455,
+                  "7": 4592056
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "synthesis",
+      "threads": 1,
+      "case_id": "GL-T720-M180-even-s0-synthesis-q1",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "parent_batch_ms": [
+        403.982883,
+        417.177169,
+        417.451057,
+        409.37206,
+        410.474556,
+        399.33889500000004,
+        417.911328,
+        416.352669,
+        416.870198,
+        415.804702,
+        417.210763,
+        415.576981,
+        418.049629,
+        416.851362,
+        417.190023
+      ],
+      "candidate_batch_ms": [
+        290.742821,
+        290.38765900000004,
+        290.296596,
+        291.07003999999995,
+        290.41661400000004,
+        300.07809499999996,
+        290.18799099999995,
+        292.582381,
+        302.262509,
+        301.767371,
+        301.84968699999996,
+        302.30211299999996,
+        302.31624,
+        301.915973,
+        300.961056
+      ],
+      "ducc_batch_ms": [
+        8.901262666666666,
+        8.391732,
+        8.330903666666666,
+        8.732396666666666,
+        8.855179,
+        8.287922333333333,
+        8.635900666666666,
+        8.758866666666666,
+        8.851582,
+        8.808811333333333,
+        8.376116,
+        8.271451333333333,
+        8.546642,
+        8.683197,
+        8.860068333333333,
+        8.363909333333334,
+        8.785139666666668,
+        8.866904666666667,
+        8.898524333333333,
+        8.829924666666667,
+        8.542066333333333,
+        8.902475,
+        8.262260666666666,
+        8.620999333333334,
+        8.856277666666667,
+        8.311660666666667,
+        8.948512333333333,
+        8.580228666666667,
+        8.537060666666667,
+        8.748547333333333
+      ],
+      "candidate_over_parent_triplet_ratios": [
+        0.7075142898747664,
+        0.7207305665188374,
+        0.7236893414395004
+      ],
+      "candidate_over_parent_median": 0.7207305665188374,
+      "parent_over_ducc_median": 47.6694120275905,
+      "candidate_over_ducc_median": 34.356802336265176,
+      "parent_vs_ducc_error_max_rel_l2": 0.0002725512983988447,
+      "candidate_vs_ducc_error_max_rel_l2": 0.00027254614364372677,
+      "parent_vs_ducc_error_max_abs": 0.0015479326248168945,
+      "candidate_vs_ducc_error_max_abs": 0.0015478730201721191,
+      "finite": true,
+      "triplets": [
+        {
+          "triplet": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "rust_parent_median_ms": 410.474556,
+          "rust_candidate_median_ms": 290.41661400000004,
+          "ducc_median_ms": 8.745631666666666,
+          "candidate_over_parent": 0.7075142898747664,
+          "parent_over_ducc": 46.93480947345332,
+          "candidate_over_ducc": 33.207048395017786,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725512983988447,
+              "absolute_l2": 0.024453906090247036,
+              "max_absolute": 0.0015479326248168945,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 393.93455900000004,
+              "warmup_ms": 415.36613300000005,
+              "setup_ms": 0.87173,
+              "pool_setup_ms": 0.10467800000000001,
+              "fixture_load_ms": 2.983937,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                403.982883,
+                417.177169,
+                417.451057,
+                409.37206,
+                410.474556
+              ],
+              "batch_total_ms": [
+                403.982883,
+                417.177169,
+                417.451057,
+                409.37206,
+                410.474556
+              ],
+              "process_elapsed_s": 3.4957620601635426,
+              "output_checksum": -5.228230049833655,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4790842
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 304.052014,
+              "warmup_ms": 303.055659,
+              "setup_ms": 1.1194790000000001,
+              "pool_setup_ms": 0.101752,
+              "fixture_load_ms": 3.138308,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                290.742821,
+                290.38765900000004,
+                290.296596,
+                291.07003999999995,
+                290.41661400000004
+              ],
+              "batch_total_ms": [
+                290.742821,
+                290.38765900000004,
+                290.296596,
+                291.07003999999995,
+                290.41661400000004
+              ],
+              "process_elapsed_s": 2.5689284931868315,
+              "output_checksum": -5.228234040550888,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4766299
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 8.776978,
+              "warmup_ms": 8.724939,
+              "setup_ms": 1.589046,
+              "fixture_load_ms": 2.758931,
+              "repetitions_per_batch": 3,
+              "batch_ms": [
+                8.901262666666666,
+                8.391732,
+                8.330903666666666,
+                8.732396666666666,
+                8.855179,
+                8.287922333333333,
+                8.635900666666666,
+                8.758866666666666,
+                8.851582,
+                8.808811333333333
+              ],
+              "batch_total_ms": [
+                26.703788,
+                25.175196,
+                24.992711,
+                26.19719,
+                26.565537,
+                24.863767,
+                25.907702,
+                26.2766,
+                26.554746,
+                26.426434
+              ],
+              "process_elapsed_s": 0.32133993692696095,
+              "output_checksum": -10.469048616942018,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4666512
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "rust_parent_median_ms": 416.352669,
+          "rust_candidate_median_ms": 300.07809499999996,
+          "ducc_median_ms": 8.734168333333333,
+          "candidate_over_parent": 0.7207305665188374,
+          "parent_over_ducc": 47.6694120275905,
+          "candidate_over_ducc": 34.356802336265176,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725512983988447,
+              "absolute_l2": 0.024453906090247036,
+              "max_absolute": 0.0015479326248168945,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 394.61816300000004,
+              "warmup_ms": 392.54299599999996,
+              "setup_ms": 0.886328,
+              "pool_setup_ms": 0.092986,
+              "fixture_load_ms": 3.000458,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                399.33889500000004,
+                417.911328,
+                416.352669,
+                416.870198,
+                415.804702
+              ],
+              "batch_total_ms": [
+                399.33889500000004,
+                417.911328,
+                416.352669,
+                416.870198,
+                415.804702
+              ],
+              "process_elapsed_s": 3.4588599340058863,
+              "output_checksum": -5.228230049833655,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4766315
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 298.73809,
+              "warmup_ms": 294.66609500000004,
+              "setup_ms": 0.906124,
+              "pool_setup_ms": 0.096343,
+              "fixture_load_ms": 3.0850370000000003,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                300.07809499999996,
+                290.18799099999995,
+                292.582381,
+                302.262509,
+                301.767371
+              ],
+              "batch_total_ms": [
+                300.07809499999996,
+                290.18799099999995,
+                292.582381,
+                302.262509,
+                301.767371
+              ],
+              "process_elapsed_s": 2.5884075320791453,
+              "output_checksum": -5.228234040550888,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4766229
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 8.818426,
+              "warmup_ms": 8.650729,
+              "setup_ms": 1.633351,
+              "fixture_load_ms": 2.755093,
+              "repetitions_per_batch": 3,
+              "batch_ms": [
+                8.376116,
+                8.271451333333333,
+                8.546642,
+                8.683197,
+                8.860068333333333,
+                8.363909333333334,
+                8.785139666666668,
+                8.866904666666667,
+                8.898524333333333,
+                8.829924666666667
+              ],
+              "batch_total_ms": [
+                25.128348,
+                24.814354,
+                25.639926,
+                26.049591,
+                26.580205,
+                25.091728,
+                26.355419,
+                26.600714,
+                26.695573,
+                26.489774
+              ],
+              "process_elapsed_s": 0.3208608399145305,
+              "output_checksum": -10.469048616942018,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4666473
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "rust_parent_median_ms": 417.190023,
+          "rust_candidate_median_ms": 301.915973,
+          "ducc_median_ms": 8.600614,
+          "candidate_over_parent": 0.7236893414395004,
+          "parent_over_ducc": 48.50700461618205,
+          "candidate_over_ducc": 35.10400222588759,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725512983988447,
+              "absolute_l2": 0.024453906090247036,
+              "max_absolute": 0.0015479326248168945,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 396.415073,
+              "warmup_ms": 418.714297,
+              "setup_ms": 0.8853650000000001,
+              "pool_setup_ms": 0.09063099999999999,
+              "fixture_load_ms": 3.094746,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                417.210763,
+                415.576981,
+                418.049629,
+                416.851362,
+                417.190023
+              ],
+              "batch_total_ms": [
+                417.210763,
+                415.576981,
+                418.049629,
+                416.851362,
+                417.190023
+              ],
+              "process_elapsed_s": 3.534569991985336,
+              "output_checksum": -5.228230049833655,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4782210
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 289.245137,
+              "warmup_ms": 294.88164300000005,
+              "setup_ms": 0.902969,
+              "pool_setup_ms": 0.087696,
+              "fixture_load_ms": 2.99642,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                301.84968699999996,
+                302.30211299999996,
+                302.31624,
+                301.915973,
+                300.961056
+              ],
+              "batch_total_ms": [
+                301.84968699999996,
+                302.30211299999996,
+                302.31624,
+                301.915973,
+                300.961056
+              ],
+              "process_elapsed_s": 2.6048888470977545,
+              "output_checksum": -5.228234040550888,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4753568
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 8.812234,
+              "warmup_ms": 8.722224,
+              "setup_ms": 1.619725,
+              "fixture_load_ms": 2.804878,
+              "repetitions_per_batch": 3,
+              "batch_ms": [
+                8.542066333333333,
+                8.902475,
+                8.262260666666666,
+                8.620999333333334,
+                8.856277666666667,
+                8.311660666666667,
+                8.948512333333333,
+                8.580228666666667,
+                8.537060666666667,
+                8.748547333333333
+              ],
+              "batch_total_ms": [
+                25.626199,
+                26.707425,
+                24.786782,
+                25.862998,
+                26.568833,
+                24.934982,
+                26.845537,
+                25.740686,
+                25.611182,
+                26.245642
+              ],
+              "process_elapsed_s": 0.32166649494320154,
+              "output_checksum": -10.469048616942018,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0",
+                "scaling_cur_freq_khz": {
+                  "0": 4666478
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "synthesis",
+      "threads": 8,
+      "case_id": "GL-T720-M180-even-s0-synthesis-q8",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "parent_batch_ms": [
+        153.915959,
+        155.915171,
+        156.286805,
+        150.965976,
+        153.131323,
+        150.107923,
+        155.20360499999998,
+        151.822697,
+        154.790493,
+        156.124597,
+        150.71937999999997,
+        156.79699,
+        151.14355300000003,
+        149.41938,
+        153.94663599999998
+      ],
+      "candidate_batch_ms": [
+        143.498918,
+        141.890534,
+        141.535672,
+        144.306836,
+        141.18371699999997,
+        146.700526,
+        146.865508,
+        148.21266699999998,
+        145.05399,
+        143.889737,
+        140.128991,
+        142.850611,
+        142.61069700000002,
+        141.397841,
+        141.806415
+      ],
+      "ducc_batch_ms": [
+        1.1973615454545454,
+        1.2164249090909092,
+        1.2294167272727272,
+        1.2167559545454545,
+        1.1963815,
+        1.275827318181818,
+        1.1938745,
+        1.2144625454545455,
+        1.2266483181818182,
+        1.2164722272727273,
+        1.2044652857142857,
+        1.2149455714285715,
+        1.2151669523809523,
+        1.205668,
+        1.2117643333333332,
+        1.2105186190476191,
+        1.1954949523809524,
+        1.214324857142857,
+        1.2106450476190478,
+        1.2244068095238094,
+        1.2133832272727274,
+        1.2117041363636363,
+        1.2130166363636363,
+        1.2240675454545455,
+        1.2180702727272728,
+        1.2150964545454546,
+        1.2108693636363637,
+        1.2102331818181817,
+        1.207602318181818,
+        1.2109978181818182
+      ],
+      "candidate_over_parent_triplet_ratios": [
+        0.9218701876132287,
+        0.9477360214880897,
+        0.9382233789356531
+      ],
+      "candidate_over_parent_median": 0.9382233789356531,
+      "parent_over_ducc_median": 126.52894912774867,
+      "candidate_over_ducc_median": 116.96721255082848,
+      "parent_vs_ducc_error_max_rel_l2": 0.0002725512983988447,
+      "candidate_vs_ducc_error_max_rel_l2": 0.00027254614364372677,
+      "parent_vs_ducc_error_max_abs": 0.0015479326248168945,
+      "candidate_vs_ducc_error_max_abs": 0.0015478730201721191,
+      "finite": true,
+      "triplets": [
+        {
+          "triplet": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "rust_parent_median_ms": 153.915959,
+          "rust_candidate_median_ms": 141.890534,
+          "ducc_median_ms": 1.2164485681818182,
+          "candidate_over_parent": 0.9218701876132287,
+          "parent_over_ducc": 126.52894912774867,
+          "candidate_over_ducc": 116.64326607090233,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725512983988447,
+              "absolute_l2": 0.024453906090247036,
+              "max_absolute": 0.0015479326248168945,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 150.559948,
+              "warmup_ms": 155.40171,
+              "setup_ms": 1.217644,
+              "pool_setup_ms": 0.36615200000000003,
+              "fixture_load_ms": 3.0820410000000003,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                153.915959,
+                155.915171,
+                156.286805,
+                150.965976,
+                153.131323
+              ],
+              "batch_total_ms": [
+                153.915959,
+                155.915171,
+                156.286805,
+                150.965976,
+                153.131323
+              ],
+              "process_elapsed_s": 1.4459755020216107,
+              "output_checksum": -5.228230049833655,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3891142,
+                  "1": 3868625,
+                  "2": 3889529,
+                  "3": 3899168,
+                  "4": 3804872,
+                  "5": 4186168,
+                  "6": 4746283,
+                  "7": 3771341
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 141.06649399999998,
+              "warmup_ms": 144.85354,
+              "setup_ms": 1.342691,
+              "pool_setup_ms": 0.306711,
+              "fixture_load_ms": 3.047797,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                143.498918,
+                141.890534,
+                141.535672,
+                144.306836,
+                141.18371699999997
+              ],
+              "batch_total_ms": [
+                143.498918,
+                141.890534,
+                141.535672,
+                144.306836,
+                141.18371699999997
+              ],
+              "process_elapsed_s": 1.3424417770002037,
+              "output_checksum": -5.228234040550888,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3853877,
+                  "1": 3852772,
+                  "2": 3851385,
+                  "3": 4811176,
+                  "4": 3860027,
+                  "5": 3851760,
+                  "6": 4675010,
+                  "7": 3831600
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 2.387287,
+              "warmup_ms": 1.865019,
+              "setup_ms": 1.598245,
+              "fixture_load_ms": 2.86444,
+              "repetitions_per_batch": 22,
+              "batch_ms": [
+                1.1973615454545454,
+                1.2164249090909092,
+                1.2294167272727272,
+                1.2167559545454545,
+                1.1963815,
+                1.275827318181818,
+                1.1938745,
+                1.2144625454545455,
+                1.2266483181818182,
+                1.2164722272727273
+              ],
+              "batch_total_ms": [
+                26.341954,
+                26.761348,
+                27.047168,
+                26.768631,
+                26.320393,
+                28.068201,
+                26.265239,
+                26.718176,
+                26.986263,
+                26.762389
+              ],
+              "process_elapsed_s": 0.32706251507624984,
+              "output_checksum": -10.469048616942018,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3840650,
+                  "1": 3767829,
+                  "2": 3675625,
+                  "3": 3713945,
+                  "4": 4522943,
+                  "5": 4117735,
+                  "6": 4540327,
+                  "7": 3648272
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "rust_parent_median_ms": 154.790493,
+          "rust_candidate_median_ms": 146.700526,
+          "ducc_median_ms": 1.2112046904761904,
+          "candidate_over_parent": 0.9477360214880897,
+          "parent_over_ducc": 127.79878926917253,
+          "candidate_over_ducc": 121.11951609296034,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725512983988447,
+              "absolute_l2": 0.024453906090247036,
+              "max_absolute": 0.0015479326248168945,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 155.616355,
+              "warmup_ms": 154.61925000000002,
+              "setup_ms": 1.182838,
+              "pool_setup_ms": 0.31919400000000003,
+              "fixture_load_ms": 3.381579,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                150.107923,
+                155.20360499999998,
+                151.822697,
+                154.790493,
+                156.124597
+              ],
+              "batch_total_ms": [
+                150.107923,
+                155.20360499999998,
+                151.822697,
+                154.790493,
+                156.124597
+              ],
+              "process_elapsed_s": 1.4386743160430342,
+              "output_checksum": -5.228230049833655,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3833338,
+                  "1": 3831404,
+                  "2": 3825797,
+                  "3": 3790597,
+                  "4": 4747940,
+                  "5": 3801899,
+                  "6": 4552503,
+                  "7": 3759767
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 144.49806800000002,
+              "warmup_ms": 145.057797,
+              "setup_ms": 1.237892,
+              "pool_setup_ms": 0.481892,
+              "fixture_load_ms": 3.388281,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                146.700526,
+                146.865508,
+                148.21266699999998,
+                145.05399,
+                143.889737
+              ],
+              "batch_total_ms": [
+                146.700526,
+                146.865508,
+                148.21266699999998,
+                145.05399,
+                143.889737
+              ],
+              "process_elapsed_s": 1.3728648519609123,
+              "output_checksum": -5.228234040550888,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3851632,
+                  "1": 3846718,
+                  "2": 3852010,
+                  "3": 4776060,
+                  "4": 3815591,
+                  "5": 4318664,
+                  "6": 4713825,
+                  "7": 3924892
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 2.306555,
+              "warmup_ms": 1.640023,
+              "setup_ms": 1.597422,
+              "fixture_load_ms": 2.867465,
+              "repetitions_per_batch": 21,
+              "batch_ms": [
+                1.2044652857142857,
+                1.2149455714285715,
+                1.2151669523809523,
+                1.205668,
+                1.2117643333333332,
+                1.2105186190476191,
+                1.1954949523809524,
+                1.214324857142857,
+                1.2106450476190478,
+                1.2244068095238094
+              ],
+              "batch_total_ms": [
+                25.293771,
+                25.513857,
+                25.518506,
+                25.319028,
+                25.447051,
+                25.420891,
+                25.105394,
+                25.500822,
+                25.423546,
+                25.712543
+              ],
+              "process_elapsed_s": 0.314389405073598,
+              "output_checksum": -10.469048616942018,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3801558,
+                  "1": 3897832,
+                  "2": 3721801,
+                  "3": 3719585,
+                  "4": 3731345,
+                  "5": 4657698,
+                  "6": 3964613,
+                  "7": 3662650
+                }
+              }
+            }
+          }
+        },
+        {
+          "triplet": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "rust_parent_median_ms": 151.14355300000003,
+          "rust_candidate_median_ms": 141.806415,
+          "ducc_median_ms": 1.2123603863636363,
+          "candidate_over_parent": 0.9382233789356531,
+          "parent_over_ducc": 124.66883172695971,
+          "candidate_over_ducc": 116.96721255082848,
+          "errors_vs_ducc": {
+            "parent": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725512983988447,
+              "absolute_l2": 0.024453906090247036,
+              "max_absolute": 0.0015479326248168945,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_details": {
+            "parent": {
+              "backend": "parent",
+              "first_ms": 153.597005,
+              "warmup_ms": 150.465149,
+              "setup_ms": 1.748799,
+              "pool_setup_ms": 0.306981,
+              "fixture_load_ms": 3.3021190000000002,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                150.71937999999997,
+                156.79699,
+                151.14355300000003,
+                149.41938,
+                153.94663599999998
+              ],
+              "batch_total_ms": [
+                150.71937999999997,
+                156.79699,
+                151.14355300000003,
+                149.41938,
+                153.94663599999998
+              ],
+              "process_elapsed_s": 1.431333907181397,
+              "output_checksum": -5.228230049833655,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3850867,
+                  "1": 3846881,
+                  "2": 3874734,
+                  "3": 3846398,
+                  "4": 4789157,
+                  "5": 3860551,
+                  "6": 4264566,
+                  "7": 3820349
+                }
+              }
+            },
+            "candidate": {
+              "backend": "candidate",
+              "first_ms": 140.61522100000002,
+              "warmup_ms": 141.033422,
+              "setup_ms": 1.197947,
+              "pool_setup_ms": 0.297062,
+              "fixture_load_ms": 3.148698,
+              "repetitions_per_batch": 1,
+              "batch_ms": [
+                140.128991,
+                142.850611,
+                142.61069700000002,
+                141.397841,
+                141.806415
+              ],
+              "batch_total_ms": [
+                140.128991,
+                142.850611,
+                142.61069700000002,
+                141.397841,
+                141.806415
+              ],
+              "process_elapsed_s": 1.3379820780828595,
+              "output_checksum": -5.228234040550888,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f32_lanes": 8,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3874244,
+                  "1": 3870692,
+                  "2": 3874655,
+                  "3": 3889439,
+                  "4": 3920520,
+                  "5": 3911532,
+                  "6": 3932220,
+                  "7": 3931803
+                }
+              }
+            },
+            "ducc": {
+              "backend": "ducc",
+              "first_ms": 2.623674,
+              "warmup_ms": 1.776451,
+              "setup_ms": 1.669009,
+              "fixture_load_ms": 2.926728,
+              "repetitions_per_batch": 22,
+              "batch_ms": [
+                1.2133832272727274,
+                1.2117041363636363,
+                1.2130166363636363,
+                1.2240675454545455,
+                1.2180702727272728,
+                1.2150964545454546,
+                1.2108693636363637,
+                1.2102331818181817,
+                1.207602318181818,
+                1.2109978181818182
+              ],
+              "batch_total_ms": [
+                26.694431,
+                26.657491,
+                26.686366,
+                26.929486,
+                26.797546,
+                26.732122,
+                26.639126,
+                26.62513,
+                26.567251,
+                26.641952
+              ],
+              "process_elapsed_s": 0.3273545471020043,
+              "output_checksum": -10.469048616942018,
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true,
+              "telemetry": {
+                "affinity_cpus": "0,1,2,3,4,5,6,7",
+                "scaling_cur_freq_khz": {
+                  "0": 3894303,
+                  "1": 3872668,
+                  "2": 4591645,
+                  "3": 3680250,
+                  "4": 3927008,
+                  "5": 4368484,
+                  "6": 3665585,
+                  "7": 3691019
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
