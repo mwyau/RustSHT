@@ -612,3 +612,16 @@ After validating this result on `origin/dev` at `a2eaae68`, removed the exact ow
 ## Shared f64 scalar/spin pair normalizer — initial lint checkpoint
 
 Started from exact parent `01aab1f0ef48d29d2783174a7f623fe9da5fd3c0`. The working candidate factors the duplicate checked f64 pair-rescaling loops into `numeric::normalize_pair_values_f64`, preserving both exponent writes and the scalar/spin overflow labels while leaving the SIMD vector normalizer unchanged. Eight focused tests passed: scalar single-lane and multi-lane scaling, exponent overflow fallback, high-order near-polar tails, spin low-degree bases, spin-2 DUCC/weighted analysis, spin adjoint identities, and large-finite spin synthesis. Warning-denied Clippy then found two stale test constants (`BIG` and `SMALL`) in `spin.rs`, now unused after removing its local scaling loop. This candidate is not accepted pending their removal and a fresh isolated validation. No benchmark ran.
+
+## Retire standalone f32 scalar owner — 2026-10-27 01:44 UTC
+
+Source commit `ef6e9aabaca0bb1f43d5a8186d5aa2f6cc96dcd8` follows exact parent `9c5fdd1c676edb9d87cdee707a5bc2c2fb2f8d4a`. Deleted `src/legendre/scalar_f32.rs`. The native-f32 `ScalarRecurrencePrecision` and `PairedScalarRecurrencePrecision` leaves and scaled complex arithmetic now live in the scalar mathematical owner; shared sectoral normalization and epsilon use `numeric` directly; the f32 binary scale helper is shared by scalar and spin. The unique native-f32 paired synthesis transaction and its factor limit live with paired scalar synthesis. Its staged finite checks and no-write decline behavior are unchanged. The f64 scalar/spin implementation has no source diff.
+
+The seven existing f32 scalar tests moved intact under `legendre::scalar::f32_tests`; all seven are still present. Focused validation on rustc/Cargo 1.99.1 used the isolated scratch `rustsht-exp-scalar-f32-convergence.tM9XMidl` with `CARGO_HOME` and `CARGO_TARGET_DIR` inside that directory:
+
+- `cargo test --locked --all-features --lib scalar`: 167 passed, 0 failed, 16 ignored, 154 filtered.
+- `cargo clippy --locked --all-targets --all-features -- -D warnings`: passed.
+- `cargo fmt --all -- --check` and `git diff --check`: passed.
+- No benchmark ran: f64 source and protected hot paths are unchanged. The f32 shared traversal inherits the prior paired-traversal validation; this checkpoint makes no new f32 performance claim.
+
+Before cleanup, the experiment scratch measured 1,105,011,846 apparent bytes across 2,206 files; `/tmp` had 45 GiB available and 946,422 free inodes. This exact owned scratch is scheduled for immediate removal after the durable checkpoint. Next: converge native-spin recurrence traversal, then spin-analysis SIMD accumulation, retaining the typed f32/f64 leaves and current f64 performance guardrails.
