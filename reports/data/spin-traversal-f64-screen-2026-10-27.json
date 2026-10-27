@@ -1,0 +1,577 @@
+{
+  "metadata": {
+    "parent_source": "291465759133aea1685cb4a99dd5ca3d8da27aae",
+    "candidate_source_state": "working tree at traversal-family checkpoint",
+    "candidate_patch_sha256": "8a8dd5d139b026679c36f3d64be56a1571c2c06528c0886dc3c0e7a48404e00c",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+    "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "physical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "monitor_cpu": 8,
+    "preflight_psi_some_avg10": 0.0,
+    "fixture_seed_and_hashes": {
+      "GL-T720-M720-spin1-analysis": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "GL-T1023-M1023-spin1-synthesis": {
+        "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+        "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+        "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+        "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+      }
+    },
+    "measurement": "3 alternating parent/candidate/DUCC process triplets per GL full-mmax spin-1 cell; 25 ms target batches; worker checks repeat/reset; outputs hashed and compared"
+  },
+  "rescreen_metadata": {
+    "parent_source": "291465759133aea1685cb4a99dd5ca3d8da27aae",
+    "candidate_source_state": "working tree at traversal-family checkpoint",
+    "candidate_patch_sha256": "8a8dd5d139b026679c36f3d64be56a1571c2c06528c0886dc3c0e7a48404e00c",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+    "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "physical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "monitor_cpu": 8,
+    "preflight_psi_some_avg10": 0.0,
+    "fixture_seed_and_hashes": {
+      "GL-T720-M720-spin1-analysis": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      }
+    },
+    "measurement": "3 alternating parent/candidate/DUCC process triplets per GL full-mmax spin-1 cell; 25 ms target batches; worker checks repeat/reset; outputs hashed and compared"
+  },
+  "corrected_cells": [
+    {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 1,
+      "pairs": [
+        {
+          "pair": 1,
+          "timing_medians_ms": {
+            "parent": 35.9411275,
+            "ducc": 29.1045715,
+            "candidate": 36.759318500000006
+          },
+          "candidate_parent_ratio": 1.0227647560583626,
+          "scheduler_wait_fraction": {
+            "parent": 0.06915969993055217,
+            "ducc": 0.00029804224415088174,
+            "candidate": 0.0681178476647032
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        },
+        {
+          "pair": 2,
+          "timing_medians_ms": {
+            "candidate": 36.0664685,
+            "ducc": 29.3138015,
+            "parent": 36.000549500000005
+          },
+          "candidate_parent_ratio": 1.0018310553843073,
+          "scheduler_wait_fraction": {
+            "candidate": 0.0690957316867934,
+            "ducc": 0.0006320750391156492,
+            "parent": 0.06916066698488409
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        },
+        {
+          "pair": 3,
+          "timing_medians_ms": {
+            "parent": 36.063799,
+            "ducc": 29.049342000000003,
+            "candidate": 36.682714000000004
+          },
+          "candidate_parent_ratio": 1.0171616695179562,
+          "scheduler_wait_fraction": {
+            "parent": 0.06896297412171093,
+            "ducc": 0.0003071419307241379,
+            "candidate": 0.0689999072207355
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        }
+      ],
+      "usable_timing_pair_count": 3,
+      "usable_paired_ratio_median": 1.0171616695179562,
+      "usable_paired_ratio_range": [
+        1.0018310553843073,
+        1.0227647560583626
+      ],
+      "usable_backend_median_ms": {
+        "parent": 36.000549500000005,
+        "candidate": 36.682714000000004,
+        "ducc": 29.1045715
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 8,
+      "pairs": [
+        {
+          "pair": 1,
+          "timing_medians_ms": {
+            "parent": 5.310003249999999,
+            "ducc": 4.2513414166666665,
+            "candidate": 5.338893199999999
+          },
+          "candidate_parent_ratio": 1.005440665219932,
+          "scheduler_wait_fraction": {
+            "parent": 0.01004772966413999,
+            "ducc": 0.0038650353244044765,
+            "candidate": 0.007797934578452164
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain: low or moderate wait q8 pair"
+        },
+        {
+          "pair": 2,
+          "timing_medians_ms": {
+            "candidate": 5.295917,
+            "ducc": 4.254060750000001,
+            "parent": 5.2985281
+          },
+          "candidate_parent_ratio": 0.9995072027644809,
+          "scheduler_wait_fraction": {
+            "candidate": 0.008856314034555958,
+            "ducc": 0.003049357007361619,
+            "parent": 0.006042945718643037
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain: low or moderate wait q8 pair"
+        },
+        {
+          "pair": 3,
+          "timing_medians_ms": {
+            "parent": 5.2523236,
+            "ducc": 4.222755,
+            "candidate": 5.3439439
+          },
+          "candidate_parent_ratio": 1.0174437652699082,
+          "scheduler_wait_fraction": {
+            "parent": 0.011527139234764557,
+            "ducc": 0.0010855464041388625,
+            "candidate": 0.008597771884035517
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "exclude: candidate scheduler wait 4.98%"
+        }
+      ],
+      "usable_timing_pair_count": 2,
+      "usable_paired_ratio_median": 1.0024739339922064,
+      "usable_paired_ratio_range": [
+        0.9995072027644809,
+        1.005440665219932
+      ],
+      "usable_backend_median_ms": {
+        "parent": 5.304265675,
+        "candidate": 5.3174051,
+        "ducc": 4.252701083333333
+      }
+    },
+    {
+      "case_id": "GL-T1023-M1023-spin1-synthesis",
+      "threads": 1,
+      "pairs": [
+        {
+          "pair": 1,
+          "timing_medians_ms": {
+            "parent": 90.5595185,
+            "ducc": 123.673007,
+            "candidate": 90.3680065
+          },
+          "candidate_parent_ratio": 0.9978852361057994,
+          "scheduler_wait_fraction": {
+            "parent": 0.021153383303895292,
+            "ducc": 0.0004946025594432119,
+            "candidate": 0.021225565540648056
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff",
+            "ducc": "c371f3587455cfd68e588b343602dfee9fb7f0ae8b2e4eaa6cb769374e0941c1",
+            "candidate": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        },
+        {
+          "pair": 2,
+          "timing_medians_ms": {
+            "candidate": 92.237435,
+            "ducc": 120.397226,
+            "parent": 90.6976995
+          },
+          "candidate_parent_ratio": 1.0169765662027626,
+          "scheduler_wait_fraction": {
+            "candidate": 0.021092149398020833,
+            "ducc": 0.0005449134796926782,
+            "parent": 0.021062276158047035
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff",
+            "ducc": "c371f3587455cfd68e588b343602dfee9fb7f0ae8b2e4eaa6cb769374e0941c1",
+            "parent": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        },
+        {
+          "pair": 3,
+          "timing_medians_ms": {
+            "parent": 90.92765449999999,
+            "ducc": 120.380394,
+            "candidate": 90.20782399999999
+          },
+          "candidate_parent_ratio": 0.9920834810492115,
+          "scheduler_wait_fraction": {
+            "parent": 0.021261193065275123,
+            "ducc": 0.0003953820236790335,
+            "candidate": 0.021314295022909286
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff",
+            "ducc": "c371f3587455cfd68e588b343602dfee9fb7f0ae8b2e4eaa6cb769374e0941c1",
+            "candidate": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        }
+      ],
+      "usable_timing_pair_count": 3,
+      "usable_paired_ratio_median": 0.9978852361057994,
+      "usable_paired_ratio_range": [
+        0.9920834810492115,
+        1.0169765662027626
+      ],
+      "usable_backend_median_ms": {
+        "parent": 90.6976995,
+        "candidate": 90.3680065,
+        "ducc": 120.397226
+      }
+    },
+    {
+      "case_id": "GL-T1023-M1023-spin1-synthesis",
+      "threads": 8,
+      "pairs": [
+        {
+          "pair": 1,
+          "timing_medians_ms": {
+            "parent": 14.89755075,
+            "ducc": 19.797163249999997,
+            "candidate": 14.4227285
+          },
+          "candidate_parent_ratio": 0.9681274957227448,
+          "scheduler_wait_fraction": {
+            "parent": 0.01996706505266572,
+            "ducc": 0.005960455288588286,
+            "candidate": 0.0087988440680402
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff",
+            "ducc": "c371f3587455cfd68e588b343602dfee9fb7f0ae8b2e4eaa6cb769374e0941c1",
+            "candidate": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff"
+          },
+          "timing_admissibility": "retain: low or moderate wait q8 pair"
+        },
+        {
+          "pair": 2,
+          "timing_medians_ms": {
+            "candidate": 14.2676855,
+            "ducc": 19.904113,
+            "parent": 14.3669855
+          },
+          "candidate_parent_ratio": 0.9930883204413341,
+          "scheduler_wait_fraction": {
+            "candidate": 0.0029386946877874025,
+            "ducc": 0.008050140822827779,
+            "parent": 0.0037547388036837915
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff",
+            "ducc": "c371f3587455cfd68e588b343602dfee9fb7f0ae8b2e4eaa6cb769374e0941c1",
+            "parent": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff"
+          },
+          "timing_admissibility": "retain: low or moderate wait q8 pair"
+        },
+        {
+          "pair": 3,
+          "timing_medians_ms": {
+            "parent": 14.274533250000001,
+            "ducc": 19.98470775,
+            "candidate": 16.696260000000002
+          },
+          "candidate_parent_ratio": 1.1696536557508808,
+          "scheduler_wait_fraction": {
+            "parent": 0.005432216193361478,
+            "ducc": 0.0025193438938253426,
+            "candidate": 0.049752775507098376
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff",
+            "ducc": "c371f3587455cfd68e588b343602dfee9fb7f0ae8b2e4eaa6cb769374e0941c1",
+            "candidate": "c3f0a2be08878754b68299c7746f51d3d38fd25bf5ab128cdd3cfcf5b08482ff"
+          },
+          "timing_admissibility": "exclude: candidate scheduler wait 4.98%"
+        }
+      ],
+      "usable_timing_pair_count": 2,
+      "usable_paired_ratio_median": 0.9806079080820395,
+      "usable_paired_ratio_range": [
+        0.9681274957227448,
+        0.9930883204413341
+      ],
+      "usable_backend_median_ms": {
+        "parent": 14.632268125,
+        "candidate": 14.345207,
+        "ducc": 19.850638124999996
+      }
+    }
+  ],
+  "t720_rescreen_cells": [
+    {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 1,
+      "pairs": [
+        {
+          "pair": 4,
+          "timing_medians_ms": {
+            "candidate": 37.931844,
+            "ducc": 30.7684955,
+            "parent": 37.425081
+          },
+          "candidate_parent_ratio": 1.0135407322164514,
+          "scheduler_wait_fraction": {
+            "candidate": 0.0667753670532003,
+            "ducc": 0.00034716197339224476,
+            "parent": 0.06674411418965892
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        },
+        {
+          "pair": 5,
+          "timing_medians_ms": {
+            "parent": 37.935475499999995,
+            "ducc": 31.157378,
+            "candidate": 37.736172999999994
+          },
+          "candidate_parent_ratio": 0.9947462764767506,
+          "scheduler_wait_fraction": {
+            "parent": 0.06653214682235503,
+            "ducc": 0.00030346146945296705,
+            "candidate": 0.06646020983548906
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        },
+        {
+          "pair": 6,
+          "timing_medians_ms": {
+            "candidate": 37.7101095,
+            "ducc": 31.2838895,
+            "parent": 37.462406
+          },
+          "candidate_parent_ratio": 1.0066120552961815,
+          "scheduler_wait_fraction": {
+            "candidate": 0.06633661494225099,
+            "ducc": 0.000501272717338304,
+            "parent": 0.06522975264604135
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "retain as wait-affected secondary q1 evidence"
+        }
+      ],
+      "usable_timing_pair_count": 3,
+      "usable_paired_ratio_median": 1.0066120552961815,
+      "usable_paired_ratio_range": [
+        0.9947462764767506,
+        1.0135407322164514
+      ]
+    },
+    {
+      "case_id": "GL-T720-M720-spin1-analysis",
+      "threads": 8,
+      "pairs": [
+        {
+          "pair": 4,
+          "timing_medians_ms": {
+            "candidate": 7.201333375000001,
+            "ducc": 5.34801,
+            "parent": 7.431399875
+          },
+          "candidate_parent_ratio": 0.9690412972158897,
+          "scheduler_wait_fraction": {
+            "candidate": 0.07342558722698408,
+            "ducc": 0.12472734414154056,
+            "parent": 0.08521269984321221
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "exclude: high scheduler wait and host CPU pressure"
+        },
+        {
+          "pair": 5,
+          "timing_medians_ms": {
+            "parent": 6.790768,
+            "ducc": 4.8444529166666666,
+            "candidate": 7.470193625
+          },
+          "candidate_parent_ratio": 1.1000513675330978,
+          "scheduler_wait_fraction": {
+            "parent": 0.033514529458101405,
+            "ducc": 0.019563988459345854,
+            "candidate": 0.09828464036730897
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "exclude: high scheduler wait and host CPU pressure"
+        },
+        {
+          "pair": 6,
+          "timing_medians_ms": {
+            "candidate": 5.92180525,
+            "ducc": 4.535701250000001,
+            "parent": 7.3326766249999995
+          },
+          "candidate_parent_ratio": 0.8075912184386013,
+          "scheduler_wait_fraction": {
+            "candidate": 0.014212134426741026,
+            "ducc": 0.019524434113763367,
+            "parent": 0.06618588620869384
+          },
+          "candidate_parent_byte_identical": true,
+          "all_finite": true,
+          "output_sha256": {
+            "candidate": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563",
+            "ducc": "d00e9fd07c28c32b9a79a603ce1d93135f151f930d9bae71f33dc8b3803f7fa0",
+            "parent": "4f724b1e600dc299f369169801567e6a106162b177f8590093116cf9bfeed563"
+          },
+          "timing_admissibility": "exclude: high scheduler wait and host CPU pressure"
+        }
+      ],
+      "usable_timing_pair_count": 0,
+      "usable_paired_ratio_median": null,
+      "usable_paired_ratio_range": null
+    }
+  ],
+  "correction_note": "The first runner accidentally accumulated q1 pairs into q8 cell summaries. This durable sidecar recomputes every summary from the per-process CSV rows and labels high-wait pairs; do not use the original scratch JSON summaries.",
+  "validation": "All initial and rescreen executions reported finite outputs, repeat consistency and reset consistency; candidate and parent output bytes matched in every pair."
+}

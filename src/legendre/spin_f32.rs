@@ -27,10 +27,11 @@ use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
 #[cfg(test)]
+use crate::legendre::LATITUDE_BLOCK_SIZE;
+#[cfg(test)]
 use crate::legendre::LegendrePrecision;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, ScaledValue as BinaryScaledValue,
-    numeric::scale_binary_f32 as scale_binary,
+    ScaledValue as BinaryScaledValue, numeric::scale_binary_f32 as scale_binary,
 };
 
 type ScaledValue = BinaryScaledValue<f32>;
@@ -309,165 +310,29 @@ pub(crate) fn for_each_spin_lm_dispatched<F>(
     current_minus: &mut [f32],
     next_minus: &mut [f32],
     exponent_minus: &mut [i64],
-    mut visit: F,
+    visit: F,
 ) -> Result<(), ShtError>
 where
     F: FnMut(usize, usize, &[f32], &[i64], &[f32], &[i64]) -> Result<(), ShtError>,
 {
-    debug_assert_eq!(sin_theta.len(), cos_theta.len());
-    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
-    for values in [
-        &*previous_plus,
-        &*current_plus,
-        &*next_plus,
-        &*previous_minus,
-        &*current_minus,
-        &*next_minus,
-    ] {
-        debug_assert!(values.len() >= scratch_len);
-    }
-    debug_assert!(exponent_plus.len() >= scratch_len);
-    debug_assert!(exponent_minus.len() >= scratch_len);
-
-    for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
-        let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
-        let block_len = ring_end - ring_start;
-        arch.dispatch(ForEachSpin32 {
-            ring_start,
-            initial,
-            lmax,
-            cos_theta: &cos_theta[ring_start..ring_end],
-            coefficient_a,
-            coefficient_b,
-            previous_plus: &mut previous_plus[..block_len],
-            current_plus: &mut current_plus[..block_len],
-            next_plus: &mut next_plus[..block_len],
-            exponent_plus: &mut exponent_plus[..block_len],
-            previous_minus: &mut previous_minus[..block_len],
-            current_minus: &mut current_minus[..block_len],
-            next_minus: &mut next_minus[..block_len],
-            exponent_minus: &mut exponent_minus[..block_len],
-            visit: &mut visit,
-        })?;
-    }
-    Ok(())
-}
-
-struct ForEachSpin32<'a, F> {
-    ring_start: usize,
-    initial: &'a SpinInitial32,
-    lmax: usize,
-    cos_theta: &'a [f32],
-    coefficient_a: &'a [f32],
-    coefficient_b: &'a [f32],
-    previous_plus: &'a mut [f32],
-    current_plus: &'a mut [f32],
-    next_plus: &'a mut [f32],
-    exponent_plus: &'a mut [i64],
-    previous_minus: &'a mut [f32],
-    current_minus: &'a mut [f32],
-    next_minus: &'a mut [f32],
-    exponent_minus: &'a mut [i64],
-    visit: F,
-}
-
-impl<F> WithSimd for ForEachSpin32<'_, F>
-where
-    F: FnMut(usize, usize, &[f32], &[i64], &[f32], &[i64]) -> Result<(), ShtError>,
-{
-    type Output = Result<(), ShtError>;
-
-    #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        let ForEachSpin32 {
-            ring_start,
-            initial,
-            lmax,
-            cos_theta,
-            coefficient_a,
-            coefficient_b,
-            previous_plus,
-            current_plus,
-            next_plus,
-            exponent_plus,
-            previous_minus,
-            current_minus,
-            next_minus,
-            exponent_minus,
-            mut visit,
-        } = self;
-        debug_assert_eq!(cos_theta.len(), previous_plus.len());
-        debug_assert_eq!(cos_theta.len(), current_plus.len());
-        debug_assert_eq!(cos_theta.len(), next_plus.len());
-        debug_assert_eq!(cos_theta.len(), exponent_plus.len());
-        debug_assert_eq!(cos_theta.len(), previous_minus.len());
-        debug_assert_eq!(cos_theta.len(), current_minus.len());
-        debug_assert_eq!(cos_theta.len(), next_minus.len());
-        debug_assert_eq!(cos_theta.len(), exponent_minus.len());
-
-        for lane in 0..cos_theta.len() {
-            let (plus, minus) = super::spin_factors::initial_spin_values(
-                cos_theta[lane],
-                initial,
-                power,
-                multiply,
-            )?;
-            previous_plus[lane] = 0.0;
-            current_plus[lane] = initial.plus_sign * plus.mantissa;
-            exponent_plus[lane] = plus.exponent;
-            previous_minus[lane] = 0.0;
-            current_minus[lane] = initial.minus_sign * minus.mantissa;
-            exponent_minus[lane] = minus.exponent;
-        }
-
-        let mut previous_plus = previous_plus;
-        let mut current_plus = current_plus;
-        let mut next_plus = next_plus;
-        let mut previous_minus = previous_minus;
-        let mut current_minus = current_minus;
-        let mut next_minus = next_minus;
-        for l in initial.start_degree..=lmax {
-            visit(
-                l,
-                ring_start,
-                current_plus,
-                exponent_plus,
-                current_minus,
-                exponent_minus,
-            )?;
-            if l == lmax {
-                break;
-            }
-            recurrence_step(
-                simd,
-                cos_theta,
-                coefficient_a[l + 1],
-                coefficient_b[l + 1],
-                current_plus,
-                previous_plus,
-                next_plus,
-                false,
-            );
-            recurrence_step(
-                simd,
-                cos_theta,
-                coefficient_a[l + 1],
-                coefficient_b[l + 1],
-                current_minus,
-                previous_minus,
-                next_minus,
-                true,
-            );
-            normalize_pair_lanes_prechecked(simd, current_plus, next_plus, exponent_plus)?;
-
-            normalize_pair_lanes_prechecked(simd, current_minus, next_minus, exponent_minus)?;
-            std::mem::swap(&mut previous_plus, &mut current_plus);
-            std::mem::swap(&mut current_plus, &mut next_plus);
-            std::mem::swap(&mut previous_minus, &mut current_minus);
-            std::mem::swap(&mut current_minus, &mut next_minus);
-        }
-        Ok(())
-    }
+    super::spin::for_each_spin_lm_dispatched_typed::<f32, F>(
+        arch,
+        initial,
+        lmax,
+        sin_theta,
+        cos_theta,
+        coefficient_a,
+        coefficient_b,
+        previous_plus,
+        current_plus,
+        next_plus,
+        exponent_plus,
+        previous_minus,
+        current_minus,
+        next_minus,
+        exponent_minus,
+        visit,
+    )
 }
 
 #[expect(
@@ -573,6 +438,49 @@ fn pair_recurrence_state_in_safe_range<S: Simd>(
         return false;
     }
     !super::numeric::f32_pair_lanes_need_scaling::<S, false>(simd, previous, current)
+}
+
+impl super::spin::SpinRecurrencePrecision for f32 {
+    #[inline(always)]
+    fn initial_values(
+        cosine: Self,
+        initial: &super::spin_factors::SpinInitial<Self>,
+    ) -> Result<(BinaryScaledValue<Self>, BinaryScaledValue<Self>), ShtError> {
+        super::spin_factors::initial_spin_values(cosine, initial, power, multiply)
+    }
+
+    #[inline(always)]
+    fn recurrence_step<S: Simd>(
+        simd: S,
+        cosine: &[Self],
+        coefficient_a: Self,
+        coefficient_b: Self,
+        current: &[Self],
+        previous: &[Self],
+        next: &mut [Self],
+        add_coupling: bool,
+    ) {
+        recurrence_step(
+            simd,
+            cosine,
+            coefficient_a,
+            coefficient_b,
+            current,
+            previous,
+            next,
+            add_coupling,
+        );
+    }
+
+    #[inline(always)]
+    fn normalize_pair<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        normalize_pair_lanes_prechecked(simd, previous, current, exponents)
+    }
 }
 
 #[inline(always)]

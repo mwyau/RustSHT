@@ -39,7 +39,43 @@ const SCALE_EXPONENT: i64 = <f64 as LegendrePrecision>::SCALE_EXPONENT;
 
 pub(crate) type SpinInitial = super::spin_factors::SpinInitial<f64>;
 
-/// Visits the two normalized spin recurrence sequences over latitude lanes.
+/// Precision leaves for the shared native-spin recurrence traversal.
+pub(crate) trait SpinRecurrencePrecision: LegendrePrecision {
+    fn initial_values(
+        cosine: Self,
+        initial: &super::spin_factors::SpinInitial<Self>,
+    ) -> Result<
+        (
+            crate::legendre::ScaledValue<Self>,
+            crate::legendre::ScaledValue<Self>,
+        ),
+        ShtError,
+    >;
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The SIMD step receives independent spin coefficients and caller-owned lane state."
+    )]
+    fn recurrence_step<S: Simd>(
+        simd: S,
+        cosine: &[Self],
+        coefficient_a: Self,
+        coefficient_b: Self,
+        current: &[Self],
+        previous: &[Self],
+        next: &mut [Self],
+        add_coupling: bool,
+    );
+
+    fn normalize_pair<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError>;
+}
+
+/// Visits the two normalized f64 spin recurrence sequences over latitude lanes.
 #[expect(
     clippy::too_many_arguments,
     reason = "The recurrence receives its plan factors and caller-owned lane scratch explicitly."
@@ -60,8 +96,55 @@ pub(crate) fn for_each_spin_lm_dispatched(
     current_minus: &mut [f64],
     next_minus: &mut [f64],
     exponent_minus: &mut [i64],
-    mut visit: impl FnMut(usize, usize, &[f64], &[i64], &[f64], &[i64]) -> Result<(), ShtError>,
+    visit: impl FnMut(usize, usize, &[f64], &[i64], &[f64], &[i64]) -> Result<(), ShtError>,
 ) -> Result<(), ShtError> {
+    for_each_spin_lm_dispatched_typed::<f64, _>(
+        arch,
+        initial,
+        lmax,
+        sin_theta,
+        cos_theta,
+        coefficient_a,
+        coefficient_b,
+        previous_plus,
+        current_plus,
+        next_plus,
+        exponent_plus,
+        previous_minus,
+        current_minus,
+        next_minus,
+        exponent_minus,
+        visit,
+    )
+}
+
+/// Shares latitude scheduling, degree traversal and recurrence-state rotation.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The recurrence receives its plan factors and caller-owned lane scratch explicitly."
+)]
+pub(crate) fn for_each_spin_lm_dispatched_typed<T, F>(
+    arch: Arch,
+    initial: &super::spin_factors::SpinInitial<T>,
+    lmax: usize,
+    sin_theta: &[T],
+    cos_theta: &[T],
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    previous_plus: &mut [T],
+    current_plus: &mut [T],
+    next_plus: &mut [T],
+    exponent_plus: &mut [i64],
+    previous_minus: &mut [T],
+    current_minus: &mut [T],
+    next_minus: &mut [T],
+    exponent_minus: &mut [i64],
+    mut visit: F,
+) -> Result<(), ShtError>
+where
+    T: SpinRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64], &[T], &[i64]) -> Result<(), ShtError>,
+{
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
     let scratch_len = sin_theta.len().min(crate::legendre::LATITUDE_BLOCK_SIZE);
     for values in [
@@ -102,28 +185,29 @@ pub(crate) fn for_each_spin_lm_dispatched(
     Ok(())
 }
 
-struct ForEachSpin<'a, F> {
+struct ForEachSpin<'a, T, F> {
     ring_start: usize,
-    initial: &'a SpinInitial,
+    initial: &'a super::spin_factors::SpinInitial<T>,
     lmax: usize,
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
-    coefficient_a: &'a [f64],
-    coefficient_b: &'a [f64],
-    previous_plus: &'a mut [f64],
-    current_plus: &'a mut [f64],
-    next_plus: &'a mut [f64],
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
+    coefficient_a: &'a [T],
+    coefficient_b: &'a [T],
+    previous_plus: &'a mut [T],
+    current_plus: &'a mut [T],
+    next_plus: &'a mut [T],
     exponent_plus: &'a mut [i64],
-    previous_minus: &'a mut [f64],
-    current_minus: &'a mut [f64],
-    next_minus: &'a mut [f64],
+    previous_minus: &'a mut [T],
+    current_minus: &'a mut [T],
+    next_minus: &'a mut [T],
     exponent_minus: &'a mut [i64],
     visit: F,
 }
 
-impl<F> WithSimd for ForEachSpin<'_, F>
+impl<T, F> WithSimd for ForEachSpin<'_, T, F>
 where
-    F: FnMut(usize, usize, &[f64], &[i64], &[f64], &[i64]) -> Result<(), ShtError>,
+    T: SpinRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64], &[T], &[i64]) -> Result<(), ShtError>,
 {
     type Output = Result<(), ShtError>;
 
@@ -149,16 +233,11 @@ where
         } = self;
 
         for ring in 0..sin_theta.len() {
-            let (plus, minus) = super::spin_factors::initial_spin_values(
-                cos_theta[ring],
-                initial,
-                power,
-                multiply,
-            )?;
-            previous_plus[ring] = 0.0;
+            let (plus, minus) = T::initial_values(cos_theta[ring], initial)?;
+            previous_plus[ring] = T::zero();
             current_plus[ring] = initial.plus_sign * plus.mantissa;
             exponent_plus[ring] = plus.exponent;
-            previous_minus[ring] = 0.0;
+            previous_minus[ring] = T::zero();
             current_minus[ring] = initial.minus_sign * minus.mantissa;
             exponent_minus[ring] = minus.exponent;
         }
@@ -183,7 +262,7 @@ where
                 break;
             }
 
-            recurrence_step(
+            T::recurrence_step(
                 simd,
                 cos_theta,
                 coefficient_a[l + 1],
@@ -193,7 +272,7 @@ where
                 next_plus,
                 false,
             );
-            recurrence_step(
+            T::recurrence_step(
                 simd,
                 cos_theta,
                 coefficient_a[l + 1],
@@ -203,8 +282,8 @@ where
                 next_minus,
                 true,
             );
-            normalize_pair_lanes(current_plus, next_plus, exponent_plus)?;
-            normalize_pair_lanes(current_minus, next_minus, exponent_minus)?;
+            T::normalize_pair(simd, current_plus, next_plus, exponent_plus)?;
+            T::normalize_pair(simd, current_minus, next_minus, exponent_minus)?;
             std::mem::swap(&mut previous_plus, &mut current_plus);
             std::mem::swap(&mut current_plus, &mut next_plus);
             std::mem::swap(&mut previous_minus, &mut current_minus);
@@ -218,7 +297,7 @@ where
     clippy::too_many_arguments,
     reason = "The SIMD recurrence step receives vector lanes and independent positive/negative spin coefficients."
 )]
-fn recurrence_step<S: Simd>(
+fn recurrence_step_f64<S: Simd>(
     simd: S,
     cosine: &[f64],
     coefficient_a: f64,
@@ -288,6 +367,55 @@ fn normalize_pair_lanes(
         }
     }
     Ok(())
+}
+
+impl SpinRecurrencePrecision for f64 {
+    #[inline(always)]
+    fn initial_values(
+        cosine: Self,
+        initial: &super::spin_factors::SpinInitial<Self>,
+    ) -> Result<
+        (
+            crate::legendre::ScaledValue<Self>,
+            crate::legendre::ScaledValue<Self>,
+        ),
+        ShtError,
+    > {
+        super::spin_factors::initial_spin_values(cosine, initial, power, multiply)
+    }
+
+    #[inline(always)]
+    fn recurrence_step<S: Simd>(
+        simd: S,
+        cosine: &[Self],
+        coefficient_a: Self,
+        coefficient_b: Self,
+        current: &[Self],
+        previous: &[Self],
+        next: &mut [Self],
+        add_coupling: bool,
+    ) {
+        recurrence_step_f64(
+            simd,
+            cosine,
+            coefficient_a,
+            coefficient_b,
+            current,
+            previous,
+            next,
+            add_coupling,
+        );
+    }
+
+    #[inline(always)]
+    fn normalize_pair<S: Simd>(
+        _simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        normalize_pair_lanes(previous, current, exponents)
+    }
 }
 
 /// Accumulates one spin-analysis degree over latitude lanes.
