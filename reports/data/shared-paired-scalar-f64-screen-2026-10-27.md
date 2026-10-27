@@ -24,4 +24,4 @@ All 36 exact-parent/candidate pairs (72 outputs) were byte-identical and finite;
 
 ## Cleanup
 
-This report and CSV are saved outside the unique tmpfs scratch. Remove that scratch and its parent/candidate worktrees immediately after this evidence commit; the shared progress report will record reclaimed space. The first preflight attempt also stopped before measurement on a mistyped SHA and was cleaned separately.
+After evidence commit `84e4b900` was verified, removed the exact tmpfs scratch label `rustsht-exp-paired-f64-screen-20261027-WeLC3U`, its clean parent/candidate worktrees, isolated targets and raw outputs; verified the label and worktree registrations are absent. It measured 1,146,346,987 apparent bytes / 7,698 files; available tmpfs space rose by 1,165,185,024 bytes and free inodes by 8,778. The first preflight attempt also stopped before measurement on a mistyped SHA and was cleaned separately.
