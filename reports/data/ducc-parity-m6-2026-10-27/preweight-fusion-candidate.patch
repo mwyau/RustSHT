@@ -1,0 +1,51 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index 451942e5..3d2a3f2e 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -3788,17 +3787,0 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
+-    q_opposite_real[..sin_theta.len()].copy_from_slice(opposite_real[0]);
+-    q_opposite_imag[..sin_theta.len()].copy_from_slice(opposite_imag[0]);
+-    u_opposite_real[..sin_theta.len()].copy_from_slice(opposite_real[1]);
+-    u_opposite_imag[..sin_theta.len()].copy_from_slice(opposite_imag[1]);
+-    let q_opposite_prepared = prepare_analysis_opposite(
+-        &mut q_opposite_real[..sin_theta.len()],
+-        &mut q_opposite_imag[..sin_theta.len()],
+-        cos_theta,
+-    );
+-    let u_opposite_prepared = prepare_analysis_opposite(
+-        &mut u_opposite_real[..sin_theta.len()],
+-        &mut u_opposite_imag[..sin_theta.len()],
+-        cos_theta,
+-    );
+-    if !q_opposite_prepared || !u_opposite_prepared {
+-        return Ok(None);
+-    }
+@@ -3806,2 +3789,26 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
+-    for (squared, &cosine) in cos_theta_squared.iter_mut().zip(cos_theta) {
+-        *squared = cosine * cosine;
++    for lane in 0..sin_theta.len() {
++        let cosine = cos_theta[lane];
++        let q_real = opposite_real[0][lane];
++        let q_imag = opposite_imag[0][lane];
++        let u_real = opposite_real[1][lane];
++        let u_imag = opposite_imag[1][lane];
++        let q_weighted_real = q_real * cosine;
++        let q_weighted_imag = q_imag * cosine;
++        let u_weighted_real = u_real * cosine;
++        let u_weighted_imag = u_imag * cosine;
++        let q_real_safe = q_weighted_real.is_normal()
++            || (q_weighted_real == 0.0 && (q_real == 0.0 || cosine == 0.0));
++        let q_imag_safe = q_weighted_imag.is_normal()
++            || (q_weighted_imag == 0.0 && (q_imag == 0.0 || cosine == 0.0));
++        let u_real_safe = u_weighted_real.is_normal()
++            || (u_weighted_real == 0.0 && (u_real == 0.0 || cosine == 0.0));
++        let u_imag_safe = u_weighted_imag.is_normal()
++            || (u_weighted_imag == 0.0 && (u_imag == 0.0 || cosine == 0.0));
++        if !q_real_safe || !q_imag_safe || !u_real_safe || !u_imag_safe {
++            return Ok(None);
++        }
++        q_opposite_real[lane] = q_weighted_real;
++        q_opposite_imag[lane] = q_weighted_imag;
++        u_opposite_real[lane] = u_weighted_real;
++        u_opposite_imag[lane] = u_weighted_imag;
++        cos_theta_squared[lane] = cosine * cosine;

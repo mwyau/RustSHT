@@ -113,3 +113,18 @@ The candidate reused the staging pass's active-lane decisions during reflected-b
 The candidate passed `cargo test --release --locked --all-features --lib spin1` (49 passed, 4 ignored), format, and diff checks. q1 runqueue wait was 6.6–6.9%; q8 frequency samples included 1.746 GHz readings. See the [screen report](active-mask-screen-2026-10-27.md) for timing and cleanup details.
 
 Cleanup removed only exact scratch root `rustsht-m6-active-mask.7W3HgJPa` and its two registered worktrees after artifact verification. It contained 12,841 files (1,329,602,560 bytes allocated; 1,294,995,959 apparent). The root and registrations are absent; `/tmp` returned from 45 to 46 GiB available and free inodes increased by 12,430 to 949,018. No worker remained.
+
+### Paired preweight and cosine-square fusion candidate — removed
+
+This candidate combined local Q/U opposite-channel copy/preweight checks with per-lane cosine-square preparation in the shared spin-1 recurrence setup. It preserved the local transactional decline path but produced no supported whole-transform gain. The exact parent/candidate base was `85fd4998827619887c6d1642330ceb614b014935`; the measured source patch SHA is recorded separately from the recoverable zero-context patch hash.
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate patch](preweight-fusion-candidate.patch) | `fcfe352b69c12de8a24a7aec11ae86467d31eda05cf9c3da9d90fec4bce2a404` | Equivalent zero-context patch; apply with `git apply --unidiff-zero`. |
+| [Triplet results JSON](preweight-fusion-triplets.json) | `a7e97193cbf32b3525c2578e5c08489a9170ff3e7641db0f4f87e7542a9c59c4` | Six q1/q8 triplets with medians, checks, numerical errors, output hashes, and build/fixture provenance; no worker or host snapshots. |
+| [Triplet summary CSV](preweight-fusion-triplets.csv) | `776170071f3cc2688611366af66b317c19d5b58e7532c8bdfc79909ed1ebfeba` | Per-triplet medians, paired ratios, correctness, errors, and output hashes. |
+| [Runner](preweight-fusion-triplet-runner.py) | `925a928a68f10797bf3be64dc22a989737e247043f9b25069c35c84d3493eaac` | Reused corrected GL T720 triplet runner from the earlier matched screen. |
+
+See the [screen report](preweight-fusion-screen-2026-10-27.md) for the measured patch SHA, test result, and cleanup record.
+
+Cleanup removed only exact scratch root `rustsht-m6-preweight-fusion.2ccEyRrg` and its two registered worktrees after artifact verification. It contained 12,850 files (1,329,721,344 bytes allocated; 1,295,118,456 apparent). The root and registrations are absent; `/tmp` returned from 45 to 46 GiB available and free inodes increased by 14,474 to 949,018. No worker remained.
