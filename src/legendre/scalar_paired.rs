@@ -20,12 +20,15 @@
 use num_complex::{Complex, Complex64};
 use pulp::{Arch, Simd, WithSimd};
 use rustfft::num_traits::Float;
+use std::marker::PhantomData;
 
 use crate::error::ShtError;
 use crate::legendre::scalar::{
     lane_values_in_normal_range, scalar_value_in_normal_range, simd_values_in_normal_range,
 };
-use crate::legendre::{LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, scalar};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, LegendrePrecision, SCALAR_ANALYSIS_PAIR_TILE_SIZE, scalar,
+};
 
 const SIMD_SECTORAL_INIT_MIN_LMAX: usize = 511;
 const ANALYSIS_FTOL: f64 = f64::from_bits(963_u64 << 52);
@@ -851,7 +854,104 @@ pub(crate) use analysis::{
     prepare_analysis_products_and_opposite,
 };
 
-/// Visits transformed scalar basis values for degree pairs over latitude lanes.
+/// Precision leaves used by the shared paired scalar traversal.
+///
+/// The ring scheduling, degree loop, state rotation, and range-check policy
+/// stay in one implementation; only seed, typed SIMD update, and scaling
+/// operations remain specialized.
+pub(crate) trait PairedScalarRecurrencePrecision: LegendrePrecision {
+    fn initialize_pair_state(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError>;
+
+    fn step_pair<S: Simd>(
+        simd: S,
+        coefficient_a: Self,
+        coefficient_b: Self,
+        cosine: &[Self],
+        previous: &[Self],
+        current: &[Self],
+        next: &mut [Self],
+    );
+
+    fn normalize_pair_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError>;
+
+    fn pair_state_needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool;
+}
+
+impl PairedScalarRecurrencePrecision for f64 {
+    #[inline(always)]
+    fn initialize_pair_state(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        for ring in 0..sin_theta.len() {
+            let (value, exponent) = scalar::sectoral_value(sin_theta[ring], m, sectoral_norm)?;
+            previous[ring] = 0.0;
+            current[ring] = value;
+            exponents[ring] = exponent;
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn step_pair<S: Simd>(
+        simd: S,
+        coefficient_a: Self,
+        coefficient_b: Self,
+        cosine: &[Self],
+        previous: &[Self],
+        current: &[Self],
+        next: &mut [Self],
+    ) {
+        let (current_vectors, current_tail) = S::as_simd_f64s(current);
+        let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+        let (cos_vectors, cos_tail) = S::as_simd_f64s(cosine);
+        let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+        let a = simd.splat_f64s(coefficient_a);
+        let b = simd.splat_f64s(coefficient_b);
+        for index in 0..current_vectors.len() {
+            let cos_squared = simd.mul_f64s(cos_vectors[index], cos_vectors[index]);
+            let leading = simd.mul_add_f64s(a, cos_squared, b);
+            next_vectors[index] =
+                simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+        }
+        for index in 0..current_tail.len() {
+            let cos_squared = cos_tail[index] * cos_tail[index];
+            let leading = coefficient_a.mul_add(cos_squared, coefficient_b);
+            next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+        }
+    }
+
+    #[inline(always)]
+    fn normalize_pair_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar::normalize_pair_lanes(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn pair_state_needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
+        scalar::pair_lanes_need_scaling(simd, previous, current)
+    }
+}
+
+/// Visits transformed scalar basis values for f64 consumers.
 #[expect(
     clippy::too_many_arguments,
     reason = "The recurrence uses plan factors, geometry and caller-owned lane scratch."
@@ -893,8 +993,7 @@ where
     )
 }
 
-/// Visits paired scalar basis values and reports whether all lanes are in the
-/// ordinary floating-point range at each degree pair.
+/// Visits paired f64 scalar basis values and reports their normal-range state.
 #[expect(
     clippy::too_many_arguments,
     reason = "The recurrence uses plan factors, geometry and caller-owned lane scratch."
@@ -912,13 +1011,57 @@ pub(crate) fn for_each_y_lm_paired_status_dispatched<F>(
     current: &mut [f64],
     next: &mut [f64],
     exponents: &mut [i64],
-    mut visit: F,
+    visit: F,
 ) -> Result<(), ShtError>
 where
     F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
 {
+    for_each_y_lm_paired_status_dispatched_typed::<f64, F>(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        next,
+        exponents,
+        visit,
+    )
+}
+
+/// Shared order and latitude-block traversal for transformed scalar bases.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The recurrence uses plan factors, geometry and caller-owned lane scratch."
+)]
+pub(crate) fn for_each_y_lm_paired_status_dispatched_typed<T, F>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[T],
+    cos_theta: &[T],
+    sectoral_norm: T,
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    previous: &mut [T],
+    current: &mut [T],
+    next: &mut [T],
+    exponents: &mut [i64],
+    mut visit: F,
+) -> Result<(), ShtError>
+where
+    T: PairedScalarRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64], bool) -> Result<(), ShtError>,
+{
     debug_assert!(m <= lmax);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(coefficient_a.len() >= pair_count);
+    debug_assert!(coefficient_b.len() >= pair_count);
     let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
     debug_assert!(previous.len() >= scratch_len);
     debug_assert!(current.len() >= scratch_len);
@@ -942,30 +1085,33 @@ where
             next: &mut next[..block_len],
             exponents: &mut exponents[..block_len],
             visit: &mut visit,
+            _precision: PhantomData,
         })?;
     }
     Ok(())
 }
 
-struct ForEachPairedYlm<'a, F> {
+struct ForEachPairedYlm<'a, T, F> {
     ring_start: usize,
     m: usize,
     lmax: usize,
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
-    sectoral_norm: f64,
-    coefficient_a: &'a [f64],
-    coefficient_b: &'a [f64],
-    previous: &'a mut [f64],
-    current: &'a mut [f64],
-    next: &'a mut [f64],
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
+    sectoral_norm: T,
+    coefficient_a: &'a [T],
+    coefficient_b: &'a [T],
+    previous: &'a mut [T],
+    current: &'a mut [T],
+    next: &'a mut [T],
     exponents: &'a mut [i64],
     visit: F,
+    _precision: PhantomData<T>,
 }
 
-impl<F> WithSimd for ForEachPairedYlm<'_, F>
+impl<T, F> WithSimd for ForEachPairedYlm<'_, T, F>
 where
-    F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
+    T: PairedScalarRecurrencePrecision,
+    F: FnMut(usize, usize, &[T], &[i64], bool) -> Result<(), ShtError>,
 {
     type Output = Result<(), ShtError>;
 
@@ -985,52 +1131,35 @@ where
             next,
             exponents,
             mut visit,
+            _precision: _,
         } = self;
         let mut previous = previous;
         let mut current = current;
         let mut next = next;
 
-        for ring in 0..sin_theta.len() {
-            let (value, exponent) = scalar::sectoral_value(sin_theta[ring], m, sectoral_norm)?;
-            previous[ring] = 0.0;
-            current[ring] = value;
-            exponents[ring] = exponent;
-        }
-        let mut normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
+        T::initialize_pair_state(m, sin_theta, sectoral_norm, previous, current, exponents)?;
+        let mut normal_range = T::normalize_pair_state(previous, current, exponents)?;
 
-        for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
-            visit(l, ring_start, current, exponents, normal_range)?;
-            if l + 2 > lmax {
+        for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
+            visit(degree, ring_start, current, exponents, normal_range)?;
+            if degree + 2 > lmax {
                 break;
             }
 
-            let (current_vectors, current_tail) = S::as_simd_f64s(current);
-            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
-            let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
-            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
-            let a = simd.splat_f64s(coefficient_a[pair_index]);
-            let b = simd.splat_f64s(coefficient_b[pair_index]);
-            for index in 0..current_vectors.len() {
-                let cos_squared = simd.mul_f64s(cos_vectors[index], cos_vectors[index]);
-                let leading = simd.mul_add_f64s(a, cos_squared, b);
-                next_vectors[index] =
-                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
-            }
-            for index in 0..current_tail.len() {
-                let cos_squared = cos_tail[index] * cos_tail[index];
-                let leading =
-                    coefficient_a[pair_index].mul_add(cos_squared, coefficient_b[pair_index]);
-                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
-            }
+            T::step_pair(
+                simd,
+                coefficient_a[pair_index],
+                coefficient_b[pair_index],
+                cos_theta,
+                previous,
+                current,
+                next,
+            );
 
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
-            if normal_range {
-                if scalar::pair_lanes_need_scaling(simd, previous, current) {
-                    normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
-                }
-            } else {
-                normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
+            if !normal_range || T::pair_state_needs_scaling(simd, previous, current) {
+                normal_range = T::normalize_pair_state(previous, current, exponents)?;
             }
         }
         Ok(())

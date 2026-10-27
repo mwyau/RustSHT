@@ -21,9 +21,12 @@
 use std::f32::consts::PI;
 
 use num_complex::Complex32;
-use pulp::{Arch, Simd, WithSimd};
+#[cfg(test)]
+use pulp::WithSimd;
+use pulp::{Arch, Simd};
 
 use super::scalar::ScalarRecurrencePrecision;
+use super::scalar_paired::PairedScalarRecurrencePrecision;
 use crate::error::ShtError;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendrePrecision, ScaledValue as BinaryScaledValue, define_scale_binary,
@@ -130,6 +133,74 @@ impl ScalarRecurrencePrecision for f32 {
     }
 }
 
+impl PairedScalarRecurrencePrecision for f32 {
+    #[inline(always)]
+    fn initialize_pair_state(
+        m: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<(), ShtError> {
+        super::numeric::initialize_scalar_recurrence_lanes(
+            m,
+            sin_theta,
+            sectoral_norm,
+            super::numeric::ScalarRecurrenceBuffers {
+                previous,
+                current,
+                exponents,
+            },
+            scaled_power,
+            normalize_value,
+        )
+    }
+
+    #[inline(always)]
+    fn step_pair<S: Simd>(
+        simd: S,
+        coefficient_a: Self,
+        coefficient_b: Self,
+        cosine: &[Self],
+        previous: &[Self],
+        current: &[Self],
+        next: &mut [Self],
+    ) {
+        let (current_vectors, current_tail) = S::as_simd_f32s(current);
+        let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+        let (cos_vectors, cos_tail) = S::as_simd_f32s(cosine);
+        let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+        let a = simd.splat_f32s(coefficient_a);
+        let b = simd.splat_f32s(coefficient_b);
+        for index in 0..current_vectors.len() {
+            let cos_squared = simd.mul_f32s(cos_vectors[index], cos_vectors[index]);
+            let leading = simd.mul_add_f32s(a, cos_squared, b);
+            next_vectors[index] =
+                simd.mul_add_f32s(leading, current_vectors[index], previous_vectors[index]);
+        }
+        for index in 0..current_tail.len() {
+            let cos_squared = cos_tail[index] * cos_tail[index];
+            let leading = coefficient_a.mul_add(cos_squared, coefficient_b);
+            next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+        }
+    }
+
+    #[inline(always)]
+    fn normalize_pair_state(
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        normalize_pair_lanes_with_state(previous, current, exponents)
+    }
+
+    #[inline(always)]
+    fn pair_state_needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool {
+        pair_lanes_need_scaling(simd, previous, current)
+    }
+}
+
 pub(crate) fn sectoral_normalizations(mmax: usize) -> Result<Vec<f32>, ShtError> {
     super::numeric::sectoral_normalizations(mmax)
 }
@@ -219,138 +290,26 @@ pub(crate) fn for_each_y_lm_paired_status_dispatched<F>(
     current: &mut [f32],
     next: &mut [f32],
     exponents: &mut [i64],
-    mut visit: F,
+    visit: F,
 ) -> Result<(), ShtError>
 where
     F: FnMut(usize, usize, &[f32], &[i64], bool) -> Result<(), ShtError>,
 {
-    debug_assert!(m <= lmax);
-    debug_assert_eq!(sin_theta.len(), cos_theta.len());
-    let pair_count = (lmax - m + 2) / 2;
-    debug_assert!(coefficient_a.len() >= pair_count);
-    debug_assert!(coefficient_b.len() >= pair_count);
-    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
-    debug_assert!(previous.len() >= scratch_len);
-    debug_assert!(current.len() >= scratch_len);
-    debug_assert!(next.len() >= scratch_len);
-    debug_assert!(exponents.len() >= scratch_len);
-
-    for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
-        let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
-        let block_len = ring_end - ring_start;
-        arch.dispatch(ForEachPairedYlm32 {
-            ring_start,
-            m,
-            lmax,
-            sin_theta: &sin_theta[ring_start..ring_end],
-            cos_theta: &cos_theta[ring_start..ring_end],
-            sectoral_norm,
-            coefficient_a,
-            coefficient_b,
-            previous: &mut previous[..block_len],
-            current: &mut current[..block_len],
-            next: &mut next[..block_len],
-            exponents: &mut exponents[..block_len],
-            visit: &mut visit,
-        })?;
-    }
-    Ok(())
-}
-
-struct ForEachPairedYlm32<'a, F> {
-    ring_start: usize,
-    m: usize,
-    lmax: usize,
-    sin_theta: &'a [f32],
-    cos_theta: &'a [f32],
-    sectoral_norm: f32,
-    coefficient_a: &'a [f32],
-    coefficient_b: &'a [f32],
-    previous: &'a mut [f32],
-    current: &'a mut [f32],
-    next: &'a mut [f32],
-    exponents: &'a mut [i64],
-    visit: F,
-}
-
-impl<F> WithSimd for ForEachPairedYlm32<'_, F>
-where
-    F: FnMut(usize, usize, &[f32], &[i64], bool) -> Result<(), ShtError>,
-{
-    type Output = Result<(), ShtError>;
-
-    #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        let ForEachPairedYlm32 {
-            ring_start,
-            m,
-            lmax,
-            sin_theta,
-            cos_theta,
-            sectoral_norm,
-            coefficient_a,
-            coefficient_b,
-            previous,
-            current,
-            next,
-            exponents,
-            mut visit,
-        } = self;
-        let mut previous = previous;
-        let mut current = current;
-        let mut next = next;
-
-        super::numeric::initialize_scalar_recurrence_lanes(
-            m,
-            sin_theta,
-            sectoral_norm,
-            super::numeric::ScalarRecurrenceBuffers {
-                previous,
-                current,
-                exponents,
-            },
-            scaled_power,
-            normalize_value,
-        )?;
-        let mut normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
-
-        for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
-            visit(degree, ring_start, current, exponents, normal_range)?;
-            if degree + 2 > lmax {
-                break;
-            }
-
-            let (current_vectors, current_tail) = S::as_simd_f32s(current);
-            let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
-            let (cos_vectors, cos_tail) = S::as_simd_f32s(cos_theta);
-            let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
-            let a = simd.splat_f32s(coefficient_a[pair_index]);
-            let b = simd.splat_f32s(coefficient_b[pair_index]);
-            for index in 0..current_vectors.len() {
-                let cosine_squared = simd.mul_f32s(cos_vectors[index], cos_vectors[index]);
-                let leading = simd.mul_add_f32s(a, cosine_squared, b);
-                next_vectors[index] =
-                    simd.mul_add_f32s(leading, current_vectors[index], previous_vectors[index]);
-            }
-            for index in 0..current_tail.len() {
-                let cosine_squared = cos_tail[index] * cos_tail[index];
-                let leading =
-                    coefficient_a[pair_index].mul_add(cosine_squared, coefficient_b[pair_index]);
-                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
-            }
-
-            std::mem::swap(&mut previous, &mut current);
-            std::mem::swap(&mut current, &mut next);
-            if normal_range {
-                if pair_lanes_need_scaling(simd, previous, current) {
-                    normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
-                }
-            } else {
-                normal_range = normalize_pair_lanes_with_state(previous, current, exponents)?;
-            }
-        }
-        Ok(())
-    }
+    super::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, F>(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        next,
+        exponents,
+        visit,
+    )
 }
 
 /// Accumulates one prepared native-f32 paired scalar order transactionally.
