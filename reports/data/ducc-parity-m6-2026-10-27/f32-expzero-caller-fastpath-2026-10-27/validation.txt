@@ -1,0 +1,11 @@
+Exact parent: a30537bdcfa0fc5273985abfd592998325a608de
+Candidate patch SHA-256: e52f04beb9e302396dcbe0b992d1bc798c15fe97ae6e2857022ac45de0aac776
+
+Validation on the candidate worktree:
+- cargo test --locked --release --features parallel --lib scalar: 168 passed, 16 ignored.
+- cargo test --locked --release --features parallel --test f32: 11 passed, 1 ignored.
+- cargo fmt --all -- --check: passed after formatting.
+- git diff --check: passed.
+- Patch apply-check passed against a clean exact-parent worktree.
+
+Matched GL T720 full-mmax native-f32 scalar synthesis used three alternating fresh-process parent/candidate/DUCC triplets per q. All six parent/candidate comparisons were bitwise identical; every backend worker passed finite, repeat, and reset checks.

@@ -160,11 +160,16 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
                     odd.re.mul_add(cos_theta[ring], even.re),
                     odd.im.mul_add(cos_theta[ring], even.im),
                 );
-                let contribution = super::super::scalar::multiply_complex_scaled_f32(
-                    coefficient,
-                    basis[lane],
-                    lane_exponents[lane],
-                );
+                let exponent = lane_exponents[lane];
+                let contribution = if exponent == 0 {
+                    Complex32::new(coefficient.re * basis[lane], coefficient.im * basis[lane])
+                } else {
+                    super::super::scalar::multiply_complex_scaled_f32(
+                        coefficient,
+                        basis[lane],
+                        exponent,
+                    )
+                };
                 let real = staged_real[ring] + contribution.re;
                 let imag = staged_imag[ring] + contribution.im;
                 if !real.is_finite() || !imag.is_finite() {
