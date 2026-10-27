@@ -1,0 +1,80 @@
+{
+  "parent_source_sha": "469f175a905df34b4514a9f21db391a424adbe15",
+  "candidate_patch_sha256": "c71b5e36e5c953dbfbfcafdc389226ab045d242292cd17dafb76318093757071",
+  "candidate_source_file_sha256": {
+    "src/legendre/mod.rs": "92b8d88e5b26aba539b8c882ce6fab6402ce1a553a27bb429803091fc1e72864",
+    "src/legendre/scalar_paired.rs": "8925053855ff2b33b50488a259796326af4d9cfe366e22bb450d2f77d3d98233",
+    "src/legendre/scalar_paired/analysis.rs": "24735f65c9ff9462c5a9ef3931782d019c6713fb85423a3b3cfe6a9f9b9ea07e",
+    "src/transform/spin/analysis.rs": "911bc499442a2a6cec3920f848f69d6a4358a92b705b9a6a335050558d522f30"
+  },
+  "focused_tests": {
+    "cargo test --locked --all-features --lib legendre::scalar_paired::analysis": "35 passed, 8 ignored",
+    "cargo test --locked --all-features --lib spin1": "49 passed, 4 ignored",
+    "cargo fmt --all -- --check": "passed",
+    "git diff --check": "passed"
+  },
+  "compiler": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "llvm": "23.1.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "gxx": "Ubuntu 15.2.0-16ubuntu1",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_driver_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3 -fno-fast-math -ffp-contract=fast"
+  },
+  "release_binary_sha256": {
+    "parent": "55fd342480d80c63ae16332a1e758c3af230ad27fbc1d4fddad968ab460871ee",
+    "candidate": "c7c1083e527dfe3ca2e59d385d65f62e24ba4edfabdfd6ba07331e07f59b1a54",
+    "ducc": "2fb19b2e0e2453a7f937808f283f420de376e95cc9158a8c470285bfa5cdfb5d"
+  },
+  "fixture": {
+    "case": "GL T720 spin-1 analysis, full mmax, ntheta=721, nphi=1458, phi0=0.23",
+    "seed": 1416973757,
+    "sha256": {
+      "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+      "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+      "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+      "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "runner_sha256": null,
+      "fixture_created": false,
+      "worker_started": false,
+      "failure": "Python eager evaluation of the Path(__file__).parents[3] fallback raised IndexError despite RUSTSHT_REPO being set",
+      "timing_data_retained": false
+    },
+    {
+      "attempt": 2,
+      "runner_sha256": "372866e49507075ad60acdc0d411f24a9d872bd0b46521a8c9ef3e244d4c50fa",
+      "fixture_created": true,
+      "worker": "parent q1, pair 0",
+      "transform_and_timed_batches_ran": true,
+      "failure": "Worker failed to create output files because the runner had not created its results directory; output serialization precedes timing JSON emission",
+      "candidate_worker_started": false,
+      "ducc_worker_started": false,
+      "timing_data_retained": false
+    }
+  ],
+  "cleanup": [
+    {
+      "scratch_label": "rustsht-m6-pair-safety.8zxvvDjw",
+      "files": 56355,
+      "allocated_kib": 2305276,
+      "free_inodes_delta": 65785,
+      "root_absent": true,
+      "worktrees_removed": true
+    },
+    {
+      "scratch_label": "rustsht-m6-pair-safety-retry.DYDnowSr",
+      "files": 55820,
+      "allocated_kib": 1610060,
+      "free_inodes_delta": 65179,
+      "root_absent": true,
+      "worktrees_removed": true
+    }
+  ],
+  "performance_conclusion": "none; no complete parent/candidate/DUCC triplets and no timing samples were retained"
+}

@@ -1,0 +1,369 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index 26f4da22..cbcd3b90 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -635,0 +636,17 @@ pub(crate) trait ShtScalar:
++    fn scalar_analysis_channels_products_safe(
++        same_real: [&[Self]; 2],
++        same_imag: [&[Self]; 2],
++        opposite_real: [&[Self]; 2],
++        opposite_imag: [&[Self]; 2],
++        cos_theta: &[Self],
++    ) -> [bool; 2] {
++        std::array::from_fn(|channel| {
++            Self::scalar_analysis_products_safe(
++                same_real[channel],
++                same_imag[channel],
++                opposite_real[channel],
++                opposite_imag[channel],
++                cos_theta,
++            )
++        })
++    }
+@@ -1679,0 +1697,16 @@ impl ShtScalar for f64 {
++    fn scalar_analysis_channels_products_safe(
++        same_real: [&[Self]; 2],
++        same_imag: [&[Self]; 2],
++        opposite_real: [&[Self]; 2],
++        opposite_imag: [&[Self]; 2],
++        cos_theta: &[Self],
++    ) -> [bool; 2] {
++        scalar_paired::analysis_channels_products_safe(
++            same_real,
++            same_imag,
++            opposite_real,
++            opposite_imag,
++            cos_theta,
++        )
++    }
++
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 464a12ec..54010d8a 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -856 +856,2 @@ pub(crate) use analysis::{
+-    analysis_products_safe, fused_scalar_analysis_pair_block_preweighted_dispatched,
++    analysis_channels_products_safe, analysis_products_safe,
++    fused_scalar_analysis_pair_block_preweighted_dispatched,
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index 451942e5..d03664ac 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -165,3 +165,41 @@ pub(crate) fn analysis_products_safe(
+-    // Bound the absolute sum as well as each product. This keeps both the
+-    // vector reduction and accumulation across previous latitude tiles finite.
+-    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
++    analysis_products_safe_channels(
++        [same_real],
++        [same_imag],
++        [opposite_real],
++        [opposite_imag],
++        cos_theta,
++    )[0]
++}
++
++/// Checks two spin-analysis channels together, sharing cosine validation and
++/// the SIMD lane traversal while keeping each channel's safety result separate.
++pub(crate) fn analysis_channels_products_safe(
++    same_real: [&[f64]; 2],
++    same_imag: [&[f64]; 2],
++    opposite_real: [&[f64]; 2],
++    opposite_imag: [&[f64]; 2],
++    cos_theta: &[f64],
++) -> [bool; 2] {
++    for channel in 0..2 {
++        debug_assert_eq!(same_real[channel].len(), same_imag[channel].len());
++        debug_assert_eq!(same_real[channel].len(), opposite_real[channel].len());
++        debug_assert_eq!(same_real[channel].len(), opposite_imag[channel].len());
++        debug_assert_eq!(same_real[channel].len(), cos_theta.len());
++    }
++    analysis_products_safe_channels(
++        same_real,
++        same_imag,
++        opposite_real,
++        opposite_imag,
++        cos_theta,
++    )
++}
++
++fn analysis_products_safe_channels<const CHANNELS: usize>(
++    same_real: [&[f64]; CHANNELS],
++    same_imag: [&[f64]; CHANNELS],
++    opposite_real: [&[f64]; CHANNELS],
++    opposite_imag: [&[f64]; CHANNELS],
++    cos_theta: &[f64],
++) -> [bool; CHANNELS] {
++    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real[0].len().max(1) as f64);
+@@ -178,5 +216,5 @@ pub(crate) fn analysis_products_safe(
+-struct AnalysisProductsSafe<'a> {
+-    same_real: &'a [f64],
+-    same_imag: &'a [f64],
+-    opposite_real: &'a [f64],
+-    opposite_imag: &'a [f64],
++struct AnalysisProductsSafe<'a, const CHANNELS: usize> {
++    same_real: [&'a [f64]; CHANNELS],
++    same_imag: [&'a [f64]; CHANNELS],
++    opposite_real: [&'a [f64]; CHANNELS],
++    opposite_imag: [&'a [f64]; CHANNELS],
+@@ -187,2 +225,2 @@ struct AnalysisProductsSafe<'a> {
+-impl WithSimd for AnalysisProductsSafe<'_> {
+-    type Output = bool;
++impl<const CHANNELS: usize> WithSimd for AnalysisProductsSafe<'_, CHANNELS> {
++    type Output = [bool; CHANNELS];
+@@ -192,4 +230,8 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(self.same_real);
+-        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(self.same_imag);
+-        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(self.opposite_real);
+-        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(self.opposite_imag);
++        let same_real: [(&[S::f64s], &[f64]); CHANNELS] =
++            std::array::from_fn(|channel| S::as_simd_f64s(self.same_real[channel]));
++        let same_imag: [(&[S::f64s], &[f64]); CHANNELS] =
++            std::array::from_fn(|channel| S::as_simd_f64s(self.same_imag[channel]));
++        let opposite_real: [(&[S::f64s], &[f64]); CHANNELS] =
++            std::array::from_fn(|channel| S::as_simd_f64s(self.opposite_real[channel]));
++        let opposite_imag: [(&[S::f64s], &[f64]); CHANNELS] =
++            std::array::from_fn(|channel| S::as_simd_f64s(self.opposite_imag[channel]));
+@@ -197,8 +239,10 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-        debug_assert_eq!(same_real_vectors.len(), same_imag_vectors.len());
+-        debug_assert_eq!(same_real_vectors.len(), opposite_real_vectors.len());
+-        debug_assert_eq!(same_real_vectors.len(), opposite_imag_vectors.len());
+-        debug_assert_eq!(same_real_vectors.len(), cosine_vectors.len());
+-        debug_assert_eq!(same_real_tail.len(), same_imag_tail.len());
+-        debug_assert_eq!(same_real_tail.len(), opposite_real_tail.len());
+-        debug_assert_eq!(same_real_tail.len(), opposite_imag_tail.len());
+-        debug_assert_eq!(same_real_tail.len(), cosine_tail.len());
++        for channel in 0..CHANNELS {
++            debug_assert_eq!(same_real[channel].0.len(), cosine_vectors.len());
++            debug_assert_eq!(same_imag[channel].0.len(), cosine_vectors.len());
++            debug_assert_eq!(opposite_real[channel].0.len(), cosine_vectors.len());
++            debug_assert_eq!(opposite_imag[channel].0.len(), cosine_vectors.len());
++            debug_assert_eq!(same_real[channel].1.len(), cosine_tail.len());
++            debug_assert_eq!(same_imag[channel].1.len(), cosine_tail.len());
++            debug_assert_eq!(opposite_real[channel].1.len(), cosine_tail.len());
++            debug_assert_eq!(opposite_imag[channel].1.len(), cosine_tail.len());
++        }
+@@ -210,17 +254,2 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-        for index in 0..same_real_vectors.len() {
+-            let mut normal_inputs = simd.equal_f64s(zeros, zeros);
+-            for value in [
+-                same_real_vectors[index],
+-                same_imag_vectors[index],
+-                opposite_real_vectors[index],
+-                opposite_imag_vectors[index],
+-            ] {
+-                let magnitude = simd.abs_f64s(value);
+-                let normal_or_zero = simd.or_m64s(
+-                    simd.equal_f64s(magnitude, zeros),
+-                    simd.greater_than_or_equal_f64s(magnitude, minimum_normal),
+-                );
+-                let bounded = simd.less_than_or_equal_f64s(magnitude, maximum_input);
+-                normal_inputs =
+-                    simd.and_m64s(normal_inputs, simd.and_m64s(normal_or_zero, bounded));
+-            }
++        let mut channel_safe = [true; CHANNELS];
++        for index in 0..cosine_vectors.len() {
+@@ -229,2 +258,2 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-            if !analysis_mask_all(simd, simd.and_m64s(normal_inputs, cosine_in_range)) {
+-                return false;
++            if !analysis_mask_all(simd, cosine_in_range) {
++                return [false; CHANNELS];
+@@ -232,11 +261,16 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-        }
+-
+-        for lane in 0..same_real_tail.len() {
+-            for value in [
+-                same_real_tail[lane],
+-                same_imag_tail[lane],
+-                opposite_real_tail[lane],
+-                opposite_imag_tail[lane],
+-            ] {
+-                if !(value.is_normal() || value == 0.0) || value.abs() > self.max_input {
+-                    return false;
++            for channel in 0..CHANNELS {
++                let mut normal_inputs = simd.equal_f64s(zeros, zeros);
++                for value in [
++                    same_real[channel].0[index],
++                    same_imag[channel].0[index],
++                    opposite_real[channel].0[index],
++                    opposite_imag[channel].0[index],
++                ] {
++                    let magnitude = simd.abs_f64s(value);
++                    let normal_or_zero = simd.or_m64s(
++                        simd.equal_f64s(magnitude, zeros),
++                        simd.greater_than_or_equal_f64s(magnitude, minimum_normal),
++                    );
++                    let bounded = simd.less_than_or_equal_f64s(magnitude, maximum_input);
++                    normal_inputs =
++                        simd.and_m64s(normal_inputs, simd.and_m64s(normal_or_zero, bounded));
+@@ -243,0 +278 @@ impl WithSimd for AnalysisProductsSafe<'_> {
++                channel_safe[channel] &= analysis_mask_all(simd, normal_inputs);
+@@ -244,0 +280,3 @@ impl WithSimd for AnalysisProductsSafe<'_> {
++        }
++
++        for lane in 0..cosine_tail.len() {
+@@ -246 +284,13 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-                return false;
++                return [false; CHANNELS];
++            }
++            for channel in 0..CHANNELS {
++                for value in [
++                    same_real[channel].1[lane],
++                    same_imag[channel].1[lane],
++                    opposite_real[channel].1[lane],
++                    opposite_imag[channel].1[lane],
++                ] {
++                    if !(value.is_normal() || value == 0.0) || value.abs() > self.max_input {
++                        channel_safe[channel] = false;
++                    }
++                }
+@@ -249 +299 @@ impl WithSimd for AnalysisProductsSafe<'_> {
+-        true
++        channel_safe
+diff --git a/src/legendre/scalar_paired/analysis/tests.rs b/src/legendre/scalar_paired/analysis/tests.rs
+index 3d8a055c..b8b10bf3 100644
+--- a/src/legendre/scalar_paired/analysis/tests.rs
++++ b/src/legendre/scalar_paired/analysis/tests.rs
+@@ -901,0 +902,79 @@ fn analysis_products_safe_simd_matches_ieee_boundaries() {
++#[test]
++fn analysis_channel_pair_safety_matches_independent_checks() {
++    for lane_count in [0, 1, 3, 4, 5, 8, 9, LATITUDE_BLOCK_SIZE] {
++        let max_input = f64::MAX / scalar::BIG / (2.0 * lane_count.max(1) as f64);
++        let q = [
++            vec![0.5; lane_count],
++            vec![-0.25; lane_count],
++            vec![f64::MIN_POSITIVE; lane_count],
++            vec![-0.0; lane_count],
++        ];
++        let u = [
++            vec![0.375; lane_count],
++            vec![0.125; lane_count],
++            vec![-0.75; lane_count],
++            vec![0.0; lane_count],
++        ];
++        let cosine = vec![1.0; lane_count];
++        let check = |q: [&[f64]; 4], u: [&[f64]; 4], cosine: &[f64]| {
++            let expected = [
++                analysis_products_safe(q[0], q[1], q[2], q[3], cosine),
++                analysis_products_safe(u[0], u[1], u[2], u[3], cosine),
++            ];
++            assert_eq!(
++                analysis_channels_products_safe(
++                    [q[0], u[0]],
++                    [q[1], u[1]],
++                    [q[2], u[2]],
++                    [q[3], u[3]],
++                    cosine,
++                ),
++                expected,
++                "lane_count={lane_count}"
++            );
++        };
++        let q_refs = [&q[0][..], &q[1], &q[2], &q[3]];
++        let u_refs = [&u[0][..], &u[1], &u[2], &u[3]];
++        check(q_refs, u_refs, &cosine);
++
++        for channel in 0..2 {
++            for component in 0..4 {
++                for lane in 0..lane_count {
++                    for invalid in [
++                        f64::NAN,
++                        f64::INFINITY,
++                        -f64::INFINITY,
++                        f64::MIN_POSITIVE * 0.5,
++                        f64::from_bits(max_input.to_bits() + 1),
++                    ] {
++                        let mut changed = vec![0.5; lane_count];
++                        changed[lane] = invalid;
++                        let mut q_values = q_refs;
++                        let mut u_values = u_refs;
++                        if channel == 0 {
++                            q_values[component] = &changed;
++                        } else {
++                            u_values[component] = &changed;
++                        }
++                        check(q_values, u_values, &cosine);
++                    }
++                }
++            }
++        }
++
++        for lane in 0..lane_count {
++            for invalid in [
++                f64::NAN,
++                f64::INFINITY,
++                -f64::INFINITY,
++                1.0 + f64::EPSILON,
++                -1.0 - f64::EPSILON,
++            ] {
++                let mut changed = cosine.clone();
++                changed[lane] = invalid;
++                check(q_refs, u_refs, &changed);
++            }
++        }
++    }
++}
++
+diff --git a/src/transform/spin/analysis.rs b/src/transform/spin/analysis.rs
+index 2250374e..1c9a670a 100644
+--- a/src/transform/spin/analysis.rs
++++ b/src/transform/spin/analysis.rs
+@@ -710,12 +710,17 @@ impl<T: ShtScalar> ShtPlan<T> {
+-            let q_inputs_safe = T::scalar_analysis_products_safe(
+-                &recurrence.analysis_same_real[..block_len],
+-                &recurrence.analysis_same_imag[..block_len],
+-                &recurrence.analysis_opposite_real[..block_len],
+-                &recurrence.analysis_opposite_imag[..block_len],
+-                all_cosines,
+-            );
+-            let u_inputs_safe = T::scalar_analysis_products_safe(
+-                &recurrence.spin_previous_plus[..block_len],
+-                &recurrence.spin_current_plus[..block_len],
+-                &recurrence.spin_previous_minus[..block_len],
+-                &recurrence.spin_current_minus[..block_len],
++            let [q_inputs_safe, u_inputs_safe] = T::scalar_analysis_channels_products_safe(
++                [
++                    &recurrence.analysis_same_real[..block_len],
++                    &recurrence.spin_previous_plus[..block_len],
++                ],
++                [
++                    &recurrence.analysis_same_imag[..block_len],
++                    &recurrence.spin_current_plus[..block_len],
++                ],
++                [
++                    &recurrence.analysis_opposite_real[..block_len],
++                    &recurrence.spin_previous_minus[..block_len],
++                ],
++                [
++                    &recurrence.analysis_opposite_imag[..block_len],
++                    &recurrence.spin_current_minus[..block_len],
++                ],
+@@ -775,12 +780,17 @@ impl<T: ShtScalar> ShtPlan<T> {
+-            let q_products_safe = T::scalar_analysis_products_safe(
+-                &recurrence.analysis_same_real[..lane_count],
+-                &recurrence.analysis_same_imag[..lane_count],
+-                &recurrence.analysis_opposite_real[..lane_count],
+-                &recurrence.analysis_opposite_imag[..lane_count],
+-                block_cosine,
+-            );
+-            let u_products_safe = T::scalar_analysis_products_safe(
+-                &recurrence.spin_previous_plus[..lane_count],
+-                &recurrence.spin_current_plus[..lane_count],
+-                &recurrence.spin_previous_minus[..lane_count],
+-                &recurrence.spin_current_minus[..lane_count],
++            let [q_products_safe, u_products_safe] = T::scalar_analysis_channels_products_safe(
++                [
++                    &recurrence.analysis_same_real[..lane_count],
++                    &recurrence.spin_previous_plus[..lane_count],
++                ],
++                [
++                    &recurrence.analysis_same_imag[..lane_count],
++                    &recurrence.spin_current_plus[..lane_count],
++                ],
++                [
++                    &recurrence.analysis_opposite_real[..lane_count],
++                    &recurrence.spin_previous_minus[..lane_count],
++                ],
++                [
++                    &recurrence.analysis_opposite_imag[..lane_count],
++                    &recurrence.spin_current_minus[..lane_count],
++                ],

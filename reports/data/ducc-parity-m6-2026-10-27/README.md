@@ -19,6 +19,16 @@ The checked-length unchecked-index variant was tested against exact parent `1af8
 
 The executed scratch runner SHA-256 is retained in the JSON. The archived runner resolves the repository root through `RUSTSHT_REPO` or its location in the evidence tree; its measurement logic matches the executed copy. The checked harness source hashes are `e8364e3a18996bac98daa68cba348ccb0d6803576d26c167f63ce79d111ecabe` for `benchmark_ducc_spin1_native.py` and `8a364bd8f6caf1eb5c98f832cd5a28aa7446145b1a3455996cda5f35bcd86843` for `benchmark_ducc_full_transform_parity.py`.
 
+### Paired Q/U safety scan candidate — pre-screen
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate source patch](pair-safety-candidate.patch) | `c71b5e36e5c953dbfbfcafdc389226ab045d242292cd17dafb76318093757071` | Shared-cosine two-channel safety scan, zero-context patch based on exact parent `469f175a`; apply with `git apply --unidiff-zero`. |
+| [Pre-screen checkpoint](pair-safety-prescreen.md) | — | Focused validation passed. Two runner setup failures produced no retained timing data; the second ran one parent q1 worker through its batches before output serialization failed. Exact scratch and worktrees were removed. |
+| [Pre-screen details JSON](pair-safety-prescreen.json) | — | Compact build, fixture, attempt, and cleanup provenance; no worker snapshots or local paths. |
+
+Retry the matched q1/q8 screen in a fresh scratch root after fixing the runner's eager fallback path evaluation. The candidate has not been accepted or rejected on performance.
+
 ## Reproduction outline
 
 Use a fresh scratch root, current source `26941cf45564a9637b72b0eca87ff880472c3505`, and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Copy the two checked benchmark scripts into the clean source worktree, then apply `harness-selection.patch` from the repository root:

@@ -46,7 +46,7 @@ The q1 f32 runs had low scheduler wait. q8 scalar analysis/synthesis saw median 
 
 ## Next
 
-The ranked indexed-loop candidate has now been screened at GL T720 spin-1 analysis q1/q8 against the exact parent and pinned DUCC. Outputs matched bitwise, but the 15-pair timing intervals include parity at both thread counts; the unsafe indexed variant was removed. The next investigation is the checked-scaled path from rank 2 below. The selected-cell ledger and bounded harness patch are in [the evidence directory](data/ducc-parity-m6-2026-10-27/README.md). This triage does not certify the broader f64/f32 matrix.
+The ranked indexed-loop candidate has now been screened at GL T720 spin-1 analysis q1/q8 against the exact parent and pinned DUCC. Outputs matched bitwise, but the 15-pair timing intervals include parity at both thread counts; the unsafe indexed variant was removed. Read-only review of rank 2 found no safe shortcut in the checked-scaled prefix: it must accumulate each degree and preserve per-lane exponent/range normalization through the ordinary-suffix handoff. The next candidate combines Q/U input and post-compaction safety scans while reusing cosine validation. Its focused tests passed. Two runner setup failures yielded no retained timing data; in the second attempt, one parent q1 worker completed its transform batches but failed output serialization before emitting timing JSON. The exact patch, fixture hashes, and cleanup records are in the [evidence directory](data/ducc-parity-m6-2026-10-27/README.md); retry with the results directory created before worker launch. This triage does not certify the broader f64/f32 matrix.
 
 ## Phase B profile — current source `feb46e5f`
 
