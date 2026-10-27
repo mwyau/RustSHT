@@ -188,5 +188,4 @@ pub(crate) fn reserve_filled<T: Clone>(
 }
 
 #[cfg(test)]
-#[path = "pointwise_tests.rs"]
 mod tests;

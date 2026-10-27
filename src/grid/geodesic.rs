@@ -224,5 +224,4 @@ fn latitude_f32(value: f64) -> f32 {
 }
 
 #[cfg(test)]
-#[path = "geodesic_tests.rs"]
 mod tests;

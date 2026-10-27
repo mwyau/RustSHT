@@ -330,5 +330,4 @@ fn triangular_lmax(length: usize) -> Result<usize, ShtError> {
 }
 
 #[cfg(test)]
-#[path = "evaluation_tests.rs"]
 mod tests;

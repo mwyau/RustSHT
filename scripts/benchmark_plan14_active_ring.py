@@ -19,7 +19,7 @@ import time
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DUCC_REVISION = "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b"
 RUST_TEST_CAPTURE = "transform::tests::capture_plan14_t127_active_ring_kernel_input"
-RUST_TEST_BENCH = "legendre::scalar_paired::kernel_bench::benchmark_plan14_t127_active_ring_route"
+RUST_TEST_BENCH = "legendre::scalar_paired::analysis::tests::kernel_bench::benchmark_plan14_t127_active_ring_route"
 SOURCE_FILES = (
     "src/ducc0/sht/sht_inner_loop.h",
     "src/ducc0/sht/sht.h",

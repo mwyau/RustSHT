@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import benchmark_scalar_analysis_kernel as common
 
 DUCC_REVISION = common.DUCC_REVISION
-RUST_TEST = "legendre::scalar_paired::kernel_bench::benchmark_fused_scaled_scalar_analysis_prefix"
+RUST_TEST = "legendre::scalar_paired::analysis::tests::kernel_bench::benchmark_fused_scaled_scalar_analysis_prefix"
 TIMED_CASES = (
     ("synthetic", 64),
     ("synthetic", 128),

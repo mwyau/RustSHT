@@ -3,7 +3,7 @@
 // Test-only direct-kernel benchmark fixture. This module is excluded from
 // production builds and calls the same Pulp implementation as the analysis path.
 
-use super::*;
+use super::super::*;
 use crate::legendre::SCALAR_ORDER_BATCH_SIZE;
 use pulp::{Simd, WithSimd};
 use std::fs::File;
@@ -531,8 +531,9 @@ impl WithSimd for AnalysisRangeCheckLoop<'_> {
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        (0..self.repetitions)
-            .all(|_| super::analysis_pair_group_state_in_range(simd, self.previous, self.current))
+        (0..self.repetitions).all(|_| {
+            super::super::analysis_pair_group_state_in_range(simd, self.previous, self.current)
+        })
     }
 }
 
@@ -2859,11 +2860,12 @@ fn count_t720_production_late_ordinary_range_declines() {
             .unwrap();
         let mut workspace = pool.install(|| plan.workspace()).unwrap();
         let mut output = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-        super::ANALYSIS_PAIR_GROUP_RANGE_DECLINES.store(0, std::sync::atomic::Ordering::Relaxed);
+        super::super::ANALYSIS_PAIR_GROUP_RANGE_DECLINES
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         pool.install(|| plan.analysis_into(&input, &mut output, &mut workspace))
             .unwrap();
-        let declines =
-            super::ANALYSIS_PAIR_GROUP_RANGE_DECLINES.load(std::sync::atomic::Ordering::Relaxed);
+        let declines = super::super::ANALYSIS_PAIR_GROUP_RANGE_DECLINES
+            .load(std::sync::atomic::Ordering::Relaxed);
         assert_eq!(declines, 0, "valid T720 GL analysis hit the late fallback");
         eprintln!(
             "T720_GL_ORDINARY_GROUP_RANGE thread_count={thread_count} late_declines={declines}"

@@ -20,7 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 DUCC_REVISION = os.environ.get(
     "RUSTSHT_DUCC_REVISION", "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b"
 )
-RUST_TEST = "legendre::scalar_paired::kernel_bench::benchmark_fused_scalar_analysis_pair_kernel"
+RUST_TEST = "legendre::scalar_paired::analysis::tests::kernel_bench::benchmark_fused_scalar_analysis_pair_kernel"
 RUSTFLAGS = os.environ.get(
     "RUSTSHT_KERNEL_BENCH_RUSTFLAGS",
     # The default must measure the checked production route. Experimental
