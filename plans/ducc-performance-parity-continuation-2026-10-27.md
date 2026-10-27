@@ -1,5 +1,7 @@
 # RustSHT performance phase — continue toward DUCC parity
 
+**ACTIVE IMPLEMENTATION OVERRIDE (2026-10-27 04:46 UTC):** [M6 hot-loop Callgrind/assembly-guided optimization and repository cleanup](m6-ducc-parity-hotpath-cleanup-2026-10-27.md) is the new Luna Max assignment. This document supplies the broader per-cell f64/f32 parity acceptance matrix and historical prioritization. M6 requires actual source optimization, not only refactor completion, profiling, a ledger, or docs work; no Sol in any role.
+
 **Owner direction: 2026-10-27 04:14 UTC.** The Legendre precision and test-layout refactor is **not** the stopping point. **Continue numerical performance engineering on `dev` until matched DUCC parity has been demonstrated across the agreed supported workload matrix. Do not propose merging `dev` into `main` merely because tests and architecture are green.** This file is the **active execution plan** and supersedes implementation-stage sections of `plans/resume-legendre-convergence-no-sol-2026-10-27.md`, not its safety, no-Sol, numerical, git, or cleanup rules.
 
 ## Goal / acceptance contract
