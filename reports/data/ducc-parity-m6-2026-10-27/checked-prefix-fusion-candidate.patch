@@ -1,0 +1,249 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index 451942e5..798b2432 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -2081,11 +2080,0 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
+-        let channel_sums = MixedAnalysisPairChannelsAccumulation::<true> {
+-            same_real,
+-            same_imag,
+-            opposite_real,
+-            opposite_imag,
+-            basis: basis_current,
+-            exponents,
+-            cos_theta,
+-        }
+-        .with_simd(simd);
+-
+@@ -2096,0 +2086,9 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++        let (same_real_0, _) = S::as_simd_f64s(same_real[0]);
++        let (same_imag_0, _) = S::as_simd_f64s(same_imag[0]);
++        let (opposite_real_0, _) = S::as_simd_f64s(opposite_real[0]);
++        let (opposite_imag_0, _) = S::as_simd_f64s(opposite_imag[0]);
++        let (same_real_1, _) = S::as_simd_f64s(same_real[1]);
++        let (same_imag_1, _) = S::as_simd_f64s(same_imag[1]);
++        let (opposite_real_1, _) = S::as_simd_f64s(opposite_real[1]);
++        let (opposite_imag_1, _) = S::as_simd_f64s(opposite_imag[1]);
++        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+@@ -2100,0 +2099,13 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++        for vectors in [
++            same_real_0,
++            same_imag_0,
++            opposite_real_0,
++            opposite_imag_0,
++            same_real_1,
++            same_imag_1,
++            opposite_real_1,
++            opposite_imag_1,
++            cosine_vectors,
++        ] {
++            debug_assert_eq!(vectors.len(), current_vectors.len());
++        }
+@@ -2104,0 +2116 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++        debug_assert_eq!(current_tail.len(), cosine_tail.len());
+@@ -2107,0 +2120,12 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++        let zero = simd.splat_f64s(0.0);
++        let minimum = simd.splat_f64s(scalar::SMALL);
++        let maximum = simd.splat_f64s(scalar::BIG);
++        let zero_i64 = simd.splat_i64s(0);
++        let mut sums_0 = [zero; 4];
++        let mut sums_1 = [zero; 4];
++        let mut exceptional_vector_lanes = 0_u64;
++        let mut has_avx2_lane_masks = true;
++        let mut saved_basis_vectors = [zero; LATITUDE_BLOCK_SIZE];
++        let mut saved_exponent_vectors = [zero_i64; LATITUDE_BLOCK_SIZE];
++        let mut saved_basis_lanes = [0.0; LATITUDE_BLOCK_SIZE];
++        let mut saved_exponent_lanes = [0_i64; LATITUDE_BLOCK_SIZE];
+@@ -2109,0 +2134,52 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++            let basis = current_vectors[index];
++            let exponent = exponent_vectors[index];
++            let magnitude = simd.abs_f64s(basis);
++            let in_range = simd.and_m64s(
++                simd.less_than_or_equal_f64s(magnitude, maximum),
++                simd.or_m64s(
++                    simd.equal_f64s(magnitude, zero),
++                    simd.greater_than_or_equal_f64s(magnitude, minimum),
++                ),
++            );
++            let ordinary = simd.and_m64s(simd.equal_i64s(exponent, zero_i64), in_range);
++            if let Some(ordinary_lanes) = analysis_mask_lane_bits::<S>(ordinary) {
++                let exception_lanes = !ordinary_lanes & 0b1111;
++                if exception_lanes != 0 {
++                    let lane_start = index * 4;
++                    exceptional_vector_lanes |= u64::from(exception_lanes) << lane_start;
++                    saved_basis_vectors[index] = basis;
++                    saved_exponent_vectors[index] = exponent;
++                    simd.partial_store_f64s(&mut saved_basis_lanes[lane_start..], basis);
++                    simd.partial_store_i64s(&mut saved_exponent_lanes[lane_start..], exponent);
++                }
++            } else {
++                has_avx2_lane_masks = false;
++                let lane_start = index * S::F64_LANES;
++                saved_basis_vectors[index] = basis;
++                saved_exponent_vectors[index] = exponent;
++                simd.partial_store_f64s(&mut saved_basis_lanes[lane_start..], basis);
++                simd.partial_store_i64s(&mut saved_exponent_lanes[lane_start..], exponent);
++            }
++
++            let ordinary_basis = simd.select_f64s(ordinary, basis, zero);
++            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(same_real_0[index], ordinary_basis));
++            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(same_imag_0[index], ordinary_basis));
++            sums_0[2] = simd.add_f64s(
++                sums_0[2],
++                simd.mul_f64s(opposite_real_0[index], ordinary_basis),
++            );
++            sums_0[3] = simd.add_f64s(
++                sums_0[3],
++                simd.mul_f64s(opposite_imag_0[index], ordinary_basis),
++            );
++            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(same_real_1[index], ordinary_basis));
++            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(same_imag_1[index], ordinary_basis));
++            sums_1[2] = simd.add_f64s(
++                sums_1[2],
++                simd.mul_f64s(opposite_real_1[index], ordinary_basis),
++            );
++            sums_1[3] = simd.add_f64s(
++                sums_1[3],
++                simd.mul_f64s(opposite_imag_1[index], ordinary_basis),
++            );
++
+@@ -2111 +2187 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
+-            let mut previous_value = current_vectors[index];
++            let mut previous_value = basis;
+@@ -2114 +2190 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
+-            let mut exponent = exponent_vectors[index];
++            let mut exponent = exponent;
+@@ -2124,0 +2201,113 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++
++        let vector_lane_count = current_vectors.len() * S::F64_LANES;
++        let mut channel_sums = [
++            (
++                Complex64::new(
++                    simd.reduce_sum_f64s(sums_0[0]),
++                    simd.reduce_sum_f64s(sums_0[1]),
++                ),
++                Complex64::new(
++                    simd.reduce_sum_f64s(sums_0[2]),
++                    simd.reduce_sum_f64s(sums_0[3]),
++                ),
++            ),
++            (
++                Complex64::new(
++                    simd.reduce_sum_f64s(sums_1[0]),
++                    simd.reduce_sum_f64s(sums_1[1]),
++                ),
++                Complex64::new(
++                    simd.reduce_sum_f64s(sums_1[2]),
++                    simd.reduce_sum_f64s(sums_1[3]),
++                ),
++            ),
++        ];
++        let accumulate_scaled_lane = |lane: usize, results: &mut [(Complex64, Complex64); 2]| {
++            for channel in 0..2 {
++                results[channel].0 += scalar::multiply_complex_scaled(
++                    Complex64::new(same_real[channel][lane], same_imag[channel][lane]),
++                    saved_basis_lanes[lane],
++                    saved_exponent_lanes[lane],
++                );
++                results[channel].1 += scalar::multiply_complex_scaled(
++                    Complex64::new(opposite_real[channel][lane], opposite_imag[channel][lane]),
++                    saved_basis_lanes[lane],
++                    saved_exponent_lanes[lane],
++                );
++            }
++        };
++        if has_avx2_lane_masks {
++            for vector_index in 0..current_vectors.len() {
++                let vector_lane_start = vector_index * 4;
++                let mut exception_mask =
++                    ((exceptional_vector_lanes >> vector_lane_start) & 0b1111) as u8;
++                if exception_mask == 0b1111 {
++                    let completed = try_accumulate_scaled_exception_vector::<S, true>(
++                        simd,
++                        ScaledAnalysisExceptionVector::<S, true> {
++                            same_real: [same_real_0[vector_index], same_real_1[vector_index]],
++                            same_imag: [same_imag_0[vector_index], same_imag_1[vector_index]],
++                            opposite_real: [
++                                opposite_real_0[vector_index],
++                                opposite_real_1[vector_index],
++                            ],
++                            opposite_imag: [
++                                opposite_imag_0[vector_index],
++                                opposite_imag_1[vector_index],
++                            ],
++                            basis: saved_basis_vectors[vector_index],
++                            exponents: &saved_exponent_lanes
++                                [vector_lane_start..vector_lane_start + 4],
++                            cosine: cosine_vectors[vector_index],
++                        },
++                        &mut channel_sums,
++                    );
++                    if completed {
++                        continue;
++                    }
++                }
++                while exception_mask != 0 {
++                    let lane_offset = exception_mask.trailing_zeros() as usize;
++                    exception_mask &= exception_mask - 1;
++                    accumulate_scaled_lane(vector_lane_start + lane_offset, &mut channel_sums);
++                }
++            }
++        } else {
++            for lane in 0..vector_lane_count {
++                if saved_exponent_lanes[lane] == 0
++                    && scalar_value_in_normal_range(saved_basis_lanes[lane])
++                {
++                    continue;
++                }
++                accumulate_scaled_lane(lane, &mut channel_sums);
++            }
++        }
++
++        for lane in 0..current_tail.len() {
++            let index = vector_lane_count + lane;
++            let basis = current_tail[lane];
++            let exponent = exponent_tail[lane];
++            for channel in 0..2 {
++                if exponent == 0 && scalar_value_in_normal_range(basis) {
++                    channel_sums[channel].0.re += same_real[channel][index] * basis;
++                    channel_sums[channel].0.im += same_imag[channel][index] * basis;
++                    channel_sums[channel].1.re += opposite_real[channel][index] * basis;
++                    channel_sums[channel].1.im += opposite_imag[channel][index] * basis;
++                } else {
++                    channel_sums[channel].0 += scalar::multiply_complex_scaled(
++                        Complex64::new(same_real[channel][index], same_imag[channel][index]),
++                        basis,
++                        exponent,
++                    );
++                    channel_sums[channel].1 += scalar::multiply_complex_scaled(
++                        Complex64::new(
++                            opposite_real[channel][index],
++                            opposite_imag[channel][index],
++                        ),
++                        basis,
++                        exponent,
++                    );
++                }
++            }
++        }
++
+@@ -2127,2 +2316,3 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
+-            let next_value = leading.mul_add(current_tail[lane], previous_tail[lane]);
+-            if !current_tail[lane].is_finite() || !next_value.is_finite() {
++            let current_value = current_tail[lane];
++            let mut next_value = leading.mul_add(current_value, previous_tail[lane]);
++            if !current_value.is_finite() || !next_value.is_finite() {
+@@ -2131 +2321,2 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
+-            next_tail[lane] = next_value;
++            let mut previous_value = current_value;
++            let mut exponent = exponent_tail[lane];
+@@ -2133,3 +2324,3 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
+-                &mut current_tail[lane..lane + 1],
+-                &mut next_tail[lane..lane + 1],
+-                &mut exponent_tail[lane..lane + 1],
++                core::slice::from_mut(&mut previous_value),
++                core::slice::from_mut(&mut next_value),
++                core::slice::from_mut(&mut exponent),
+@@ -2137,0 +2329,3 @@ impl WithSimd for FusedCheckedMixedAnalysisPairChannelsStep<'_> {
++            current_tail[lane] = previous_value;
++            next_tail[lane] = next_value;
++            exponent_tail[lane] = exponent;

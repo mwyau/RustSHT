@@ -1,0 +1,368 @@
+{
+  "metadata": {
+    "candidate_base_source_sha": "67eb85151d0e91cca0fcc3bc6b89372f67e64dcd",
+    "candidate_binary_sha256": "3701e14a7829252dfc2d30a5a0a67b168c37c622c3080635e57121ae39cdb15b",
+    "candidate_patch_sha256": "aa01403775a9113be444d693c659d825f673875f53e7a87b275c36734b95bed7",
+    "candidate_source_file_sha256": {
+      "src/legendre/mod.rs": "6b176df9618e44e506aed8699dd7569daf60b146f378733ce096403caa58e85d",
+      "src/legendre/scalar_paired.rs": "1db422a449c3d1dd068ceeb7e2c6af84597340cf5f35bf92c69d3ea3e07aa19e",
+      "src/legendre/scalar_paired/analysis.rs": "f0d4ce0cdc6111db1bd2757e3af264cf208605c5e923f6903d3acb192227af7f",
+      "src/transform/spin/analysis.rs": "4d90007dd9b16af7db9fc01c3debc2bbc1dbc31e9d1466dd0ed3377bfff44f8e"
+    },
+    "case": {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "latitude_mode": "exact",
+      "lmax": 720,
+      "longitude_mode": "even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721
+    },
+    "ducc_binary_sha256": "acb3fdf666cd855ce0186460265b7e032c425f0694c4fce3598f91fda2478c8d",
+    "ducc_flags": "SHT -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver overrides with -fno-fast-math -ffp-contract=fast",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "fixture_seed": 1416973757,
+    "fixture_sha256": {
+      "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+      "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+      "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+      "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+    },
+    "gxx": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "operation": "spin-1 analysis",
+    "parent_binary_sha256": "a9047ef0bf2723020f749bccdcffa405fb4ece052dc3f8b263f2364984d98e4a",
+    "parent_source_sha": "67eb85151d0e91cca0fcc3bc6b89372f67e64dcd",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "target_batch_ms": 25.0,
+    "triplets_per_thread_count": 3
+  },
+  "raw_capture_sha256": "1efc83e1ec8ca4681c4fc8d1a8ebd9d7af0c7986b68daa5a30caa071bd411ad0",
+  "triplets": [
+    {
+      "candidate_ducc_ratio": 1.2840624855433167,
+      "candidate_parent_bitwise_equal": true,
+      "candidate_parent_ratio": 1.034628285508211,
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "finite_outputs": true,
+      "output_sha256": {
+        "candidate": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        },
+        "ducc": {
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db",
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d"
+        },
+        "parent": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        }
+      },
+      "parent_ducc_ratio": 1.2410858117150578,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "process_pair": 0,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1,
+      "timing_median_ms": {
+        "candidate": 37.416004,
+        "ducc": 29.138772,
+        "parent": 36.1637165
+      }
+    },
+    {
+      "candidate_ducc_ratio": 1.3148017596604236,
+      "candidate_parent_bitwise_equal": true,
+      "candidate_parent_ratio": 1.0464056789673566,
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "finite_outputs": true,
+      "output_sha256": {
+        "candidate": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        },
+        "ducc": {
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db",
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d"
+        },
+        "parent": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        }
+      },
+      "parent_ducc_ratio": 1.2564933334057715,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "process_pair": 1,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1,
+      "timing_median_ms": {
+        "candidate": 38.116434999999996,
+        "ducc": 28.9902525,
+        "parent": 36.426059
+      }
+    },
+    {
+      "candidate_ducc_ratio": 1.2938094312137687,
+      "candidate_parent_bitwise_equal": true,
+      "candidate_parent_ratio": 1.0595032048053317,
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "finite_outputs": true,
+      "output_sha256": {
+        "candidate": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        },
+        "ducc": {
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db",
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d"
+        },
+        "parent": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        }
+      },
+      "parent_ducc_ratio": 1.2211472559457595,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "process_pair": 2,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1,
+      "timing_median_ms": {
+        "candidate": 37.9158235,
+        "ducc": 29.3055705,
+        "parent": 35.786417
+      }
+    },
+    {
+      "candidate_ducc_ratio": 1.3722541405148703,
+      "candidate_parent_bitwise_equal": true,
+      "candidate_parent_ratio": 1.1302374315904915,
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "finite_outputs": true,
+      "output_sha256": {
+        "candidate": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        },
+        "ducc": {
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db",
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d"
+        },
+        "parent": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        }
+      },
+      "parent_ducc_ratio": 1.2141290866502346,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "process_pair": 0,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8,
+      "timing_median_ms": {
+        "candidate": 5.9629705,
+        "ducc": 4.3453835000000005,
+        "parent": 5.2758565
+      }
+    },
+    {
+      "candidate_ducc_ratio": 1.4698811822583464,
+      "candidate_parent_bitwise_equal": true,
+      "candidate_parent_ratio": 1.1381370617799709,
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "finite_outputs": true,
+      "output_sha256": {
+        "candidate": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        },
+        "ducc": {
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db",
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d"
+        },
+        "parent": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        }
+      },
+      "parent_ducc_ratio": 1.2914799382418405,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "process_pair": 1,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8,
+      "timing_median_ms": {
+        "candidate": 6.198310599999999,
+        "ducc": 4.216878666666666,
+        "parent": 5.4460142000000005
+      }
+    },
+    {
+      "candidate_ducc_ratio": 1.2785973339822225,
+      "candidate_parent_bitwise_equal": true,
+      "candidate_parent_ratio": 1.0169398106520924,
+      "candidate_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "finite_outputs": true,
+      "output_sha256": {
+        "candidate": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        },
+        "ducc": {
+          "b": "e614ba1d8d9b157ce94fc0fe4f68ca9bd08429c3299abe64a4a21e9c419163db",
+          "e": "7bf77a8ee5c55c498d599b09b5b627f17aac1df034b3e8436d6b776d2e648e9d"
+        },
+        "parent": {
+          "b": "09623d39888f0bc99f89c10656cb52bc827a27beb62ef9dd19cb94a2b9f5775f",
+          "e": "35febaf10a11274c16a53c44b4137b449ab70b52732f363290514a3529f1204e"
+        }
+      },
+      "parent_ducc_ratio": 1.2572989282053455,
+      "parent_vs_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "process_pair": 2,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8,
+      "timing_median_ms": {
+        "candidate": 5.4822013,
+        "ducc": 4.287668333333333,
+        "parent": 5.3908808
+      }
+    }
+  ]
+}

@@ -130,3 +130,16 @@ This candidate combined local Q/U opposite-channel copy/preweight checks with pe
 See the [screen report](preweight-fusion-screen-2026-10-27.md) for the measured patch SHA, test result, and cleanup record.
 
 Cleanup removed only exact scratch root `rustsht-m6-preweight-fusion.2ccEyRrg` and its two registered worktrees after artifact verification. It contained 12,850 files (1,329,721,344 bytes allocated; 1,295,118,456 apparent). The root and registrations are absent; `/tmp` returned from 45 to 46 GiB available and free inodes increased by 14,474 to 949,018. No worker remained.
+
+### Checked-scaled prefix/update fusion candidate — screened and removed
+
+The checked-scaled prefix/update fusion was based on exact parent `67eb85151d0e91cca0fcc3bc6b89372f67e64dcd` and rejected after three GL T720 full-mmax spin-1 analysis triplets at each q. It was slower in all six pairs; focused numerical tests, bitwise output comparisons, finite checks, and repeat/reset checks passed. See the [screen report](checked-prefix-fusion-screen-2026-10-27.md).
+
+| Artifact | SHA-256 | Contents |
+|---|---|---|
+| [Candidate source patch](checked-prefix-fusion-candidate.patch) | `aa01403775a9113be444d693c659d825f673875f53e7a87b275c36734b95bed7` | Recoverable zero-context diff; not applied to production. |
+| [Triplet summary JSON](checked-prefix-fusion-triplets.json) | `0233d11b231d35e9bc2828621f1500fa916a27841c5d1904664e36705545e7e8` | Six triplet medians, ratios, correctness/error summaries and source/binary/fixture/output provenance; no worker snapshots or batch-level samples. |
+| [Triplet summary CSV](checked-prefix-fusion-triplets.csv) | `9919c378d47198f9d9fe37ec03f0b4fb4b0d143b10ffbf08a1ca3ed35dbaeda6` | One row per triplet with medians, paired ratios, checks, DUCC errors, wait and frequency summaries. |
+| [Screen report](checked-prefix-fusion-screen-2026-10-27.md) | — | Method, result, validation, decision and limitations. |
+
+The original runner capture is retained locally and untracked at SHA-256 `1efc83e1ec8ca4681c4fc8d1a8ebd9d7af0c7986b68daa5a30caa071bd411ad0`. After verifying the compact evidence, cleanup removed only the experiment-owned scratch root `rustsht-m6-checked-prefix-fusion.gMZMJ8I2` and its two worktrees. It held 9,007 files and 924,896,044 apparent bytes; `/tmp` available space rose by 930,566,144 bytes and free inodes increased by 10,380 to 949,018. No worker remained.
