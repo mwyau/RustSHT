@@ -1125,6 +1125,9 @@ pub(crate) fn multiply_complex_scaled_f32(
     factor: f32,
     exponent: i64,
 ) -> Complex32 {
+    if exponent == 0 {
+        return Complex32::new(value.re * factor, value.im * factor);
+    }
     if factor.is_normal() {
         if value.re.is_normal() && value.im.is_normal() {
             let product = Complex32::new(value.re * factor, value.im * factor);
