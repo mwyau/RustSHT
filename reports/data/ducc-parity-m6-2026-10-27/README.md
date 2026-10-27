@@ -156,3 +156,7 @@ The two-vector pipeline candidate followed exact parent `30a17ee82154d761ccbbb40
 | [Screen report](two-vector-pipeline-screen-2026-10-27.md) | — | Method, result, validation, decision and limitations. |
 
 The original runner capture is retained locally and untracked at SHA-256 `95312da1c6130384f5d055584c048de1727c461861f2df705753b3f9b4f0f060`. After verifying the compact evidence, cleanup removed only the experiment-owned scratch root `rustsht-m6-two-vector-pipeline.6ZaMVKzS` and its two worktrees. It held 9,557 files and 1,697,144,643 apparent bytes; `/tmp` available space rose by 1,667,055,616 bytes and free inodes increased by 11,004 to 949,016. No worker remained.
+
+### CC T720 reduced-synthesis q1 route profile
+
+The current M6 CC reduced-order q1 synthesis gap was profiled with the existing ignored phase helper at source `f2f813fd`. The measured order-recurrence/spectral-accumulation phase was 26.967–28.218 ms; both inverse longitude FFTs and map writeback took 0.968–1.055 ms. The profile recorded 1,736 ordinary fused paired-kernel successes and 305 fallback entries per call. This is route evidence only, not a matched timing or numerical comparison. See the [focused report](cc-t720-reduced-q1-route-profile-2026-10-27.md) and [compact CSV](cc-t720-reduced-q1-route-profile.csv). Cleanup removed only scratch root `rustsht-m6-cc-q1-profile.lI3xYv` after verifying the compact evidence; its 1,245 files occupied 120,484 KiB and `/tmp` available space rose by 123,375,616 bytes, with 1,519 inodes reclaimed.
