@@ -1,12 +1,17 @@
 # Experiment lifecycle and disk-space hygiene
 
-**Standing owner instruction (2026-10-26, 17:36 UTC).** This file governs all local RustSHT experiments, performance A/B trials, CPU profiling, temporary test/reference environments, and agent-run benchmark work. It takes precedence over older directions to retain/reuse experimental binaries, compilation objects, benchmark worktrees, or virtual environments. See `AGENTS.md`.
+**Standing owner instruction (updated 2026-10-27 01:07 UTC).** This file governs all local RustSHT experiments, performance A/B trials, CPU profiling, temporary test/reference environments, and agent-run benchmark work. It takes precedence over older directions to retain/reuse experimental binaries, compilation objects, benchmark worktrees, or virtual environments. See `AGENTS.md`.
 
-## Reviewer authorization
+## Absolute model and reviewer prohibition for this assignment
 
-- **Never invoke, delegate to, create, or schedule a Sol reviewer/subagent without the owner's explicit authorization for that particular review.** Read-only status, previous one-time approvals, older plan text saying “optional Sol,” and the availability of a reviewer are **not** authorization.
-- One explicit authorization permits **one review invocation for the specifically authorized task only**. It expires when that review completes; it is not continuing permission for subsequent milestones, branches, or sessions.
-- By default the main Luna agent reviews its own changes and uses focused tests. The already authorized **Luna `benchmark`** worker may continue under its current limited read-only-production scope; this rule does not authorize any additional reviewers.
+- **DO NOT invoke any Sol model or Sol reviewer at all, for any purpose.** No Sol High, background or read-only Sol, scheduled Sol review, quota-exhaustion fallback, automatically assigned Sol, or one-time review exception. Historical approvals are revoked; the current owner specifically forbids Sol for this resumed work.
+- Main Luna Max alone writes to `dev`. The previously authorized **Luna-only `benchmark`** worker can carry out isolated read-only-to-production measurement when available; it **may not** ask Sol or any other subagent for help. If Luna resources are exhausted, save verified evidence, clean scratch, push the last coherent state and stop. Do not replace Luna with Sol.
+- The main agent performs its own review, code inspection and tests. No external reviewer is a prerequisite to continue.
+
+## First action after a paused or quota-exhausted session
+
+- Before **any new build**, inspect remote/working tree status, active worker processes, experiment worktree registrations, `/tmp` bytes/inodes and existing experiment scratch. Enumerate only confirmed-owned inactive temporary targets, virtual environments, profilers, compiled workers, and comparison worktrees. Save and verify any unique reports/data/source in durable storage **before** deleting their exact paths. Do **not** delete uncertain or active scratch, unrelated parked Git worktrees, other sessions' files, or shared package/toolchain installations.
+- Record what was safely removed and reclaimed. If nothing can be proved safe to delete, say so and continue implementation; never claim local cleanup from a GitHub tree check alone. This is the startup Phase 0 in [the current resume plan](../plans/resume-legendre-convergence-no-sol-2026-10-27.md).
 
 ## Before starting each experiment
 
