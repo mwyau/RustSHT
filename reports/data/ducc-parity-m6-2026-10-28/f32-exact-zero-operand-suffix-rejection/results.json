@@ -1,0 +1,335 @@
+{
+  "build": {
+    "geometry": "GL T720 f32 scalar synthesis; phi0=0.23; ntheta=721; full mmax=720 nphi=1458; reduced mmax=180 nphi=378",
+    "profile": "release",
+    "q1_affinity": "same fixed single-core affinity for parent and candidate",
+    "route_census_affinity": "one and eight distinct physical cores selected from the process allowed affinity set",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "rustflags": "-C target-cpu=x86-64-v3; instrumentation only for route census: --cfg m6_profile_suffix",
+    "transform_invocation": "one first transform only; separate route-counter and output-capture builds; candidate/parent output capture ran one call per fixture; not timed"
+  },
+  "candidate_based_on": "rejected suffix candidate from 54b166f2 plus exact-operand predicate; see patch",
+  "correctness_cells": {
+    "180_fixture_sha256": {
+      "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+      "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+    },
+    "180_q1": {
+      "absolute_l2": 33.79080902397949,
+      "bitwise_equal": false,
+      "candidate_output_sha256": "e878a829166220017110e2bdfc44f792e1db009df65a80c403e975420faa6d17",
+      "finite": true,
+      "max_absolute": 0.6117381453514099,
+      "output_bytes": 1090152,
+      "output_values": 272538,
+      "parent_output_sha256": "37f854f69c6180dcef9e44778b93dfe566915481961def5a6ad448142ad932f7",
+      "reference_rms": 0.17186583488101023,
+      "relative_l2": 0.3766131721025046
+    },
+    "720_fixture_sha256": {
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+    },
+    "720_q1": {
+      "absolute_l2": 101.43601001661456,
+      "bitwise_equal": false,
+      "candidate_output_sha256": "1b5ed4bbd9c3b5356f72c63cc52bb075d5357647a5b30fc0511343e50ce33115",
+      "finite": true,
+      "max_absolute": 0.7166571468114853,
+      "output_bytes": 4204872,
+      "output_values": 1051218,
+      "parent_output_sha256": "260e35799c6f8d3c505fc9d6f2cc5bdbd5443e03d4e75e4d488044904066d45d",
+      "reference_rms": 0.2299908284147645,
+      "relative_l2": 0.4301651728549795
+    }
+  },
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "fourier_relative_mode_error_bins": {
+    "180": [
+      {
+        "m_range": [
+          1,
+          40
+        ],
+        "median_relative_mode_error": 1.6056429912295356e-07
+      },
+      {
+        "m_range": [
+          41,
+          80
+        ],
+        "median_relative_mode_error": 0.3793307382886476
+      },
+      {
+        "m_range": [
+          81,
+          120
+        ],
+        "median_relative_mode_error": 0.47803334412594206
+      },
+      {
+        "m_range": [
+          121,
+          160
+        ],
+        "median_relative_mode_error": 0.5238235416022128
+      },
+      {
+        "m_range": [
+          161,
+          180
+        ],
+        "median_relative_mode_error": 0.5098609230632365
+      }
+    ],
+    "720": [
+      {
+        "m_range": [
+          1,
+          40
+        ],
+        "median_relative_mode_error": 1.4631109891398074e-07
+      },
+      {
+        "m_range": [
+          41,
+          80
+        ],
+        "median_relative_mode_error": 0.3613626774055718
+      },
+      {
+        "m_range": [
+          81,
+          120
+        ],
+        "median_relative_mode_error": 0.49179887421901614
+      },
+      {
+        "m_range": [
+          121,
+          160
+        ],
+        "median_relative_mode_error": 0.5214613279128981
+      },
+      {
+        "m_range": [
+          161,
+          200
+        ],
+        "median_relative_mode_error": 0.528621401920111
+      },
+      {
+        "m_range": [
+          201,
+          240
+        ],
+        "median_relative_mode_error": 0.5708704786194054
+      },
+      {
+        "m_range": [
+          241,
+          280
+        ],
+        "median_relative_mode_error": 0.5795743785161291
+      },
+      {
+        "m_range": [
+          281,
+          320
+        ],
+        "median_relative_mode_error": 0.5480459716964191
+      },
+      {
+        "m_range": [
+          321,
+          360
+        ],
+        "median_relative_mode_error": 0.5127404247965137
+      },
+      {
+        "m_range": [
+          361,
+          400
+        ],
+        "median_relative_mode_error": 0.4893448235812606
+      },
+      {
+        "m_range": [
+          401,
+          440
+        ],
+        "median_relative_mode_error": 0.4698224467551487
+      },
+      {
+        "m_range": [
+          441,
+          480
+        ],
+        "median_relative_mode_error": 0.45220954523523527
+      },
+      {
+        "m_range": [
+          481,
+          520
+        ],
+        "median_relative_mode_error": 0.3476506288553377
+      },
+      {
+        "m_range": [
+          521,
+          560
+        ],
+        "median_relative_mode_error": 0.23196107138858174
+      },
+      {
+        "m_range": [
+          561,
+          600
+        ],
+        "median_relative_mode_error": 0.15796803627459166
+      },
+      {
+        "m_range": [
+          601,
+          640
+        ],
+        "median_relative_mode_error": 2.2008507585890223e-05
+      },
+      {
+        "m_range": [
+          641,
+          680
+        ],
+        "median_relative_mode_error": 4.243735827434634e-07
+      },
+      {
+        "m_range": [
+          681,
+          720
+        ],
+        "median_relative_mode_error": 7.114336799691255e-07
+      }
+    ]
+  },
+  "parent_source": "6db3f65aa139aeef7ba9a74b00ec01d3d5826fb4",
+  "patch": {
+    "gzip_patch_bytes": 7861,
+    "gzip_patch_sha256": "7da2d7d5f521becbf15710af5594842dd83563ba1f609dd6b4d667f4bf45c5bb",
+    "raw_patch_bytes": 42944,
+    "raw_patch_sha256": "5db7b02b9da5fc435da44d533afc91814ce6c1c7de360b08cb32023b3e5f83d8"
+  },
+  "route_cells": {
+    "180_q1": {
+      "active_degree_latitude_terms": 81210177,
+      "completed_packets": 7950,
+      "counter_log_bytes": 1004370,
+      "decline_reasons": {},
+      "declined_packets": 0,
+      "exponent_max": 0,
+      "exponent_min": -800,
+      "fused_suffix_degree_latitude_terms": 37948296,
+      "nonzero_exponent_lane_fraction": 0.24427672955974844,
+      "packets_all_zero_exponent": 6008,
+      "packets_with_nonzero_exponent": 1942,
+      "per_worker_completed_packets": {
+        "0": 7950
+      },
+      "prefix_degree_latitude_terms": 1370080,
+      "prefix_not_ready_visits_before_first_success": 85630,
+      "suffix_fraction_of_active_terms": 0.46728498079741904,
+      "threads": 1,
+      "transition_pair_start_max": 340,
+      "transition_pair_start_median": 3.0,
+      "transition_pair_start_p90": 32
+    },
+    "180_q8": {
+      "active_degree_latitude_terms": 81210177,
+      "completed_packets": 7570,
+      "counter_log_bytes": 959682,
+      "decline_reasons": {},
+      "declined_packets": 0,
+      "exponent_max": 0,
+      "exponent_min": -800,
+      "fused_suffix_degree_latitude_terms": 35891784,
+      "nonzero_exponent_lane_fraction": 0.3104359313077939,
+      "packets_all_zero_exponent": 5220,
+      "packets_with_nonzero_exponent": 2350,
+      "per_worker_completed_packets": {
+        "0": 378,
+        "1": 1404,
+        "2": 636,
+        "3": 840,
+        "4": 1344,
+        "5": 1032,
+        "6": 1088,
+        "7": 848
+      },
+      "prefix_degree_latitude_terms": 1370080,
+      "prefix_not_ready_visits_before_first_success": 85630,
+      "suffix_fraction_of_active_terms": 0.4419616521707618,
+      "threads": 8,
+      "transition_pair_start_max": 340,
+      "transition_pair_start_median": 4.0,
+      "transition_pair_start_p90": 33
+    },
+    "720_q1": {
+      "active_degree_latitude_terms": 161199393,
+      "completed_packets": 29188,
+      "counter_log_bytes": 3693190,
+      "decline_reasons": {},
+      "declined_packets": 0,
+      "exponent_max": 0,
+      "exponent_min": -800,
+      "fused_suffix_degree_latitude_terms": 88765136,
+      "nonzero_exponent_lane_fraction": 0.3026243661778813,
+      "packets_all_zero_exponent": 20355,
+      "packets_with_nonzero_exponent": 8833,
+      "per_worker_completed_packets": {
+        "0": 29188
+      },
+      "prefix_degree_latitude_terms": 3711712,
+      "prefix_not_ready_visits_before_first_success": 231982,
+      "suffix_fraction_of_active_terms": 0.5506542819302055,
+      "threads": 1,
+      "transition_pair_start_max": 340,
+      "transition_pair_start_median": 2.0,
+      "transition_pair_start_p90": 26
+    },
+    "720_q8": {
+      "active_degree_latitude_terms": 161199393,
+      "completed_packets": 28135,
+      "counter_log_bytes": 3576238,
+      "decline_reasons": {},
+      "declined_packets": 0,
+      "exponent_max": 0,
+      "exponent_min": -800,
+      "fused_suffix_degree_latitude_terms": 86183800,
+      "nonzero_exponent_lane_fraction": 0.39303358805757954,
+      "packets_all_zero_exponent": 17077,
+      "packets_with_nonzero_exponent": 11058,
+      "per_worker_completed_packets": {
+        "0": 2722,
+        "1": 4360,
+        "2": 3632,
+        "3": 4593,
+        "4": 3378,
+        "5": 4142,
+        "6": 2192,
+        "7": 3116
+      },
+      "prefix_degree_latitude_terms": 3749376,
+      "prefix_not_ready_visits_before_first_success": 234336,
+      "suffix_fraction_of_active_terms": 0.5346409710115968,
+      "threads": 8,
+      "transition_pair_start_max": 340,
+      "transition_pair_start_median": 2.0,
+      "transition_pair_start_p90": 26
+    }
+  },
+  "route_comparison": "exact-operand predicate and prior normal-or-zero-result route both completed the same state-ready packet counts, with zero declines; exact-zero operand restriction changed no route in these fixtures",
+  "timing": "Not run: q1 numerical gate failed; prior normal-or-zero timing data is not reused for this stricter predicate."
+}
