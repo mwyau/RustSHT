@@ -1,0 +1,164 @@
+
+Candidate executable SHA-256 c59179272f3597b7e3f63a8f503baa8276b579408e4c8ceb11421785716d8941: file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+000000000020bc40 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1620>:
+  20bc40:	8d 34 81             	lea    (%rcx,%rax,4),%esi
+  20bc43:	4c 8b 0d 16 6c 07 00 	mov    0x76c16(%rip),%r9        # 282860 <_DYNAMIC+0xaa0>
+  20bc4a:	4d 8b 81 00 08 00 00 	mov    0x800(%r9),%r8
+  20bc51:	48 8d 0d 03 00 00 00 	lea    0x3(%rip),%rcx        # 20bc5b <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x163b>
+  20bc58:	41 ff e0             	jmp    *%r8
+  20bc5b:	c5 fc 28 d0          	vmovaps %ymm0,%ymm2
+  20bc5f:	4d 8b 81 00 08 00 00 	mov    0x800(%r9),%r8
+  20bc66:	48 89 f0             	mov    %rsi,%rax
+  20bc69:	48 8d 0d 03 00 00 00 	lea    0x3(%rip),%rcx        # 20bc73 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1653>
+  20bc70:	41 ff e0             	jmp    *%r8
+  20bc73:	c5 fc 28 d8          	vmovaps %ymm0,%ymm3
+  20bc77:	49 8b b1 00 08 00 00 	mov    0x800(%r9),%rsi
+  20bc7e:	48 89 d0             	mov    %rdx,%rax
+  20bc81:	48 8d 0d 02 00 00 00 	lea    0x2(%rip),%rcx        # 20bc8a <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x166a>
+  20bc88:	ff e6                	jmp    *%rsi
+  20bc8a:	c5 fc 28 f2          	vmovaps %ymm2,%ymm6
+  20bc8e:	c5 fc 10 8c 24 60 03 	vmovups 0x360(%rsp),%ymm1
+  20bc95:	00 00
+  20bc97:	c4 e2 75 98 b4 24 80 	vfmadd132ps 0x380(%rsp),%ymm1,%ymm6
+  20bc9e:	03 00 00
+  20bca1:	c4 e2 7d 18 0d 7e 3f 	vbroadcastss -0x1ec082(%rip),%ymm1        # 1fc28 <__abi_tag+0x1f92c>
+  20bca8:	e1 ff
+  20bcaa:	c5 cc 54 e9          	vandps %ymm1,%ymm6,%ymm5
+  20bcae:	c4 e2 7d 58 25 b1 3f 	vpbroadcastd -0x1ec04f(%rip),%ymm4        # 1fc68 <__abi_tag+0x1f96c>
+  20bcb5:	e1 ff
+  20bcb7:	c5 d5 fa fc          	vpsubd %ymm4,%ymm5,%ymm7
+  20bcbb:	c4 e2 7d 58 2d 5c 3f 	vpbroadcastd -0x1ec0a4(%rip),%ymm5        # 1fc20 <__abi_tag+0x1f924>
+  20bcc2:	e1 ff
+  20bcc4:	c4 62 45 3b c5       	vpminud %ymm5,%ymm7,%ymm8
+  20bcc9:	c5 bd ef ff          	vpxor  %ymm7,%ymm8,%ymm7
+  20bccd:	c4 e2 7d 17 ff       	vptest %ymm7,%ymm7
+  20bcd2:	48 8b ac 24 40 04 00 	mov    0x440(%rsp),%rbp
+  20bcd9:	00
+  20bcda:	0f 85 b0 01 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bce0:	c5 fc 10 bc 24 20 03 	vmovups 0x320(%rsp),%ymm7
+  20bce7:	00 00
+  20bce9:	c4 e2 45 98 94 24 40 	vfmadd132ps 0x340(%rsp),%ymm7,%ymm2
+  20bcf0:	03 00 00
+  20bcf3:	c5 ec 54 f9          	vandps %ymm1,%ymm2,%ymm7
+  20bcf7:	c5 c5 fa fc          	vpsubd %ymm4,%ymm7,%ymm7
+  20bcfb:	c4 62 45 3b c5       	vpminud %ymm5,%ymm7,%ymm8
+  20bd00:	c5 bd 76 ff          	vpcmpeqd %ymm7,%ymm8,%ymm7
+  20bd04:	c5 fc 50 c7          	vmovmskps %ymm7,%eax
+  20bd08:	3c ff                	cmp    $0xff,%al
+  20bd0a:	0f 85 80 01 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bd10:	c5 e4 54 f9          	vandps %ymm1,%ymm3,%ymm7
+  20bd14:	c5 c5 fa fc          	vpsubd %ymm4,%ymm7,%ymm7
+  20bd18:	c4 62 45 3b c5       	vpminud %ymm5,%ymm7,%ymm8
+  20bd1d:	c5 bd 76 ff          	vpcmpeqd %ymm7,%ymm8,%ymm7
+  20bd21:	c5 fc 50 c7          	vmovmskps %ymm7,%eax
+  20bd25:	3c ff                	cmp    $0xff,%al
+  20bd27:	0f 85 63 01 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bd2d:	c5 cc 59 f3          	vmulps %ymm3,%ymm6,%ymm6
+  20bd31:	c5 cc 54 f9          	vandps %ymm1,%ymm6,%ymm7
+  20bd35:	c5 c5 fa fc          	vpsubd %ymm4,%ymm7,%ymm7
+  20bd39:	c4 62 45 3b c5       	vpminud %ymm5,%ymm7,%ymm8
+  20bd3e:	c5 bd ef ff          	vpxor  %ymm7,%ymm8,%ymm7
+  20bd42:	c4 e2 7d 17 ff       	vptest %ymm7,%ymm7
+  20bd47:	0f 85 43 01 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bd4d:	c5 ec 59 db          	vmulps %ymm3,%ymm2,%ymm3
+  20bd51:	c5 e4 54 d1          	vandps %ymm1,%ymm3,%ymm2
+  20bd55:	c5 ed fa d4          	vpsubd %ymm4,%ymm2,%ymm2
+  20bd59:	c4 e2 6d 3b fd       	vpminud %ymm5,%ymm2,%ymm7
+  20bd5e:	c5 ed 76 d7          	vpcmpeqd %ymm7,%ymm2,%ymm2
+  20bd62:	c5 fc 50 c2          	vmovmskps %ymm2,%eax
+  20bd66:	3c ff                	cmp    $0xff,%al
+  20bd68:	0f 85 22 01 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bd6e:	c5 cc 59 d0          	vmulps %ymm0,%ymm6,%ymm2
+  20bd72:	c5 ec 54 f1          	vandps %ymm1,%ymm2,%ymm6
+  20bd76:	c5 cd fa f4          	vpsubd %ymm4,%ymm6,%ymm6
+  20bd7a:	c4 e2 4d 3b fd       	vpminud %ymm5,%ymm6,%ymm7
+  20bd7f:	c5 cd ef f7          	vpxor  %ymm7,%ymm6,%ymm6
+  20bd83:	c4 e2 7d 17 f6       	vptest %ymm6,%ymm6
+  20bd88:	0f 85 02 01 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bd8e:	c5 e4 59 d8          	vmulps %ymm0,%ymm3,%ymm3
+  20bd92:	c5 e4 54 c1          	vandps %ymm1,%ymm3,%ymm0
+  20bd96:	c5 fd fa c4          	vpsubd %ymm4,%ymm0,%ymm0
+  20bd9a:	c4 e2 7d 3b cd       	vpminud %ymm5,%ymm0,%ymm1
+  20bd9f:	c5 fd 76 c1          	vpcmpeqd %ymm1,%ymm0,%ymm0
+  20bda3:	c5 fc 50 c0          	vmovmskps %ymm0,%eax
+  20bda7:	3c ff                	cmp    $0xff,%al
+  20bda9:	0f 85 e1 00 00 00    	jne    20be90 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1870>
+  20bdaf:	48 8b 44 24 08       	mov    0x8(%rsp),%rax
+  20bdb4:	48 8d 34 b8          	lea    (%rax,%rdi,4),%rsi
+  20bdb8:	48 8b 44 24 28       	mov    0x28(%rsp),%rax
+  20bdbd:	48 8d 14 b8          	lea    (%rax,%rdi,4),%rdx
+  20bdc1:	4c 8b 05 98 6a 07 00 	mov    0x76a98(%rip),%r8        # 282860 <_DYNAMIC+0xaa0>
+  20bdc8:	49 8b b8 00 08 00 00 	mov    0x800(%r8),%rdi
+  20bdcf:	48 89 f0             	mov    %rsi,%rax
+  20bdd2:	48 8d 0d 02 00 00 00 	lea    0x2(%rip),%rcx        # 20bddb <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x17bb>
+  20bdd9:	ff e7                	jmp    *%rdi
+  20bddb:	c5 ec 58 d0          	vaddps %ymm0,%ymm2,%ymm2
+  20bddf:	49 8b b8 00 08 00 00 	mov    0x800(%r8),%rdi
+  20bde6:	48 89 d0             	mov    %rdx,%rax
+  20bde9:	48 8d 0d 02 00 00 00 	lea    0x2(%rip),%rcx        # 20bdf2 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x17d2>
+  20bdf0:	ff e7                	jmp    *%rdi
+  20bdf2:	c5 ed fe e2          	vpaddd %ymm2,%ymm2,%ymm4
+  20bdf6:	c4 e2 7d 58 0d 59 38 	vpbroadcastd -0x1ec7a7(%rip),%ymm1        # 1f658 <__abi_tag+0x1f35c>
+  20bdfd:	e1 ff
+  20bdff:	c4 e2 5d 3b e9       	vpminud %ymm1,%ymm4,%ymm5
+  20be04:	c5 dd ef e5          	vpxor  %ymm5,%ymm4,%ymm4
+  20be08:	c4 e2 7d 17 e4       	vptest %ymm4,%ymm4
+  20be0d:	49 89 e9             	mov    %rbp,%r9
+  20be10:	4c 8b 54 24 18       	mov    0x18(%rsp),%r10
+  20be15:	4c 8b 44 24 10       	mov    0x10(%rsp),%r8
+  20be1a:	0f 85 80 03 00 00    	jne    20c1a0 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1b80>
+  20be20:	c5 e4 58 d8          	vaddps %ymm0,%ymm3,%ymm3
+  20be24:	c5 e5 fe c3          	vpaddd %ymm3,%ymm3,%ymm0
+  20be28:	c4 e2 7d 3b c9       	vpminud %ymm1,%ymm0,%ymm1
+  20be2d:	c5 fd ef c1          	vpxor  %ymm1,%ymm0,%ymm0
+  20be31:	c4 e2 7d 17 c0       	vptest %ymm0,%ymm0
+  20be36:	0f 85 64 03 00 00    	jne    20c1a0 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1b80>
+  20be3c:	4c 8b 05 1d 6a 07 00 	mov    0x76a1d(%rip),%r8        # 282860 <_DYNAMIC+0xaa0>
+  20be43:	49 8b b8 08 08 00 00 	mov    0x808(%r8),%rdi
+  20be4a:	48 89 f0             	mov    %rsi,%rax
+  20be4d:	c5 fc 28 c2          	vmovaps %ymm2,%ymm0
+  20be51:	48 8d 0d 02 00 00 00 	lea    0x2(%rip),%rcx        # 20be5a <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x183a>
+  20be58:	ff e7                	jmp    *%rdi
+  20be5a:	49 8b b0 08 08 00 00 	mov    0x808(%r8),%rsi
+  20be61:	4c 8b 44 24 10       	mov    0x10(%rsp),%r8
+  20be66:	48 89 d0             	mov    %rdx,%rax
+  20be69:	c5 fc 28 c3          	vmovaps %ymm3,%ymm0
+  20be6d:	48 8d 0d 02 00 00 00 	lea    0x2(%rip),%rcx        # 20be76 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1856>
+  20be74:	ff e6                	jmp    *%rsi
+  20be76:	48 8b 5c 24 20       	mov    0x20(%rsp),%rbx
+  20be7b:	48 8b 6c 24 68       	mov    0x68(%rsp),%rbp
+  20be80:	e9 7f 01 00 00       	jmp    20c004 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x19e4>
+  20be85:	66 66 2e 0f 1f 84 00 	data16 cs nopw 0x0(%rax,%rax,1)
+  20be8c:	00 00 00 00
+  20be90:	48 8b 84 24 a8 01 00 	mov    0x1a8(%rsp),%rax
+  20be97:	00
+  20be98:	48 8b 8c 24 80 00 00 	mov    0x80(%rsp),%rcx
+  20be9f:	00
+  20bea0:	48 8d 1c 08          	lea    (%rax,%rcx,1),%rbx
+  20bea4:	49 89 e9             	mov    %rbp,%r9
+  20bea7:	31 ed                	xor    %ebp,%ebp
+  20bea9:	4c 8b 54 24 18       	mov    0x18(%rsp),%r10
+  20beae:	4c 8b 44 24 10       	mov    0x10(%rsp),%r8
+  20beb3:	66 66 66 66 2e 0f 1f 	data16 data16 data16 cs nopw 0x0(%rax,%rax,1)
+  20beba:	84 00 00 00 00 00
+  20bec0:	48 89 d8             	mov    %rbx,%rax
+  20bec3:	48 01 e8             	add    %rbp,%rax
+  20bec6:	0f 84 f5 0d 00 00    	je     20ccc1 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x26a1>
+  20becc:	48 8b 84 24 a8 00 00 	mov    0xa8(%rsp),%rax
+  20bed3:	00
+  20bed4:	c5 fa 10 0c a8       	vmovss (%rax,%rbp,4),%xmm1
+  20bed9:	c5 f8 28 c1          	vmovaps %xmm1,%xmm0
+  20bedd:	c5 f8 28 94 24 e0 00 	vmovaps 0xe0(%rsp),%xmm2
+  20bee4:	00 00
+  20bee6:	c4 e2 69 a9 84 24 50 	vfmadd213ss 0x150(%rsp),%xmm2,%xmm0
+  20beed:	01 00 00
+  20bef0:	c5 f8 28 94 24 40 01 	vmovaps 0x140(%rsp),%xmm2
+  20bef7:	00 00
+  20bef9:	c4                   	.byte 0xc4
+  20befa:	e2 69                	loop   20bf65 <rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>+0x1945>
+  20befc:	a9                   	.byte 0xa9
+  20befd:	8c 24 f0             	mov    %fs,(%rax,%rsi,8)
