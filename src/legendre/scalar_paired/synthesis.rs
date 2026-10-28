@@ -147,39 +147,14 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
         current,
         next,
         exponents,
-        |degree, ring_start, basis, lane_exponents, _normal_range| {
-            if !finite_sums {
-                return Ok(());
-            }
-            let pair = (degree - m) / 2;
-            let even = coefficient_even[pair];
-            let odd = coefficient_odd[pair];
-            for lane in 0..basis.len() {
-                let ring = ring_start + lane;
-                let coefficient = Complex32::new(
-                    odd.re.mul_add(cos_theta[ring], even.re),
-                    odd.im.mul_add(cos_theta[ring], even.im),
-                );
-                let exponent = lane_exponents[lane];
-                let contribution = if exponent == 0 {
-                    Complex32::new(coefficient.re * basis[lane], coefficient.im * basis[lane])
-                } else {
-                    super::super::scalar::multiply_complex_scaled_f32(
-                        coefficient,
-                        basis[lane],
-                        exponent,
-                    )
-                };
-                let real = staged_real[ring] + contribution.re;
-                let imag = staged_imag[ring] + contribution.im;
-                if !real.is_finite() || !imag.is_finite() {
-                    finite_sums = false;
-                    break;
-                }
-                staged_real[ring] = real;
-                staged_imag[ring] = imag;
-            }
-            Ok(())
+        F32SynthesisAccumulator {
+            m,
+            cos_theta,
+            coefficient_even,
+            coefficient_odd,
+            staged_real,
+            staged_imag,
+            finite_sums: &mut finite_sums,
         },
     );
     if recurrence_result.is_err() || !finite_sums {
@@ -190,6 +165,215 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
         spectra[spectrum_index] = Complex32::new(staged_real[ring], staged_imag[ring]);
     }
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests;
+
+struct F32SynthesisAccumulator<'a> {
+    m: usize,
+    cos_theta: &'a [f32],
+    coefficient_even: &'a [Complex32],
+    coefficient_odd: &'a [Complex32],
+    staged_real: &'a mut [f32],
+    staged_imag: &'a mut [f32],
+    finite_sums: &'a mut bool,
+}
+
+impl PairedScalarRecurrenceVisitor<f32> for F32SynthesisAccumulator<'_> {
+    #[inline(always)]
+    fn visit<S: Simd>(
+        &mut self,
+        degree: usize,
+        ring_start: usize,
+        basis: &[f32],
+        lane_exponents: &[i64],
+        _normal_range: bool,
+        simd: S,
+    ) -> Result<(), ShtError> {
+        if !*self.finite_sums {
+            return Ok(());
+        }
+
+        let pair = (degree - self.m) / 2;
+        let even = self.coefficient_even[pair];
+        let odd = self.coefficient_odd[pair];
+        let cos_theta = &self.cos_theta[ring_start..ring_start + basis.len()];
+        let (staged_real, staged_imag, finite_sums) = (
+            &mut *self.staged_real,
+            &mut *self.staged_imag,
+            &mut *self.finite_sums,
+        );
+        let lanes = S::F32_LANES;
+        let vector_count = basis.len() / lanes;
+        let mut scale_factors = [1.0_f32; LATITUDE_BLOCK_SIZE];
+        for vector_index in 0..vector_count {
+            let lane_start = vector_index * lanes;
+            let lane_end = lane_start + lanes;
+            let scaleable = lane_exponents[lane_start..lane_end]
+                .iter()
+                .all(|&exponent| (-126..=127).contains(&exponent));
+            if scaleable {
+                for lane in lane_start..lane_end {
+                    let exponent = lane_exponents[lane];
+                    scale_factors[lane] = f32::from_bits(((exponent + 127) as u32) << 23);
+                }
+                if let Some(finite) = try_accumulate_f32_synthesis_packet(
+                    simd,
+                    &cos_theta[lane_start..lane_end],
+                    &basis[lane_start..lane_end],
+                    &scale_factors[lane_start..lane_end],
+                    &mut staged_real[ring_start + lane_start..ring_start + lane_end],
+                    &mut staged_imag[ring_start + lane_start..ring_start + lane_end],
+                    even,
+                    odd,
+                ) {
+                    if !finite {
+                        *finite_sums = false;
+                        return Ok(());
+                    }
+                    continue;
+                }
+            }
+
+            accumulate_f32_synthesis_scalar_range(
+                ring_start,
+                lane_start,
+                lane_end,
+                cos_theta,
+                basis,
+                lane_exponents,
+                even,
+                odd,
+                staged_real,
+                staged_imag,
+                finite_sums,
+            );
+            if !*finite_sums {
+                return Ok(());
+            }
+        }
+
+        accumulate_f32_synthesis_scalar_range(
+            ring_start,
+            vector_count * lanes,
+            basis.len(),
+            cos_theta,
+            basis,
+            lane_exponents,
+            even,
+            odd,
+            staged_real,
+            staged_imag,
+            finite_sums,
+        );
+        Ok(())
+    }
+}
+
+#[inline(always)]
+fn try_accumulate_f32_synthesis_packet<S: Simd>(
+    simd: S,
+    cos_theta: &[f32],
+    basis: &[f32],
+    scale: &[f32],
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
+    even: Complex32,
+    odd: Complex32,
+) -> Option<bool> {
+    let cosine = simd.partial_load_f32s(cos_theta);
+    let basis = simd.partial_load_f32s(basis);
+    let scale = simd.partial_load_f32s(scale);
+    let coefficient_re =
+        simd.mul_add_f32s(simd.splat_f32s(odd.re), cosine, simd.splat_f32s(even.re));
+    let coefficient_im =
+        simd.mul_add_f32s(simd.splat_f32s(odd.im), cosine, simd.splat_f32s(even.im));
+    if !simd_all_normal_f32(simd, coefficient_re)
+        || !simd_all_normal_f32(simd, coefficient_im)
+        || !simd_all_normal_f32(simd, basis)
+    {
+        return None;
+    }
+    let product_re = simd.mul_f32s(coefficient_re, basis);
+    let product_im = simd.mul_f32s(coefficient_im, basis);
+    if !simd_all_normal_f32(simd, product_re) || !simd_all_normal_f32(simd, product_im) {
+        return None;
+    }
+
+    let contribution_re = simd.mul_f32s(product_re, scale);
+    let contribution_im = simd.mul_f32s(product_im, scale);
+    if !simd_all_normal_f32(simd, contribution_re) || !simd_all_normal_f32(simd, contribution_im) {
+        return None;
+    }
+    let next_sum_re = simd.add_f32s(simd.partial_load_f32s(staged_real), contribution_re);
+    let next_sum_im = simd.add_f32s(simd.partial_load_f32s(staged_imag), contribution_im);
+    if !simd_all_finite_f32(simd, next_sum_re) || !simd_all_finite_f32(simd, next_sum_im) {
+        return Some(false);
+    }
+    simd.partial_store_f32s(staged_real, next_sum_re);
+    simd.partial_store_f32s(staged_imag, next_sum_im);
+    Some(true)
+}
+
+#[inline(always)]
+fn accumulate_f32_synthesis_scalar_range(
+    ring_start: usize,
+    lane_start: usize,
+    lane_end: usize,
+    cos_theta: &[f32],
+    basis: &[f32],
+    exponents: &[i64],
+    even: Complex32,
+    odd: Complex32,
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
+    finite_sums: &mut bool,
+) {
+    for lane in lane_start..lane_end {
+        let coefficient = Complex32::new(
+            odd.re.mul_add(cos_theta[lane], even.re),
+            odd.im.mul_add(cos_theta[lane], even.im),
+        );
+        let exponent = exponents[lane];
+        let contribution = if exponent == 0 {
+            Complex32::new(coefficient.re * basis[lane], coefficient.im * basis[lane])
+        } else {
+            super::super::scalar::multiply_complex_scaled_f32(coefficient, basis[lane], exponent)
+        };
+        let ring = ring_start + lane;
+        let real = staged_real[ring] + contribution.re;
+        let imag = staged_imag[ring] + contribution.im;
+        if !real.is_finite() || !imag.is_finite() {
+            *finite_sums = false;
+            return;
+        }
+        staged_real[ring] = real;
+        staged_imag[ring] = imag;
+    }
+}
+
+#[inline(always)]
+fn simd_all_normal_f32<S: Simd>(simd: S, values: S::f32s) -> bool {
+    let exponent_bits = simd.and_u32s(
+        simd.transmute_u32s_f32s(values),
+        simd.splat_u32s(0x7f80_0000),
+    );
+    let normal = simd.and_m32s(
+        simd.greater_than_u32s(exponent_bits, simd.splat_u32s(0)),
+        simd.less_than_u32s(exponent_bits, simd.splat_u32s(0x7f80_0000)),
+    );
+    simd.first_true_m32s(simd.not_m32s(normal)) == S::F32_LANES
+}
+
+#[inline(always)]
+fn simd_all_finite_f32<S: Simd>(simd: S, values: S::f32s) -> bool {
+    let exponent_bits = simd.and_u32s(
+        simd.transmute_u32s_f32s(values),
+        simd.splat_u32s(0x7f80_0000),
+    );
+    simd.first_true_m32s(simd.equal_u32s(exponent_bits, simd.splat_u32s(0x7f80_0000)))
+        == S::F32_LANES
 }
 
 /// Runs the paired f32 order kernel for a block with no polar-excluded lanes.

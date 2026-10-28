@@ -2222,9 +2222,11 @@ impl ShtScalar for f32 {
             current,
             next,
             exponents,
-            |degree, ring_start, basis, lane_exponents, _normal_range| {
-                visit(degree, ring_start, basis, lane_exponents)
-            },
+            |degree: usize,
+             ring_start: usize,
+             basis: &[f32],
+             lane_exponents: &[i64],
+             _normal_range: bool| { visit(degree, ring_start, basis, lane_exponents) },
         )?;
         Ok(true)
     }

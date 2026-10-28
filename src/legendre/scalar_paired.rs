@@ -1038,6 +1038,57 @@ where
 }
 
 /// Shared order and latitude-block traversal for transformed scalar bases.
+pub(crate) trait PairedScalarRecurrenceVisitor<T> {
+    fn visit<S: Simd>(
+        &mut self,
+        degree: usize,
+        ring_start: usize,
+        basis: &[T],
+        exponents: &[i64],
+        normal_range: bool,
+        simd: S,
+    ) -> Result<(), ShtError>;
+}
+
+impl<T, F> PairedScalarRecurrenceVisitor<T> for F
+where
+    F: for<'a, 'b> FnMut(usize, usize, &'a [T], &'b [i64], bool) -> Result<(), ShtError>,
+{
+    #[inline(always)]
+    fn visit<S: Simd>(
+        &mut self,
+        degree: usize,
+        ring_start: usize,
+        basis: &[T],
+        exponents: &[i64],
+        normal_range: bool,
+        _simd: S,
+    ) -> Result<(), ShtError> {
+        self(degree, ring_start, basis, exponents, normal_range)
+    }
+}
+
+struct PairedScalarVisitorRef<'a, V>(&'a mut V);
+
+impl<T, V> PairedScalarRecurrenceVisitor<T> for PairedScalarVisitorRef<'_, V>
+where
+    V: PairedScalarRecurrenceVisitor<T>,
+{
+    #[inline(always)]
+    fn visit<S: Simd>(
+        &mut self,
+        degree: usize,
+        ring_start: usize,
+        basis: &[T],
+        exponents: &[i64],
+        normal_range: bool,
+        simd: S,
+    ) -> Result<(), ShtError> {
+        self.0
+            .visit(degree, ring_start, basis, exponents, normal_range, simd)
+    }
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "The recurrence uses plan factors, geometry and caller-owned lane scratch."
@@ -1059,7 +1110,7 @@ pub(crate) fn for_each_y_lm_paired_status_dispatched_typed<T, F>(
 ) -> Result<(), ShtError>
 where
     T: PairedScalarRecurrencePrecision,
-    F: FnMut(usize, usize, &[T], &[i64], bool) -> Result<(), ShtError>,
+    F: PairedScalarRecurrenceVisitor<T>,
 {
     debug_assert!(m <= lmax);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
@@ -1088,7 +1139,7 @@ where
             current: &mut current[..block_len],
             next: &mut next[..block_len],
             exponents: &mut exponents[..block_len],
-            visit: &mut visit,
+            visit: PairedScalarVisitorRef(&mut visit),
             _precision: PhantomData,
         })?;
     }
@@ -1115,7 +1166,7 @@ struct ForEachPairedYlm<'a, T, F> {
 impl<T, F> WithSimd for ForEachPairedYlm<'_, T, F>
 where
     T: PairedScalarRecurrencePrecision,
-    F: FnMut(usize, usize, &[T], &[i64], bool) -> Result<(), ShtError>,
+    F: PairedScalarRecurrenceVisitor<T>,
 {
     type Output = Result<(), ShtError>;
 
@@ -1145,7 +1196,7 @@ where
         let mut normal_range = T::normalize_pair_state(previous, current, exponents)?;
 
         for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
-            visit(degree, ring_start, current, exponents, normal_range)?;
+            visit.visit(degree, ring_start, current, exponents, normal_range, simd)?;
             if degree + 2 > lmax {
                 break;
             }
