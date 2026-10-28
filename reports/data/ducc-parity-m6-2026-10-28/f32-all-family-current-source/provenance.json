@@ -1,0 +1,17 @@
+{
+  "rust_source": "b3289762c7ba019523e4908b6172109d6975bfca",
+  "rust_transform_source_unchanged_since": "54b166f2c0698f1c70e88f8679d12fa4376704fe",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_binary_sha256": "390bf3948d2a3a53219185988abbfe9112f0dd09c7bb64c9ea7a1b6e88277457",
+  "ducc_binary_sha256": "900f28332e756a3e6b975410a005515fa0bee917df8b73b61f35dad7c8bddf0f",
+  "harness": "scripts/benchmark_ducc_f32_native.py",
+  "harness_sha256": "70033f7251358128783f35d7aefa527fa957abce5513571db1142e92e6e38ff0",
+  "combined_result_sha256": "7b6acff7f30d26d5fe88123369d404f92f53bba4843346972b4c5fabb11d9449",
+  "summary_csv_sha256": "80d0eef72c29b8b1be20684d440afe1b1bbfc079a199249667bb3a0cf0f1c262",
+  "fixture_manifest_sha256": "d1988b98b79d526e15def5ca66ec3f822dd7ee304c8e9282621182c5fe69c256",
+  "cells": 16,
+  "worker_processes": 96,
+  "all_finite_repeat_reset": true,
+  "rust_binary_artifact": "target/release/examples/ducc_f32_full_transform_parity",
+  "ducc_binary_artifact": "ducc-build/ducc_f32_full_transform_parity"
+}

@@ -1,5 +1,31 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 current-source native-f32 T720 all-family screen
+
+At exact Rust source `b3289762c7ba019523e4908b6172109d6975bfca` (production
+transform source unchanged from `54b166f2`) against pinned DUCC
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, three alternating matched pairs
+per cell measured GL T720 native-f32 scalar synthesis/analysis and spin-1
+analysis/synthesis, full/reduced mmax at q1/q8. The four scalar-synthesis
+Rust/DUCC ratios are `36.737×`/`40.512×` full and `25.258×`/`45.888×`
+reduced q1/q8; all remain **GAP**. Adjacent scalar analysis is `29.321–38.755×`,
+spin-1 analysis `28.088–35.210×`, and spin-1 synthesis `35.864–47.938×`.
+All 96 worker processes passed finite, repeat and workspace-reset checks.
+T720 scalar synthesis max Rust-vs-DUCC relative-L2 / absolute errors are
+`1.723e-4 / 9.644e-4` full and `2.725e-4 / 1.548e-3` reduced. These three-pair
+values are a current baseline, not an independent numerical acceptance suite
+or a parent/candidate screen. The exact methods, paired values, fixture and
+binary hashes are in the [16-cell report](data/ducc-parity-m6-2026-10-28/f32-all-family-current-source/README.md).
+
+The transition blocker and diagnostic remain unchanged: native-f32 exponent
+folding destroys some nonzero recurrence states; the f32-I/O/f64-internal
+reflected route is near DUCC, while all-ring paired recurrence does about twice
+the useful recurrence updates. Do not restore the rejected 513-line f32
+reflected recurrence candidate; it regressed protected reduced scalar-analysis
+q8 by 4.3%. Next, evaluate a shared reflected traversal that preserves current
+scalar analysis and f64 code generation, with a measured stage boundary and
+exact-parent controls.
+
 ## 2026-10-28 exact scalar-fallback route census
 
 At repository HEAD `bb53b86dc4ed47a9fb2cc01fd06b4e5d8626a7f6` (transform
@@ -19,16 +45,17 @@ paired work distributed 4.69–20.40M slots per worker full and 1.54–10.97M
 reduced; the instrumented worker times are not scheduling measurements. See
 the [census and counter definitions](data/ducc-parity-m6-2026-10-28/f32-fallback-transition-census/README.md).
 
-Current whole-transform Rust/DUCC ratios remain `36.591×`/`40.257×` full and
-`25.432×`/`45.090×` reduced q1/q8. The matched q1 profile still attributes
+The latest current-source whole-transform Rust/DUCC ratios are `36.737×`/`40.512×` full and
+`25.258×`/`45.888×` reduced q1/q8; the previous source-specific ratios remain
+recorded in their original experiment reports. The matched q1 profile still attributes
 2.726B self Ir to the scaled-component helper; these are instruction counts,
 not elapsed time. The safe native-f32 suffix opportunity is blocked on the
-random T720 workload by underflow-range scaled contributions. The next measured
-large algorithmic difference is reflected-ring recurrence work (about twice
-DUCC's updates), but the earlier reflected f32 candidate regressed protected
-reduced scalar-analysis q8 and must not be repeated unchanged. Continue with
-current-source native-f32 scalar/spin cells, then seek a synthesis-only route
-that retains reflected work reduction and preserves analysis performance.
+random T720 workload by underflow-range scaled contributions. The current-source f32 scalar/spin baseline is now recorded above. The next
+measured large algorithmic difference is reflected-ring recurrence work (about
+twice DUCC's updates), but the earlier reflected f32 candidate regressed
+protected reduced scalar-analysis q8 and added a separate recurrence copy. Do
+not repeat it; test a shared reflected traversal that preserves analysis and
+f64 code generation.
 
 ## 2026-10-28 f32-I/O / f64-internal diagnostic
 
