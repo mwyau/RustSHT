@@ -17,7 +17,42 @@ The route coverage did not pay for repeated staged-sum scans at each candidate d
 
 Pinned DUCC's init_lambda/iter_to_ieee/calc_alm2map path keeps double recurrence state plus per-lane scale, corrects the residual scale once after the prefix, then enters a four-degree/two-pair AVX2 double-FMA kernel. The candidate reused Rust's shared native-f32 fused kernel, but its normal/product/sum checks and transactional replay did not preserve DUCC's low-check bulk suffix cost. AVX2 disassembly and source-level path comparison are in the [screen report](data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md).
 
-A matched candidate-specific dynamic instruction count was not obtained: perf events are blocked by host perf_event_paranoid=4, and the one-transform Callgrind attempt was stopped after more than 77 seconds without a complete profile. No candidate equivalent-work-normalized Ir result is claimed. The production parent 746c7e60 Rust CI run passed. Continue to profile native-f32 spin-1 synthesis and analysis; keep scalar synthesis on the scorecard and M6 open.
+A matched candidate-specific dynamic instruction count was not obtained: perf events are blocked by host perf_event_paranoid=4, and the one-transform Callgrind attempt was stopped after more than 77 seconds without a complete profile. No candidate equivalent-work-normalized Ir result is claimed for that suffix trial. The production parent 746c7e60 Rust CI run passed. The current-source native-f32 spin-1 synthesis and analysis profiles follow; keep scalar synthesis on the scorecard and M6 open.
+
+## 2026-10-28 current-source f32 spin-1 q1 profile at `0f821099`
+
+The current exact-source Callgrind screen measured full GL T720 native-f32
+spin-1 synthesis at 22,433,360,982 Rust Ir versus 520,826,788 pinned-DUCC Ir
+(43.07x). Spin-1 analysis measured 15,752,365,732 versus 430,971,670 Ir
+(36.55x). These are instructions for one warmed transform, not cycles or
+elapsed timing. The synthesis counts normalize to 139.06 Rust and 3.23 DUCC
+Ir per 161,323,854 logical degree-latitude output contributions. Rust's
+test-only route census recorded 4.504B recurrence lane updates and 322.648M
+scaled-basis calls, two per useful contribution.
+
+The executed Rust synthesis callback has 7.136B self Ir; its
+`scaled_basis_value_f32` child has 8.364B inclusive Ir over 322.648M calls.
+These overlap and are not additive. The emitted callback assembly confirms
+two indirect scaling calls per active lane followed by scalar Q/U accumulation.
+DUCC's high-Lmax `synthesis<float>` path converts spin-1 coefficients into two
+scalar channels, processes 361 north/equator ring records for the 721-ring GL
+grid, and reflects the results. Its Callgrind run executes `alm2map_kernel`
+(122.213M Ir) and does not execute `calc_alm2map_spin` or
+`alm2map_spin_kernel`. Its emitted scalar kernel uses four AVX2 double lanes
+and fused multiply-add recurrence/accumulation. Rust's current f32 policy
+leaves this scalar paired-spin route disabled.
+
+The old three-pair, code-equivalent timing screen at `b3289762` measured
+spin-1 synthesis at 37.654x/47.938x full q1/q8 and 35.864x/40.444x reduced
+q1/q8. These elapsed values are reported separately from the Callgrind
+profile; they are not a fresh 15-pair acceptance campaign at `0f821099`.
+No candidate or numerical acceptance work was done. The bounded next screen
+is a narrow f32 spin-1 dispatch into the existing separate-channel
+paired-scalar conversion and accumulator, keeping polar and declined/scaled
+blocks on the current general callback. Do not enable paired-spin support
+globally or add another recurrence. See the [profile report](data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md)
+for exact flags, hashes, raw profiles, and disassembly. Scalar synthesis stays
+a major GAP and M6 remains open.
 
 ## 2026-10-28 native-f32 scalar-analysis callback SIMD accepted at parent `4770e1c7`
 

@@ -23,10 +23,24 @@ errors, per-worker counts and AVX2 disassembly are in the
 [single M6 ledger](../reports/DUCC_PARITY_M6.md) and
 [candidate evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
 
-Next profile native-f32 spin-1 synthesis and analysis, then select a bounded
-change from measured work and executed SIMD paths. Keep scalar synthesis on the
-scorecard; its scaled-prefix transition remains a documented blocker, not a
-parity result. M6 remains open.
+Current-source q1 profiling at `0f821099` measured full GL T720 f32 spin-1
+synthesis at 22.433B Rust versus 520.827M pinned-DUCC Ir (43.07x), and spin-1
+analysis at 15.752B versus 430.972M (36.55x). The synthesis visitor makes two
+indirect `scaled_basis_value_f32` calls for each of 161.324M useful
+degree-latitude terms. DUCC's high-Lmax spin-1 route converts to two scalar
+channels, evaluates 361 north/equator ring records for this 721-ring grid,
+and mirrors the results; Callgrind confirms the scalar AVX2 double-FMA kernel
+runs while the spin kernel does not. Rust's f32 `supports_paired_spin` policy
+keeps this transform on the general spin callback.
+
+Next screen only the existing separate-channel paired-scalar conversion and
+f32 accumulation route under a narrow spin-1 dispatch. Preserve the current
+general spin callback for polar and declined/scaled blocks. Do not change
+`supports_paired_spin` globally or add another recurrence. The profile-only
+Callgrind and executed assembly evidence is in the [M6 ledger](../reports/DUCC_PARITY_M6.md)
+and [profile report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md).
+Keep scalar synthesis on the scorecard; its scaled-prefix transition remains
+a documented blocker, not a parity result. M6 remains open.
 
 ## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
 

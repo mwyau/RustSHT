@@ -26,11 +26,25 @@ leaves the f64 analysis override unchanged. The protected f64 GL T1023
 spin-1 synthesis controls show no meaningful regression; see the candidate
 report and exact measurements in the [single M6 ledger](reports/DUCC_PARITY_M6.md).
 
-Continue through native-f32 spin-1 synthesis and analysis before returning to
-the remaining f64 gaps. Profile their current work and executed SIMD paths
-before choosing a bounded change. Keep scalar synthesis on the scorecard and
-resume it after this documented transition blocker if a new work-reduction
-hypothesis is measured. M6 remains open.
+The exact-current-source q1 profile at `0f821099` measured GL T720 f32
+spin-1 synthesis at 22.433B Rust versus 520.827M DUCC Ir (43.07x); spin-1
+analysis measured 15.752B versus 430.972M Ir (36.55x). Rust synthesis used
+the general plus/minus callback over full rings, with two indirect scaled
+basis calls for each of 161.324M useful degree-latitude terms. DUCC's T720
+high-Lmax route converts to two scalar channels, pairs the rings, and executes
+the AVX2 double-FMA scalar kernel. The eight-lane f32 recurrence is already
+shared, but f32 does not enter the prepared paired-spin route.
+
+Next, screen a narrow f32 spin-1 dispatch into the existing separate-channel
+paired-scalar conversion and f32 accumulation path. Keep the general spin
+callback for polar and declined/scaled cases; do not enable paired-spin
+support globally or add a second recurrence. Require matched q1/q8 full and
+reduced timings, numerical/adjoint/extreme/reset checks, adjacent f32 controls
+and protected f64 T1023 synthesis before promotion. See the exact source,
+Callgrind, and AVX2 evidence in the [single M6 ledger](reports/DUCC_PARITY_M6.md)
+and [profile report](reports/data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md).
+Keep scalar synthesis on the scorecard; its two suffix trials remain blocked.
+M6 remains open.
 
 ## Active M6 goal — real DUCC speed parity, assembly/Callgrind, and careful cleanup
 
