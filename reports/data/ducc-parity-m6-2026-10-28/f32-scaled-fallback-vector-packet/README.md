@@ -50,6 +50,8 @@ measurements exclude FFT and writeback; the table above remains the whole-call
 acceptance result. The change does not modify scheduling; the accepted
 32-ring q8 worker distribution and workspace costs remain in the
 [schedule report](../../ducc-parity-m6-2026-10-27/f32-32-ring-schedule-2026-10-27/README.md).
+The exact temporary stage-profiling test is preserved as
+[`stage-profile-harness.patch.gz`](callgrind/stage-profile-harness.patch.gz).
 
 ## Fallback work and instruction attribution
 
@@ -138,12 +140,12 @@ identical after normalizing RIP-relative link offsets; see
 
 ## Next measured direction
 
-Keep M6 active. This change lowers the scalar-synthesis fallback cost but does
-not implement a safe recurrence suffix, and the four synthesis cells remain
-**GAP**. Next remeasure the current native-f32 scalar-analysis and spin-1
-analysis/synthesis cells against DUCC, then select the largest current
-Legendre-stage gap. Return to synthesis with the measured recurrence-work
-difference: Rust updates about twice the useful paired states because it
-does not use DUCC's reflected-ring recurrence traversal. Any shared traversal
-must preserve analysis and f64 code generation and must not restore the
-rejected f32-only reflected recurrence unchanged.
+Keep M6 active. This change lowers scalar-synthesis fallback cost but does not
+implement a recurrence suffix, and the four synthesis cells remain **GAP**.
+The corrected transition route count admits only suffixes whose recurrence
+exponents stay zero in every lane; these cover 41.10–46.62% of active paired
+slots, but are not timed or numerically accepted. Next test a synthesis-only
+guarded handoff using the existing shared recurrence and native-f32 fused leaf,
+with exact transactional fallback on any nonzero exponent, later decline,
+polar/mixed block, exceptional value or tail. Do not restore the rejected
+shared early-stop visitor or f32-only reflected recurrence unchanged.

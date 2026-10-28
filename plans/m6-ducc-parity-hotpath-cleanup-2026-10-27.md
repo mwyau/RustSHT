@@ -20,17 +20,22 @@ RustSHT already has shared f32/f64 recurrence mathematics and a native-f32 fused
 6. **After measurable algorithmic improvement**, extend the same investigation to the f32 analysis/spin-1 families, then return to smaller f64 gaps. If transition coverage is small or a protected gate fails, preserve negative evidence and change algorithmic hypothesis instead of performing repeated minor tuning. Update only the single live per-cell ledger at `reports/DUCC_PARITY_M6.md` with exact revision, q1/q8 and PASS/GAP/INCONCLUSIVE/UNMEASURED. Profiling, one cell, or docs alone never completes M6.
 
 **Execution checkpoint — 2026-10-28:** exact-source transition census showed
-that fewer than 1% of scaled fallback slots can use ordinary f32 scale factors;
-the suffix-handoff screen was rejected after underflow-safe route limits and
-negligible q8 Legendre-stage benefit. The f32-I/O/f64-internal run remains a
-diagnostic only. The accepted native-f32 fallback packet vectorization
-reduced per-component scaled-helper calls 30.7% full / 37.0% reduced and
-whole-call q1 Ir 10.51% / 10.99%, with 15-pair whole-transform gains in all
-four q1/q8 cells. It did not add a fused recurrence suffix or establish
-parity. **Next:** remeasure current-source f32 scalar analysis and spin-1
-analysis/synthesis versus pinned DUCC, then use their largest measured
-Legendre-stage gap to choose the next bounded algorithmic change. Preserve the
-full evidence and limitations in the current ledger.
+that fewer than 1% of scaled fallback slots can use ordinary f32 scale factors.
+The unguarded suffix candidate was rejected after real-state replay showed that
+one-time exponent folding can turn nonzero recurrence states into zero while
+later scaled contributions remain nonzero. A corrected route guard completed
+only all-zero-exponent suffixes: 37.62M/33.88M full and 16.70M/15.07M reduced
+paired-accumulation lane slots at q1/q8 (41.10–46.62% of active slots). These
+are route counts, not timed or numerically accepted production work. The f32-
+I/O/f64-internal run remains diagnostic only. The accepted native-f32 fallback
+packet vectorization lowered scaled-helper calls 30.7% full / 37.0% reduced
+and whole-call q1 Ir 10.51% / 10.99%, with 15-pair whole-transform gains in all
+four cells; it did not add a fused recurrence suffix or establish parity.
+**Next:** test one synthesis-only, all-zero-exponent guarded prefix-to-fused-
+suffix handoff at current source. Keep the original scaled path transactional
+for any nonzero exponent, polar or mixed packet, later decline, exceptional
+value or tail. Do not restore the rejected shared early-stop visitor. Preserve
+the full evidence and limitations in the current ledger.
 
 **Operations:** Continue directly on `dev`. No main merge or force-push; reconcile remote before push and commit verified meaningful code slices. Preserve exact experiment evidence before cleaning only owned inactive scratch; do not erase parked worktrees. Main Luna Max is the only production writer; **no Sol or Sol reviewer under any circumstances**. On quota/blocker, checkpoint tested code, concise NEXT and evidence, then stop.
 

@@ -57,16 +57,19 @@ f32 full spin-1 analysis q1 measured a small repeatable 1.27% slowdown
 (`1.01274`, 95% interval `[1.00860,1.01694]`); other extended q8 controls
 were inconclusive and are disclosed in the report.
 
-The checked scaled-prefix-to-fused-SIMD-suffix route remains rejected: the
-fallback census found underflow-range scaled contributions on almost all
-fallback packets, and the 15-pair suffix candidate did not improve q8 stage
-time or reduce the dominant scaled-helper work. The accepted candidate
-vectorizes part of that contribution arithmetic while retaining exact
-exceptional fallback. Full timing, Callgrind, numerical and control details
-are in the [candidate report](data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/README.md).
-M6 stays open; next remeasure native-f32 scalar analysis and spin-1 analysis /
-synthesis on this source, then return to the measured shared reflected-ring
-recurrence gap without restoring the rejected f32-only recurrence copy.
+The unguarded scaled-prefix-to-fused-SIMD-suffix candidate remains rejected:
+real-state replay showed nonzero recurrence values underflowing to zero at
+one-time exponent correction while later scaled contributions remained
+nonzero. A corrected route guard completed suffixes only when every lane's
+exponent stayed zero through the end. That route count covers 37.62M/33.88M
+full and 16.70M/15.07M reduced paired-accumulation lane slots at q1/q8
+(41.10–46.62% of active slots); it has not been timed or numerically accepted.
+This supports one bounded f32-synthesis-only handoff trial with transactional
+fallback, not an all-block policy. Keep nonzero-exponent, later-declining,
+polar, mixed, exceptional and tail packets on the exact path. Do not reintroduce
+the rejected shared early-stop visitor. The accepted packet leaf is an interim
+gain, not the recurrence handoff. M6 remains open. Next, test this guarded
+prefix-to-fused-suffix route against the exact current source and pinned DUCC.
 
 ## 2026-10-28 exact scalar-fallback route census
 
@@ -106,7 +109,7 @@ At repository source `096216465ea35ab747ce977d5b65cf27dc4681f1` (transform imple
 
 **Latest measured arithmetic change — scaled-contribution packets:** candidate `ec5d56ca` adds native-f32 SIMD arithmetic for fully checked packets while preserving the existing scalar helper for unsafe packets and tails. Against exact parent `3816adce`, 15 interleaved pairs showed candidate/parent medians `0.9783`, `0.9754`, `0.9685`, and `0.9901` for full/reduced q1/q8; the last interval crosses parity. All 60 candidate/parent primary outputs were bitwise equal. Adjacent f32 scalar analysis was neutral and protected f64 GL T1023 spin-1 synthesis had no meaningful regression. The [packet-leaf report](data/ducc-parity-m6-2026-10-27/f32-scaled-packet-leaf-2026-10-27/README.md) records source, binary and fixture hashes, pair timings, errors, controls and AVX2 code.
 
-**Measured scaled-prefix handoffs — both candidates rejected:** the earlier block-wide candidate at exact source `061a0467` executed 30.799–31.116M full and 13.726–13.806M reduced paired slots, but its three-pair candidate/parent ratios were `0.9807`, `0.9626`, `0.9932`, and `1.0021` for full/reduced q1/q8. The later packet suffix candidate at exact parent `54b166f2` was screened with 15 paired runs per cell (30 reduced-q8 pairs). It moved 30.3–37.1% of required output slots to the existing fused kernel and reduced q1 Callgrind Ir by 6.9% full / 11.3% reduced, but did not reduce the dominant scaled-component helper's 2.726B self Ir. Whole-call candidate/parent ratios were `0.9729`, `0.9833`, `0.9403`, and `1.0055`; reduced q8 was inconclusive, and f32 GL T720 spin-1 synthesis q8 regressed 4.1% in a matched-ISA 15-pair control. The candidate was removed. Its safe-state transitions, full dynamic packet declines, stage times, errors, and assembly are in the [packet suffix report](data/ducc-parity-m6-2026-10-28/f32-packet-suffix-candidate/README.md). DUCC enters the fused suffix immediately on these random fixtures and pairs reflected GL rings, accumulating both outputs from one recurrence lane. The separate reflected-ring candidate and its protected-cell regression are recorded below. The [f32-I/O/f64-internal diagnostic](data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/README.md) remains diagnostic only. All four Rust/DUCC cells remain **GAP**.
+**Measured scaled-prefix handoffs — earlier candidates rejected; guarded route remains to time:** the earlier block-wide candidate at exact source `061a0467` executed 30.799–31.116M full and 13.726–13.806M reduced paired slots, but its three-pair candidate/parent ratios were `0.9807`, `0.9626`, `0.9932`, and `1.0021` for full/reduced q1/q8. The later unguarded packet suffix candidate at exact parent `54b166f2` was screened with 15 paired runs per cell (30 reduced-q8 pairs). It moved 30.3–37.1% of required output slots to the existing fused kernel and reduced q1 Callgrind Ir by 6.9% full / 11.3% reduced, but did not reduce the dominant scaled-component helper's 2.726B self Ir. Whole-call candidate/parent ratios were `0.9729`, `0.9833`, `0.9403`, and `1.0055`; reduced q8 was inconclusive, and f32 GL T720 spin-1 synthesis q8 regressed 4.1% in a matched-ISA 15-pair control. Real-state replay later proved that its one-time correction could underflow nonzero recurrence states to zero. A stricter route guard completed only all-zero-exponent suffixes: 37.62M/33.88M full and 16.70M/15.07M reduced paired-accumulation lane slots at q1/q8. This is a material route opportunity but has no candidate timing or end-to-end numerical validation yet. Test only a synthesis-specific guarded handoff, keeping all nonzero-exponent, exceptional and declining packets transactional on the existing path. See the [packet suffix report](data/ducc-parity-m6-2026-10-28/f32-packet-suffix-candidate/README.md) and [real-state replay report](data/ducc-parity-m6-2026-10-28/f32-exact-zero-operand-suffix-rejection/README.md). DUCC enters the fused suffix immediately on these random fixtures and pairs reflected GL rings, accumulating both outputs from one recurrence lane. The separate reflected-ring candidate and its protected-cell regression are recorded below. The [f32-I/O/f64-internal diagnostic](data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/README.md) remains diagnostic only. All four Rust/DUCC cells remain **GAP**.
 
 ## Reflected-ring f32 synthesis candidate — rejected
 

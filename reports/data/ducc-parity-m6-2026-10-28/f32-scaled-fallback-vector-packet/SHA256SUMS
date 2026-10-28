@@ -1,4 +1,4 @@
-4eb918d9d475be9f34fa29fc3e6f5949cb32cbac4afa62f036a0cc3a1c32ff4c  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/README.md
+d0880520b2302c45a858e9db3d3396800170c68677395eeeb09b8f62cca255a2  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/README.md
 1b340f0e586a1188c4fa3362534d2113a6549bfb2bc31d66f31da083effa5931  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/adjacent-f32-15-pairs.json
 2275e4b5a0366f7735921a214d6bc2ca832085741b0890559448c49a814bc289  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/adjacent-f32-initial-triads.json
 79de338b33b20129a510bab22b3c72cd65b669c8b3af4c8a225e7a877728c0f0  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/callgrind-summary.json
@@ -17,3 +17,4 @@ ee09fd5bb51dc69cf1740461f12bbe765e09f2b4e8bcc05de1a37d1cb430277e  reports/data/d
 79035e126cd9f984976c7630c2b7bf3f88cbfeedbc73d0daec66b7499a8d649f  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/protected-f64-15-pairs.json
 529b8123ac1da06378cc4d11e67401509a198356dde8c4e81368c12e562a9726  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/stage-profile.json
 29b4ab87658ed1c1dc595ca46a2ff2434d05fac215eb27febb1063dd8671868a  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/visitor-codegen-compare.json
+581105cb8ea0202fd7599467307715603927c2e48f5a95547c95f7ed8ad6e776  reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/callgrind/stage-profile-harness.patch.gz
