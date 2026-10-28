@@ -1,5 +1,38 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 native-f32 prefix-to-fused-suffix follow-up — not promoted
+
+At exact source parent `49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80`
+(`src/` is identical to `ef11ce0a`) against pinned DUCC 0.42.0
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, an isolated candidate reused the
+shared f32 recurrence and fused kernel after all recurrence lanes had exponent
+zero. It moved 33–38% of active degree–latitude terms into the fused suffix,
+but kept per-pair range/contribution checks and did not correct nonzero
+residual exponents once. Fifteen interleaved warm whole-transform pairs per
+cell measured:
+
+| GL T720 f32 scalar synthesis | Parent ms | Candidate ms | DUCC ms | Candidate/parent | Candidate/DUCC | Status |
+|---|---:|---:|---:|---:|---:|---|
+| Full q1 | 677.754 | 649.485 | 19.907 | 0.9570 | 32.64× | **GAP** |
+| Full q8 | 100.800 | 96.577 | 2.795 | 0.9576 | 34.58× | **GAP** |
+| Reduced q1 | 201.600 | 189.859 | 8.714 | 0.9426 | 21.72× | **GAP** |
+| Reduced q8 | 53.024 | 53.688 | 1.273 | 1.0142 | 42.09× | **GAP** |
+
+Reduced q8 was slower in 12/15 pairs; the 95% bootstrap interval for its
+paired candidate/parent ratio was `[1.0043, 1.0187]`. The other three cells
+improved 4.3–5.7%, which is insufficient to offset the repeatable reduced-q8
+regression or count as a material algorithmic step. Suffix failures were all
+late recurrence-range declines; discarded attempts replayed only 0.09–0.19M
+pair-lane contributions per cell. The f32 Rust/DUCC gap remains 21.72–42.09×.
+The candidate was not promoted and adjacent/f64 controls were not run.
+
+The current exact-parent work census records about 2× Rust recurrence work
+versus DUCC's reflected northern-hemisphere route. Continue with a synthesis
+only reflected-ring hypothesis, leaving scalar analysis and f64 routing
+unchanged. Full route counts, suffix-length bins, stage samples, numerical
+errors, assembly and exact candidate patch are in the [screen report](data/ducc-parity-m6-2026-10-28/f32-prefix-suffix-transition-49295a89/README.md).
+M6 remains open.
+
 ## 2026-10-28 native-f32 T720 all-family baseline at `b3289762`
 
 At exact Rust source `b3289762c7ba019523e4908b6172109d6975bfca` (production

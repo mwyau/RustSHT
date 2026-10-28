@@ -1,0 +1,50 @@
+{
+  "affinity": {
+    "q1": "CPU 3",
+    "q8": "CPUs 8-15"
+  },
+  "candidate": "isolated scratch patch against exact Rust parent",
+  "candidate_patch_sha256": "f780198fb226cf17f8ef70ad84d83b581bc47c8d6b9640d600480996433f5eb3",
+  "ci_run": "https://github.com/mwyau/RustSHT/actions/runs/40672993320",
+  "ducc": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver built without fast-math",
+  "fixture": {
+    "full": {
+      "mmax": 720,
+      "nphi": 1458,
+      "sha256": {
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+      }
+    },
+    "grid": "GL",
+    "lmax": 720,
+    "ntheta": 721,
+    "phi0": 0.23,
+    "reduced": {
+      "mmax": 180,
+      "nphi": 378,
+      "sha256": {
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+      }
+    }
+  },
+  "host": "AMD Ryzen 9 5950X",
+  "rust_flags": "--release --locked; -C target-cpu=x86-64-v3",
+  "rust_parent": "49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80",
+  "rustc": "1.99.1",
+  "timed_binaries": {
+    "candidate": "isolated Rust candidate binary, release build, x86-64-v3",
+    "ducc": "pinned DUCC 0.42.0 worker, -O3, -march=x86-64-v3",
+    "parent": "exact Rust parent 49295 release build, x86-64-v3"
+  },
+  "verified_source_identity": "git diff ef11ce0a1043d8acb049ce9178513e4cde058789 49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80 -- src was empty",
+  "candidate_patch_file": "candidate.patch.gz",
+  "candidate_patch_gzip_sha256": "fd411569b133ded243f4bb8d61649b034e5884d8ce0c890cf6169909a7a7d356",
+  "candidate_binary_sha256": "2bef70dad5ee3022a30065f8f20a94f471f0a13e4d29aa42630b0e1a7f84f28f"
+}

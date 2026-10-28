@@ -1,0 +1,393 @@
+{
+  "candidate_exact_parent": "49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80",
+  "candidate_suffix": {
+    "GL-T720-M180-q1": {
+      "counts": {
+        "attempts": 821,
+        "decline_coeff": 0,
+        "decline_recurrence": 36,
+        "decline_tail": 0,
+        "decline_vector": 0,
+        "declined_replay_pair_updates": 193656,
+        "declined_replay_recurrence_updates": 192088,
+        "declines": 36,
+        "fallback_blocks": 972,
+        "fallback_generic": 98,
+        "initial_fused_success": 922,
+        "order_calls": 1992,
+        "order_len_32": 0,
+        "order_len_64": 1889,
+        "successes": 785,
+        "suffix_degree_latitude_terms": 27069056,
+        "suffix_fused_pair_updates": 13547136,
+        "suffix_fused_recurrence_updates": 13496896
+      },
+      "histograms": {
+        "succeeded_fraction_buckets": [
+          3,
+          2,
+          3,
+          17,
+          37,
+          75,
+          108,
+          540
+        ],
+        "suffix_fraction_buckets": [
+          9,
+          7,
+          9,
+          23,
+          41,
+          80,
+          112,
+          540
+        ]
+      }
+    },
+    "GL-T720-M180-q8": {
+      "counts": {
+        "attempts": 1663,
+        "decline_coeff": 0,
+        "decline_recurrence": 55,
+        "decline_tail": 0,
+        "decline_vector": 0,
+        "declined_replay_pair_updates": 92456,
+        "declined_replay_recurrence_updates": 91712,
+        "declines": 55,
+        "fallback_blocks": 1849,
+        "fallback_generic": 98,
+        "initial_fused_success": 2036,
+        "order_calls": 3983,
+        "order_len_32": 3880,
+        "order_len_64": 0,
+        "successes": 1608,
+        "suffix_degree_latitude_terms": 27103072,
+        "suffix_fused_pair_updates": 13564448,
+        "suffix_fused_recurrence_updates": 13512992
+      },
+      "histograms": {
+        "succeeded_fraction_buckets": [
+          11,
+          21,
+          30,
+          47,
+          72,
+          126,
+          253,
+          1048
+        ],
+        "suffix_fraction_buckets": [
+          21,
+          29,
+          40,
+          57,
+          79,
+          132,
+          257,
+          1048
+        ]
+      }
+    },
+    "GL-T720-M720-q1": {
+      "counts": {
+        "attempts": 3193,
+        "decline_coeff": 0,
+        "decline_recurrence": 39,
+        "decline_tail": 0,
+        "decline_vector": 0,
+        "declined_replay_pair_updates": 193680,
+        "declined_replay_recurrence_updates": 192112,
+        "declines": 39,
+        "fallback_blocks": 3657,
+        "fallback_generic": 98,
+        "initial_fused_success": 1744,
+        "order_calls": 5499,
+        "order_len_32": 0,
+        "order_len_64": 5396,
+        "successes": 3154,
+        "suffix_degree_latitude_terms": 61913344,
+        "suffix_fused_pair_updates": 31007168,
+        "suffix_fused_recurrence_updates": 30805312
+      },
+      "histograms": {
+        "succeeded_fraction_buckets": [
+          110,
+          133,
+          161,
+          192,
+          257,
+          348,
+          527,
+          1426
+        ],
+        "suffix_fraction_buckets": [
+          118,
+          139,
+          167,
+          198,
+          261,
+          353,
+          531,
+          1426
+        ]
+      }
+    },
+    "GL-T720-M720-q8": {
+      "counts": {
+        "attempts": 6262,
+        "decline_coeff": 0,
+        "decline_recurrence": 63,
+        "decline_tail": 0,
+        "decline_vector": 0,
+        "declined_replay_pair_updates": 95616,
+        "declined_replay_recurrence_updates": 94752,
+        "declines": 63,
+        "fallback_blocks": 7112,
+        "fallback_generic": 98,
+        "initial_fused_success": 4337,
+        "order_calls": 11547,
+        "order_len_32": 11444,
+        "order_len_64": 0,
+        "successes": 6199,
+        "suffix_degree_latitude_terms": 61465376,
+        "suffix_fused_pair_updates": 30782304,
+        "suffix_fused_recurrence_updates": 30583936
+      },
+      "histograms": {
+        "succeeded_fraction_buckets": [
+          216,
+          269,
+          321,
+          386,
+          516,
+          698,
+          1058,
+          2735
+        ],
+        "suffix_fraction_buckets": [
+          231,
+          280,
+          331,
+          396,
+          523,
+          704,
+          1062,
+          2735
+        ]
+      }
+    }
+  },
+  "ducc_equivalent_work": {
+    "full": {
+      "computed_hemisphere_degree_contributions": 80729837,
+      "padded_suffix_state_updates": 40558328,
+      "useful_suffix_state_updates": 40316358
+    },
+    "reduced": {
+      "computed_hemisphere_degree_contributions": 40662194,
+      "padded_suffix_state_updates": 20449548,
+      "useful_suffix_state_updates": 20314925
+    },
+    "source_report": "reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/work-counts.json"
+  },
+  "parent_current_work_count_source": "reports/data/ducc-parity-m6-2026-10-28/f32-reflection-workcount-current/route-counts.json",
+  "parent_degree_work": {
+    "full-q1": {
+      "instrumented_legendre_stage_wall_ns": 663019912,
+      "stage_calls": 1,
+      "totals": {
+        "calls": 1,
+        "degree_contributions": 161199393,
+        "pair_contributions": 80696637,
+        "recurrence_updates": 80309372
+      }
+    },
+    "full-q8": {
+      "instrumented_legendre_stage_wall_ns": 106279110,
+      "stage_calls": 1,
+      "totals": {
+        "calls": 23,
+        "degree_contributions": 161199393,
+        "pair_contributions": 80696637,
+        "recurrence_updates": 80309372
+      }
+    },
+    "reduced-q1": {
+      "instrumented_legendre_stage_wall_ns": 198393821,
+      "stage_calls": 1,
+      "totals": {
+        "calls": 1,
+        "degree_contributions": 81210177,
+        "pair_contributions": 40637387,
+        "recurrence_updates": 40508890
+      }
+    },
+    "reduced-q8": {
+      "instrumented_legendre_stage_wall_ns": 50958623,
+      "stage_calls": 1,
+      "totals": {
+        "calls": 23,
+        "degree_contributions": 81210177,
+        "pair_contributions": 40637387,
+        "recurrence_updates": 40508890
+      }
+    }
+  },
+  "parent_q8_workers": {
+    "full-q1": [
+      {
+        "calls": 1,
+        "degree_contributions": 161199393,
+        "nanos": 662783540,
+        "pair_contributions": 80696637,
+        "recurrence_updates": 80309372,
+        "worker": 0
+      }
+    ],
+    "full-q8": [
+      {
+        "calls": 1,
+        "degree_contributions": 3124134,
+        "nanos": 84190978,
+        "pair_contributions": 1563286,
+        "recurrence_updates": 1558426,
+        "worker": 0
+      },
+      {
+        "calls": 7,
+        "degree_contributions": 56471658,
+        "nanos": 105413323,
+        "pair_contributions": 28272808,
+        "recurrence_updates": 28125077,
+        "worker": 1
+      },
+      {
+        "calls": 2,
+        "degree_contributions": 15781950,
+        "nanos": 71274251,
+        "pair_contributions": 7899976,
+        "recurrence_updates": 7864002,
+        "worker": 2
+      },
+      {
+        "calls": 1,
+        "degree_contributions": 6075644,
+        "nanos": 68203531,
+        "pair_contributions": 3040604,
+        "recurrence_updates": 3029493,
+        "worker": 3
+      },
+      {
+        "calls": 2,
+        "degree_contributions": 10282066,
+        "nanos": 97629210,
+        "pair_contributions": 5145469,
+        "recurrence_updates": 5127757,
+        "worker": 4
+      },
+      {
+        "calls": 4,
+        "degree_contributions": 25128903,
+        "nanos": 80471284,
+        "pair_contributions": 12580023,
+        "recurrence_updates": 12517818,
+        "worker": 5
+      },
+      {
+        "calls": 4,
+        "degree_contributions": 32358326,
+        "nanos": 99915694,
+        "pair_contributions": 16199944,
+        "recurrence_updates": 16116925,
+        "worker": 6
+      },
+      {
+        "calls": 2,
+        "degree_contributions": 11976712,
+        "nanos": 103227857,
+        "pair_contributions": 5994527,
+        "recurrence_updates": 5969874,
+        "worker": 7
+      }
+    ],
+    "reduced-q1": [
+      {
+        "calls": 1,
+        "degree_contributions": 81210177,
+        "nanos": 198353356,
+        "pair_contributions": 40637387,
+        "recurrence_updates": 40508890,
+        "worker": 0
+      }
+    ],
+    "reduced-q8": [
+      {
+        "calls": 1,
+        "degree_contributions": 3086775,
+        "nanos": 50899943,
+        "pair_contributions": 1544590,
+        "recurrence_updates": 1539800,
+        "worker": 0
+      },
+      {
+        "calls": 5,
+        "degree_contributions": 18214468,
+        "nanos": 40438177,
+        "pair_contributions": 9114486,
+        "recurrence_updates": 9085634,
+        "worker": 1
+      },
+      {
+        "calls": 5,
+        "degree_contributions": 16051910,
+        "nanos": 31834632,
+        "pair_contributions": 8032327,
+        "recurrence_updates": 8006976,
+        "worker": 2
+      },
+      {
+        "calls": 3,
+        "degree_contributions": 10964256,
+        "nanos": 10321605,
+        "pair_contributions": 5486496,
+        "recurrence_updates": 5469120,
+        "worker": 3
+      },
+      {
+        "calls": 1,
+        "degree_contributions": 3654752,
+        "nanos": 15404687,
+        "pair_contributions": 1828832,
+        "recurrence_updates": 1823040,
+        "worker": 4
+      },
+      {
+        "calls": 3,
+        "degree_contributions": 10964256,
+        "nanos": 13466213,
+        "pair_contributions": 5486496,
+        "recurrence_updates": 5469120,
+        "worker": 5
+      },
+      {
+        "calls": 1,
+        "degree_contributions": 3654752,
+        "nanos": 10515558,
+        "pair_contributions": 1828832,
+        "recurrence_updates": 1823040,
+        "worker": 6
+      },
+      {
+        "calls": 4,
+        "degree_contributions": 14619008,
+        "nanos": 9695424,
+        "pair_contributions": 7315328,
+        "recurrence_updates": 7292160,
+        "worker": 7
+      }
+    ]
+  },
+  "profile_build": "isolated scratch; feature m6-profile-suffix; profile counters excluded from timed binaries",
+  "suffix_fraction_bucket_definition": "8 equal bins of remaining degree count divided by total order degree count; bucket 0 is 0-12.5%, bucket 7 is 87.5-100%"
+}

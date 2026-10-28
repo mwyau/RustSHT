@@ -1,0 +1,7 @@
+# Candidate V3 fused suffix assembly notes
+
+The isolated release binary was built from the scratch candidate at exact parent `49295a89`, `--release`, `-C target-cpu=x86-64-v3`. The measured worker selected Pulp V3 (AVX2/FMA). Its SHA-256 and build provenance are recorded in `provenance.json`.
+
+The disassembled `FusedSynthesisBlock<f32, true, false, false, false>` V3 specialization contains a YMM loop with packed `vfmadd*ps` for coefficient construction, recurrence and real/imaginary accumulation. The `CHECK_CONTRIBUTIONS` path performs per-pair normality checks; `CHECK_RANGE` checks recurrence values after each step. The V3 body has 12 static packed FMA instructions and one `vmulps` occurrence; static counts describe code shape, not dynamic instruction totals. The enclosing `F32SynthesisFallbackBlock` contains prefix normalization, stack staging, transaction/decline branches and the fused dispatch.
+
+Pinned DUCC 0.42.0 `alm2map_kernel` was built from source `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` with `-march=x86-64-v3`. Its AVX2 specialization uses packed YMM `vfmadd*pd`, unrolled across four recurrence pairs (eight degrees), with unit-stride recurrence and accumulator updates and no calls in its hot loop. It transitions once after the scaled prefix and does not repeat candidate-style range checks per pair. The inspected binary has 13 static packed FMA instructions in the kernel body. Full binary-specific disassembly captures remain local; this note records the inspected code shape. No dynamic candidate instruction count is claimed.
