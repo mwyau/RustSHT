@@ -1,0 +1,30 @@
+{
+  "GL-T720-M720-s0-synthesis-q1": {
+    "max_candidate_parent_relative_l2": 1.1787049837171426e-07,
+    "max_candidate_parent_absolute": 1.9371509552001953e-07,
+    "candidate_ducc_relative_l2": 0.0001723430859140876,
+    "candidate_ducc_max_absolute": 0.0009644031524658203,
+    "all_finite_repeat_reset": true
+  },
+  "GL-T720-M720-s0-synthesis-q8": {
+    "max_candidate_parent_relative_l2": 9.054464362456342e-08,
+    "max_candidate_parent_absolute": 2.086162567138672e-07,
+    "candidate_ducc_relative_l2": 0.00017234309416222117,
+    "candidate_ducc_max_absolute": 0.0009644031524658203,
+    "all_finite_repeat_reset": true
+  },
+  "GL-T720-M180-s0-synthesis-q1": {
+    "max_candidate_parent_relative_l2": 9.973504578896405e-08,
+    "max_candidate_parent_absolute": 1.4901161193847656e-07,
+    "candidate_ducc_relative_l2": 0.000272546208553138,
+    "candidate_ducc_max_absolute": 0.0015478730201721191,
+    "all_finite_repeat_reset": true
+  },
+  "GL-T720-M180-s0-synthesis-q8": {
+    "max_candidate_parent_relative_l2": 7.705845832213397e-08,
+    "max_candidate_parent_absolute": 1.4901161193847656e-07,
+    "candidate_ducc_relative_l2": 0.00027254623504963555,
+    "candidate_ducc_max_absolute": 0.0015478730201721191,
+    "all_finite_repeat_reset": true
+  }
+}

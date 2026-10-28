@@ -1,0 +1,24 @@
+{
+  "scope": "one warmed GL T720 full-mmax q1 synthesis_into call; setup/workspace outside.",
+  "event": "Callgrind Ir (instruction references), not elapsed time or cycles",
+  "rust_parent_source": "ef11ce0a1043d8acb049ce9178513e4cde058789",
+  "candidate_patch_sha256": "74d9bfcfcae98e57e87944058baea44afcaaf1c3a78782780dbfd47af6278666",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_profile_note": "Pinned DUCC same-shape q1 reference from the accepted packet-vector screen; not reprofiled in this candidate screen.",
+  "required_degree_latitude_slots": 161199393,
+  "ir": {
+    "parent": 6610413955,
+    "candidate": 6925618870,
+    "ducc": 260801202
+  },
+  "ir_per_required_slot": {
+    "parent": 41.00768515300799,
+    "candidate": 42.963057993648896,
+    "ducc": 1.617879553677972
+  },
+  "rust_to_ducc_ir_ratio": {
+    "parent": 25.346562455643898,
+    "candidate": 26.555164688236367
+  },
+  "candidate_parent_ir_ratio": 1.0476830826549954
+}

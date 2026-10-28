@@ -1,0 +1,20 @@
+{
+  "rust_target_cpu": "x86-64-v3",
+  "selected_backend": "Pulp V3, AVX2, eight f32 lanes",
+  "symbols": {
+    "FusedSynthesisBlock<f32, true, false>": {
+      "parent_source": "ef11ce0a1043d8acb049ce9178513e4cde058789",
+      "parent_size_bytes": 1772,
+      "candidate_size_bytes": 4879,
+      "parent_vfmadd_static_instructions": 12,
+      "candidate_vfmadd_static_instructions": 12,
+      "notes": "Both contain YMM vfmadd*ps in the fused recurrence loop; candidate symbol also handles arbitrary pair_start and initial_previous."
+    },
+    "F32SynthesisFallback": {
+      "candidate_size_bytes": 10012,
+      "candidate_vfmadd_static_instructions": 34,
+      "notes": "New packet-split fallback traversal with guarded suffix path."
+    }
+  },
+  "interpretation": "Static size/instruction counts describe emitted code, not dynamic cycles. The dynamic q1 full Callgrind profile is reported separately."
+}
