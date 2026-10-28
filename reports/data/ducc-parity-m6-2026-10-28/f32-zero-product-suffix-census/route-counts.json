@@ -1,0 +1,116 @@
+{
+  "experiment": "instrumented route census; not a timed binary",
+  "parent_source": "e28ca1c65a384ca613d4527f777a479980818e94 (production code matches 54b166f2c0698f1c70e88f8679d12fa4376704fe)",
+  "ducc_reference": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b (not built or timed in this census)",
+  "base_suffix_patch_uncompressed_sha256": "67bcd6dfd59da3077636aec1bf1df09284e4663ea5c0043148e6900b977db242",
+  "normal_or_zero_condition": "For the suffix product check, require every lane product to be either normal or exactly zero; all recurrence, coefficient, accumulated-sum and overflow checks remain active.",
+  "candidate_census_patch_gzip_sha256": "dd53e0c0db7d035458b9eb0785743c6d64bb80c6d5fd7f59505f20a1040bb0a3",
+  "rust_flags": "release; -C target-cpu=x86-64-v3; --cfg m6_profile_suffix for census only",
+  "fixture": "GL T720 f32 scalar synthesis; phi0=0.23; full M720 nphi1458; reduced M180 nphi378; deterministic scripts/benchmark_ducc_f32_native.py fixture",
+  "fixture_sha256": {
+    "M720": {
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+    },
+    "M180": {
+      "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+      "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+    }
+  },
+  "active_degree_latitude_terms": {
+    "full_mmax_720": 161199393,
+    "reduced_mmax_180": 81210177
+  },
+  "cells": {
+    "full_q1": {
+      "threads": 1,
+      "state_ready_packets": 29188,
+      "strict_guard_completed_packets": 20355,
+      "strict_guard_declined_packets": 8833,
+      "normal_or_zero_completed_packets": 29188,
+      "normal_or_zero_declined_packets": 0,
+      "decline_reasons": {},
+      "fused_pair_lane_updates": 44440960,
+      "fused_degree_latitude_terms": 88881920,
+      "active_degree_latitude_terms": 161199393,
+      "suffix_coverage_fraction": 0.5513787511594413,
+      "additional_pair_lane_updates_vs_strict": 14469808,
+      "additional_degree_latitude_terms_vs_strict": 29021048,
+      "completed_packets_per_worker": {
+        "0": 29188
+      }
+    },
+    "full_q8": {
+      "threads": 8,
+      "state_ready_packets": 28135,
+      "strict_guard_completed_packets": 17077,
+      "strict_guard_declined_packets": 11058,
+      "normal_or_zero_completed_packets": 28135,
+      "normal_or_zero_declined_packets": 0,
+      "decline_reasons": {},
+      "fused_pair_lane_updates": 43148192,
+      "fused_degree_latitude_terms": 86296384,
+      "active_degree_latitude_terms": 161199393,
+      "suffix_coverage_fraction": 0.5353393855521528,
+      "additional_pair_lane_updates_vs_strict": 17690688,
+      "additional_degree_latitude_terms_vs_strict": 35449696,
+      "completed_packets_per_worker": {
+        "0": 2138,
+        "1": 4064,
+        "2": 2196,
+        "3": 3288,
+        "4": 3640,
+        "5": 5171,
+        "6": 3524,
+        "7": 4114
+      }
+    },
+    "reduced_q1": {
+      "threads": 1,
+      "state_ready_packets": 7950,
+      "strict_guard_completed_packets": 6008,
+      "strict_guard_declined_packets": 1942,
+      "normal_or_zero_completed_packets": 7950,
+      "normal_or_zero_declined_packets": 0,
+      "decline_reasons": {},
+      "fused_pair_lane_updates": 18990112,
+      "fused_degree_latitude_terms": 37980224,
+      "active_degree_latitude_terms": 81210177,
+      "suffix_coverage_fraction": 0.4676781334930473,
+      "additional_pair_lane_updates_vs_strict": 4700008,
+      "additional_degree_latitude_terms_vs_strict": 9424112,
+      "completed_packets_per_worker": {
+        "0": 7950
+      }
+    },
+    "reduced_q8": {
+      "threads": 8,
+      "state_ready_packets": 7570,
+      "strict_guard_completed_packets": 5220,
+      "strict_guard_declined_packets": 2350,
+      "normal_or_zero_completed_packets": 7570,
+      "normal_or_zero_declined_packets": 0,
+      "decline_reasons": {},
+      "fused_pair_lane_updates": 17961088,
+      "fused_degree_latitude_terms": 35922176,
+      "active_degree_latitude_terms": 81210177,
+      "suffix_coverage_fraction": 0.44233589098075726,
+      "additional_pair_lane_updates_vs_strict": 5636200,
+      "additional_degree_latitude_terms_vs_strict": 11293328,
+      "completed_packets_per_worker": {
+        "0": 378,
+        "1": 600,
+        "2": 1568,
+        "3": 636,
+        "4": 1088,
+        "5": 1252,
+        "6": 840,
+        "7": 1208
+      }
+    }
+  }
+}
