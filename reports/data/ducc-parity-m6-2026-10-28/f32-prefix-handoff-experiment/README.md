@@ -44,16 +44,16 @@ At exact parent `061a0467`, the active mathematical work is 80,696,637 degree–
 
 The suffix candidate successfully handed off 31,115,584 full-q1, 30,799,296 full-q8, 13,806,400 reduced-q1 and 13,726,240 reduced-q8 contributions. It declined zero candidate suffix blocks after its transactional checks. That is substantial route coverage, but the uninstrumented whole-transform results above do not support promotion. The exact-parent packet route totals are summarized in [route-summary.csv](route-summary.csv).
 
-The next bounded diagnostic tested exponent-field adjustment on each currently unscaleable full SIMD packet. For every lane it required normal coefficient, recurrence basis and product; bitwise equality to the existing scaled helper; a normal adjusted result; and finite normal-or-zero staged sums. A packet was counted only if **all** lanes passed, so this did not assume mixed-lane masking.
+The next bounded diagnostic tested exponent-field adjustment on each currently unscaleable full SIMD packet. Its first census was too strict: it required staged and next sums to be normal-or-zero, while the checked packet leaf only requires the next sums to be finite. We reran the census at exact source `58267773c4a3139371fdaa4d9b133e291b3ed593` with the leaf's finite-sum condition. It still requires normal coefficient, recurrence basis, product and exponent-adjusted result, plus bitwise equality to the existing scaled helper.
 
-| Cell | Unscaleable packets | Exact lanes | Safe lanes | Fully safe packets |
-|---|---:|---:|---:|---:|
-| Full q1 | 446,244 | 364,030 | 294,829 | 2 |
-| Full q8 | 624,474 | 462,717 | 375,835 | 2 |
-| Reduced q1 | 160,361 | 212,049 | 193,683 | 0 |
-| Reduced q8 | 199,189 | 238,999 | 216,979 | 0 |
+| Cell | Unscaleable packets | Exact lanes | Earlier overstrict lane count | Corrected safe lanes | Fully safe 8-lane packets |
+|---|---:|---:|---:|---:|---:|
+| Full q1 | 446,244 | 364,030 | 294,829 | 364,030 | 2 |
+| Full q8 | 624,474 | 462,717 | 375,835 | 462,717 | 2 |
+| Reduced q1 | 160,361 | 212,049 | 193,683 | 212,049 | 0 |
+| Reduced q8 | 199,189 | 238,999 | 216,979 | 238,999 | 0 |
 
-Safe individual lanes are dispersed among packets that fail another lane's exactness or normal-range conditions. Processing those lanes separately would reintroduce the rejected mixed-lane route. The full-packet exponent-adjustment idea is therefore rejected before implementation.
+The corrected route adds about 10–23% more individually eligible lanes than the earlier conservative count, but does not add any fully safe packets. Those lanes are dispersed among packets that fail another lane's exactness or normal-range conditions. Processing them separately would reintroduce the rejected mixed-lane route, so the full-packet exponent-adjustment idea remains rejected before implementation. Per-worker q8 route counts are retained in [exp-adjust-counts.json](exp-adjust-counts.json); they are work counts, not timing or utilization measurements. The instrumented build used the matched random T720 fixtures (hashes unchanged from [provenance.json](provenance.json)); this census did not exercise the polar, subnormal, nonfinite, overflow or tail controls.
 
 ## Instructions and emitted code
 

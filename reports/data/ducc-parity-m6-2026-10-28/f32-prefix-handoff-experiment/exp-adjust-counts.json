@@ -1,30 +1,185 @@
 {
-  "q1-full": {
-    "orders_with_unscaleable_packets": 2195,
-    "unscaleable_packets": 446244,
-    "exact_lanes": 364030,
-    "safe_lanes": 294829,
-    "safe_packets": 2
+  "build": {
+    "instrumented_only": true,
+    "llvm": "23.1.1",
+    "profile": "release",
+    "rust": "1.99.1",
+    "rustflags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "simd_arch": "AVX2 / FMA"
   },
-  "q1-reduced": {
-    "orders_with_unscaleable_packets": 586,
-    "unscaleable_packets": 160361,
-    "exact_lanes": 212049,
-    "safe_lanes": 193683,
-    "safe_packets": 0
+  "cells": {
+    "q1-full": {
+      "accumulator_rows_with_unscaleable_packets": 2195,
+      "corrected_safe_lanes": 364030,
+      "exact_lanes": 364030,
+      "finite_next_lanes": 364030,
+      "finite_staged_lanes": 3569952,
+      "fully_safe_8_lane_packets": 2,
+      "normal_or_zero_next_lanes": 354263,
+      "normal_or_zero_staged_lanes": 2800350,
+      "per_worker": {
+        "ThreadId(1)": {
+          "census_rows": 2195,
+          "safe_packets": 2,
+          "unscaleable_packets": 446244
+        }
+      },
+      "previous_overstrict_safe_lanes": 294829,
+      "unscaleable_packets": 446244
+    },
+    "q1-reduced": {
+      "accumulator_rows_with_unscaleable_packets": 586,
+      "corrected_safe_lanes": 212049,
+      "exact_lanes": 212049,
+      "finite_next_lanes": 212049,
+      "finite_staged_lanes": 1282888,
+      "fully_safe_8_lane_packets": 0,
+      "normal_or_zero_next_lanes": 207756,
+      "normal_or_zero_staged_lanes": 1028326,
+      "per_worker": {
+        "ThreadId(1)": {
+          "census_rows": 586,
+          "safe_packets": 0,
+          "unscaleable_packets": 160361
+        }
+      },
+      "previous_overstrict_safe_lanes": 193683,
+      "unscaleable_packets": 160361
+    },
+    "q8-full": {
+      "accumulator_rows_with_unscaleable_packets": 4313,
+      "corrected_safe_lanes": 462717,
+      "exact_lanes": 462717,
+      "finite_next_lanes": 462717,
+      "finite_staged_lanes": 4995792,
+      "fully_safe_8_lane_packets": 2,
+      "normal_or_zero_next_lanes": 449121,
+      "normal_or_zero_staged_lanes": 3993038,
+      "per_worker": {
+        "ThreadId(2)": {
+          "census_rows": 212,
+          "safe_packets": 0,
+          "unscaleable_packets": 90720
+        },
+        "ThreadId(3)": {
+          "census_rows": 302,
+          "safe_packets": 0,
+          "unscaleable_packets": 57693
+        },
+        "ThreadId(4)": {
+          "census_rows": 979,
+          "safe_packets": 1,
+          "unscaleable_packets": 47719
+        },
+        "ThreadId(5)": {
+          "census_rows": 322,
+          "safe_packets": 0,
+          "unscaleable_packets": 92081
+        },
+        "ThreadId(6)": {
+          "census_rows": 666,
+          "safe_packets": 0,
+          "unscaleable_packets": 54173
+        },
+        "ThreadId(7)": {
+          "census_rows": 700,
+          "safe_packets": 0,
+          "unscaleable_packets": 78991
+        },
+        "ThreadId(8)": {
+          "census_rows": 433,
+          "safe_packets": 0,
+          "unscaleable_packets": 111034
+        },
+        "ThreadId(9)": {
+          "census_rows": 699,
+          "safe_packets": 1,
+          "unscaleable_packets": 92063
+        }
+      },
+      "previous_overstrict_safe_lanes": 375835,
+      "unscaleable_packets": 624474
+    },
+    "q8-reduced": {
+      "accumulator_rows_with_unscaleable_packets": 1008,
+      "corrected_safe_lanes": 238999,
+      "exact_lanes": 238999,
+      "finite_next_lanes": 238999,
+      "finite_staged_lanes": 1593512,
+      "fully_safe_8_lane_packets": 0,
+      "normal_or_zero_next_lanes": 233596,
+      "normal_or_zero_staged_lanes": 1282335,
+      "per_worker": {
+        "ThreadId(2)": {
+          "census_rows": 88,
+          "safe_packets": 0,
+          "unscaleable_packets": 45063
+        },
+        "ThreadId(3)": {
+          "census_rows": 127,
+          "safe_packets": 0,
+          "unscaleable_packets": 18743
+        },
+        "ThreadId(4)": {
+          "census_rows": 174,
+          "safe_packets": 0,
+          "unscaleable_packets": 35709
+        },
+        "ThreadId(5)": {
+          "census_rows": 116,
+          "safe_packets": 0,
+          "unscaleable_packets": 10903
+        },
+        "ThreadId(6)": {
+          "census_rows": 102,
+          "safe_packets": 0,
+          "unscaleable_packets": 5725
+        },
+        "ThreadId(7)": {
+          "census_rows": 138,
+          "safe_packets": 0,
+          "unscaleable_packets": 35789
+        },
+        "ThreadId(8)": {
+          "census_rows": 139,
+          "safe_packets": 0,
+          "unscaleable_packets": 1600
+        },
+        "ThreadId(9)": {
+          "census_rows": 124,
+          "safe_packets": 0,
+          "unscaleable_packets": 45657
+        }
+      },
+      "previous_overstrict_safe_lanes": 216979,
+      "unscaleable_packets": 199189
+    }
   },
-  "q8-full": {
-    "orders_with_unscaleable_packets": 4313,
-    "unscaleable_packets": 624474,
-    "exact_lanes": 462717,
-    "safe_lanes": 375835,
-    "safe_packets": 2
-  },
-  "q8-reduced": {
-    "orders_with_unscaleable_packets": 1008,
-    "unscaleable_packets": 199189,
-    "exact_lanes": 238999,
-    "safe_lanes": 216979,
-    "safe_packets": 0
+  "fixture_hashes": "provenance.json; regenerated files matched all recorded hashes",
+  "instrumentation_patch_sha256": "52a577bb9f4f9857d1a8f7820fa3ee199e7db48bf1b1cd890f76fbc589525365",
+  "limitations": [
+    "This is a route census, not a timing or correctness acceptance run.",
+    "The fixture is the matched random normal synthesis fixture; polar, subnormal, nonfinite, overflow and SIMD-tail exceptional controls were not included in this census."
+  ],
+  "pinned_ducc": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "production_code_changed_since_route_parent_061a0467": false,
+  "safe_lane_rule": "normal coefficient components, basis, unscaled product and adjusted result; bitwise match with multiply_complex_scaled_f32; next staged sums finite",
+  "safe_packet_rule": "all 8 lanes safe; no mixed-lane compaction",
+  "schema": "m6-f32-exp-adjust-census-finite-sums-v2",
+  "source_commit": "58267773c4a3139371fdaa4d9b133e291b3ed593",
+  "superseded_initial_census": "Earlier safe-lane counts required staged and next sums to be normal-or-zero. The checked packet leaf only requires next sums to be finite. Corrected values are provided per cell; fully safe packet counts remain unchanged.",
+  "workload": {
+    "counts_per_worker": true,
+    "grid": "GL",
+    "lmax": 720,
+    "mmaxes": {
+      "full": 720,
+      "reduced": 180
+    },
+    "ntheta": 721,
+    "operation": "scalar synthesis",
+    "phi0": 0.23,
+    "precision": "native f32",
+    "warm_transform_timing": false
   }
 }
