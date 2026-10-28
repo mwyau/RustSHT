@@ -272,6 +272,10 @@ impl PairedScalarRecurrenceVisitor<f32> for F32SynthesisAccumulator<'_> {
 }
 
 #[inline(always)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The native packet helper passes lane inputs and transactional output scratch directly."
+)]
 fn try_accumulate_f32_synthesis_packet<S: Simd>(
     simd: S,
     cos_theta: &[f32],
@@ -317,6 +321,10 @@ fn try_accumulate_f32_synthesis_packet<S: Simd>(
 }
 
 #[inline(always)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scalar fallback carries a lane range, recurrence pair, scale exponents, and staged sums."
+)]
 fn accumulate_f32_synthesis_scalar_range(
     ring_start: usize,
     lane_start: usize,
