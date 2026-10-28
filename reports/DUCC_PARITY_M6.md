@@ -46,13 +46,51 @@ The old three-pair, code-equivalent timing screen at `b3289762` measured
 spin-1 synthesis at 37.654x/47.938x full q1/q8 and 35.864x/40.444x reduced
 q1/q8. These elapsed values are reported separately from the Callgrind
 profile; they are not a fresh 15-pair acceptance campaign at `0f821099`.
-No candidate or numerical acceptance work was done. The bounded next screen
-is a narrow f32 spin-1 dispatch into the existing separate-channel
-paired-scalar conversion and accumulator, keeping polar and declined/scaled
-blocks on the current general callback. Do not enable paired-spin support
-globally or add another recurrence. See the [profile report](data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md)
+The narrow f32 dispatch screen at parent `092fe72f` is recorded below. See the
+[profile report](data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md)
 for exact flags, hashes, raw profiles, and disassembly. Scalar synthesis stays
 a major GAP and M6 remains open.
+
+## 2026-10-28 f32 spin-1 separate paired-scalar dispatch screen — not promoted
+
+The isolated one-gate candidate allowed native-f32 spin 1 to enter the
+existing fast-scalar eligibility and separate-channel paired-scalar path. It
+did not alter the recurrence or globally enable paired-spin support. Exact
+parent was `092fe72f322bd482dac73b020785b096772bc901`; pinned DUCC was
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+
+Three interleaved GL T720 parent/candidate/DUCC pairs ran per full/reduced
+q1/q8 cell. The reduced-q8 result initially suggested a 10.3% gain, so that
+cell received 15 more pairs. Timings and hashes are in the [screen report](data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
+
+| Cell | Parent / candidate / DUCC median ms | Candidate/parent paired median | Candidate/DUCC paired median | Status |
+|---|---:|---:|---:|---|
+| Full q1 | 1484.907 / 1493.662 / 40.528 | 1.006 | 37.10x | **GAP** |
+| Full q8 | 271.436 / 268.161 / 5.563 | 0.983 | 48.53x | **GAP** |
+| Reduced q1 | 615.820 / 613.619 / 17.682 | 0.995 | 34.64x | **GAP** |
+| Reduced q8, initial 3 | 123.724 / 101.717 / 2.459 | 0.897 | 41.36x | **INCONCLUSIVE** |
+| Reduced q8, 15-pair extension | 122.540 / 102.338 / 2.487 | 1.006 `[0.823, 1.036]` | 41.17x | **INCONCLUSIVE** |
+
+Across the initial matrix, parent/candidate output was bitwise equal and all
+workers passed finite, repeat, and reset checks. The 15-pair reduced-q8
+candidate/parent interval spans parity; only 6/15 pairs were faster, with
+paired ratios from 0.796 to 1.244. Separate parent/candidate medians are
+strongly dispersed, so the paired ratio controls the decision. Candidate/DUCC
+error was `1.41495e-4` relative L2 and `9.13277e-4` max absolute on the
+reduced shape. No analytic/adjoint/extreme-value or protected f64 control was
+run after the targeted screen failed to confirm a gain.
+
+No candidate-specific route-success counter, Legendre-stage timing, or
+equivalent-work instruction count was collected. Therefore this result does
+not establish that more work reached the fused scalar path. **Decision:** do
+not promote; no whole-transform gain is established. Return to native-f32
+scalar synthesis. The `scalar_paired/synthesis.rs` and scalar-transform
+synthesis sources at `092fe72f` match the earlier reflected-ring census source
+`49295a89`; its approximately 2x useful-work difference versus DUCC is a
+dataflow lead, while its instrumented timings are not acceptance results.
+Re-measure exact-current-source scalar-synthesis whole-call and Legendre-stage
+baselines before selecting a different bounded dataflow experiment. The two
+scaled-prefix suffix candidates remain rejected. M6 remains open.
 
 ## 2026-10-28 native-f32 scalar-analysis callback SIMD accepted at parent `4770e1c7`
 

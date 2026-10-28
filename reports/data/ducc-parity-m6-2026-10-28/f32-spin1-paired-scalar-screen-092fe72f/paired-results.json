@@ -1,0 +1,1232 @@
+{
+  "parent_source": "092fe72f322bd482dac73b020785b096772bc901",
+  "candidate_change": "allow f32 spin-1 to enter existing fast scalar eligibility; separate channel preparation uses existing paired-scalar leaf",
+  "candidate_patch_sha256": "b35cedbc12ad9ee0e86efa1749a7e7e76bf2be3a6327dbe65fb04108de5fb2ed",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "environment": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "rust_build": "cargo build --release --locked --features parallel --example ducc_f32_full_transform_parity",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "pulp": "runtime V3, 8 f32 lanes",
+    "ducc_flags": "GCC 15.2, -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+    "target_batch_ms": 35.0,
+    "ducc_binary_sha256": "0e376e9474c674fb84dbeff67baf1996907cdfdee5a889b0b11ddf8b2b098f9b",
+    "parent_binary_sha256": "7552d0705709309a15988c78627a6e0d6a54edce4161085b13ba2dc3dfa41bb4",
+    "candidate_binary_sha256": "b4c716b1a0b9ec0de317acc07d4dc1c78149c81069edd48e1de54ae405067f3e",
+    "runner_sha256": "c2e52ca37ea5be9563318abafd0f619528e73f4d78d198f9197654455329773d",
+    "parent_synthesis_rs_sha256": "8ef50c59d134f8c816793d8567198ff4120919503f9c243a8984ce6d13fef4e1",
+    "candidate_synthesis_rs_sha256": "179f7e919bc213cf8c9b45e289f01e019593ad0b94462e00cfb64874feacead6"
+  },
+  "initial_three_pairs_all_cells": [
+    {
+      "case_id": "GL-T720-M720-s1-synthesis-q1",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "pair_order": [
+        [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        [
+          "parent",
+          "candidate",
+          "ducc"
+        ]
+      ],
+      "paired_times_ms": [
+        {
+          "parent": 1482.70605,
+          "candidate": 1505.954912,
+          "ducc": 40.5284775
+        },
+        {
+          "parent": 1487.636561,
+          "candidate": 1490.663982,
+          "ducc": 41.819064999999995
+        },
+        {
+          "parent": 1484.907015,
+          "candidate": 1493.6620249999999,
+          "ducc": 40.261602499999995
+        }
+      ],
+      "candidate_parent_ratio_pairs": [
+        1.015680020999442,
+        1.0020350541788008,
+        1.0058959988144442
+      ],
+      "parent_ducc_ratio_pairs": [
+        36.58430174190481,
+        35.57316647323416,
+        36.88146826743919
+      ],
+      "candidate_ducc_ratio_pairs": [
+        37.157944361467806,
+        35.6455597943187,
+        37.09892136061897
+      ],
+      "median_process_ms": {
+        "parent": 1484.907015,
+        "candidate": 1493.6620249999999,
+        "ducc": 40.5284775
+      },
+      "median_paired_ratios": {
+        "candidate_parent": 1.0058959988144442,
+        "parent_ducc": 36.58430174190481,
+        "candidate_ducc": 37.09892136061897
+      },
+      "candidate_parent_max_relative_l2": 0.0,
+      "candidate_parent_max_absolute": 0.0,
+      "candidate_ducc_max_relative_l2": 0.0001426412049337804,
+      "candidate_ducc_max_absolute": 0.0011716485023498535,
+      "all_finite_repeat_reset_checks": true,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-s1-synthesis-q8",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "pair_order": [
+        [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        [
+          "candidate",
+          "ducc",
+          "parent"
+        ]
+      ],
+      "paired_times_ms": [
+        {
+          "parent": 271.435651,
+          "candidate": 268.160653,
+          "ducc": 5.5124163
+        },
+        {
+          "parent": 277.88105,
+          "candidate": 269.957263,
+          "ducc": 5.56289625
+        },
+        {
+          "parent": 270.33376599999997,
+          "candidate": 265.62642600000004,
+          "ducc": 5.649781875
+        }
+      ],
+      "candidate_parent_ratio_pairs": [
+        0.9879345325938781,
+        0.9714849681185529,
+        0.9825869329249831
+      ],
+      "parent_ducc_ratio_pairs": [
+        49.24077504813996,
+        49.952585400096225,
+        47.84853149751024
+      ],
+      "candidate_ducc_ratio_pairs": [
+        48.646662081744445,
+        48.52818583485177,
+        47.015341809103035
+      ],
+      "median_process_ms": {
+        "parent": 271.435651,
+        "candidate": 268.160653,
+        "ducc": 5.56289625
+      },
+      "median_paired_ratios": {
+        "candidate_parent": 0.9825869329249831,
+        "parent_ducc": 49.24077504813996,
+        "candidate_ducc": 48.52818583485177
+      },
+      "candidate_parent_max_relative_l2": 0.0,
+      "candidate_parent_max_absolute": 0.0,
+      "candidate_ducc_max_relative_l2": 0.0001426412049337804,
+      "candidate_ducc_max_absolute": 0.0011716485023498535,
+      "all_finite_repeat_reset_checks": true,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-s1-synthesis-q1",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "pair_order": [
+        [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        [
+          "ducc",
+          "parent",
+          "candidate"
+        ]
+      ],
+      "paired_times_ms": [
+        {
+          "parent": 623.727046,
+          "candidate": 613.619426,
+          "ducc": 18.217079
+        },
+        {
+          "parent": 615.81975,
+          "candidate": 612.551805,
+          "ducc": 17.681632999999998
+        },
+        {
+          "parent": 614.881885,
+          "candidate": 617.038497,
+          "ducc": 17.658579500000002
+        }
+      ],
+      "candidate_parent_ratio_pairs": [
+        0.9837948024463252,
+        0.9946933416799314,
+        1.0035073597915476
+      ],
+      "parent_ducc_ratio_pairs": [
+        34.238587097305775,
+        34.828216941274604,
+        34.820574610772056
+      ],
+      "candidate_ducc_ratio_pairs": [
+        33.68374402943524,
+        34.643395494070035,
+        34.94270289408046
+      ],
+      "median_process_ms": {
+        "parent": 615.81975,
+        "candidate": 613.619426,
+        "ducc": 17.681632999999998
+      },
+      "median_paired_ratios": {
+        "candidate_parent": 0.9946933416799314,
+        "parent_ducc": 34.820574610772056,
+        "candidate_ducc": 34.643395494070035
+      },
+      "candidate_parent_max_relative_l2": 0.0,
+      "candidate_parent_max_absolute": 0.0,
+      "candidate_ducc_max_relative_l2": 0.00014149547686522266,
+      "candidate_ducc_max_absolute": 0.000913277268409729,
+      "all_finite_repeat_reset_checks": true,
+      "fixture_sha256": {
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-s1-synthesis-q8",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "pair_order": [
+        [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        [
+          "parent",
+          "candidate",
+          "ducc"
+        ]
+      ],
+      "paired_times_ms": [
+        {
+          "parent": 113.34194,
+          "candidate": 101.71733900000001,
+          "ducc": 2.4594454090909093
+        },
+        {
+          "parent": 124.52300299999999,
+          "candidate": 125.17676,
+          "ducc": 2.49152715
+        },
+        {
+          "parent": 123.72411,
+          "candidate": 99.850675,
+          "ducc": 2.4577372
+        }
+      ],
+      "candidate_parent_ratio_pairs": [
+        0.8974377798721287,
+        1.0052500902182708,
+        0.8070429845888566
+      ],
+      "parent_ducc_ratio_pairs": [
+        46.08434876458382,
+        49.97858562368064,
+        50.34065887923249
+      ],
+      "candidate_ducc_ratio_pairs": [
+        41.35783564214098,
+        50.24097770718654,
+        40.62707558806532
+      ],
+      "median_process_ms": {
+        "parent": 123.72411,
+        "candidate": 101.71733900000001,
+        "ducc": 2.4594454090909093
+      },
+      "median_paired_ratios": {
+        "candidate_parent": 0.8974377798721287,
+        "parent_ducc": 49.97858562368064,
+        "candidate_ducc": 41.35783564214098
+      },
+      "candidate_parent_max_relative_l2": 0.0,
+      "candidate_parent_max_absolute": 0.0,
+      "candidate_ducc_max_relative_l2": 0.00014149547686522266,
+      "candidate_ducc_max_absolute": 0.000913277268409729,
+      "all_finite_repeat_reset_checks": true,
+      "fixture_sha256": {
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+      }
+    }
+  ],
+  "extended_fifteen_pairs_reduced_q8": {
+    "case_id": "GL-T720-M180-s1-synthesis-q8",
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 1,
+      "operation": "synthesis",
+      "threads": 8
+    },
+    "pairs": [
+      {
+        "pair": 1,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "times_ms": {
+          "parent": 125.76031400000001,
+          "candidate": 101.874375,
+          "ducc": 2.50746985
+        },
+        "candidate_parent_ratio": 0.8100677531705271,
+        "parent_ducc_ratio": 50.15426765749547,
+        "candidate_ducc_ratio": 40.62835491322059,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        "times_ms": {
+          "parent": 99.6378375,
+          "candidate": 101.662735,
+          "ducc": 2.4868463636363636
+        },
+        "candidate_parent_ratio": 1.0203225757483947,
+        "parent_ducc_ratio": 40.065940122776894,
+        "candidate_ducc_ratio": 40.880183225852676,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "times_ms": {
+          "parent": 99.535549,
+          "candidate": 123.788482,
+          "ducc": 2.4966257272727272
+        },
+        "candidate_parent_ratio": 1.2436610160255408,
+        "parent_ducc_ratio": 39.86802984231481,
+        "candidate_ducc_ratio": 49.58231450062981,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          }
+        }
+      },
+      {
+        "pair": 4,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "times_ms": {
+          "parent": 100.654582,
+          "candidate": 123.554479,
+          "ducc": 2.4647850499999997
+        },
+        "candidate_parent_ratio": 1.2275097322444795,
+        "parent_ducc_ratio": 40.837062850571904,
+        "candidate_ducc_ratio": 50.12789208535649,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 5,
+        "order": [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        "times_ms": {
+          "parent": 124.19948,
+          "candidate": 125.732292,
+          "ducc": 2.51167435
+        },
+        "candidate_parent_ratio": 1.0123415331529568,
+        "parent_ducc_ratio": 49.44887859367597,
+        "candidate_ducc_ratio": 50.05915356821636,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 6,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "times_ms": {
+          "parent": 99.3893425,
+          "candidate": 100.3506615,
+          "ducc": 2.4693948
+        },
+        "candidate_parent_ratio": 1.0096722543465866,
+        "parent_ducc_ratio": 40.248461890338476,
+        "candidate_ducc_ratio": 40.63775525080072,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          }
+        }
+      },
+      {
+        "pair": 7,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "times_ms": {
+          "parent": 98.471845,
+          "candidate": 102.032184,
+          "ducc": 2.49549065
+        },
+        "candidate_parent_ratio": 1.0361559083207996,
+        "parent_ducc_ratio": 39.45991342423984,
+        "candidate_ducc_ratio": 40.88662243635335,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 8,
+        "order": [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        "times_ms": {
+          "parent": 125.87954,
+          "candidate": 100.246745,
+          "ducc": 2.5114110454545457
+        },
+        "candidate_parent_ratio": 0.7963704427264351,
+        "parent_ducc_ratio": 50.12303351449854,
+        "candidate_ducc_ratio": 39.91650239073314,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 9,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "times_ms": {
+          "parent": 124.281716,
+          "candidate": 100.70841399999999,
+          "ducc": 2.5187646500000005
+        },
+        "candidate_parent_ratio": 0.810323652113075,
+        "parent_ducc_ratio": 49.342329780593026,
+        "candidate_ducc_ratio": 39.983256871577886,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          }
+        }
+      },
+      {
+        "pair": 10,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "times_ms": {
+          "parent": 124.417553,
+          "candidate": 102.337792,
+          "ducc": 2.4858973181818182
+        },
+        "candidate_parent_ratio": 0.8225350003467757,
+        "parent_ducc_ratio": 50.04935324158876,
+        "candidate_ducc_ratio": 41.16734478592612,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 11,
+        "order": [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        "times_ms": {
+          "parent": 122.539969,
+          "candidate": 123.262747,
+          "ducc": 2.486315318181818
+        },
+        "candidate_parent_ratio": 1.0058983040872158,
+        "parent_ducc_ratio": 49.28577164122952,
+        "candidate_ducc_ratio": 49.57647410954257,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 12,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "times_ms": {
+          "parent": 113.971637,
+          "candidate": 99.487398,
+          "ducc": 2.476919772727273
+        },
+        "candidate_parent_ratio": 0.8729136530696667,
+        "parent_ducc_ratio": 46.01345520146127,
+        "candidate_ducc_ratio": 40.165773270265014,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          }
+        }
+      },
+      {
+        "pair": 13,
+        "order": [
+          "candidate",
+          "ducc",
+          "parent"
+        ],
+        "times_ms": {
+          "parent": 125.11831900000001,
+          "candidate": 122.52858699999999,
+          "ducc": 2.4730672499999997
+        },
+        "candidate_parent_ratio": 0.9793017359832015,
+        "parent_ducc_ratio": 50.59236419874956,
+        "candidate_ducc_ratio": 49.545190087329814,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 14,
+        "order": [
+          "ducc",
+          "parent",
+          "candidate"
+        ],
+        "times_ms": {
+          "parent": 123.82525199999999,
+          "candidate": 123.8797395,
+          "ducc": 2.48598765
+        },
+        "candidate_parent_ratio": 1.0004400354460818,
+        "parent_ducc_ratio": 49.80927881922502,
+        "candidate_ducc_ratio": 49.83119666744925,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          },
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          }
+        }
+      },
+      {
+        "pair": 15,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "times_ms": {
+          "parent": 99.545738,
+          "candidate": 115.59334650000001,
+          "ducc": 2.499780318181818
+        },
+        "candidate_parent_ratio": 1.1612083934723554,
+        "parent_ducc_ratio": 39.82179444968319,
+        "candidate_ducc_ratio": 46.241401958102976,
+        "candidate_parent_error": {
+          "output_values": 545076,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.1718282567289342,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 545076,
+          "relative_l2": 0.00014149547686522266,
+          "absolute_l2": 0.017949881970216363,
+          "max_absolute": 0.000913277268409729,
+          "reference_rms": 0.1718266448380884,
+          "finite": true
+        },
+        "checks": {
+          "parent": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "candidate": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8
+          },
+          "ducc": {
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "simd_arch": null,
+            "f32_lanes": null
+          }
+        }
+      }
+    ],
+    "median_process_ms": {
+      "parent": 122.539969,
+      "candidate": 102.337792,
+      "ducc": 2.4868463636363636
+    },
+    "candidate_parent_ratio_median": 1.0058983040872158,
+    "candidate_parent_ratio_bootstrap_95_percentile_ci": [
+      0.8225350003467757,
+      1.0361559083207996
+    ],
+    "bootstrap_replicates": 100000,
+    "bootstrap_seed": 923177,
+    "candidate_parent_faster_pairs": 6,
+    "candidate_parent_ratio_range": [
+      0.7963704427264351,
+      1.2436610160255408
+    ],
+    "candidate_ducc_ratio_median_of_pairs": 41.16734478592612,
+    "parent_ducc_ratio_median_of_pairs": 49.28577164122952,
+    "all_finite_repeat_reset_checks": true,
+    "fixture_sha256": {
+      "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+      "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+      "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+      "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+    }
+  },
+  "decision": "not promoted: paired median ~1.006 with wide interval spanning parity and only 6/15 candidate-faster pairs; no whole-transform gain established",
+  "limits": [
+    "No candidate-specific route-success counter or Callgrind/Ir attribution was collected.",
+    "No analytic, adjoint, extreme-value, or protected f64 control tests were run because the timing screen did not establish a gain.",
+    "Initial q1/full etc. cells have three pairs; the 15-pair extension was limited to reduced q8 and is inconclusive."
+  ]
+}

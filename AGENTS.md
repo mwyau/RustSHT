@@ -35,16 +35,23 @@ high-Lmax route converts to two scalar channels, pairs the rings, and executes
 the AVX2 double-FMA scalar kernel. The eight-lane f32 recurrence is already
 shared, but f32 does not enter the prepared paired-spin route.
 
-Next, screen a narrow f32 spin-1 dispatch into the existing separate-channel
-paired-scalar conversion and f32 accumulation path. Keep the general spin
-callback for polar and declined/scaled cases; do not enable paired-spin
-support globally or add a second recurrence. Require matched q1/q8 full and
-reduced timings, numerical/adjoint/extreme/reset checks, adjacent f32 controls
-and protected f64 T1023 synthesis before promotion. See the exact source,
-Callgrind, and AVX2 evidence in the [single M6 ledger](reports/DUCC_PARITY_M6.md)
-and [profile report](reports/data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md).
-Keep scalar synthesis on the scorecard; its two suffix trials remain blocked.
-M6 remains open.
+The narrow f32 spin-1 dispatch into the existing separate-channel paired-scalar
+path was screened at exact parent `092fe72f` and was not promoted. The initial
+three-pair matrix was mixed; a 15-pair reduced-q8 extension gave paired
+candidate/parent median `1.006`, 95% bootstrap interval `[0.823, 1.036]`, and
+only 6/15 candidate-faster pairs. The run did not capture separate-route
+success counts or candidate-specific instruction attribution. See the exact
+paired timings and retained patch in the [single M6 ledger](reports/DUCC_PARITY_M6.md)
+and [screen report](reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
+
+The owner's current priority returns to native-f32 GL T720 scalar synthesis.
+The `scalar_paired/synthesis.rs` and scalar transform synthesis sources are
+byte-identical between latest source `092fe72f` and the earlier reflected
+work census source `49295a89`; that census shows roughly 2× useful
+degree-latitude work versus DUCC but its instrumented timings are not acceptance
+data. Re-measure an exact-current-source baseline and Legendre stage, then
+choose one bounded synthesis-only dataflow change. Do not repeat either
+scaled-prefix suffix candidate unchanged. M6 remains open.
 
 ## Active M6 goal — real DUCC speed parity, assembly/Callgrind, and careful cleanup
 

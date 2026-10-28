@@ -1,0 +1,13 @@
+diff --git a/src/transform/spin/synthesis.rs b/src/transform/spin/synthesis.rs
+index 4a19614e..8b7ecf40 100644
+--- a/src/transform/spin/synthesis.rs
++++ b/src/transform/spin/synthesis.rs
+@@ -824,7 +824,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+             && (!derivative_norm || (spin == 1 && self.harmonics.spin() == 0))
+             && (spin == 1 || b_alm.is_some())
+             && self.harmonics.lmax() >= fast_scalar_min_lmax
+-            && T::supports_paired_spin()
++            && (T::supports_paired_spin() || (spin == 1 && T::supports_paired_scalar()))
+             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
+             && (spin != 2 || self.spin2_fast_f1.len() > self.harmonics.lmax());
+         let reflected_q1_full_order = spin == 1

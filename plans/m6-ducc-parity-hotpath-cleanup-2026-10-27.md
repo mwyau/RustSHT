@@ -33,14 +33,23 @@ and mirrors the results; Callgrind confirms the scalar AVX2 double-FMA kernel
 runs while the spin kernel does not. Rust's f32 `supports_paired_spin` policy
 keeps this transform on the general spin callback.
 
-Next screen only the existing separate-channel paired-scalar conversion and
-f32 accumulation route under a narrow spin-1 dispatch. Preserve the current
-general spin callback for polar and declined/scaled blocks. Do not change
-`supports_paired_spin` globally or add another recurrence. The profile-only
-Callgrind and executed assembly evidence is in the [M6 ledger](../reports/DUCC_PARITY_M6.md)
-and [profile report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md).
-Keep scalar synthesis on the scorecard; its scaled-prefix transition remains
-a documented blocker, not a parity result. M6 remains open.
+The narrow f32 spin-1 dispatch into the existing separate-channel paired-scalar
+path was screened at exact parent `092fe72f` and was not promoted. The initial
+three-pair matrix was mixed; a 15-pair reduced-q8 extension gave paired
+candidate/parent median `1.006`, 95% bootstrap interval `[0.823, 1.036]`, and
+only 6/15 candidate-faster pairs. The run did not capture separate-route
+success counts or candidate-specific instruction attribution. Exact paired
+timings and the retained patch are in the [single M6 ledger](../reports/DUCC_PARITY_M6.md)
+and [screen report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
+
+The owner's current priority returns to native-f32 GL T720 scalar synthesis.
+The `scalar_paired/synthesis.rs` and scalar transform synthesis sources are
+byte-identical between latest source `092fe72f` and the earlier reflected work
+census source `49295a89`; that census shows roughly 2× useful degree-latitude
+work versus DUCC but its instrumented timings are not acceptance data.
+Re-measure an exact-current-source baseline and Legendre stage, then choose one
+bounded synthesis-only dataflow change. Do not repeat either scaled-prefix
+suffix candidate unchanged. M6 remains open.
 
 ## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
 
