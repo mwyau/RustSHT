@@ -86,6 +86,48 @@ not establish that more work reached the fused scalar path. **Decision:** do
 not promote; no whole-transform gain is established. The exact-current-source
 scalar-synthesis baseline and stage profile follow.
 
+## 2026-10-28 f32 spin-1 paired-scalar adapter census and initial screen — rejected
+
+A test-only route census at exact current parent `8472668b` confirmed why the
+one-gate candidate above did not establish a route change: f32 spin-1 work had
+zero fast-scalar scratch and inherited the default prepared-block `Ok(false)`.
+Thus the earlier one-gate timings were not evidence for paired-scalar kernel
+execution. A new isolated adapter provisioned the existing f32 worker scratch
+and called the shared native-f32 prepared paired-scalar synthesis kernel. It
+reused the scaled visitor fallback and did not add another recurrence
+implementation. Full route counts and the recoverable candidate are in the
+[route census and screen report](data/ducc-parity-m6-2026-10-28/f32-spin1-shared-scalar-route-8472668b/README.md).
+
+The route census counts paired recurrence lane updates only within blocks
+entering the adapter. Full/reduced fused-versus-fallback paired lane updates
+were 55.53M/106.38M and 38.42M/39.69M at q1; at q8 they were 56.11M/93.22M
+and 38.42M/39.69M. q8 additionally declined 1,214 outer full-mmax blocks to
+the general-spin path (150 reduced); these are not expanded into lane-update
+counts. These are route counts, not whole-transform instruction or timing
+estimates.
+
+Three interleaved fresh-process whole-transform pairs ran per cell on GL T720
+spin-1 synthesis, parent `8472668b`, candidate based on that parent, and pinned
+DUCC `42ce8ab5`. Parent/candidate/DUCC median ms were `1528.307/786.247/40.824`
+full q1, `613.044/389.330/17.695` reduced q1, `270.121/274.927/5.571` full
+q8, and `125.068/177.267/2.498` reduced q8. Candidate/parent paired medians
+were `0.515`, `0.633`, `1.018`, and `1.417`; all q1 pairs favored the
+candidate, while full q8 favored it once and reduced q8 zero times. Candidate
+versus parent relative-L2 differences were `1.70e-4` full and `2.53e-4`
+reduced; candidate versus DUCC relative-L2 errors were `1.96e-4` and
+`2.11e-4`. All workers passed finite, repeated-call and workspace-reset
+checks, but the outputs were not bitwise identical.
+
+**Decision:** reject the unconditional adapter. The q1 gains were large, but
+the reduced-q8 regression is decisive and the full-q8 result is neutral to
+slower. No 15-pair or extended correctness screen was warranted for this
+unconditional change, and no candidate-specific Legendre-stage timing was
+collected. Independent analytic-mode, adjoint, exceptional-value and f64
+controls remain unrun. No production code changed. Next, refresh the GL T720
+f32 spin-1 analysis baseline at current source (the earlier Callgrind was at
+`0f821099`, before the accepted scalar-analysis leaf), then resume the planned
+reflected-ring f32 scalar-synthesis hypothesis. M6 remains open.
+
 ## 2026-10-28 exact-current native-f32 scalar-synthesis baseline — all cells GAP
 
 Production scalar-synthesis source is `092fe72f322bd482dac73b020785b096772bc901`;

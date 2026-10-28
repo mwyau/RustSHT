@@ -1,0 +1,24 @@
+{
+  "parent_source": "8472668b463e2fe06eae189800b83cf8d5620804",
+  "candidate_base": "8472668b463e2fe06eae189800b83cf8d5620804",
+  "candidate_patch_sha256": "97a0504c46149d63482e33a073f402633d18cf269d9dc8e746f759fe0cc4844a",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "runtime_simd": "Pulp V3 / AVX2 + FMA / 8 f32 lanes",
+  "ducc_compiler": "GCC 15.2.0",
+  "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math -ffp-contract=fast",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": {
+    "q1": "CPU 3",
+    "q8": "CPUs 8-15"
+  },
+  "binary_sha256": {
+    "parent": "92918924cfdde7b98230781c9a219faf734d5b1ff0a3eca4704ffd13a6ebec3e",
+    "candidate": "1efb6b54e9ce854694cb414222ee937cfa574550ae953a6e69e0def1774cac70",
+    "ducc": "dbe4dad000a52a43df8337534f3c649d06c711801cfe7140c33372b62ff5fe96"
+  },
+  "process_pairs": 3,
+  "method": "Interleaved fresh processes, same deterministic fixtures, warm reusable plan/workspace, 35 ms warm-call batch target; whole-transform timing. Candidate and parent use native Rust worker; DUCC uses pinned native f32 I/O worker.",
+  "paired_screen_runner_sha256": "3e584310e32032467495ec7b565a1db595964cc110bc8339deb4a57570860bac"
+}

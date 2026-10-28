@@ -1,0 +1,27 @@
+{
+  "parent_source": "8472668b463e2fe06eae189800b83cf8d5620804",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "candidate_patch_sha256": "97a0504c46149d63482e33a073f402633d18cf269d9dc8e746f759fe0cc4844a",
+  "fixture": {
+    "grid": "Gauss-Legendre",
+    "ntheta": 721,
+    "phi0": 0.23,
+    "lmax": 720,
+    "spin": 1,
+    "nphi_by_mmax": {"720": 1458, "180": 362}
+  },
+  "build": {
+    "mode": "isolated release test binary; counters are cfg(test) only",
+    "rustflags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "threads": [1, 8],
+    "fixture_inputs": "deterministic synthetic f32 E/B coefficients; warm twice, reset counters, measure one transform"
+  },
+  "work_unit": "paired recurrence lane update: one latitude lane per paired recurrence slot; fused and fallback counters use the same unit. Fused pairs combine adjacent degree coefficients.",
+  "counts": [
+    {"mmax": 720, "threads": 1, "fast_scalar_buffer_len": 722, "fast_scalar_entries": 1, "reflected_order_entries": 1, "outer_scalar_block_fallbacks": 0, "separate_prepare_attempts": 6444, "separate_prepare_successes": 6444, "paired_kernel_attempts": 12888, "paired_calls": 12888, "all_normal_blocks": 3564, "fused_success_blocks": 3564, "fallback_entries": 9324, "fused_lane_pair_updates": 55530546, "fallback_lane_pair_updates": 106375296},
+    {"mmax": 180, "threads": 1, "fast_scalar_buffer_len": 722, "fast_scalar_entries": 1, "reflected_order_entries": 0, "outer_scalar_block_fallbacks": 150, "separate_prepare_attempts": 1995, "separate_prepare_successes": 1995, "paired_kernel_attempts": 3990, "paired_calls": 3990, "all_normal_blocks": 1844, "fused_success_blocks": 1844, "fallback_entries": 2146, "fused_lane_pair_updates": 38417842, "fallback_lane_pair_updates": 39688422},
+    {"mmax": 720, "threads": 8, "fast_scalar_buffer_len": 722, "fast_scalar_entries": 12, "reflected_order_entries": 0, "outer_scalar_block_fallbacks": 1214, "separate_prepare_attempts": 5507, "separate_prepare_successes": 5507, "paired_kernel_attempts": 11014, "paired_calls": 11014, "all_normal_blocks": 3488, "fused_success_blocks": 3488, "fallback_entries": 7526, "fused_lane_pair_updates": 56105010, "fallback_lane_pair_updates": 93215590},
+    {"mmax": 180, "threads": 8, "fast_scalar_buffer_len": 722, "fast_scalar_entries": 12, "reflected_order_entries": 0, "outer_scalar_block_fallbacks": 150, "separate_prepare_attempts": 1995, "separate_prepare_successes": 1995, "paired_kernel_attempts": 3990, "paired_calls": 3990, "all_normal_blocks": 1844, "fused_success_blocks": 1844, "fallback_entries": 2146, "fused_lane_pair_updates": 38417842, "fallback_lane_pair_updates": 39688422}
+  ],
+  "limits": "These counters cover only blocks entering the prepared paired-scalar adapter. Outer declined blocks and the general spin fallback are counted as block declines, not expanded into recurrence lane updates; this is a route census, not total-transform useful-work accounting."
+}
