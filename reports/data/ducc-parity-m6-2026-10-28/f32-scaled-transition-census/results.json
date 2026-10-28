@@ -1,0 +1,111 @@
+{
+  "accumulated_output_safety": "Not included in this state-only census; must be measured before candidate selection.",
+  "cases": {
+    "GL-T720-M180-s0-synthesis-q8": {
+      "case": {
+        "grid": "GL",
+        "lmax": 720,
+        "mmax": 180,
+        "nphi": 378,
+        "ntheta": 721,
+        "operation": "synthesis",
+        "spin": 0,
+        "threads": 8
+      },
+      "distinct_orders": 176,
+      "fallback_contributions": 18740156,
+      "fallback_order_block_records": 1947,
+      "fixture_sha256": {
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+      },
+      "folded_hardware_normal": {
+        "candidate_success_suffix_contributions": 13557333,
+        "candidate_success_suffix_coverage": 0.7234375743723799,
+        "complete_suffix_blocks": 1388,
+        "declining_blocks": 559,
+        "failed_attempt_speculation_coverage": 0.02039673522461606,
+        "failed_attempt_speculative_contributions_until_first_decline": 382238,
+        "first_contiguous_safe_suffix_contributions": 13939571,
+        "first_contiguous_safe_suffix_coverage": 0.7438343095969959,
+        "later_unsafe_states": 68142,
+        "transitioned_blocks": 1947
+      },
+      "folded_strict": {
+        "candidate_success_suffix_contributions": 12433451,
+        "candidate_success_suffix_coverage": 0.6634657150132581,
+        "complete_suffix_blocks": 1376,
+        "declining_blocks": 512,
+        "failed_attempt_speculation_coverage": 0.018805980056942964,
+        "failed_attempt_speculative_contributions_until_first_decline": 352427,
+        "first_contiguous_safe_suffix_contributions": 12785878,
+        "first_contiguous_safe_suffix_coverage": 0.6822716950702011,
+        "later_unsafe_states": 98782,
+        "transitioned_blocks": 1888
+      },
+      "full_simd_packet_degree_updates": 2338428,
+      "instrumented_first_call_ms": 207.655618,
+      "partial_vector_tail_degree_lane_visits": 32732
+    },
+    "GL-T720-M720-s0-synthesis-q8": {
+      "case": {
+        "grid": "GL",
+        "lmax": 720,
+        "mmax": 720,
+        "nphi": 1458,
+        "ntheta": 721,
+        "operation": "synthesis",
+        "spin": 0,
+        "threads": 8
+      },
+      "distinct_orders": 716,
+      "fallback_contributions": 45163996,
+      "fallback_order_block_records": 7210,
+      "fixture_sha256": {
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+      },
+      "folded_hardware_normal": {
+        "candidate_success_suffix_contributions": 29237909,
+        "candidate_success_suffix_coverage": 0.6473720571580955,
+        "complete_suffix_blocks": 4839,
+        "declining_blocks": 2362,
+        "failed_attempt_speculation_coverage": 0.03606478930695149,
+        "failed_attempt_speculative_contributions_until_first_decline": 1628830,
+        "first_contiguous_safe_suffix_contributions": 30866739,
+        "first_contiguous_safe_suffix_coverage": 0.6834368464650471,
+        "later_unsafe_states": 156934,
+        "transitioned_blocks": 7201
+      },
+      "folded_strict": {
+        "candidate_success_suffix_contributions": 26213707,
+        "candidate_success_suffix_coverage": 0.5804115959978386,
+        "complete_suffix_blocks": 4627,
+        "declining_blocks": 2315,
+        "failed_attempt_speculation_coverage": 0.03540472813787336,
+        "failed_attempt_speculative_contributions_until_first_decline": 1599019,
+        "first_contiguous_safe_suffix_contributions": 27812726,
+        "first_contiguous_safe_suffix_coverage": 0.615816324135712,
+        "later_unsafe_states": 278540,
+        "transitioned_blocks": 6942
+      },
+      "full_simd_packet_degree_updates": 5641408,
+      "instrumented_first_call_ms": 558.576397,
+      "partial_vector_tail_degree_lane_visits": 32732
+    }
+  },
+  "compiler_flags": "RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'; cargo build --release --features parallel --example ducc_f32_full_transform_parity",
+  "counter_correction": "An initial instrumentation pass was discarded: Vec::resize_with shrank per-packet records on every vector. The final pass grows records only; each full-mmax counter covers exactly 45,163,996 fallback contributions and reduced covers exactly 18,740,156, matching the independent route census.",
+  "ducc_reference_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "execution": "One full GL T720 scalar-synthesis transform per mmax; 8 Rayon workers; counters run only in the isolated instrumented worktree.",
+  "instrumented_binary_sha256": "38cd531afd1671bb21b7d38cdef9af3ff19cf69ba7271bc9af29d7c3ca9e04a8",
+  "production_source_revision": "ec5d56ca29ec6ad4e34fe80443d934677b0515f8",
+  "purpose": "Temporary q8 route census; no production timing was collected from this instrumented build.",
+  "q1_route_census": "Pending; this report covers only the q8 execution path.",
+  "simd": "Pulp AVX2/FMA, 8 f32 lanes",
+  "source_worktree_head": "9760e361eb74236cb1ce10be6653b87b93086c46"
+}
