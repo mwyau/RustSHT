@@ -1,0 +1,110 @@
+{
+  "M720-q1": {
+    "paired_stage_medians_ms": {
+      "parent": 659.452594,
+      "candidate": 706.66242
+    },
+    "candidate_parent_median": 1.0707763690869696,
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_stage_ms": 660.147781,
+        "candidate_stage_ms": 706.870644,
+        "candidate_parent": 1.0707763690869696
+      },
+      {
+        "pair": 2,
+        "parent_stage_ms": 659.452594,
+        "candidate_stage_ms": 706.66242,
+        "candidate_parent": 1.0715894158724015
+      },
+      {
+        "pair": 3,
+        "parent_stage_ms": 658.41478,
+        "candidate_stage_ms": 700.079801,
+        "candidate_parent": 1.0632808106160678
+      }
+    ]
+  },
+  "M180-q1": {
+    "paired_stage_medians_ms": {
+      "parent": 197.083265,
+      "candidate": 225.140329
+    },
+    "candidate_parent_median": 1.142413966925804,
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_stage_ms": 197.083265,
+        "candidate_stage_ms": 223.310536,
+        "candidate_parent": 1.1330771082973483
+      },
+      {
+        "pair": 2,
+        "parent_stage_ms": 198.35947,
+        "candidate_stage_ms": 226.608629,
+        "candidate_parent": 1.142413966925804
+      },
+      {
+        "pair": 3,
+        "parent_stage_ms": 196.453493,
+        "candidate_stage_ms": 225.140329,
+        "candidate_parent": 1.1460235476698803
+      }
+    ]
+  },
+  "M720-q8": {
+    "paired_stage_medians_ms": {
+      "parent": 96.905756,
+      "candidate": 118.759781
+    },
+    "candidate_parent_median": 1.253216816842697,
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_stage_ms": 87.352414,
+        "candidate_stage_ms": 112.640908,
+        "candidate_parent": 1.2894996582464224
+      },
+      {
+        "pair": 2,
+        "parent_stage_ms": 96.905756,
+        "candidate_stage_ms": 118.759781,
+        "candidate_parent": 1.2255183376310486
+      },
+      {
+        "pair": 3,
+        "parent_stage_ms": 96.959437,
+        "candidate_stage_ms": 121.511197,
+        "candidate_parent": 1.253216816842697
+      }
+    ]
+  },
+  "M180-q8": {
+    "paired_stage_medians_ms": {
+      "parent": 51.266924,
+      "candidate": 65.227137
+    },
+    "candidate_parent_median": 1.2692171273804702,
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_stage_ms": 51.207001,
+        "candidate_stage_ms": 64.694419,
+        "candidate_parent": 1.2633901173005622
+      },
+      {
+        "pair": 2,
+        "parent_stage_ms": 51.39163,
+        "candidate_stage_ms": 65.227137,
+        "candidate_parent": 1.2692171273804702
+      },
+      {
+        "pair": 3,
+        "parent_stage_ms": 51.266924,
+        "candidate_stage_ms": 65.525903,
+        "candidate_parent": 1.2781321344732912
+      }
+    ]
+  }
+}

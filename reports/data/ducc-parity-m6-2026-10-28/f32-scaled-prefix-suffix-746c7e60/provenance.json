@@ -1,0 +1,35 @@
+{
+  "status": "rejected, isolated only",
+  "parent_source": "746c7e60c6d967f09ecbc7d87271a8938284d0e3",
+  "candidate_source": "isolated working-tree patch based on parent_source",
+  "candidate_patch_sha256": "6e38c6e7adf5ff4d7edd6a6eeb4d749d81f5742f88c958b04c962720a17662c0",
+  "candidate_patch_compressed_sha256": "6b73a530696ab92361f6aae86bd9a1275f613f539af957adfe9931f237f0dec8",
+  "pinned_ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_checkout": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "binary_sha256": {
+    "parent_rust": "7552d0705709309a15988c78627a6e0d6a54edce4161085b13ba2dc3dfa41bb4",
+    "candidate_rust": "aaaa37fe361598a5d5b57afcf93d29e08aa4c8de592eebdf7f9af382cfda2400",
+    "pinned_ducc": "654d11fe9d7b3c0e3cef4b1b8b10f7318dff73abe2c7d847a824a73927ef1119"
+  },
+  "fixture_sha256": {
+    "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+    "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+  },
+  "compiler": {
+    "rustc_version": "1.99.1",
+    "llvm_version": "23.1.1",
+    "ducc_cxx": "GCC 15.2.0"
+  },
+  "build": {
+    "rust_profile": "release",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_driver_flags": "-fno-fast-math -ffp-contract=fast",
+    "feature_census": "m6-f32-transition-census; instrumented binary not timed"
+  },
+  "timing_protocol": "three interleaved warm parent/candidate/pinned-DUCC process pairs per GL T720 full/reduced mmax q1/q8 cell; separate three-pair Legendre-stage screen; same deterministic fixture and fixed affinity",
+  "profile_limit": "perf_event_paranoid=4 denied perf instruction/cycle events. A one-transform parent Callgrind attempt exceeded 77 seconds without a completed profile and was terminated. No candidate-specific dynamic instruction count is claimed.",
+  "affinity_policy": "q1 pinned to one fixed CPU; q8 pinned to the same fixed eight-CPU set for parent, candidate, and DUCC"
+}

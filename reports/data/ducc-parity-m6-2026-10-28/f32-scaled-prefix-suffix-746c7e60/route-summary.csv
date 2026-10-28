@@ -1,0 +1,5 @@
+cell,complete_blocks,declined_blocks,no_handoff_blocks,partial_tail_blocks,prefix_terms,completed_suffix_terms,planned_suffix_terms,declined_planned_suffix_terms
+M720-q1,3114,445,98,98,8134336,33597952,37715136,4117184
+M720-q8,6041,940,131,98,7328256,33047584,37279296,4231712
+M180-q1,720,159,93,98,3281536,13694976,15931200,2236224
+M180-q8,1453,303,93,98,2394880,13736064,15788832,2052768

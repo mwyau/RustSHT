@@ -1,0 +1,654 @@
+{
+  "GL-T720-M720-q1": {
+    "n_pairs": 3,
+    "median_parent_ms": 645.744468,
+    "median_candidate_ms": 701.307765,
+    "median_ducc_ms": 19.773999250000003,
+    "candidate_parent_ratio": 1.0818983877012311,
+    "parent_ducc_ratio": 32.59599916289063,
+    "candidate_ducc_ratio": 35.49103785871742,
+    "max_parent_candidate_rel_l2": 1.7779010375432883e-07,
+    "max_parent_candidate_abs": 2.384185791015625e-07,
+    "max_candidate_ducc_rel_l2": 0.00017234319468266283,
+    "max_candidate_ducc_abs": 0.0009644031524658203,
+    "all_workers_passed": true,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 645.744468,
+          "candidate": 697.9642660000001,
+          "ducc": 19.82975475
+        },
+        "candidate_parent": 1.0808675886325985,
+        "parent_ducc": 32.5644202937003,
+        "candidate_ducc": 35.1978264380703,
+        "parent_candidate_error": {
+          "output_values": 1051218,
+          "relative_l2": 1.7779010375432883e-07,
+          "absolute_l2": 4.1924172116460265e-05,
+          "max_absolute": 2.384185791015625e-07,
+          "reference_rms": 0.2299908284147645,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 1051218,
+          "relative_l2": 0.00017234319468266283,
+          "absolute_l2": 0.040639576113477266,
+          "max_absolute": 0.0009644031524658203,
+          "reference_rms": 0.22998983199799372,
+          "finite": true
+        },
+        "simd_arch": {
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null
+        },
+        "checks": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 648.2196230000001,
+          "candidate": 701.307765,
+          "ducc": 19.650706
+        },
+        "candidate_parent": 1.0818983877012311,
+        "parent_ducc": 32.98709079460046,
+        "candidate_ducc": 35.68868034563237,
+        "parent_candidate_error": {
+          "output_values": 1051218,
+          "relative_l2": 1.7779010375432883e-07,
+          "absolute_l2": 4.1924172116460265e-05,
+          "max_absolute": 2.384185791015625e-07,
+          "reference_rms": 0.2299908284147645,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 1051218,
+          "relative_l2": 0.00017234319468266283,
+          "absolute_l2": 0.040639576113477266,
+          "max_absolute": 0.0009644031524658203,
+          "reference_rms": 0.22998983199799372,
+          "finite": true
+        },
+        "simd_arch": {
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 644.553263,
+          "candidate": 701.799756,
+          "ducc": 19.773999250000003
+        },
+        "candidate_parent": 1.0888157678910082,
+        "parent_ducc": 32.59599916289063,
+        "candidate_ducc": 35.49103785871742,
+        "parent_candidate_error": {
+          "output_values": 1051218,
+          "relative_l2": 1.7779010375432883e-07,
+          "absolute_l2": 4.1924172116460265e-05,
+          "max_absolute": 2.384185791015625e-07,
+          "reference_rms": 0.2299908284147645,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 1051218,
+          "relative_l2": 0.00017234319468266283,
+          "absolute_l2": 0.040639576113477266,
+          "max_absolute": 0.0009644031524658203,
+          "reference_rms": 0.22998983199799372,
+          "finite": true
+        },
+        "simd_arch": {
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  "GL-T720-M180-q1": {
+    "n_pairs": 3,
+    "median_parent_ms": 191.77076000000002,
+    "median_candidate_ms": 222.484272,
+    "median_ducc_ms": 8.771477,
+    "candidate_parent_ratio": 1.1601574296310866,
+    "parent_ducc_ratio": 21.842941047839922,
+    "candidate_ducc_ratio": 25.364516375064312,
+    "max_parent_candidate_rel_l2": 1.5653782680689452e-07,
+    "max_parent_candidate_abs": 1.7881393432617188e-07,
+    "max_candidate_ducc_rel_l2": 0.0002725465625195814,
+    "max_candidate_ducc_abs": 0.0015478730201721191,
+    "all_workers_passed": true,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 191.77076000000002,
+          "candidate": 222.484272,
+          "ducc": 8.771477
+        },
+        "candidate_parent": 1.1601574296310866,
+        "parent_ducc": 21.862995251540877,
+        "candidate_ducc": 25.364516375064312,
+        "parent_candidate_error": {
+          "output_values": 272538,
+          "relative_l2": 1.5653782680689452e-07,
+          "absolute_l2": 1.4045020733424773e-05,
+          "max_absolute": 1.7881393432617188e-07,
+          "reference_rms": 0.17186583488101023,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 272538,
+          "relative_l2": 0.0002725465625195814,
+          "absolute_l2": 0.024453481176671354,
+          "max_absolute": 0.0015478730201721191,
+          "reference_rms": 0.1718646082623544,
+          "finite": true
+        },
+        "simd_arch": {
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null
+        },
+        "checks": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 192.33282400000002,
+          "candidate": 224.651013,
+          "ducc": 8.816801625
+        },
+        "candidate_parent": 1.1680326234902056,
+        "parent_ducc": 21.81435311583298,
+        "candidate_ducc": 25.479876099628136,
+        "parent_candidate_error": {
+          "output_values": 272538,
+          "relative_l2": 1.5653782680689452e-07,
+          "absolute_l2": 1.4045020733424773e-05,
+          "max_absolute": 1.7881393432617188e-07,
+          "reference_rms": 0.17186583488101023,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 272538,
+          "relative_l2": 0.0002725465625195814,
+          "absolute_l2": 0.024453481176671354,
+          "max_absolute": 0.0015478730201721191,
+          "reference_rms": 0.1718646082623544,
+          "finite": true
+        },
+        "simd_arch": {
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 191.487213,
+          "candidate": 221.791261,
+          "ducc": 8.766549
+        },
+        "candidate_parent": 1.1582562486822554,
+        "parent_ducc": 21.842941047839922,
+        "candidate_ducc": 25.29972295825872,
+        "parent_candidate_error": {
+          "output_values": 272538,
+          "relative_l2": 1.5653782680689452e-07,
+          "absolute_l2": 1.4045020733424773e-05,
+          "max_absolute": 1.7881393432617188e-07,
+          "reference_rms": 0.17186583488101023,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 272538,
+          "relative_l2": 0.0002725465625195814,
+          "absolute_l2": 0.024453481176671354,
+          "max_absolute": 0.0015478730201721191,
+          "reference_rms": 0.1718646082623544,
+          "finite": true
+        },
+        "simd_arch": {
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  "GL-T720-M720-q8": {
+    "n_pairs": 3,
+    "median_parent_ms": 96.135839,
+    "median_candidate_ms": 108.664963,
+    "median_ducc_ms": 2.6615559444444443,
+    "candidate_parent_ratio": 1.154687726186394,
+    "parent_ducc_ratio": 36.12016467309943,
+    "candidate_ducc_ratio": 40.82760808647289,
+    "max_parent_candidate_rel_l2": 1.7368113271435382e-07,
+    "max_parent_candidate_abs": 2.384185791015625e-07,
+    "max_candidate_ducc_rel_l2": 0.00017234317455488315,
+    "max_candidate_ducc_abs": 0.0009644031524658203,
+    "all_workers_passed": true,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 97.1112655,
+          "candidate": 119.629496,
+          "ducc": 2.652705833333333
+        },
+        "candidate_parent": 1.2318807234573623,
+        "parent_ducc": 36.608380876507546,
+        "candidate_ducc": 45.097158718754784,
+        "parent_candidate_error": {
+          "output_values": 1051218,
+          "relative_l2": 1.7368113271435382e-07,
+          "absolute_l2": 4.095524749872869e-05,
+          "max_absolute": 2.384185791015625e-07,
+          "reference_rms": 0.22999082843955448,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 1051218,
+          "relative_l2": 0.00017234317455488315,
+          "absolute_l2": 0.0406395713672241,
+          "max_absolute": 0.0009644031524658203,
+          "reference_rms": 0.22998983199799372,
+          "finite": true
+        },
+        "simd_arch": {
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null
+        },
+        "checks": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 96.135839,
+          "candidate": 108.664963,
+          "ducc": 2.6615559444444443
+        },
+        "candidate_parent": 1.130327296566268,
+        "parent_ducc": 36.12016467309943,
+        "candidate_ducc": 40.82760808647289,
+        "parent_candidate_error": {
+          "output_values": 1051218,
+          "relative_l2": 1.7368113271435382e-07,
+          "absolute_l2": 4.095524749872869e-05,
+          "max_absolute": 2.384185791015625e-07,
+          "reference_rms": 0.22999082843955448,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 1051218,
+          "relative_l2": 0.00017234317455488315,
+          "absolute_l2": 0.0406395713672241,
+          "max_absolute": 0.0009644031524658203,
+          "reference_rms": 0.22998983199799372,
+          "finite": true
+        },
+        "simd_arch": {
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 93.216814,
+          "candidate": 107.636311,
+          "ducc": 2.6712075
+        },
+        "candidate_parent": 1.154687726186394,
+        "parent_ducc": 34.89688240243411,
+        "candidate_ducc": 40.29500179226062,
+        "parent_candidate_error": {
+          "output_values": 1051218,
+          "relative_l2": 1.7368113271435382e-07,
+          "absolute_l2": 4.095524749872869e-05,
+          "max_absolute": 2.384185791015625e-07,
+          "reference_rms": 0.22999082843955448,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 1051218,
+          "relative_l2": 0.00017234317455488315,
+          "absolute_l2": 0.0406395713672241,
+          "max_absolute": 0.0009644031524658203,
+          "reference_rms": 0.22998983199799372,
+          "finite": true
+        },
+        "simd_arch": {
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  "GL-T720-M180-q8": {
+    "n_pairs": 3,
+    "median_parent_ms": 50.781661,
+    "median_candidate_ms": 64.535894,
+    "median_ducc_ms": 1.2047217954545455,
+    "candidate_parent_ratio": 1.2704034139411076,
+    "parent_ducc_ratio": 42.15218915404441,
+    "candidate_ducc_ratio": 53.550285006389345,
+    "max_parent_candidate_rel_l2": 1.6013219099937886e-07,
+    "max_parent_candidate_abs": 1.7881393432617188e-07,
+    "max_candidate_ducc_rel_l2": 0.000272546600268214,
+    "max_candidate_ducc_abs": 0.0015478730201721191,
+    "all_workers_passed": true,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 50.749204000000006,
+          "candidate": 64.535894,
+          "ducc": 1.1961779565217392
+        },
+        "candidate_parent": 1.2716631772194888,
+        "parent_ducc": 42.42613210125453,
+        "candidate_ducc": 53.95174994501509,
+        "parent_candidate_error": {
+          "output_values": 272538,
+          "relative_l2": 1.6013219099937886e-07,
+          "absolute_l2": 1.43675173471237e-05,
+          "max_absolute": 1.7881393432617188e-07,
+          "reference_rms": 0.1718658348392936,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 272538,
+          "relative_l2": 0.000272546600268214,
+          "absolute_l2": 0.024453484563562274,
+          "max_absolute": 0.0015478730201721191,
+          "reference_rms": 0.1718646082623544,
+          "finite": true
+        },
+        "simd_arch": {
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null
+        },
+        "checks": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 50.925082,
+          "candidate": 64.6603595,
+          "ducc": 1.21164055
+        },
+        "candidate_parent": 1.2697153732614508,
+        "parent_ducc": 42.02985943314624,
+        "candidate_ducc": 53.365958658283596,
+        "parent_candidate_error": {
+          "output_values": 272538,
+          "relative_l2": 1.6013219099937886e-07,
+          "absolute_l2": 1.43675173471237e-05,
+          "max_absolute": 1.7881393432617188e-07,
+          "reference_rms": 0.1718658348392936,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 272538,
+          "relative_l2": 0.000272546600268214,
+          "absolute_l2": 0.024453484563562274,
+          "max_absolute": 0.0015478730201721191,
+          "reference_rms": 0.1718646082623544,
+          "finite": true
+        },
+        "simd_arch": {
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 50.781661,
+          "candidate": 64.5131955,
+          "ducc": 1.2047217954545455
+        },
+        "candidate_parent": 1.2704034139411076,
+        "parent_ducc": 42.15218915404441,
+        "candidate_ducc": 53.550285006389345,
+        "parent_candidate_error": {
+          "output_values": 272538,
+          "relative_l2": 1.6013219099937886e-07,
+          "absolute_l2": 1.43675173471237e-05,
+          "max_absolute": 1.7881393432617188e-07,
+          "reference_rms": 0.1718658348392936,
+          "finite": true
+        },
+        "candidate_ducc_error": {
+          "output_values": 272538,
+          "relative_l2": 0.000272546600268214,
+          "absolute_l2": 0.024453484563562274,
+          "max_absolute": 0.0015478730201721191,
+          "reference_rms": 0.1718646082623544,
+          "finite": true
+        },
+        "simd_arch": {
+          "candidate": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "ducc": null,
+          "parent": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        "checks": {
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  }
+}

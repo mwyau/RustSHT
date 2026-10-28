@@ -1,5 +1,24 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 block exponent-correction suffix transition rejected at exact parent 746c7e60
+
+An isolated synthesis-only candidate restored both recurrence states from their shared f32 exponent at a block transition, then used the shared fused SIMD suffix. Three interleaved warm parent/candidate/pinned-DUCC pairs per GL T720 full/reduced q1/q8 cell show a clear slowdown in all twelve candidate comparisons. The candidate patch was not promoted.
+
+| Cell | Parent / candidate / DUCC ms | Candidate/parent | Parent/DUCC | Candidate/DUCC | Status |
+|---|---:|---:|---:|---:|---|
+| Full q1 | 645.744 / 701.308 / 19.774 | 1.082 | 32.60× | 35.49× | **GAP; reject** |
+| Full q8 | 96.136 / 108.665 / 2.662 | 1.155 | 36.12× | 40.83× | **GAP; reject** |
+| Reduced q1 | 191.771 / 222.484 / 8.771 | 1.160 | 21.84× | 25.36× | **GAP; reject** |
+| Reduced q8 | 50.782 / 64.536 / 1.205 | 1.270 | 42.15× | 53.55× | **GAP; reject** |
+
+The separate feature-instrumented Legendre-stage screen also regressed in each cell: 1.071×/1.253× full and 1.142×/1.269× reduced q1/q8. It found 33.598M/33.048M full and 13.695M/13.736M reduced useful suffix contributions completed at q1/q8. Another 445/940 full and 159/303 reduced blocks declined; 98/131/93/93 blocks found no handoff; all 98 partial tails bypassed the transition. Prefix work was 8.134M/7.328M full and 3.282M/2.395M reduced q1/q8. Recurrence-state declines were zero; later coefficient/product/output checks caused declines. Declined and no-handoff blocks discarded prefix work and replayed through the original fallback.
+
+The route coverage did not pay for repeated staged-sum scans at each candidate degree, per-degree suffix range checks, and block replay. Candidate/parent relative L2 was 1.57e-7–1.78e-7, maximum absolute difference 1.79e-7–2.38e-7. Candidate/DUCC error matched the parent: relative L2 1.7234e-4 full / 2.7255e-4 reduced. Focused release f32 integration, scalar recurrence, and paired synthesis tests passed; timed workers passed finite/repeat/reset checks. Adjacent timing extensions and a candidate f64 control were not run after the conclusive four-cell regression. No tolerance was weakened and no production code changed.
+
+Pinned DUCC's init_lambda/iter_to_ieee/calc_alm2map path keeps double recurrence state plus per-lane scale, corrects the residual scale once after the prefix, then enters a four-degree/two-pair AVX2 double-FMA kernel. The candidate reused Rust's shared native-f32 fused kernel, but its normal/product/sum checks and transactional replay did not preserve DUCC's low-check bulk suffix cost. AVX2 disassembly and source-level path comparison are in the [screen report](data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md).
+
+A matched candidate-specific dynamic instruction count was not obtained: perf events are blocked by host perf_event_paranoid=4, and the one-transform Callgrind attempt was stopped after more than 77 seconds without a complete profile. No candidate equivalent-work-normalized Ir result is claimed. The production parent 746c7e60 Rust CI run passed. Continue to profile native-f32 spin-1 synthesis and analysis; keep scalar synthesis on the scorecard and M6 open.
+
 ## 2026-10-28 native-f32 scalar-analysis callback SIMD accepted at parent `4770e1c7`
 
 A narrow f32-only accumulation leaf now handles callback contributions only
@@ -49,11 +68,11 @@ is also bitwise identical and about 4% faster in the three-pair q1/q8 screen;
 spin synthesis is neutral/noisy and is not counted as a gain.
 
 This is a material scalar-analysis improvement, not parity. Native-f32 scalar
-synthesis remains a documented transition blocker at the current
-code-equivalent source: no nonzero-exponent handoff was safe, and the existing
-f32 synthesis ratios are still 33.37×/34.94× full and 22.75×/40.42× reduced
-q1/q8. Continue with f32 spin-1 synthesis/analysis profiling, then revisit the
-remaining f64 gaps. M6 stays open.
+synthesis remains a major GAP. The later exact-parent 746c7e60 block-transition
+screen completed safe nonzero-exponent suffixes but regressed every cell; its
+current parent ratios are 32.60×/36.12× full and 21.84×/42.15× reduced q1/q8.
+Continue with f32 spin-1 synthesis/analysis profiling, then revisit the remaining
+f64 gaps. M6 stays open.
 
 ## 2026-10-28 current native-f32 scalar-analysis profile at `72bea503`
 

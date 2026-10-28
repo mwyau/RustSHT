@@ -8,7 +8,7 @@ scaled-prefix-to-fused-suffix candidate at exact parent `2b531d73` found no
 safe nonzero-exponent handoff and caused a repeatable adjacent f32
 scalar-analysis regression. This is a quantified blocker for that transition;
 do not repeat either suffix trial unchanged. Scalar synthesis remains far from
-DUCC at **33.37×/34.94×** full and **22.75×/40.42×** reduced q1/q8.
+DUCC at **32.60×/36.12×** full and **21.84×/42.15×** reduced q1/q8 on exact parent 746c7e60. The latest exponent-correction suffix screen completed useful work but slowed all four cells by 8.2–27.0% and the Legendre stage by 7.1–26.9%; see the linked screen in the single ledger. Do not repeat either suffix route unchanged.
 
 The owner's next priority after that blocker is the other native-f32 transform
 families, before returning to the remaining f64 gaps. A bounded native-f32

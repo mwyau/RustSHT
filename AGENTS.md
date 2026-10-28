@@ -1,6 +1,6 @@
 # RustSHT — current agent rules
 
-**Authority and read order (updated 2026-10-27 04:46 UTC):** This is the concise active agent file. **FIRST read [M6 — actual hot-loop DUCC parity and cleanup goal](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md)**, then [the parity matrix contract](plans/ducc-performance-parity-continuation-2026-10-27.md), then [experiment hygiene](docs/EXPERIMENT_HYGIENE.md), [current performance status](PERFORMANCE_STATUS.md), the [f64 hotspot evidence plan](plans/f64-ducc-parity-all-cases-2026-10-24.md) as needed, and recent [progress](reports/PROGRESS.md). The prior [NO-SOL architectural restart](plans/resume-legendre-convergence-no-sol-2026-10-27.md) and [precision convergence architecture](plans/final-legendre-precision-convergence-2026-10-26.md) are completed implementation-history references, not instructions to redo stages. **The absolute no-Sol, cleanup, numerical and git rules remain mandatory.** On conflicts, this file and the M6 plan govern the active implementation; the older parity plan supplies the matrix contract.
+**Authority and read order (updated 2026-10-28):** This is the concise active agent file. **FIRST read [M6 — actual hot-loop DUCC parity and cleanup goal](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md)**, then [the parity matrix contract](plans/ducc-performance-parity-continuation-2026-10-27.md), then [experiment hygiene](docs/EXPERIMENT_HYGIENE.md), [current performance status](PERFORMANCE_STATUS.md), the [f64 hotspot evidence plan](plans/f64-ducc-parity-all-cases-2026-10-24.md) as needed, and recent [progress](reports/PROGRESS.md). The prior [NO-SOL architectural restart](plans/resume-legendre-convergence-no-sol-2026-10-27.md) and [precision convergence architecture](plans/final-legendre-precision-convergence-2026-10-26.md) are completed implementation-history references, not instructions to redo stages. **The absolute no-Sol, cleanup, numerical and git rules remain mandatory.** On conflicts, this file and the M6 plan govern the active implementation; the older parity plan supplies the matrix contract.
 
 ## Absolute agent/model restriction
 
@@ -16,8 +16,7 @@ scaled-prefix-to-fused-suffix trial is a documented algorithmic blocker: at
 source `2b531d73`, a useful safe handoff required zero recurrence exponents,
 and the trial caused a repeatable adjacent f32 scalar-analysis regression.
 Do not repeat that route unchanged. Native-f32 GL T720 scalar synthesis remains
-a major gap at **33.37×/34.94×** full and **22.75×/40.42×** reduced q1/q8 against
-pinned DUCC.
+a major gap at **32.60×/36.12×** full and **21.84×/42.15×** reduced q1/q8 at exact parent 746c7e60 against pinned DUCC. A later exponent-correction handoff restored nonzero exponents and completed 13.7M–33.6M safe suffix terms, but checks and whole-block replay slowed all four cells by 8.2–27.0%; the Legendre stage regressed by 7.1–26.9%. Do not repeat either suffix route unchanged. See the latest entry in the single M6 ledger and its linked route/timing evidence.
 
 The first native-f32 scalar-analysis follow-up is now accepted on exact parent
 `4770e1c7`. Its bounded native-f32 accumulation leaf improves GL T720 full
