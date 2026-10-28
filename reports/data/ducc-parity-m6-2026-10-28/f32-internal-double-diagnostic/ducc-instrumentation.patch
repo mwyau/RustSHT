@@ -1,0 +1,164 @@
+diff --git a/src/ducc0/sht/sht.cc b/src/ducc0/sht/sht.cc
+index bd2c40b1..34d20b52 100644
+--- a/src/ducc0/sht/sht.cc
++++ b/src/ducc0/sht/sht.cc
+@@ -24,6 +24,10 @@
+ #include <vector>
+ #include <cmath>
+ #include <cstring>
++#include <chrono>
++#include <cstdlib>
++#include <iomanip>
++#include <iostream>
+ #include "ducc0/infra/simd.h"
+ #include "ducc0/sht/sht.h"
+ #include "ducc0/sht/sphere_interpol.h"
+@@ -43,6 +47,26 @@ namespace detail_sht {
+
+ using namespace std;
+
++static void m6_report_legendre_stage(double stage_ms)
++  {
++  if (std::getenv("M6_PROFILE_LEGENDRE")==nullptr) return;
++  auto &c=detail_sht_inner_loop::m6_legendre_counts;
++  std::cerr << "M6_DUCC_LEGENDRE_PROFILE"
++    << "\tstage_ms=" << std::setprecision(17) << stage_ms
++    << "\tcalls=" << c.calls.exchange(0, std::memory_order_relaxed)
++    << "\trequested_contributions=" << c.requested_contributions.exchange(0, std::memory_order_relaxed)
++    << "\tskipped_prefix_contributions=" << c.skipped_prefix_contributions.exchange(0, std::memory_order_relaxed)
++    << "\tscaled_prefix_contributions=" << c.scaled_prefix_contributions.exchange(0, std::memory_order_relaxed)
++    << "\tfused_suffix_contributions=" << c.fused_suffix_contributions.exchange(0, std::memory_order_relaxed)
++    << "\tprefix_state_updates=" << c.prefix_state_updates.exchange(0, std::memory_order_relaxed)
++    << "\tscaled_state_updates=" << c.scaled_state_updates.exchange(0, std::memory_order_relaxed)
++    << "\tsuffix_state_updates=" << c.suffix_state_updates.exchange(0, std::memory_order_relaxed)
++    << "\tpadded_prefix_state_updates=" << c.padded_prefix_state_updates.exchange(0, std::memory_order_relaxed)
++    << "\tpadded_scaled_state_updates=" << c.padded_scaled_state_updates.exchange(0, std::memory_order_relaxed)
++    << "\tpadded_suffix_state_updates=" << c.padded_suffix_state_updates.exchange(0, std::memory_order_relaxed)
++    << std::endl;
++  }
++
+ struct ringhelper
+   {
+   using dcmplx = complex<double>;
+@@ -1467,8 +1491,13 @@ template<typename T> void synthesis(
+                           mstart.shape(0), true, true, nthreads));
+     auto legi(subarray<3>(leg, {{},{0,ntheta_tmp},{}}));
+     auto lego(subarray<3>(leg, {{},{0,theta.shape(0)},{}}));
++    const bool m6_profile = std::getenv("M6_PROFILE_LEGENDRE")!=nullptr;
++    const auto m6_started = m6_profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+     alm2leg(alm, legi, spin, lmax, mval, mstart, lstride, theta_tmp, nthreads,
+       mode, theta_interpol);
++    if (m6_profile)
++      m6_report_legendre_stage(std::chrono::duration<double, std::milli>(
++        std::chrono::steady_clock::now()-m6_started).count());
+     resample_theta(legi, true, true, lego, npi, spi, spin, nthreads, false);
+     leg2map(map, lego, nphi, phi0, ringstart, ringfactor, pixstride, nthreads);
+     }
+@@ -1476,8 +1505,13 @@ template<typename T> void synthesis(
+     {
+     auto leg(allocate_leg<T>(map.shape(0), theta.shape(0), mstart.shape(0), true,
+                           false, nthreads));
++    const bool m6_profile = std::getenv("M6_PROFILE_LEGENDRE")!=nullptr;
++    const auto m6_started = m6_profile ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
+     alm2leg(alm, leg, spin, lmax, mval, mstart, lstride, theta, nthreads, mode,
+       theta_interpol);
++    if (m6_profile)
++      m6_report_legendre_stage(std::chrono::duration<double, std::milli>(
++        std::chrono::steady_clock::now()-m6_started).count());
+     leg2map(map, leg, nphi, phi0, ringstart, ringfactor, pixstride, nthreads);
+     }
+   }
+diff --git a/src/ducc0/sht/sht_inner_loop.h b/src/ducc0/sht/sht_inner_loop.h
+index f86d5a2c..30cc9f4c 100644
+--- a/src/ducc0/sht/sht_inner_loop.h
++++ b/src/ducc0/sht/sht_inner_loop.h
+@@ -24,6 +24,10 @@
+ #ifndef DUCC0_SHT_INNER_LOOP_H
+ #define DUCC0_SHT_INNER_LOOP_H
+
++#include <atomic>
++#include <cstdint>
++#include <cstdlib>
++
+ namespace DUCC0_NAMESPACE {
+
+ namespace detail_sht {
+@@ -276,6 +280,23 @@ static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
+
+ using dcmplx = complex<double>;
+
++struct M6LegendreCounts
++  {
++  std::atomic<uint64_t> calls{0};
++  std::atomic<uint64_t> requested_contributions{0};
++  std::atomic<uint64_t> skipped_prefix_contributions{0};
++  std::atomic<uint64_t> scaled_prefix_contributions{0};
++  std::atomic<uint64_t> fused_suffix_contributions{0};
++  std::atomic<uint64_t> prefix_state_updates{0};
++  std::atomic<uint64_t> scaled_state_updates{0};
++  std::atomic<uint64_t> suffix_state_updates{0};
++  std::atomic<uint64_t> padded_prefix_state_updates{0};
++  std::atomic<uint64_t> padded_scaled_state_updates{0};
++  std::atomic<uint64_t> padded_suffix_state_updates{0};
++  };
++
++inline M6LegendreCounts m6_legendre_counts;
++
+ static constexpr double sht_ftol=0x1p-60;
+
+ constexpr size_t nv0 = 256/VLEN;
+@@ -542,11 +563,42 @@ DUCC0_NOINLINE static void alm2map_kernel(s0data_v & DUCC0_RESTRICT d,
+ DUCC0_NOINLINE static void calc_alm2map (const dcmplx * DUCC0_RESTRICT alm,
+   const Ylmgen &gen, s0data_v & DUCC0_RESTRICT d, size_t nth, size_t lstart, size_t lstop)
+   {
++  const bool m6_count = std::getenv("M6_COUNT_DUCC_UPDATES") != nullptr;
++  if (m6_count)
++    m6_legendre_counts.calls.fetch_add(1, std::memory_order_relaxed);
+   size_t l,il=0;
+   size_t nv2 = (nth+VLEN-1)/VLEN;
+   iter_to_ieee(gen, d, l, il, nv2, lstart, lstop);
+
+-  if (l>=lstop) return;
++  const size_t iter_end = min(l, lstop);
++  auto m6_record = [&](size_t scaled_end)
++    {
++    if (!m6_count) return;
++    const size_t scaled_end_clamped = min(scaled_end, lstop);
++    const uint64_t requested = uint64_t(nth) * uint64_t(lstop-lstart);
++    const uint64_t skipped = uint64_t(nth) * uint64_t(iter_end-lstart);
++    const uint64_t scaled = uint64_t(nth) * uint64_t(scaled_end_clamped-iter_end);
++    const uint64_t suffix = uint64_t(nth) * uint64_t(lstop-scaled_end_clamped);
++    const uint64_t prefix_updates = uint64_t(nth) * uint64_t((iter_end-lstart)/2);
++    const uint64_t scaled_updates = uint64_t(nth) * uint64_t((scaled_end_clamped-iter_end)/2);
++    const uint64_t suffix_updates = uint64_t(nth) * uint64_t((lstop-scaled_end_clamped)/2);
++    const uint64_t padded_lanes = uint64_t(nv2) * uint64_t(VLEN);
++    m6_legendre_counts.requested_contributions.fetch_add(requested, std::memory_order_relaxed);
++    m6_legendre_counts.skipped_prefix_contributions.fetch_add(skipped, std::memory_order_relaxed);
++    m6_legendre_counts.scaled_prefix_contributions.fetch_add(scaled, std::memory_order_relaxed);
++    m6_legendre_counts.fused_suffix_contributions.fetch_add(suffix, std::memory_order_relaxed);
++    m6_legendre_counts.prefix_state_updates.fetch_add(prefix_updates, std::memory_order_relaxed);
++    m6_legendre_counts.scaled_state_updates.fetch_add(scaled_updates, std::memory_order_relaxed);
++    m6_legendre_counts.suffix_state_updates.fetch_add(suffix_updates, std::memory_order_relaxed);
++    m6_legendre_counts.padded_prefix_state_updates.fetch_add(
++      padded_lanes * uint64_t((iter_end-lstart)/2), std::memory_order_relaxed);
++    m6_legendre_counts.padded_scaled_state_updates.fetch_add(
++      padded_lanes * uint64_t((scaled_end_clamped-iter_end)/2), std::memory_order_relaxed);
++    m6_legendre_counts.padded_suffix_state_updates.fetch_add(
++      padded_lanes * uint64_t((lstop-scaled_end_clamped)/2), std::memory_order_relaxed);
++    };
++
++  if (l>=lstop) { m6_record(l); return; }
+
+   auto &coef = gen.coef;
+   bool full_ieee=true;
+@@ -578,8 +630,9 @@ DUCC0_NOINLINE static void calc_alm2map (const dcmplx * DUCC0_RESTRICT alm,
+     l+=2; ++il;
+     }
+
+-  if (l>=lstop) return;
++  if (l>=lstop) { m6_record(l); return; }
+
++  m6_record(l);
+   for (size_t i=0; i<nv2; ++i)
+     {
+     d.lam1[i] *= d.corfac[i];

@@ -1,0 +1,9 @@
+e04c3754069c4fe45fbdc2eb286856ffeb18b2e10d87f59fbb63f27a422759d9  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/README.md
+854d9d517813f4955d77499d79bfb07dd186214a0aa11358dbbc421a5e7e5343  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/assembly-notes.md
+a289b9c7afc20511a4d87f390f10f28a918c7d51a7f8011b7f72570c786f9e67  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/collect_profile.py
+adb5ee8f7ea484d64cfcbe777690449020f2aeb22de268136c167cb6c8f3fa80  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/ducc-instrumentation.patch
+d5cf1e36a1866eff9097e2ce692bd11ba09bbc17ec3ce7003132a36c076906fd  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/profile-counts-contended.json
+2fc1768306e533cc4327bc57e85f1316153a2edb7bd734c94bfc0d3c70259b86  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/rust-instrumentation.patch
+2aa69d3dcaa1453cb40bae6d4749f07746652a7fa5042c950f6fab47e657e1fa  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/transition-instrumentation.patch
+42bb5357c546df45f82a8226bd60e3def72cfdc8ca42e66c8969743593fe523d  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/transition-profile.json
+86e2dd8aa1d0047cae0ba98b1a5d4b88d1ab37a7cc156d946e4fc2b686f40d54  reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-diagnostic/work-counts.json

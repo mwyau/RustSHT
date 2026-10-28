@@ -1,0 +1,525 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 5556330c..1cdb5e93 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -29,6 +29,8 @@ rayon = { version = "1", optional = true }
+ [features]
+ default = ["parallel"]
+ parallel = ["dep:rayon"]
++m6-force-paired = []
++m6-legendre-profile = ["m6-force-paired"]
+
+ [lints.rust]
+ unexpected_cfgs = { level = "warn", check-cfg = [
+diff --git a/examples/ducc_f32_full_transform_parity.rs b/examples/ducc_f32_full_transform_parity.rs
+index 8f54f4be..4b739d17 100644
+--- a/examples/ducc_f32_full_transform_parity.rs
++++ b/examples/ducc_f32_full_transform_parity.rs
+@@ -220,6 +220,40 @@ fn main() -> Result<(), Box<dyn Error>> {
+         &mut workspace,
+     )?;
+     let first_ms = first_started.elapsed().as_secs_f64() * 1e3;
++    #[cfg(feature = "m6-legendre-profile")]
++    if std::env::var_os("M6_PROFILE_LEGENDRE").is_some() {
++        for (worker, nanos, calls, contributions, pair_contributions, recurrence_updates) in
++            rustsht::m6_take_scalar_legendre_profile()
++        {
++            eprintln!(
++                "M6_RUST_LEGENDRE_PROFILE\tworker={worker}\tnanos={nanos}\tcalls={calls}\tdegree_contributions={contributions}\tpair_contributions={pair_contributions}\trecurrence_updates={recurrence_updates}"
++            );
++        }
++        let (wall_nanos, wall_calls) = rustsht::m6_take_scalar_legendre_stage_wall();
++        eprintln!("M6_RUST_LEGENDRE_STAGE_WALL\tnanos={wall_nanos}\tcalls={wall_calls}");
++        let (transition_counts, transition_histogram) = rustsht::m6_take_f32_transition_profile();
++        eprintln!(
++            "M6_F32_TRANSITIONS\tpacket_count={}\teligible_packets={}\teligible_suffix_terms={}\tlater_unsafe_packets={}\tfully_safe_packets={}\tfully_safe_suffix_terms={}\tcontiguous_safe_prefix_terms={}\tfirst_pair_sum={}\thistogram={}",
++            transition_counts[0],
++            transition_counts[1],
++            transition_counts[2],
++            transition_counts[3],
++            transition_counts[4],
++            transition_counts[5],
++            transition_counts[6],
++            transition_counts[7],
++            transition_histogram
++                .iter()
++                .enumerate()
++                .filter(|(_, count)| **count != 0)
++                .map(|(pair, count)| format!("{pair}:{count}"))
++                .collect::<Vec<_>>()
++                .join(",")
++        );
++        if std::env::var_os("M6_PROFILE_EXIT_AFTER_FIRST").is_some() {
++            return Ok(());
++        }
++    }
+     let first_maps = (map_out0.clone(), map_out1.clone());
+     let first_alms = (alm_out0.clone(), alm_out1.clone());
+
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index f33076db..7fb54317 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -2336,3 +2336,6 @@ pub(crate) use scalar::{LATITUDE_BLOCK_SIZE, scale_binary};
+
+ #[cfg(test)]
+ mod tests;
++
++#[cfg(feature = "m6-legendre-profile")]
++pub(crate) use scalar_paired::m6_take_f32_transition_profile;
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 27ca7a1d..cf1aba9b 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -832,6 +832,9 @@ fn try_accumulate_scaled_pair_vector<S: Simd>(
+
+ mod synthesis;
+
++#[cfg(feature = "m6-legendre-profile")]
++pub(crate) use synthesis::m6_take_f32_transition_profile;
++
+ #[cfg(test)]
+ use synthesis::{FusedSynthesisPairBlock, OriginalSynthesisPairCoefficients};
+
+@@ -1043,6 +1046,7 @@ pub(crate) trait PairedScalarRecurrenceVisitor<T> {
+         &mut self,
+         degree: usize,
+         ring_start: usize,
++        previous: &[T],
+         basis: &[T],
+         exponents: &[i64],
+         normal_range: bool,
+@@ -1059,6 +1063,7 @@ where
+         &mut self,
+         degree: usize,
+         ring_start: usize,
++        _previous: &[T],
+         basis: &[T],
+         exponents: &[i64],
+         normal_range: bool,
+@@ -1079,13 +1084,21 @@ where
+         &mut self,
+         degree: usize,
+         ring_start: usize,
++        previous: &[T],
+         basis: &[T],
+         exponents: &[i64],
+         normal_range: bool,
+         simd: S,
+     ) -> Result<(), ShtError> {
+-        self.0
+-            .visit(degree, ring_start, basis, exponents, normal_range, simd)
++        self.0.visit(
++            degree,
++            ring_start,
++            previous,
++            basis,
++            exponents,
++            normal_range,
++            simd,
++        )
+     }
+ }
+
+@@ -1196,7 +1209,15 @@ where
+         let mut normal_range = T::normalize_pair_state(previous, current, exponents)?;
+
+         for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
+-            visit.visit(degree, ring_start, current, exponents, normal_range, simd)?;
++            visit.visit(
++                degree,
++                ring_start,
++                previous,
++                current,
++                exponents,
++                normal_range,
++                simd,
++            )?;
+             if degree + 2 > lmax {
+                 break;
+             }
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index 1d8f9b14..854b963e 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -19,6 +19,22 @@
+
+ use super::*;
+ use num_complex::Complex32;
++#[cfg(feature = "m6-legendre-profile")]
++use std::sync::atomic::{AtomicU64, Ordering};
++
++#[cfg(feature = "m6-legendre-profile")]
++static M6_F32_TRANSITION_COUNTS: [AtomicU64; 8] = [const { AtomicU64::new(0) }; 8];
++#[cfg(feature = "m6-legendre-profile")]
++static M6_F32_TRANSITION_HISTOGRAM: [AtomicU64; 361] = [const { AtomicU64::new(0) }; 361];
++
++#[cfg(feature = "m6-legendre-profile")]
++pub(crate) fn m6_take_f32_transition_profile() -> ([u64; 8], Vec<u64>) {
++    let counts =
++        std::array::from_fn(|index| M6_F32_TRANSITION_COUNTS[index].swap(0, Ordering::Relaxed));
++    let histogram: [u64; 361] =
++        std::array::from_fn(|index| M6_F32_TRANSITION_HISTOGRAM[index].swap(0, Ordering::Relaxed));
++    (counts, histogram.to_vec())
++}
+
+ /// Accumulates one prepared native-f32 paired scalar order transactionally.
+ #[expect(
+@@ -149,12 +165,19 @@ pub(crate) fn synthesize_paired_scalar_order_prepared_f32(
+         exponents,
+         F32SynthesisAccumulator {
+             m,
++            lmax,
+             cos_theta,
+             coefficient_even,
+             coefficient_odd,
+             staged_real,
+             staged_imag,
+             finite_sums: &mut finite_sums,
++            #[cfg(feature = "m6-legendre-profile")]
++            m6_ring_start: usize::MAX,
++            #[cfg(feature = "m6-legendre-profile")]
++            m6_first_safe_pair: [usize::MAX; 8],
++            #[cfg(feature = "m6-legendre-profile")]
++            m6_first_unsafe_pair: [usize::MAX; 8],
+         },
+     );
+     if recurrence_result.is_err() || !finite_sums {
+@@ -172,12 +195,19 @@ mod tests;
+
+ struct F32SynthesisAccumulator<'a> {
+     m: usize,
++    lmax: usize,
+     cos_theta: &'a [f32],
+     coefficient_even: &'a [Complex32],
+     coefficient_odd: &'a [Complex32],
+     staged_real: &'a mut [f32],
+     staged_imag: &'a mut [f32],
+     finite_sums: &'a mut bool,
++    #[cfg(feature = "m6-legendre-profile")]
++    m6_ring_start: usize,
++    #[cfg(feature = "m6-legendre-profile")]
++    m6_first_safe_pair: [usize; 8],
++    #[cfg(feature = "m6-legendre-profile")]
++    m6_first_unsafe_pair: [usize; 8],
+ }
+
+ impl PairedScalarRecurrenceVisitor<f32> for F32SynthesisAccumulator<'_> {
+@@ -186,6 +216,7 @@ impl PairedScalarRecurrenceVisitor<f32> for F32SynthesisAccumulator<'_> {
+         &mut self,
+         degree: usize,
+         ring_start: usize,
++        previous: &[f32],
+         basis: &[f32],
+         lane_exponents: &[i64],
+         _normal_range: bool,
+@@ -196,6 +227,65 @@ impl PairedScalarRecurrenceVisitor<f32> for F32SynthesisAccumulator<'_> {
+         }
+
+         let pair = (degree - self.m) / 2;
++        #[cfg(feature = "m6-legendre-profile")]
++        {
++            if self.m6_ring_start != ring_start {
++                self.m6_ring_start = ring_start;
++                self.m6_first_safe_pair = [usize::MAX; 8];
++                self.m6_first_unsafe_pair = [usize::MAX; 8];
++            }
++            let lanes = S::F32_LANES;
++            debug_assert_eq!(lanes, 8);
++            let vector_count = basis.len() / lanes;
++            for vector_index in 0..vector_count {
++                let lane_start = vector_index * lanes;
++                let lane_end = lane_start + lanes;
++                let safe = (lane_start..lane_end).all(|lane| {
++                    m6_f32_pair_state_in_fused_range(
++                        previous[lane],
++                        basis[lane],
++                        lane_exponents[lane],
++                    )
++                });
++                if safe {
++                    if self.m6_first_safe_pair[vector_index] == usize::MAX {
++                        self.m6_first_safe_pair[vector_index] = pair;
++                        M6_F32_TRANSITION_HISTOGRAM[pair].fetch_add(1, Ordering::Relaxed);
++                    }
++                } else if self.m6_first_safe_pair[vector_index] != usize::MAX
++                    && self.m6_first_unsafe_pair[vector_index] == usize::MAX
++                {
++                    self.m6_first_unsafe_pair[vector_index] = pair;
++                }
++            }
++            if pair + 1 == (self.lmax - self.m + 2) / 2 {
++                for vector_index in 0..vector_count {
++                    M6_F32_TRANSITION_COUNTS[0].fetch_add(1, Ordering::Relaxed);
++                    let first_pair = self.m6_first_safe_pair[vector_index];
++                    if first_pair == usize::MAX {
++                        continue;
++                    }
++                    M6_F32_TRANSITION_COUNTS[1].fetch_add(1, Ordering::Relaxed);
++                    M6_F32_TRANSITION_COUNTS[7].fetch_add(first_pair as u64, Ordering::Relaxed);
++                    let first_degree = self.m + 2 * first_pair;
++                    let suffix_terms = (self.lmax - first_degree + 1) as u64;
++                    M6_F32_TRANSITION_COUNTS[2]
++                        .fetch_add(suffix_terms * lanes as u64, Ordering::Relaxed);
++                    let first_unsafe = self.m6_first_unsafe_pair[vector_index];
++                    if first_unsafe == usize::MAX {
++                        M6_F32_TRANSITION_COUNTS[4].fetch_add(1, Ordering::Relaxed);
++                        M6_F32_TRANSITION_COUNTS[5]
++                            .fetch_add(suffix_terms * lanes as u64, Ordering::Relaxed);
++                    } else {
++                        M6_F32_TRANSITION_COUNTS[3].fetch_add(1, Ordering::Relaxed);
++                        let safe_pairs = first_unsafe.saturating_sub(first_pair);
++                        let safe_terms = (2 * safe_pairs).min(suffix_terms as usize);
++                        M6_F32_TRANSITION_COUNTS[6]
++                            .fetch_add(safe_terms as u64 * lanes as u64, Ordering::Relaxed);
++                    }
++                }
++            }
++        }
+         let even = self.coefficient_even[pair];
+         let odd = self.coefficient_odd[pair];
+         let cos_theta = &self.cos_theta[ring_start..ring_start + basis.len()];
+@@ -320,6 +410,29 @@ fn try_accumulate_f32_synthesis_packet<S: Simd>(
+     Some(true)
+ }
+
++#[cfg(feature = "m6-legendre-profile")]
++#[inline(always)]
++fn m6_f32_pair_state_in_fused_range(previous: f32, current: f32, exponent: i64) -> bool {
++    fn value_in_range(value: f32, exponent: i64) -> bool {
++        if value == 0.0 {
++            return true;
++        }
++        let bits = value.to_bits() & 0x7fff_ffff;
++        let raw_exponent = ((bits >> 23) & 0xff) as i64;
++        if raw_exponent == 0 || raw_exponent == 0xff {
++            return false;
++        }
++        let scaled_exponent = raw_exponent + exponent;
++        if !(87..=167).contains(&scaled_exponent) {
++            return false;
++        }
++        let scaled_bits = (bits & 0x007f_ffff) | ((scaled_exponent as u32) << 23);
++        (f32::from_bits(scaled_bits).to_bits()) <= <f32 as LegendrePrecision>::BIG.to_bits()
++            && scaled_bits >= <f32 as LegendrePrecision>::SMALL.to_bits()
++    }
++    value_in_range(previous, exponent) && value_in_range(current, exponent)
++}
++
+ #[inline(always)]
+ #[expect(
+     clippy::too_many_arguments,
+diff --git a/src/lib.rs b/src/lib.rs
+index 32815c7a..fe04c1c1 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -28,3 +28,24 @@ pub type Complex64 = num_complex::Complex64;
+
+ /// Complex single-precision harmonic coefficient.
+ pub type Complex32 = num_complex::Complex32;
++
++/// Diagnostic-only per-worker scalar Legendre stage profile.
++#[cfg(feature = "m6-legendre-profile")]
++#[doc(hidden)]
++pub fn m6_take_scalar_legendre_profile() -> Vec<(usize, u64, u64, u64, u64, u64)> {
++    transform::take_m6_scalar_legendre_profile()
++}
++
++/// Diagnostic wall duration for the scalar Legendre and spectrum stage.
++#[cfg(feature = "m6-legendre-profile")]
++#[doc(hidden)]
++pub fn m6_take_scalar_legendre_stage_wall() -> (u64, u64) {
++    transform::take_m6_scalar_legendre_stage_wall()
++}
++
++/// Diagnostic-only native-f32 transition census for the scalar synthesis path.
++#[cfg(feature = "m6-legendre-profile")]
++#[doc(hidden)]
++pub fn m6_take_f32_transition_profile() -> ([u64; 8], Vec<u64>) {
++    legendre::m6_take_f32_transition_profile()
++}
+diff --git a/src/transform/mod.rs b/src/transform/mod.rs
+index a5a47152..5c49dc5d 100644
+--- a/src/transform/mod.rs
++++ b/src/transform/mod.rs
+@@ -28,6 +28,16 @@ mod scalar;
+ pub(crate) mod scheduling;
+ pub(crate) mod spin;
+
++#[cfg(feature = "m6-legendre-profile")]
++pub(crate) fn take_m6_scalar_legendre_profile() -> Vec<(usize, u64, u64, u64, u64, u64)> {
++    scalar::take_m6_scalar_legendre_profile()
++}
++
++#[cfg(feature = "m6-legendre-profile")]
++pub(crate) fn take_m6_scalar_legendre_stage_wall() -> (u64, u64) {
++    scalar::take_m6_scalar_legendre_stage_wall()
++}
++
+ const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
+ #[cfg(feature = "parallel")]
+ // Complex64 occupies 16 bytes, so four adjacent orders span 64 bytes and
+diff --git a/src/transform/scalar.rs b/src/transform/scalar.rs
+index 1334031f..7d048a40 100644
+--- a/src/transform/scalar.rs
++++ b/src/transform/scalar.rs
+@@ -2,6 +2,54 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+
+ use super::*;
++#[cfg(feature = "m6-legendre-profile")]
++use std::sync::atomic::AtomicU64;
++
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_LEGENDRE_NS: [AtomicU64; 64] = [const { AtomicU64::new(0) }; 64];
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_LEGENDRE_CALLS: [AtomicU64; 64] = [const { AtomicU64::new(0) }; 64];
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_USEFUL_CONTRIBUTIONS: [AtomicU64; 64] = [const { AtomicU64::new(0) }; 64];
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_PAIR_CONTRIBUTIONS: [AtomicU64; 64] = [const { AtomicU64::new(0) }; 64];
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_RECURRENCE_UPDATES: [AtomicU64; 64] = [const { AtomicU64::new(0) }; 64];
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_STAGE_WALL_NS: AtomicU64 = AtomicU64::new(0);
++#[cfg(feature = "m6-legendre-profile")]
++static M6_SCALAR_STAGE_CALLS: AtomicU64 = AtomicU64::new(0);
++
++#[cfg(feature = "m6-legendre-profile")]
++pub(super) fn take_m6_scalar_legendre_profile() -> Vec<(usize, u64, u64, u64, u64, u64)> {
++    (0..64)
++        .filter_map(|worker| {
++            let nanos = M6_SCALAR_LEGENDRE_NS[worker].swap(0, Ordering::Relaxed);
++            let calls = M6_SCALAR_LEGENDRE_CALLS[worker].swap(0, Ordering::Relaxed);
++            let contributions = M6_SCALAR_USEFUL_CONTRIBUTIONS[worker].swap(0, Ordering::Relaxed);
++            let pair_contributions =
++                M6_SCALAR_PAIR_CONTRIBUTIONS[worker].swap(0, Ordering::Relaxed);
++            let recurrence_updates =
++                M6_SCALAR_RECURRENCE_UPDATES[worker].swap(0, Ordering::Relaxed);
++            (calls != 0).then_some((
++                worker,
++                nanos,
++                calls,
++                contributions,
++                pair_contributions,
++                recurrence_updates,
++            ))
++        })
++        .collect()
++}
++
++#[cfg(feature = "m6-legendre-profile")]
++pub(super) fn take_m6_scalar_legendre_stage_wall() -> (u64, u64) {
++    (
++        M6_SCALAR_STAGE_WALL_NS.swap(0, Ordering::Relaxed),
++        M6_SCALAR_STAGE_CALLS.swap(0, Ordering::Relaxed),
++    )
++}
+
+ #[allow(private_bounds)]
+ impl<T: ShtScalar> ShtPlan<T> {
+@@ -284,15 +332,22 @@ impl<T: ShtScalar> ShtPlan<T> {
+             phase_started = std::time::Instant::now();
+         }
+         let arch = pulp::Arch::new();
+-        if self.scalar_legendre_strategy_with_capacity(
+-            LegendreOperation::Synthesis,
+-            workspace.execution_capacity,
+-        ) == LegendreStrategy::CompactTable
++        #[cfg(feature = "m6-force-paired")]
++        let force_paired = std::env::var_os("M6_FORCE_PAIRED_F64").is_some();
++        #[cfg(not(feature = "m6-force-paired"))]
++        let force_paired = false;
++        if !force_paired
++            && self.scalar_legendre_strategy_with_capacity(
++                LegendreOperation::Synthesis,
++                workspace.execution_capacity,
++            ) == LegendreStrategy::CompactTable
+             && let Some(table) = self.get_safe_scalar_legendre_table_for_synthesis(alm)
+             && self.synthesize_scalar_table(alm, map, workspace, table)?
+         {
+             return Ok(());
+         }
++        #[cfg(feature = "m6-legendre-profile")]
++        let m6_stage_wall_started = std::time::Instant::now();
+         #[cfg(test)]
+         SCALAR_RECURRENCE_SYNTHESIS_CALLS.fetch_add(1, Ordering::Relaxed);
+         let ordered_scalar_used = if self.scalar_ordered_synthesis_supported() {
+@@ -452,6 +507,17 @@ impl<T: ShtScalar> ShtPlan<T> {
+             );
+             phase_started = std::time::Instant::now();
+         }
++        #[cfg(feature = "m6-legendre-profile")]
++        {
++            M6_SCALAR_STAGE_WALL_NS.fetch_add(
++                m6_stage_wall_started
++                    .elapsed()
++                    .as_nanos()
++                    .min(u64::MAX as u128) as u64,
++                Ordering::Relaxed,
++            );
++            M6_SCALAR_STAGE_CALLS.fetch_add(1, Ordering::Relaxed);
++        }
+
+         self.inverse_synthesis_rows(
+             &workspace.spectra,
+@@ -758,6 +824,26 @@ impl<T: ShtScalar> ShtPlan<T> {
+         recurrence: &mut RecurrenceWorkspace<T>,
+         scalar_coefficients: Option<ScalarSynthesisCoefficientCache<'_, T>>,
+     ) -> Result<(), ShtError> {
++        #[cfg(feature = "m6-legendre-profile")]
++        let (m6_useful_contributions, m6_pair_contributions, m6_recurrence_updates) = {
++            let lmax = self.harmonics.lmax() as u64;
++            let mmax = self.harmonics.mmax() as u64;
++            (0..theta_sin.len()).fold((0_u64, 0_u64, 0_u64), |mut total, local_ring| {
++                let global_ring = group_ring_start + local_ring;
++                let active_mmax = (ring_order_limits[global_ring] as u64).min(mmax);
++                let active_orders = active_mmax + 1;
++                total.0 += active_orders * (lmax + 1) - active_mmax * active_orders / 2;
++                for m in 0..=active_mmax {
++                    let degree_count = lmax + 1 - m;
++                    let pair_count = degree_count.div_ceil(2);
++                    total.1 += pair_count;
++                    total.2 += pair_count.saturating_sub(1);
++                }
++                total
++            })
++        };
++        #[cfg(feature = "m6-legendre-profile")]
++        let m6_stage_started = std::time::Instant::now();
+         #[cfg(all(test, feature = "parallel"))]
+         recurrence.record_active_worker();
+         let lmax = self.harmonics.lmax();
+@@ -1087,6 +1173,21 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 }
+             }
+         }
++        #[cfg(feature = "m6-legendre-profile")]
++        {
++            let worker = rayon::current_thread_index().unwrap_or(0).min(63);
++            M6_SCALAR_LEGENDRE_NS[worker].fetch_add(
++                m6_stage_started.elapsed().as_nanos().min(u64::MAX as u128) as u64,
++                Ordering::Relaxed,
++            );
++            M6_SCALAR_LEGENDRE_CALLS[worker].fetch_add(1, Ordering::Relaxed);
++            M6_SCALAR_USEFUL_CONTRIBUTIONS[worker]
++                .fetch_add(m6_useful_contributions, Ordering::Relaxed);
++            M6_SCALAR_PAIR_CONTRIBUTIONS[worker]
++                .fetch_add(m6_pair_contributions, Ordering::Relaxed);
++            M6_SCALAR_RECURRENCE_UPDATES[worker]
++                .fetch_add(m6_recurrence_updates, Ordering::Relaxed);
++        }
+         Ok(())
+     }
+
+@@ -2544,6 +2645,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+     /// pole and half-grid cases have passed the same numerical checks;
+     /// under-resolved plans continue through the established general route.
+     pub(super) fn scalar_ordered_synthesis_supported(&self) -> bool {
++        #[cfg(feature = "m6-force-paired")]
++        if std::env::var_os("M6_FORCE_PAIRED_F64").is_some() {
++            return false;
++        }
+         if !T::supports_scalar_ordered() {
+             return false;
+         }

@@ -1,0 +1,285 @@
+{
+  "source_sha": "102675a171f59faeab93fece11817ab589bbacc8",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustflags": "-C target-cpu=x86-64-v3",
+  "fixtures": {
+    "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+    "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+    "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+    "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+  },
+  "rows": [
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "rust_f32",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=736415922\tcalls=1\tdegree_contributions=161199393\tpair_contributions=80696637\trecurrence_updates=80309372\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=736554965\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "rust_f64_default",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_STAGE_WALL\tnanos=13711470\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "rust_f64_paired",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=92443073\tcalls=1\tdegree_contributions=161199393\tpair_contributions=80696637\trecurrence_updates=80309372\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=92845312\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "ducc",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_DUCC_LEGENDRE_PROFILE\tstage_ms=17.706102999999999\tcalls=1139\trequested_contributions=80729837\tskipped_prefix_contributions=0\tscaled_prefix_contributions=0\tfused_suffix_contributions=80729837\tprefix_state_updates=0\tscaled_state_updates=0\tsuffix_state_updates=40316358\tpadded_prefix_state_updates=0\tpadded_scaled_state_updates=0\tpadded_suffix_state_updates=40558328\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "rust_f32",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=61291352\tcalls=1\tdegree_contributions=3124134\tpair_contributions=1563286\trecurrence_updates=1558426\nM6_RUST_LEGENDRE_PROFILE\tworker=1\tnanos=75908893\tcalls=2\tdegree_contributions=15510869\tpair_contributions=7764125\trecurrence_updates=7729395\nM6_RUST_LEGENDRE_PROFILE\tworker=2\tnanos=67261675\tcalls=5\tdegree_contributions=40355328\tpair_contributions=20204282\trecurrence_updates=20097954\nM6_RUST_LEGENDRE_PROFILE\tworker=3\tnanos=115078063\tcalls=2\tdegree_contributions=10120093\tpair_contributions=5064471\trecurrence_updates=5046806\nM6_RUST_LEGENDRE_PROFILE\tworker=4\tnanos=86188903\tcalls=2\tdegree_contributions=6207224\tpair_contributions=3106172\trecurrence_updates=3095957\nM6_RUST_LEGENDRE_PROFILE\tworker=5\tnanos=75040833\tcalls=3\tdegree_contributions=22164385\tpair_contributions=11096126\trecurrence_updates=11040464\nM6_RUST_LEGENDRE_PROFILE\tworker=6\tnanos=95465730\tcalls=4\tdegree_contributions=31219447\tpair_contributions=15628981\trecurrence_updates=15552046\nM6_RUST_LEGENDRE_PROFILE\tworker=7\tnanos=96113042\tcalls=4\tdegree_contributions=32497913\tpair_contributions=16269194\trecurrence_updates=16188324\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=115243394\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "rust_f64_default",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_STAGE_WALL\tnanos=2209713\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "rust_f64_paired",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=34787707\tcalls=5\tdegree_contributions=28707610\tpair_contributions=14367525\trecurrence_updates=14312724\nM6_RUST_LEGENDRE_PROFILE\tworker=1\tnanos=10185493\tcalls=3\tdegree_contributions=24986976\tpair_contributions=12510816\trecurrence_updates=12441600\nM6_RUST_LEGENDRE_PROFILE\tworker=2\tnanos=11309715\tcalls=3\tdegree_contributions=24692722\tpair_contributions=12362249\trecurrence_updates=12298762\nM6_RUST_LEGENDRE_PROFILE\tworker=3\tnanos=16892006\tcalls=3\tdegree_contributions=21984532\tpair_contributions=11003854\trecurrence_updates=10957549\nM6_RUST_LEGENDRE_PROFILE\tworker=4\tnanos=10782269\tcalls=3\tdegree_contributions=24855482\tpair_contributions=12444215\trecurrence_updates=12378392\nM6_RUST_LEGENDRE_PROFILE\tworker=5\tnanos=10448700\tcalls=3\tdegree_contributions=24986976\tpair_contributions=12510816\trecurrence_updates=12441600\nM6_RUST_LEGENDRE_PROFILE\tworker=6\tnanos=20078163\tcalls=3\tdegree_contributions=10985095\tpair_contributions=5497162\trecurrence_updates=5478745\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=35092271\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "ducc",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_DUCC_LEGENDRE_PROFILE\tstage_ms=2.6219109999999999\tcalls=1139\trequested_contributions=80729837\tskipped_prefix_contributions=0\tscaled_prefix_contributions=0\tfused_suffix_contributions=80729837\tprefix_state_updates=0\tscaled_state_updates=0\tsuffix_state_updates=40316358\tpadded_prefix_state_updates=0\tpadded_scaled_state_updates=0\tpadded_suffix_state_updates=40558328\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "rust_f32",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=220911919\tcalls=1\tdegree_contributions=81210177\tpair_contributions=40637387\trecurrence_updates=40508890\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=220950423\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "rust_f64_default",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_STAGE_WALL\tnanos=6028814\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "rust_f64_paired",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=33167647\tcalls=1\tdegree_contributions=81210177\tpair_contributions=40637387\trecurrence_updates=40508890\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=33220588\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "backend": "ducc",
+      "affinity": "15",
+      "stdout": "",
+      "stderr": "M6_DUCC_LEGENDRE_PROFILE\tstage_ms=8.1615500000000001\tcalls=362\trequested_contributions=40662194\tskipped_prefix_contributions=0\tscaled_prefix_contributions=0\tfused_suffix_contributions=40662194\tprefix_state_updates=0\tscaled_state_updates=0\tsuffix_state_updates=20314925\tpadded_prefix_state_updates=0\tpadded_scaled_state_updates=0\tpadded_suffix_state_updates=20449548\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "rust_f32",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=49670447\tcalls=3\tdegree_contributions=10904964\tpair_contributions=5456822\trecurrence_updates=5439554\nM6_RUST_LEGENDRE_PROFILE\tworker=1\tnanos=22303162\tcalls=2\tdegree_contributions=7309504\tpair_contributions=3657664\trecurrence_updates=3646080\nM6_RUST_LEGENDRE_PROFILE\tworker=2\tnanos=16237210\tcalls=7\tdegree_contributions=25583264\tpair_contributions=12801824\trecurrence_updates=12761280\nM6_RUST_LEGENDRE_PROFILE\tworker=3\tnanos=20228736\tcalls=1\tdegree_contributions=3654752\tpair_contributions=1828832\trecurrence_updates=1823040\nM6_RUST_LEGENDRE_PROFILE\tworker=4\tnanos=74494492\tcalls=1\tdegree_contributions=3086775\tpair_contributions=1544590\trecurrence_updates=1539800\nM6_RUST_LEGENDRE_PROFILE\tworker=5\tnanos=46459014\tcalls=2\tdegree_contributions=5087654\tpair_contributions=2545831\trecurrence_updates=2537856\nM6_RUST_LEGENDRE_PROFILE\tworker=6\tnanos=8121996\tcalls=1\tdegree_contributions=3654752\tpair_contributions=1828832\trecurrence_updates=1823040\nM6_RUST_LEGENDRE_PROFILE\tworker=7\tnanos=12673059\tcalls=6\tdegree_contributions=21928512\tpair_contributions=10972992\trecurrence_updates=10938240\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=74546069\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "rust_f64_default",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_STAGE_WALL\tnanos=1140443\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "rust_f64_paired",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_RUST_LEGENDRE_PROFILE\tworker=0\tnanos=16090281\tcalls=3\tdegree_contributions=21360535\tpair_contributions=10688750\trecurrence_updates=10655000\nM6_RUST_LEGENDRE_PROFILE\tworker=1\tnanos=5913966\tcalls=3\tdegree_contributions=21928512\tpair_contributions=10972992\trecurrence_updates=10938240\nM6_RUST_LEGENDRE_PROFILE\tworker=2\tnanos=5963349\tcalls=3\tdegree_contributions=21928512\tpair_contributions=10972992\trecurrence_updates=10938240\nM6_RUST_LEGENDRE_PROFILE\tworker=3\tnanos=11796594\tcalls=3\tdegree_contributions=15992618\tpair_contributions=8002653\trecurrence_updates=7977410\nM6_RUST_LEGENDRE_STAGE_WALL\tnanos=16158982\tcalls=1\n"
+    },
+    {
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "backend": "ducc",
+      "affinity": "8-15",
+      "stdout": "",
+      "stderr": "M6_DUCC_LEGENDRE_PROFILE\tstage_ms=1.3813089999999999\tcalls=362\trequested_contributions=40662194\tskipped_prefix_contributions=0\tscaled_prefix_contributions=0\tfused_suffix_contributions=40662194\tprefix_state_updates=0\tscaled_state_updates=0\tsuffix_state_updates=20314925\tpadded_prefix_state_updates=0\tpadded_scaled_state_updates=0\tpadded_suffix_state_updates=20449548\n"
+    }
+  ]
+}

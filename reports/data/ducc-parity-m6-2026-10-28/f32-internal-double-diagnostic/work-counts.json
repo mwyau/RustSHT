@@ -1,0 +1,71 @@
+{
+  "source_sha": "102675a171f59faeab93fece11817ab589bbacc8",
+  "production_source_comparison_sha": "061a0467c506ae1711d00b952dd000c48d5e9cab",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "fixture": {
+    "grid": "GL",
+    "lmax": 720,
+    "ntheta": 721,
+    "phi0": 0.23,
+    "full": {
+      "mmax": 720,
+      "nphi": 1458,
+      "input_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "rust_native_f32": {
+        "degree_latitude_contributions": 161199393,
+        "paired_accumulation_slots": 80696637,
+        "recurrence_state_updates": 80309372
+      },
+      "ducc_double_internal": {
+        "calc_alm2map_calls": 1139,
+        "computed_hemisphere_degree_contributions": 80729837,
+        "skipped_prefix_contributions": 0,
+        "scaled_prefix_contributions": 0,
+        "fused_suffix_contributions": 80729837,
+        "prefix_state_updates": 0,
+        "scaled_prefix_state_updates": 0,
+        "suffix_state_updates": 40316358,
+        "padded_suffix_state_updates": 40558328
+      }
+    },
+    "reduced": {
+      "mmax": 180,
+      "nphi": 378,
+      "input_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "rust_native_f32": {
+        "degree_latitude_contributions": 81210177,
+        "paired_accumulation_slots": 40637387,
+        "recurrence_state_updates": 40508890
+      },
+      "ducc_double_internal": {
+        "calc_alm2map_calls": 362,
+        "computed_hemisphere_degree_contributions": 40662194,
+        "skipped_prefix_contributions": 0,
+        "scaled_prefix_contributions": 0,
+        "fused_suffix_contributions": 40662194,
+        "prefix_state_updates": 0,
+        "scaled_prefix_state_updates": 0,
+        "suffix_state_updates": 20314925,
+        "padded_suffix_state_updates": 20449548
+      }
+    }
+  },
+  "repeat_invariance": "Work counters match q1 and q8; the q8 per-worker split is in profile-counts-contended.json.",
+  "units": {
+    "rust_degree_latitude_contributions": "one active ring, order, and individual degree slot",
+    "rust_paired_accumulation_slots": "one active ring/order paired-recurrence visitor slot, covering up to two degree terms",
+    "rust_recurrence_state_updates": "paired recurrence transitions after each seeded pair state",
+    "ducc_computed_hemisphere_degree_contributions": "one active reflected-ring-pair, order, and individual degree slot actually accumulated",
+    "ducc_state_updates": "one active SIMD lane recurrence transition; padded lanes are reported separately"
+  }
+}
