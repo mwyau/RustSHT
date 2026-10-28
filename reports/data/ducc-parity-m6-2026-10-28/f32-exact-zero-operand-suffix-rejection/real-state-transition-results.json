@@ -1,0 +1,185 @@
+{
+  "production_source_sha": "54b166f2c0698f1c70e88f8679d12fa4376704fe",
+  "candidate_base_sha": "0e258a65132ba061af460b60316111bc67bb40b7",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "instrumented_candidate": "previous exact-zero operand suffix candidate plus guard rejecting any nonzero recurrence state that scales to zero; m6_state_compare and m6_profile_suffix diagnostics",
+  "candidate_patch_gzip_sha256": "bef6c3d2aad49eb36c82b958ff43b0db6bd5f2b311bf5dbd13b2a67104f06358",
+  "instrumented_binary_sha256": "b83f2a6b7cf3eabb03540df438f0513433475ee464a9768315a6edb67bb87611",
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "rustflags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs --cfg m6_state_compare --cfg m6_profile_suffix",
+  "fixture": {
+    "grid": "GL",
+    "lmax": 720,
+    "ntheta": 721,
+    "phi0": 0.23,
+    "full": {
+      "mmax": 720,
+      "nphi": 1458,
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "reduced": {
+      "mmax": 180,
+      "nphi": 378,
+      "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    }
+  },
+  "real_transition_replay": {
+    "cell": "GL T720 f32 scalar synthesis, full mmax, q1",
+    "m": 40,
+    "ring_start": 0,
+    "pair_start": 0,
+    "degree_terms_remaining": 681,
+    "lane_exponents": [
+      -320,
+      -320,
+      -240,
+      -240,
+      -240,
+      -240,
+      -240,
+      -160
+    ],
+    "previous_mantissas": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "current_mantissas": [
+      0.0013262079,
+      360528180000.0,
+      1.9258056e-05,
+      4.5597434,
+      57427.54,
+      118695100.0,
+      72005410000.0,
+      1.4891028e-11
+    ],
+    "prefix_real": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "prefix_imag": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "unsafe_fused_suffix_real": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scalar_scaled_replay_real_first_eight": [
+      0.0,
+      -9.107635e-33,
+      -4.5036434e-25,
+      -7.2317894e-20,
+      -5.45563e-16,
+      -5.9323895e-13,
+      -1.6533142e-10,
+      -1.6449489e-08
+    ],
+    "scalar_scaled_replay_imag_first_eight": [
+      0.0,
+      6.0956857e-33,
+      2.980674e-25,
+      4.7017854e-20,
+      3.4540458e-16,
+      3.6121315e-13,
+      9.501123e-11,
+      8.6542435e-09
+    ],
+    "relative_l2_unsafe_fused_vs_scalar_replay": 1.0,
+    "finding": "nonzero recurrence states underflow to zero when their -160..-320 exponents are applied; the scalar scaled contribution path still produces representable suffix terms after coefficient multiplication"
+  },
+  "underflow_guard_route_counts": {
+    "GL-T720-M720-q1": {
+      "completed_packets": 28269,
+      "fused_suffix_pair_lane_accumulations": 37624520,
+      "fused_suffix_recurrence_lane_updates": 37398368,
+      "nonzero_exponent_lanes": 0,
+      "share_of_all_active_pair_slots": 0.4662464434546386,
+      "workers": {
+        "0": 28269
+      }
+    },
+    "GL-T720-M720-q8": {
+      "completed_packets": 26647,
+      "fused_suffix_pair_lane_accumulations": 33884672,
+      "fused_suffix_recurrence_lane_updates": 33671496,
+      "nonzero_exponent_lanes": 0,
+      "share_of_all_active_pair_slots": 0.42,
+      "workers": {
+        "0": 2311,
+        "1": 7234,
+        "2": 1340,
+        "3": 3146,
+        "4": 2664,
+        "5": 3850,
+        "6": 3435,
+        "7": 2667
+      }
+    },
+    "GL-T720-M180-q1": {
+      "completed_packets": 7589,
+      "fused_suffix_pair_lane_accumulations": 16700328,
+      "fused_suffix_recurrence_lane_updates": 16639616,
+      "nonzero_exponent_lanes": 0,
+      "share_of_all_active_pair_slots": 0.411,
+      "workers": {
+        "0": 7589
+      }
+    },
+    "GL-T720-M180-q8": {
+      "completed_packets": 7164,
+      "fused_suffix_pair_lane_accumulations": 15074152,
+      "fused_suffix_recurrence_lane_updates": 15016840,
+      "nonzero_exponent_lanes": 0,
+      "share_of_all_active_pair_slots": 0.3709429447321502,
+      "workers": {
+        "0": 243,
+        "1": 726,
+        "2": 1568,
+        "3": 1088,
+        "4": 636,
+        "5": 1208,
+        "6": 1072,
+        "7": 623
+      }
+    }
+  },
+  "limitations": [
+    "One instrumented first-transform route census per cell; not timed.",
+    "The captured q1 real state proves an unsafe handoff counterexample.",
+    "All successful suffix completions after the guard had exponent-zero lanes; no nonzero-exponent packet completed.",
+    "No whole-transform correctness or timing run was made for this guarded diagnostic variant.",
+    "Counters are fused paired-lane accumulation slots and recurrence lane updates; they are not normalized cycles or elapsed time."
+  ],
+  "decision": "The exact-zero product predicate candidate is rejected. Its missing guard admits a lossy nonzero-to-zero state rescale. The prior larger transition census treated resulting zeros as safe and must not be used as proof of a safe nonzero-exponent handoff. Continue with the existing shared algorithm; f64-internal diagnostic remains warranted to distinguish range/codegen from algorithmic work."
+}
