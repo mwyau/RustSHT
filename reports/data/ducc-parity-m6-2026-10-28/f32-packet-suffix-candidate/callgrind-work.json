@@ -1,0 +1,38 @@
+{
+  "events": "Callgrind Ir; one warmed Rust/DUCC transform with early exit; instruction counts are not elapsed time or cycles",
+  "parent_source": "54b166f2c0698f1c70e88f8679d12fa4376704fe",
+  "candidate_patch_sha256": "67bcd6dfd59da3077636aec1bf1df09284e4663ea5c0043148e6900b977db242",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cells": {
+    "full_mmax_720": {
+      "required_output_degree_latitude_slots": 161199393,
+      "parent_ir": 7389576420,
+      "candidate_ir": 6880431018,
+      "ducc_ir": 260801202,
+      "parent_ir_per_output_slot": 45.84121740458415,
+      "candidate_ir_per_output_slot": 42.68273527556025,
+      "ducc_ir_per_output_slot": 1.617879553677972
+    },
+    "reduced_mmax_180": {
+      "required_output_degree_latitude_slots": 81210177,
+      "parent_ir": 2388011998,
+      "candidate_ir": 2119043497,
+      "ducc_ir": 108641459,
+      "parent_ir_per_output_slot": 29.405329309896715,
+      "candidate_ir_per_output_slot": 26.093324448732577,
+      "ducc_ir_per_output_slot": 1.3377813349674141
+    }
+  },
+  "dominant_helper_self_ir": {
+    "multiply_component_scaled_with_normal_factor_f32_parent": 2726131628,
+    "multiply_component_scaled_with_normal_factor_f32_candidate": 2726131628,
+    "multiply_component_scaled_with_normal_factor_f32_candidate_share_percent": 39.62,
+    "multiply_complex_scaled_f32_inclusive_parent": 4421805171,
+    "multiply_complex_scaled_f32_inclusive_candidate": 4421805171
+  },
+  "binaries_sha256": {
+    "parent": "b44482dde8bdcc0e3731e2beabc2e015a85a8165381d78dec2b7476c38ad8d4b",
+    "candidate": "241b4b07896bd1c57729c2d58c17311971ff43a43ae95f59a66916badae5e0b1",
+    "ducc": "07c039c41422fa9a5bf353ca455ca6cbe655230e40c9f99d2275c0a90242f700"
+  }
+}

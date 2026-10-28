@@ -1,0 +1,611 @@
+Pinned DUCC 0.42.0 worker x86-64-v3; binary SHA-256: 90f1a14471c56328803fb0084d88220c04d5d9309a970850897e555a6e18b05b
+
+-- iter_to_ieee --
+
+<pinned DUCC binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000680d90 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]>:
+  680d90:	55                   	push   %rbp
+  680d91:	4d 89 ca             	mov    %r9,%r10
+  680d94:	49 89 f3             	mov    %rsi,%r11
+  680d97:	48 89 e5             	mov    %rsp,%rbp
+  680d9a:	41 56                	push   %r14
+  680d9c:	41 55                	push   %r13
+  680d9e:	49 89 fd             	mov    %rdi,%r13
+  680da1:	41 54                	push   %r12
+  680da3:	49 89 cc             	mov    %rcx,%r12
+  680da6:	4c 89 c1             	mov    %r8,%rcx
+  680da9:	4c 8b 45 10          	mov    0x10(%rbp),%r8
+  680dad:	53                   	push   %rbx
+  680dae:	4c 2b 97 c0 00 00 00 	sub    0xc0(%rdi),%r10
+  680db5:	48 89 d3             	mov    %rdx,%rbx
+  680db8:	49 d1 ea             	shr    $1,%r10
+  680dbb:	48 85 c9             	test   %rcx,%rcx
+  680dbe:	0f 84 c5 00 00 00    	je     680e89 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0xf9>
+  680dc4:	48 89 cf             	mov    %rcx,%rdi
+  680dc7:	48 89 f0             	mov    %rsi,%rax
+  680dca:	c5 cd 76 f6          	vpcmpeqd %ymm6,%ymm6,%ymm6
+  680dce:	ba 01 00 00 00       	mov    $0x1,%edx
+  680dd3:	c4 e2 7d 19 1d 44 33 	vbroadcastsd 0x1a3344(%rip),%ymm3        # 824120 <_IO_stdin_used+0x2f120>
+  680dda:	1a 00
+  680ddc:	48 c1 e7 05          	shl    $0x5,%rdi
+  680de0:	c4 e2 7d 19 15 97 36 	vbroadcastsd 0x1a3697(%rip),%ymm2        # 824480 <_IO_stdin_used+0x2f480>
+  680de7:	1a 00
+  680de9:	c4 e2 7d 19 2d ae 33 	vbroadcastsd 0x1a33ae(%rip),%ymm5        # 8241a0 <_IO_stdin_used+0x2f1a0>
+  680df0:	1a 00
+  680df2:	48 01 f7             	add    %rsi,%rdi
+  680df5:	c4 e2 7d 19 3d 42 36 	vbroadcastsd 0x1a3642(%rip),%ymm7        # 824440 <_IO_stdin_used+0x2f440>
+  680dfc:	1a 00
+  680dfe:	eb 21                	jmp    680e21 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x91>
+  680e00:	c5 fd 28 80 00 10 00 	vmovapd 0x1000(%rax),%ymm0
+  680e07:	00
+  680e08:	c5 fd c2 c5 01       	vcmpltpd %ymm5,%ymm0,%ymm0
+  680e0d:	c4 e2 7d 0f c6       	vtestpd %ymm6,%ymm0
+  680e12:	40 0f 92 c6          	setb   %sil
+  680e16:	48 83 c0 20          	add    $0x20,%rax
+  680e1a:	21 f2                	and    %esi,%edx
+  680e1c:	48 39 c7             	cmp    %rax,%rdi
+  680e1f:	74 60                	je     680e81 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0xf1>
+  680e21:	c5 fd 28 88 00 20 00 	vmovapd 0x2000(%rax),%ymm1
+  680e28:	00
+  680e29:	c5 f5 54 c3          	vandpd %ymm3,%ymm1,%ymm0
+  680e2d:	c5 ed c2 c0 01       	vcmpltpd %ymm0,%ymm2,%ymm0
+  680e32:	c4 e2 7d 0f c0       	vtestpd %ymm0,%ymm0
+  680e37:	74 c7                	je     680e00 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x70>
+  680e39:	c5 fd 28 a0 00 18 00 	vmovapd 0x1800(%rax),%ymm4
+  680e40:	00
+  680e41:	c5 5d 59 c7          	vmulpd %ymm7,%ymm4,%ymm8
+  680e45:	c4 c3 5d 4b e0 00    	vblendvpd %ymm0,%ymm8,%ymm4,%ymm4
+  680e4b:	c5 fd 29 a0 00 18 00 	vmovapd %ymm4,0x1800(%rax)
+  680e52:	00
+  680e53:	c5 f5 59 e7          	vmulpd %ymm7,%ymm1,%ymm4
+  680e57:	c4 e3 75 4b cc 00    	vblendvpd %ymm0,%ymm4,%ymm1,%ymm1
+  680e5d:	c5 fd 29 88 00 20 00 	vmovapd %ymm1,0x2000(%rax)
+  680e64:	00
+  680e65:	c5 fd 28 88 00 10 00 	vmovapd 0x1000(%rax),%ymm1
+  680e6c:	00
+  680e6d:	c5 f5 58 e5          	vaddpd %ymm5,%ymm1,%ymm4
+  680e71:	c4 e3 75 4b c4 00    	vblendvpd %ymm0,%ymm4,%ymm1,%ymm0
+  680e77:	c5 fd 29 80 00 10 00 	vmovapd %ymm0,0x1000(%rax)
+  680e7e:	00
+  680e7f:	eb 87                	jmp    680e08 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x78>
+  680e81:	84 d2                	test   %dl,%dl
+  680e83:	0f 84 86 01 00 00    	je     68100f <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x27f>
+  680e89:	4d 39 c1             	cmp    %r8,%r9
+  680e8c:	0f 84 7d 01 00 00    	je     68100f <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x27f>
+  680e92:	4d 8b 75 00          	mov    0x0(%r13),%r14
+  680e96:	49 83 c1 04          	add    $0x4,%r9
+  680e9a:	4d 39 ce             	cmp    %r9,%r14
+  680e9d:	0f 82 47 01 00 00    	jb     680fea <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x25a>
+  680ea3:	48 85 c9             	test   %rcx,%rcx
+  680ea6:	0f 84 5a 01 00 00    	je     681006 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x276>
+  680eac:	4c 89 d7             	mov    %r10,%rdi
+  680eaf:	48 c1 e1 05          	shl    $0x5,%rcx
+  680eb3:	c4 e2 7d 19 1d 64 32 	vbroadcastsd 0x1a3264(%rip),%ymm3        # 824120 <_IO_stdin_used+0x2f120>
+  680eba:	1a 00
+  680ebc:	c4 e2 7d 19 15 bb 35 	vbroadcastsd 0x1a35bb(%rip),%ymm2        # 824480 <_IO_stdin_used+0x2f480>
+  680ec3:	1a 00
+  680ec5:	4d 8b ad e0 00 00 00 	mov    0xe0(%r13),%r13
+  680ecc:	48 c1 e7 04          	shl    $0x4,%rdi
+  680ed0:	4c 01 d9             	add    %r11,%rcx
+  680ed3:	c4 41 2d 76 d2       	vpcmpeqd %ymm10,%ymm10,%ymm10
+  680ed8:	c4 62 7d 19 0d 5f 35 	vbroadcastsd 0x1a355f(%rip),%ymm9        # 824440 <_IO_stdin_used+0x2f440>
+  680edf:	1a 00
+  680ee1:	c4 62 7d 19 05 b6 32 	vbroadcastsd 0x1a32b6(%rip),%ymm8        # 8241a0 <_IO_stdin_used+0x2f1a0>
+  680ee8:	1a 00
+  680eea:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+  680ef0:	49 8d 44 3d 00       	lea    0x0(%r13,%rdi,1),%rax
+  680ef5:	ba 01 00 00 00       	mov    $0x1,%edx
+  680efa:	c4 e2 7d 19 38       	vbroadcastsd (%rax),%ymm7
+  680eff:	c4 e2 7d 19 70 08    	vbroadcastsd 0x8(%rax),%ymm6
+  680f05:	49 8d 44 3d 10       	lea    0x10(%r13,%rdi,1),%rax
+  680f0a:	c4 e2 7d 19 28       	vbroadcastsd (%rax),%ymm5
+  680f0f:	c4 e2 7d 19 60 08    	vbroadcastsd 0x8(%rax),%ymm4
+  680f15:	4c 89 d8             	mov    %r11,%rax
+  680f18:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+  680f1f:	00
+  680f20:	c5 fd 28 80 00 28 00 	vmovapd 0x2800(%rax),%ymm0
+  680f27:	00
+  680f28:	c5 fd 28 cf          	vmovapd %ymm7,%ymm1
+  680f2c:	c5 7d 28 98 00 20 00 	vmovapd 0x2000(%rax),%ymm11
+  680f33:	00
+  680f34:	c4 e2 cd 98 c8       	vfmadd132pd %ymm0,%ymm6,%ymm1
+  680f39:	c4 e2 dd 98 c5       	vfmadd132pd %ymm5,%ymm4,%ymm0
+  680f3e:	c4 e2 a5 a8 88 00 18 	vfmadd213pd 0x1800(%rax),%ymm11,%ymm1
+  680f45:	00 00
+  680f47:	c4 e2 a5 98 c1       	vfmadd132pd %ymm1,%ymm11,%ymm0
+  680f4c:	c5 fd 29 88 00 18 00 	vmovapd %ymm1,0x1800(%rax)
+  680f53:	00
+  680f54:	c5 7d 54 db          	vandpd %ymm3,%ymm0,%ymm11
+  680f58:	c5 fd 29 80 00 20 00 	vmovapd %ymm0,0x2000(%rax)
+  680f5f:	00
+  680f60:	c4 41 6d c2 db 01    	vcmpltpd %ymm11,%ymm2,%ymm11
+  680f66:	c4 42 7d 0f db       	vtestpd %ymm11,%ymm11
+  680f6b:	74 52                	je     680fbf <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x22f>
+  680f6d:	c4 41 75 59 e1       	vmulpd %ymm9,%ymm1,%ymm12
+  680f72:	c4 c3 75 4b cc b0    	vblendvpd %ymm11,%ymm12,%ymm1,%ymm1
+  680f78:	c5 fd 29 88 00 18 00 	vmovapd %ymm1,0x1800(%rax)
+  680f7f:	00
+  680f80:	c4 c1 7d 59 c9       	vmulpd %ymm9,%ymm0,%ymm1
+  680f85:	c4 e3 7d 4b c1 b0    	vblendvpd %ymm11,%ymm1,%ymm0,%ymm0
+  680f8b:	c5 fd 29 80 00 20 00 	vmovapd %ymm0,0x2000(%rax)
+  680f92:	00
+  680f93:	c5 fd 28 80 00 10 00 	vmovapd 0x1000(%rax),%ymm0
+  680f9a:	00
+  680f9b:	c4 c1 7d 58 c8       	vaddpd %ymm8,%ymm0,%ymm1
+  680fa0:	c4 e3 7d 4b c1 b0    	vblendvpd %ymm11,%ymm1,%ymm0,%ymm0
+  680fa6:	c5 fd 29 80 00 10 00 	vmovapd %ymm0,0x1000(%rax)
+  680fad:	00
+  680fae:	c4 c1 7d c2 c0 01    	vcmpltpd %ymm8,%ymm0,%ymm0
+  680fb4:	c4 c2 7d 0f c2       	vtestpd %ymm10,%ymm0
+  680fb9:	40 0f 92 c6          	setb   %sil
+  680fbd:	21 f2                	and    %esi,%edx
+  680fbf:	48 83 c0 20          	add    $0x20,%rax
+  680fc3:	48 39 c1             	cmp    %rax,%rcx
+  680fc6:	0f 85 54 ff ff ff    	jne    680f20 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x190>
+  680fcc:	49 83 c2 02          	add    $0x2,%r10
+  680fd0:	84 d2                	test   %dl,%dl
+  680fd2:	74 3b                	je     68100f <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x27f>
+  680fd4:	4d 39 c8             	cmp    %r9,%r8
+  680fd7:	74 36                	je     68100f <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x27f>
+  680fd9:	49 83 c1 04          	add    $0x4,%r9
+  680fdd:	48 83 c7 20          	add    $0x20,%rdi
+  680fe1:	4d 39 ce             	cmp    %r9,%r14
+  680fe4:	0f 83 06 ff ff ff    	jae    680ef0 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x160>
+  680fea:	49 83 c6 01          	add    $0x1,%r14
+  680fee:	4c 89 33             	mov    %r14,(%rbx)
+  680ff1:	c5 f8 77             	vzeroupper
+  680ff4:	5b                   	pop    %rbx
+  680ff5:	41 5c                	pop    %r12
+  680ff7:	41 5d                	pop    %r13
+  680ff9:	41 5e                	pop    %r14
+  680ffb:	5d                   	pop    %rbp
+  680ffc:	c3                   	ret
+  680ffd:	49 83 c1 04          	add    $0x4,%r9
+  681001:	4d 39 ce             	cmp    %r9,%r14
+  681004:	72 e4                	jb     680fea <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x25a>
+  681006:	49 83 c2 02          	add    $0x2,%r10
+  68100a:	4d 39 c8             	cmp    %r9,%r8
+  68100d:	75 ee                	jne    680ffd <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]+0x26d>
+  68100f:	4c 89 0b             	mov    %r9,(%rbx)
+  681012:	4d 89 14 24          	mov    %r10,(%r12)
+  681016:	c5 f8 77             	vzeroupper
+  681019:	5b                   	pop    %rbx
+  68101a:	41 5c                	pop    %r12
+  68101c:	41 5d                	pop    %r13
+  68101e:	41 5e                	pop    %r14
+  681020:	5d                   	pop    %rbp
+  681021:	c3                   	ret
+
+-- calc_alm2map --
+
+<pinned DUCC binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+00000000006813c0 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)>:
+  6813c0:	4c 8d 54 24 08       	lea    0x8(%rsp),%r10
+  6813c5:	48 83 e4 e0          	and    $0xffffffffffffffe0,%rsp
+  6813c9:	41 ff 72 f8          	push   -0x8(%r10)
+  6813cd:	55                   	push   %rbp
+  6813ce:	48 89 e5             	mov    %rsp,%rbp
+  6813d1:	41 57                	push   %r15
+  6813d3:	49 89 f7             	mov    %rsi,%r15
+  6813d6:	41 56                	push   %r14
+  6813d8:	41 55                	push   %r13
+  6813da:	4c 8d 69 03          	lea    0x3(%rcx),%r13
+  6813de:	48 8d 4d c0          	lea    -0x40(%rbp),%rcx
+  6813e2:	41 54                	push   %r12
+  6813e4:	49 c1 ed 02          	shr    $0x2,%r13
+  6813e8:	49 89 d4             	mov    %rdx,%r12
+  6813eb:	48 8d 55 b8          	lea    -0x48(%rbp),%rdx
+  6813ef:	41 52                	push   %r10
+  6813f1:	4c 89 e6             	mov    %r12,%rsi
+  6813f4:	53                   	push   %rbx
+  6813f5:	48 89 fb             	mov    %rdi,%rbx
+  6813f8:	4c 89 ff             	mov    %r15,%rdi
+  6813fb:	48 83 ec 28          	sub    $0x28,%rsp
+  6813ff:	64 4c 8b 34 25 28 00 	mov    %fs:0x28,%r14
+  681406:	00 00
+  681408:	4c 89 75 c8          	mov    %r14,-0x38(%rbp)
+  68140c:	4d 89 ce             	mov    %r9,%r14
+  68140f:	48 c7 45 c0 00 00 00 	movq   $0x0,-0x40(%rbp)
+  681416:	00
+  681417:	41 51                	push   %r9
+  681419:	4d 89 c1             	mov    %r8,%r9
+  68141c:	4d 89 e8             	mov    %r13,%r8
+  68141f:	e8 6c f9 ff ff       	call   680d90 <ducc0::detail_sht::detail_sht_inner_loop::iter_to_ieee(ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long&, unsigned long&, unsigned long, unsigned long, unsigned long) [clone .constprop.0]>
+  681424:	4c 8b 55 b8          	mov    -0x48(%rbp),%r10
+  681428:	59                   	pop    %rcx
+  681429:	5e                   	pop    %rsi
+  68142a:	4d 39 f2             	cmp    %r14,%r10
+  68142d:	0f 83 51 02 00 00    	jae    681684 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x2c4>
+  681433:	4d 85 ed             	test   %r13,%r13
+  681436:	0f 84 ef 02 00 00    	je     68172b <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x36b>
+  68143c:	4c 89 ee             	mov    %r13,%rsi
+  68143f:	4c 89 e0             	mov    %r12,%rax
+  681442:	c5 d9 57 e4          	vxorpd %xmm4,%xmm4,%xmm4
+  681446:	ba 01 00 00 00       	mov    $0x1,%edx
+  68144b:	48 c1 e6 05          	shl    $0x5,%rsi
+  68144f:	c5 e5 76 db          	vpcmpeqd %ymm3,%ymm3,%ymm3
+  681453:	c4 62 7d 19 2d 44 2d 	vbroadcastsd 0x1a2d44(%rip),%ymm13        # 8241a0 <_IO_stdin_used+0x2f1a0>
+  68145a:	1a 00
+  68145c:	4c 01 e6             	add    %r12,%rsi
+  68145f:	90                   	nop
+  681460:	c5 fd 28 80 00 10 00 	vmovapd 0x1000(%rax),%ymm0
+  681467:	00
+  681468:	c4 e2 7d 19 2d 4f 2a 	vbroadcastsd 0x1a2a4f(%rip),%ymm5        # 823ec0 <_IO_stdin_used+0x2eec0>
+  68146f:	1a 00
+  681471:	c5 fd c2 0d 26 30 1a 	vcmpltpd 0x1a3026(%rip),%ymm0,%ymm1        # 8244a0 <_IO_stdin_used+0x2f4a0>
+  681478:	00 01
+  68147a:	c5 d5 c2 d0 01       	vcmpltpd %ymm0,%ymm5,%ymm2
+  68147f:	c5 dd c2 c0 02       	vcmplepd %ymm0,%ymm4,%ymm0
+  681484:	c4 c1 75 55 cd       	vandnpd %ymm13,%ymm1,%ymm1
+  681489:	c4 e3 75 4b 0d cd 2f 	vblendvpd %ymm2,0x1a2fcd(%rip),%ymm1,%ymm1        # 824460 <_IO_stdin_used+0x2f460>
+  681490:	1a 00 20
+  681493:	c4 e2 7d 0f c3       	vtestpd %ymm3,%ymm0
+  681498:	c5 fd 29 88 00 08 00 	vmovapd %ymm1,0x800(%rax)
+  68149f:	00
+  6814a0:	0f 92 c1             	setb   %cl
+  6814a3:	48 83 c0 20          	add    $0x20,%rax
+  6814a7:	21 ca                	and    %ecx,%edx
+  6814a9:	48 39 c6             	cmp    %rax,%rsi
+  6814ac:	75 b2                	jne    681460 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0xa0>
+  6814ae:	84 d2                	test   %dl,%dl
+  6814b0:	0f 85 7b 02 00 00    	jne    681731 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x371>
+  6814b6:	4c 89 d7             	mov    %r10,%rdi
+  6814b9:	4c 8b 45 c0          	mov    -0x40(%rbp),%r8
+  6814bd:	c4 41 29 57 d2       	vxorpd %xmm10,%xmm10,%xmm10
+  6814c2:	c4 41 35 76 c9       	vpcmpeqd %ymm9,%ymm9,%ymm9
+  6814c7:	48 c1 e7 04          	shl    $0x4,%rdi
+  6814cb:	4d 8b 8f e0 00 00 00 	mov    0xe0(%r15),%r9
+  6814d2:	c4 62 7d 19 25 45 2c 	vbroadcastsd 0x1a2c45(%rip),%ymm12        # 824120 <_IO_stdin_used+0x2f120>
+  6814d9:	1a 00
+  6814db:	c4 62 7d 19 1d 9c 2f 	vbroadcastsd 0x1a2f9c(%rip),%ymm11        # 824480 <_IO_stdin_used+0x2f480>
+  6814e2:	1a 00
+  6814e4:	48 01 df             	add    %rbx,%rdi
+  6814e7:	c4 62 7d 19 35 50 2f 	vbroadcastsd 0x1a2f50(%rip),%ymm14        # 824440 <_IO_stdin_used+0x2f440>
+  6814ee:	1a 00
+  6814f0:	4c 89 c0             	mov    %r8,%rax
+  6814f3:	c4 e2 7d 19 3f       	vbroadcastsd (%rdi),%ymm7
+  6814f8:	c4 e2 7d 19 77 08    	vbroadcastsd 0x8(%rdi),%ymm6
+  6814fe:	ba 01 00 00 00       	mov    $0x1,%edx
+  681503:	48 c1 e0 04          	shl    $0x4,%rax
+  681507:	c4 e2 7d 19 6f 10    	vbroadcastsd 0x10(%rdi),%ymm5
+  68150d:	c4 e2 7d 19 67 18    	vbroadcastsd 0x18(%rdi),%ymm4
+  681513:	4c 01 c8             	add    %r9,%rax
+  681516:	c4 e2 7d 19 18       	vbroadcastsd (%rax),%ymm3
+  68151b:	c4 e2 7d 19 50 08    	vbroadcastsd 0x8(%rax),%ymm2
+  681521:	4c 89 e0             	mov    %r12,%rax
+  681524:	eb 2a                	jmp    681550 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x190>
+  681526:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  68152d:	00 00 00
+  681530:	c5 ad c2 80 00 10 00 	vcmplepd 0x1000(%rax),%ymm10,%ymm0
+  681537:	00 02
+  681539:	c4 c2 7d 0f c1       	vtestpd %ymm9,%ymm0
+  68153e:	0f 92 c1             	setb   %cl
+  681541:	48 83 c0 20          	add    $0x20,%rax
+  681545:	21 ca                	and    %ecx,%edx
+  681547:	48 39 c6             	cmp    %rax,%rsi
+  68154a:	0f 84 18 01 00 00    	je     681668 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x2a8>
+  681550:	c5 fd 28 88 00 20 00 	vmovapd 0x2000(%rax),%ymm1
+  681557:	00
+  681558:	c5 f5 59 80 00 08 00 	vmulpd 0x800(%rax),%ymm1,%ymm0
+  68155f:	00
+  681560:	c5 7d 28 c7          	vmovapd %ymm7,%ymm8
+  681564:	c4 62 fd a8 80 00 30 	vfmadd213pd 0x3000(%rax),%ymm0,%ymm8
+  68156b:	00 00
+  68156d:	c5 7d 29 80 00 30 00 	vmovapd %ymm8,0x3000(%rax)
+  681574:	00
+  681575:	c5 7d 28 c6          	vmovapd %ymm6,%ymm8
+  681579:	c4 62 fd a8 80 00 38 	vfmadd213pd 0x3800(%rax),%ymm0,%ymm8
+  681580:	00 00
+  681582:	c5 7d 29 80 00 38 00 	vmovapd %ymm8,0x3800(%rax)
+  681589:	00
+  68158a:	c5 7d 28 c5          	vmovapd %ymm5,%ymm8
+  68158e:	c4 62 fd a8 80 00 40 	vfmadd213pd 0x4000(%rax),%ymm0,%ymm8
+  681595:	00 00
+  681597:	c4 e2 dd a8 80 00 48 	vfmadd213pd 0x4800(%rax),%ymm4,%ymm0
+  68159e:	00 00
+  6815a0:	c5 7d 29 80 00 40 00 	vmovapd %ymm8,0x4000(%rax)
+  6815a7:	00
+  6815a8:	c5 fd 29 80 00 48 00 	vmovapd %ymm0,0x4800(%rax)
+  6815af:	00
+  6815b0:	c5 fd 28 c3          	vmovapd %ymm3,%ymm0
+  6815b4:	c4 e2 ed 98 80 00 28 	vfmadd132pd 0x2800(%rax),%ymm2,%ymm0
+  6815bb:	00 00
+  6815bd:	c4 e2 f5 a8 80 00 18 	vfmadd213pd 0x1800(%rax),%ymm1,%ymm0
+  6815c4:	00 00
+  6815c6:	c5 fd 29 88 00 18 00 	vmovapd %ymm1,0x1800(%rax)
+  6815cd:	00
+  6815ce:	c4 41 7d 54 c4       	vandpd %ymm12,%ymm0,%ymm8
+  6815d3:	c5 fd 29 80 00 20 00 	vmovapd %ymm0,0x2000(%rax)
+  6815da:	00
+  6815db:	c4 41 25 c2 c0 01    	vcmpltpd %ymm8,%ymm11,%ymm8
+  6815e1:	c4 42 7d 0f c0       	vtestpd %ymm8,%ymm8
+  6815e6:	0f 84 44 ff ff ff    	je     681530 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x170>
+  6815ec:	c4 41 75 59 fe       	vmulpd %ymm14,%ymm1,%ymm15
+  6815f1:	c4 c3 75 4b cf 80    	vblendvpd %ymm8,%ymm15,%ymm1,%ymm1
+  6815f7:	c4 62 7d 19 3d c0 28 	vbroadcastsd 0x1a28c0(%rip),%ymm15        # 823ec0 <_IO_stdin_used+0x2eec0>
+  6815fe:	1a 00
+  681600:	c5 fd 29 88 00 18 00 	vmovapd %ymm1,0x1800(%rax)
+  681607:	00
+  681608:	c4 c1 7d 59 ce       	vmulpd %ymm14,%ymm0,%ymm1
+  68160d:	c4 e3 7d 4b c1 80    	vblendvpd %ymm8,%ymm1,%ymm0,%ymm0
+  681613:	c5 fd 29 80 00 20 00 	vmovapd %ymm0,0x2000(%rax)
+  68161a:	00
+  68161b:	c5 fd 28 80 00 10 00 	vmovapd 0x1000(%rax),%ymm0
+  681622:	00
+  681623:	c4 c1 7d 58 cd       	vaddpd %ymm13,%ymm0,%ymm1
+  681628:	c4 e3 7d 4b c1 80    	vblendvpd %ymm8,%ymm1,%ymm0,%ymm0
+  68162e:	c5 fd c2 0d 69 2e 1a 	vcmpltpd 0x1a2e69(%rip),%ymm0,%ymm1        # 8244a0 <_IO_stdin_used+0x2f4a0>
+  681635:	00 01
+  681637:	c5 05 c2 c0 01       	vcmpltpd %ymm0,%ymm15,%ymm8
+  68163c:	c5 fd 29 80 00 10 00 	vmovapd %ymm0,0x1000(%rax)
+  681643:	00
+  681644:	c5 ad c2 c0 02       	vcmplepd %ymm0,%ymm10,%ymm0
+  681649:	c4 c1 75 55 cd       	vandnpd %ymm13,%ymm1,%ymm1
+  68164e:	c4 e3 75 4b 0d 08 2e 	vblendvpd %ymm8,0x1a2e08(%rip),%ymm1,%ymm1        # 824460 <_IO_stdin_used+0x2f460>
+  681655:	1a 00 80
+  681658:	c5 fd 29 88 00 08 00 	vmovapd %ymm1,0x800(%rax)
+  68165f:	00
+  681660:	e9 d4 fe ff ff       	jmp    681539 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x179>
+  681665:	0f 1f 00             	nopl   (%rax)
+  681668:	49 83 c2 02          	add    $0x2,%r10
+  68166c:	49 83 c0 01          	add    $0x1,%r8
+  681670:	84 d2                	test   %dl,%dl
+  681672:	75 38                	jne    6816ac <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x2ec>
+  681674:	48 83 c7 20          	add    $0x20,%rdi
+  681678:	4d 39 f2             	cmp    %r14,%r10
+  68167b:	0f 82 6f fe ff ff    	jb     6814f0 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x130>
+  681681:	c5 f8 77             	vzeroupper
+  681684:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
+  681688:	64 48 2b 04 25 28 00 	sub    %fs:0x28,%rax
+  68168f:	00 00
+  681691:	0f 85 a3 00 00 00    	jne    68173a <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x37a>
+  681697:	48 8d 65 d0          	lea    -0x30(%rbp),%rsp
+  68169b:	5b                   	pop    %rbx
+  68169c:	41 5a                	pop    %r10
+  68169e:	41 5c                	pop    %r12
+  6816a0:	41 5d                	pop    %r13
+  6816a2:	41 5e                	pop    %r14
+  6816a4:	41 5f                	pop    %r15
+  6816a6:	5d                   	pop    %rbp
+  6816a7:	49 8d 62 f8          	lea    -0x8(%r10),%rsp
+  6816ab:	c3                   	ret
+  6816ac:	4d 39 f2             	cmp    %r14,%r10
+  6816af:	73 d0                	jae    681681 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x2c1>
+  6816b1:	49 8d 84 24 00 08 00 	lea    0x800(%r12),%rax
+  6816b8:	00
+  6816b9:	31 d2                	xor    %edx,%edx
+  6816bb:	c5 e9 57 d2          	vxorpd %xmm2,%xmm2,%xmm2
+  6816bf:	90                   	nop
+  6816c0:	c5 fd 28 00          	vmovapd (%rax),%ymm0
+  6816c4:	c5 fd 59 88 00 10 00 	vmulpd 0x1000(%rax),%ymm0,%ymm1
+  6816cb:	00
+  6816cc:	48 89 d1             	mov    %rdx,%rcx
+  6816cf:	48 83 c2 01          	add    $0x1,%rdx
+  6816d3:	c5 fd 59 80 00 18 00 	vmulpd 0x1800(%rax),%ymm0,%ymm0
+  6816da:	00
+  6816db:	48 c1 e1 05          	shl    $0x5,%rcx
+  6816df:	48 83 c0 20          	add    $0x20,%rax
+  6816e3:	c5 fd 29 88 e0 0f 00 	vmovapd %ymm1,0xfe0(%rax)
+  6816ea:	00
+  6816eb:	c5 fd 29 80 e0 17 00 	vmovapd %ymm0,0x17e0(%rax)
+  6816f2:	00
+  6816f3:	c4 c1 7d 29 94 0c 00 	vmovapd %ymm2,0x1000(%r12,%rcx,1)
+  6816fa:	10 00 00
+  6816fd:	49 39 d5             	cmp    %rdx,%r13
+  681700:	75 be                	jne    6816c0 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x300>
+  681702:	c5 f8 77             	vzeroupper
+  681705:	48 83 ec 08          	sub    $0x8,%rsp
+  681709:	48 89 da             	mov    %rbx,%rdx
+  68170c:	4d 8d 4e ff          	lea    -0x1(%r14),%r9
+  681710:	4c 89 d1             	mov    %r10,%rcx
+  681713:	49 8b b7 e0 00 00 00 	mov    0xe0(%r15),%rsi
+  68171a:	41 55                	push   %r13
+  68171c:	4c 89 e7             	mov    %r12,%rdi
+  68171f:	e8 5c b5 ff ff       	call   67cc80 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]>
+  681724:	58                   	pop    %rax
+  681725:	5a                   	pop    %rdx
+  681726:	e9 59 ff ff ff       	jmp    681684 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x2c4>
+  68172b:	4c 8b 45 c0          	mov    -0x40(%rbp),%r8
+  68172f:	eb d4                	jmp    681705 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x345>
+  681731:	4c 8b 45 c0          	mov    -0x40(%rbp),%r8
+  681735:	e9 77 ff ff ff       	jmp    6816b1 <ducc0::detail_sht::detail_sht_inner_loop::calc_alm2map(std::complex<double> const*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long)+0x2f1>
+  68173a:	e8 61 b7 99 ff       	call   1cea0 <__stack_chk_fail@plt>
+
+-- alm2map_kernel --
+
+<pinned DUCC binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+000000000067cc80 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]>:
+  67cc80:	55                   	push   %rbp
+  67cc81:	49 89 cb             	mov    %rcx,%r11
+  67cc84:	49 89 d2             	mov    %rdx,%r10
+  67cc87:	49 8d 43 02          	lea    0x2(%r11),%rax
+  67cc8b:	48 89 e5             	mov    %rsp,%rbp
+  67cc8e:	41 55                	push   %r13
+  67cc90:	41 54                	push   %r12
+  67cc92:	4d 89 c4             	mov    %r8,%r12
+  67cc95:	53                   	push   %rbx
+  67cc96:	48 89 f3             	mov    %rsi,%rbx
+  67cc99:	48 83 e4 e0          	and    $0xffffffffffffffe0,%rsp
+  67cc9d:	48 8b 4d 10          	mov    0x10(%rbp),%rcx
+  67cca1:	49 39 c1             	cmp    %rax,%r9
+  67cca4:	0f 82 a3 01 00 00    	jb     67ce4d <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1cd>
+  67ccaa:	48 85 c9             	test   %rcx,%rcx
+  67ccad:	0f 84 69 01 00 00    	je     67ce1c <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x19c>
+  67ccb3:	4d 89 c5             	mov    %r8,%r13
+  67ccb6:	4c 89 da             	mov    %r11,%rdx
+  67ccb9:	49 c1 e5 04          	shl    $0x4,%r13
+  67ccbd:	48 c1 e2 04          	shl    $0x4,%rdx
+  67ccc1:	49 01 f5             	add    %rsi,%r13
+  67ccc4:	48 89 ce             	mov    %rcx,%rsi
+  67ccc7:	4c 01 d2             	add    %r10,%rdx
+  67ccca:	48 c1 e6 05          	shl    $0x5,%rsi
+  67ccce:	48 01 fe             	add    %rdi,%rsi
+  67ccd1:	0f 1f 40 00          	nopl   0x0(%rax)
+  67ccd5:	66 66 2e 0f 1f 84 00 	data16 cs nopw 0x0(%rax,%rax,1)
+  67ccdc:	00 00 00 00
+  67cce0:	c4 c2 7d 19 55 08    	vbroadcastsd 0x8(%r13),%ymm2
+  67cce6:	c4 62 7d 19 3a       	vbroadcastsd (%rdx),%ymm15
+  67cceb:	48 89 f8             	mov    %rdi,%rax
+  67ccee:	c4 62 7d 19 72 08    	vbroadcastsd 0x8(%rdx),%ymm14
+  67ccf4:	c4 62 7d 19 6a 10    	vbroadcastsd 0x10(%rdx),%ymm13
+  67ccfa:	c5 fd 29 54 24 e0    	vmovapd %ymm2,-0x20(%rsp)
+  67cd00:	c4 c2 7d 19 55 10    	vbroadcastsd 0x10(%r13),%ymm2
+  67cd06:	c4 62 7d 19 62 18    	vbroadcastsd 0x18(%rdx),%ymm12
+  67cd0c:	c4 62 7d 19 5a 20    	vbroadcastsd 0x20(%rdx),%ymm11
+  67cd12:	c4 62 7d 19 52 28    	vbroadcastsd 0x28(%rdx),%ymm10
+  67cd18:	c5 fd 29 54 24 c0    	vmovapd %ymm2,-0x40(%rsp)
+  67cd1e:	c4 c2 7d 19 55 18    	vbroadcastsd 0x18(%r13),%ymm2
+  67cd24:	c4 62 7d 19 4a 30    	vbroadcastsd 0x30(%rdx),%ymm9
+  67cd2a:	c4 62 7d 19 42 38    	vbroadcastsd 0x38(%rdx),%ymm8
+  67cd30:	c4 c2 7d 19 7d 00    	vbroadcastsd 0x0(%r13),%ymm7
+  67cd36:	c5 fd 29 54 24 a0    	vmovapd %ymm2,-0x60(%rsp)
+  67cd3c:	0f 1f 40 00          	nopl   0x0(%rax)
+  67cd40:	c5 7d 29 ec          	vmovapd %ymm13,%ymm4
+  67cd44:	c5 7d 29 fe          	vmovapd %ymm15,%ymm6
+  67cd48:	c5 7d 29 f5          	vmovapd %ymm14,%ymm5
+  67cd4c:	48 83 c0 20          	add    $0x20,%rax
+  67cd50:	c5 fd 28 90 e0 27 00 	vmovapd 0x27e0(%rax),%ymm2
+  67cd57:	00
+  67cd58:	c5 fd 28 44 24 e0    	vmovapd -0x20(%rsp),%ymm0
+  67cd5e:	c5 7d 29 e3          	vmovapd %ymm12,%ymm3
+  67cd62:	c5 fd 28 88 e0 1f 00 	vmovapd 0x1fe0(%rax),%ymm1
+  67cd69:	00
+  67cd6a:	c4 e2 f5 a8 a0 e0 3f 	vfmadd213pd 0x3fe0(%rax),%ymm1,%ymm4
+  67cd71:	00 00
+  67cd73:	c4 e2 f5 a8 b0 e0 2f 	vfmadd213pd 0x2fe0(%rax),%ymm1,%ymm6
+  67cd7a:	00 00
+  67cd7c:	c4 e2 c5 b8 c2       	vfmadd231pd %ymm2,%ymm7,%ymm0
+  67cd81:	c4 e2 f5 a8 80 e0 17 	vfmadd213pd 0x17e0(%rax),%ymm1,%ymm0
+  67cd88:	00 00
+  67cd8a:	c4 e2 f5 a8 a8 e0 37 	vfmadd213pd 0x37e0(%rax),%ymm1,%ymm5
+  67cd91:	00 00
+  67cd93:	c4 e2 f5 a8 98 e0 47 	vfmadd213pd 0x47e0(%rax),%ymm1,%ymm3
+  67cd9a:	00 00
+  67cd9c:	c4 e2 b5 b8 e0       	vfmadd231pd %ymm0,%ymm9,%ymm4
+  67cda1:	c4 e2 a5 b8 f0       	vfmadd231pd %ymm0,%ymm11,%ymm6
+  67cda6:	c5 fd 29 80 e0 17 00 	vmovapd %ymm0,0x17e0(%rax)
+  67cdad:	00
+  67cdae:	c4 e2 ad b8 e8       	vfmadd231pd %ymm0,%ymm10,%ymm5
+  67cdb3:	c4 e2 bd b8 d8       	vfmadd231pd %ymm0,%ymm8,%ymm3
+  67cdb8:	c5 fd 29 a0 e0 3f 00 	vmovapd %ymm4,0x3fe0(%rax)
+  67cdbf:	00
+  67cdc0:	c5 fd 28 64 24 a0    	vmovapd -0x60(%rsp),%ymm4
+  67cdc6:	c4 e2 dd 98 54 24 c0 	vfmadd132pd -0x40(%rsp),%ymm4,%ymm2
+  67cdcd:	c5 fd 29 b0 e0 2f 00 	vmovapd %ymm6,0x2fe0(%rax)
+  67cdd4:	00
+  67cdd5:	c5 fd 29 a8 e0 37 00 	vmovapd %ymm5,0x37e0(%rax)
+  67cddc:	00
+  67cddd:	c5 fd 29 98 e0 47 00 	vmovapd %ymm3,0x47e0(%rax)
+  67cde4:	00
+  67cde5:	c4 e2 f5 98 c2       	vfmadd132pd %ymm2,%ymm1,%ymm0
+  67cdea:	c5 fd 29 80 e0 1f 00 	vmovapd %ymm0,0x1fe0(%rax)
+  67cdf1:	00
+  67cdf2:	48 39 c6             	cmp    %rax,%rsi
+  67cdf5:	0f 85 45 ff ff ff    	jne    67cd40 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0xc0>
+  67cdfb:	4d 8d 43 04          	lea    0x4(%r11),%r8
+  67cdff:	49 83 c3 06          	add    $0x6,%r11
+  67ce03:	49 83 c4 02          	add    $0x2,%r12
+  67ce07:	48 83 c2 40          	add    $0x40,%rdx
+  67ce0b:	49 83 c5 20          	add    $0x20,%r13
+  67ce0f:	4d 39 d9             	cmp    %r11,%r9
+  67ce12:	72 3c                	jb     67ce50 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1d0>
+  67ce14:	4d 89 c3             	mov    %r8,%r11
+  67ce17:	e9 c4 fe ff ff       	jmp    67cce0 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x60>
+  67ce1c:	49 8d 43 06          	lea    0x6(%r11),%rax
+  67ce20:	49 39 c1             	cmp    %rax,%r9
+  67ce23:	72 1d                	jb     67ce42 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1c2>
+  67ce25:	4d 8d 43 08          	lea    0x8(%r11),%r8
+  67ce29:	49 83 c3 0a          	add    $0xa,%r11
+  67ce2d:	49 83 c4 04          	add    $0x4,%r12
+  67ce31:	4d 39 d9             	cmp    %r11,%r9
+  67ce34:	72 1a                	jb     67ce50 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1d0>
+  67ce36:	4d 89 c3             	mov    %r8,%r11
+  67ce39:	49 8d 43 06          	lea    0x6(%r11),%rax
+  67ce3d:	49 39 c1             	cmp    %rax,%r9
+  67ce40:	73 e3                	jae    67ce25 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1a5>
+  67ce42:	48 8d 65 e8          	lea    -0x18(%rbp),%rsp
+  67ce46:	5b                   	pop    %rbx
+  67ce47:	41 5c                	pop    %r12
+  67ce49:	41 5d                	pop    %r13
+  67ce4b:	5d                   	pop    %rbp
+  67ce4c:	c3                   	ret
+  67ce4d:	4d 89 d8             	mov    %r11,%r8
+  67ce50:	4d 39 c1             	cmp    %r8,%r9
+  67ce53:	0f 82 fb 00 00 00    	jb     67cf54 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x2d4>
+  67ce59:	48 85 c9             	test   %rcx,%rcx
+  67ce5c:	0f 84 f2 00 00 00    	je     67cf54 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x2d4>
+  67ce62:	49 c1 e4 04          	shl    $0x4,%r12
+  67ce66:	4c 89 c0             	mov    %r8,%rax
+  67ce69:	48 c1 e1 05          	shl    $0x5,%rcx
+  67ce6d:	48 c1 e0 04          	shl    $0x4,%rax
+  67ce71:	4c 01 e3             	add    %r12,%rbx
+  67ce74:	48 8d 14 0f          	lea    (%rdi,%rcx,1),%rdx
+  67ce78:	49 8d 34 02          	lea    (%r10,%rax,1),%rsi
+  67ce7c:	0f 1f 40 00          	nopl   0x0(%rax)
+  67ce80:	c4 e2 7d 19 3e       	vbroadcastsd (%rsi),%ymm7
+  67ce85:	c4 e2 7d 19 76 08    	vbroadcastsd 0x8(%rsi),%ymm6
+  67ce8b:	48 89 f8             	mov    %rdi,%rax
+  67ce8e:	c4 e2 7d 19 6e 10    	vbroadcastsd 0x10(%rsi),%ymm5
+  67ce94:	c4 e2 7d 19 66 18    	vbroadcastsd 0x18(%rsi),%ymm4
+  67ce9a:	c4 e2 7d 19 1b       	vbroadcastsd (%rbx),%ymm3
+  67ce9f:	c4 e2 7d 19 53 08    	vbroadcastsd 0x8(%rbx),%ymm2
+  67cea5:	66 66 2e 0f 1f 84 00 	data16 cs nopw 0x0(%rax,%rax,1)
+  67ceac:	00 00 00 00
+  67ceb0:	c5 fd 28 80 00 20 00 	vmovapd 0x2000(%rax),%ymm0
+  67ceb7:	00
+  67ceb8:	c5 fd 28 cf          	vmovapd %ymm7,%ymm1
+  67cebc:	48 83 c0 20          	add    $0x20,%rax
+  67cec0:	c4 e2 fd a8 88 e0 2f 	vfmadd213pd 0x2fe0(%rax),%ymm0,%ymm1
+  67cec7:	00 00
+  67cec9:	c5 fd 29 88 e0 2f 00 	vmovapd %ymm1,0x2fe0(%rax)
+  67ced0:	00
+  67ced1:	c5 fd 28 ce          	vmovapd %ymm6,%ymm1
+  67ced5:	c4 e2 fd a8 88 e0 37 	vfmadd213pd 0x37e0(%rax),%ymm0,%ymm1
+  67cedc:	00 00
+  67cede:	c5 fd 29 88 e0 37 00 	vmovapd %ymm1,0x37e0(%rax)
+  67cee5:	00
+  67cee6:	c5 fd 28 cd          	vmovapd %ymm5,%ymm1
+  67ceea:	c4 e2 fd a8 88 e0 3f 	vfmadd213pd 0x3fe0(%rax),%ymm0,%ymm1
+  67cef1:	00 00
+  67cef3:	c5 fd 29 88 e0 3f 00 	vmovapd %ymm1,0x3fe0(%rax)
+  67cefa:	00
+  67cefb:	c5 fd 28 cc          	vmovapd %ymm4,%ymm1
+  67ceff:	c4 e2 fd a8 88 e0 47 	vfmadd213pd 0x47e0(%rax),%ymm0,%ymm1
+  67cf06:	00 00
+  67cf08:	c5 fd 29 88 e0 47 00 	vmovapd %ymm1,0x47e0(%rax)
+  67cf0f:	00
+  67cf10:	c5 fd 28 cb          	vmovapd %ymm3,%ymm1
+  67cf14:	c4 e2 ed 98 88 e0 27 	vfmadd132pd 0x27e0(%rax),%ymm2,%ymm1
+  67cf1b:	00 00
+  67cf1d:	c4 e2 fd a8 88 e0 17 	vfmadd213pd 0x17e0(%rax),%ymm0,%ymm1
+  67cf24:	00 00
+  67cf26:	c5 fd 29 80 e0 17 00 	vmovapd %ymm0,0x17e0(%rax)
+  67cf2d:	00
+  67cf2e:	c5 fd 29 88 e0 1f 00 	vmovapd %ymm1,0x1fe0(%rax)
+  67cf35:	00
+  67cf36:	48 39 c2             	cmp    %rax,%rdx
+  67cf39:	0f 85 71 ff ff ff    	jne    67ceb0 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x230>
+  67cf3f:	49 83 c0 02          	add    $0x2,%r8
+  67cf43:	48 83 c6 20          	add    $0x20,%rsi
+  67cf47:	48 83 c3 10          	add    $0x10,%rbx
+  67cf4b:	4d 39 c1             	cmp    %r8,%r9
+  67cf4e:	0f 83 2c ff ff ff    	jae    67ce80 <ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x200>
+  67cf54:	c5 f8 77             	vzeroupper
+  67cf57:	48 8d 65 e8          	lea    -0x18(%rbp),%rsp
+  67cf5b:	5b                   	pop    %rbx
+  67cf5c:	41 5c                	pop    %r12
+  67cf5e:	41 5d                	pop    %r13
+  67cf60:	5d                   	pop    %rbp
+  67cf61:	c3                   	ret

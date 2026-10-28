@@ -1,0 +1,58 @@
+{
+  "counter_order": [
+    "not_ready_checks",
+    "completed_packets",
+    "suffix_degree_latitude_terms",
+    "suffix_pair_latitude_contributions",
+    "suffix_recurrence_updates_in_fused_kernel",
+    "declined_packets",
+    "prefix_pair_latitude_contributions",
+    "prefix_scalar_recurrence_updates"
+  ],
+  "active_output_degree_latitude_terms": {
+    "full_mmax_720": 161199393,
+    "reduced_mmax_180": 81210177
+  },
+  "cells": {
+    "full_q1": [
+      240832,
+      20355,
+      59860872,
+      29971152,
+      29808312,
+      8833,
+      16434764,
+      16361890
+    ],
+    "full_q8": [
+      246453,
+      17077,
+      50846688,
+      25457504,
+      25320888,
+      11058,
+      19706492,
+      19613858
+    ],
+    "reduced_q1": [
+      93226,
+      6008,
+      28556112,
+      14290104,
+      14242040,
+      1942,
+      5479076,
+      5463266
+    ],
+    "reduced_q8": [
+      93226,
+      5220,
+      24628848,
+      12324888,
+      12283128,
+      2350,
+      6415268,
+      6396194
+    ]
+  }
+}

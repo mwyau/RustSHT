@@ -1,0 +1,100 @@
+{
+  "parent_source": "54b166f2c0698f1c70e88f8679d12fa4376704fe",
+  "candidate_source_patch_sha256": "67bcd6dfd59da3077636aec1bf1df09284e4663ea5c0043148e6900b977db242",
+  "candidate_binary_sha256_default": "8ee676b54c9559fe7acbb8effffdadf271b75f0a4e4c2edfb8190d883aa0fdc8",
+  "parent_binary_sha256_default": "566861000a5c3e978a288154e8cc65d79cac0da5768095bc961f3e13b480bd04",
+  "candidate_binary_sha256_x86_64_v3": "873f4f93a41727088125dd58d92ddae5bef8fee7ceb87d91754a398318f0f803",
+  "parent_binary_sha256_x86_64_v3": "1b24b5ad5f2b364bef2302de7905e2d007379e41631ee9b08da8170cbc0cf284",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "90f1a14471c56328803fb0084d88220c04d5d9309a970850897e555a6e18b05b",
+  "candidate_callgrind_binary_sha256": "241b4b07896bd1c57729c2d58c17311971ff43a43ae95f59a66916badae5e0b1",
+  "parent_callgrind_binary_sha256": "b44482dde8bdcc0e3731e2beabc2e015a85a8165381d78dec2b7476c38ad8d4b",
+  "ducc_callgrind_binary_sha256": "07c039c41422fa9a5bf353ca455ca6cbe655230e40c9f99d2275c0a90242f700",
+  "host": "AMD Ryzen 9 5950X",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "llvm": "23.1.1",
+  "gcc": "15.2.0",
+  "default_rust_isa": "Cargo release defaults with Pulp runtime V3 dispatch; RUSTFLAGS unset",
+  "matched_rust_isa": "-C target-cpu=x86-64-v3",
+  "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+  "fixture": "GL T720, ntheta=721, phi0=0.23; full mmax=720 nphi=1458; reduced mmax=180 nphi=378; deterministic script fixture",
+  "warm_call": "fresh process, reusable plan/workspace, batch warmup target 25 ms",
+  "fixture_hashes_default": {
+    "M720-q1": null,
+    "M720-q8": null,
+    "M180-q1": null,
+    "M180-q8": null
+  },
+  "fixture_hashes_v3": {
+    "GL-T720-M720-s0-synthesis-q1": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "GL-T720-M720-s0-synthesis-q8": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "GL-T720-M180-s0-synthesis-q1": {
+      "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    },
+    "GL-T720-M180-s0-synthesis-q8": {
+      "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    },
+    "GL-T720-M720-s0-analysis-q1": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "GL-T720-M720-s0-analysis-q8": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "GL-T720-M720-s1-synthesis-q1": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M720-s1-synthesis-q8": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M720-s1-analysis-q1": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M720-s1-analysis-q8": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    }
+  },
+  "results": [
+    "timings-default-target.csv",
+    "timings-x86-64-v3.csv",
+    "protected-f64.csv",
+    "legendre-stage.csv",
+    "q8-worker-profile.csv",
+    "route-counts.json",
+    "callgrind-work.json"
+  ],
+  "affinity_policy": "fixed affinity during each worker; one physical core for q1 and eight physical cores for q8; host-local CPU IDs omitted"
+}
