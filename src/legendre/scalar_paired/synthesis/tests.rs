@@ -127,6 +127,36 @@ fn scaled_f32_packet_matches_native_scalar_arithmetic() {
 }
 
 #[test]
+fn f32_scaled_packet_matches_scalar_for_mixed_extreme_exponents() {
+    let lane_count = Arch::new().dispatch(F32LaneCount);
+    let cosine = (0..lane_count)
+        .map(|lane| -0.4 + 0.1 * lane as f32)
+        .collect::<Vec<_>>();
+    let basis = vec![1.0_f32; lane_count];
+    let exponent_pattern = [-300, -150, -149, -29, -20, 128, 140, 220];
+    let exponents = (0..lane_count)
+        .map(|lane| exponent_pattern[lane % exponent_pattern.len()])
+        .collect::<Vec<_>>();
+    let even = Complex32::new(1.0e-30, -1.0e-30);
+    let odd = Complex32::new(0.0, 0.0);
+    let expected = scalar_expected(&cosine, &basis, &exponents, even, odd, 0.0, 0.0);
+    let (finite, actual_real, actual_imag) = Arch::new().dispatch(AccumulatePacket {
+        cosine: &cosine,
+        basis: &basis,
+        exponents: &exponents,
+        even,
+        odd,
+        initial_real: 0.0,
+        initial_imag: 0.0,
+    });
+    assert!(finite);
+    assert_same_bits(&actual_real, &expected.0);
+    assert_same_bits(&actual_imag, &expected.1);
+    assert!(actual_real.iter().any(|value| value.is_subnormal()));
+    assert!(actual_real.iter().any(|value| value.is_normal()));
+}
+
+#[test]
 fn f32_packet_falls_back_for_subnormal_and_out_of_range_values() {
     let lane_count = Arch::new().dispatch(F32LaneCount);
     let (cosine, mut basis, mut exponents) = packet_inputs(lane_count);
@@ -216,4 +246,54 @@ fn f32_packet_falls_back_for_subnormal_and_out_of_range_values() {
         initial_imag: 0.0,
     });
     assert!(!finite);
+}
+
+#[test]
+fn f32_scaled_packet_declines_zero_product_that_positive_exponent_can_recover() {
+    let lane_count = Arch::new().dispatch(F32LaneCount);
+    let cosine = vec![0.0_f32; lane_count];
+    let mut basis = vec![1.0_f32; lane_count];
+    let mut exponents = vec![0_i64; lane_count];
+    basis[0] = 1.0e-20;
+    exponents[0] = 30;
+    let even = Complex32::new(1.0e-30, -1.0e-30);
+    let odd = Complex32::new(0.0, 0.0);
+    let expected = scalar_expected(&cosine, &basis, &exponents, even, odd, 0.0, 0.0);
+    assert_eq!((even.re * basis[0]).to_bits(), 0.0_f32.to_bits());
+    assert_ne!(expected.0[0].to_bits(), 0.0_f32.to_bits());
+
+    let (finite, actual_real, actual_imag) = Arch::new().dispatch(AccumulatePacket {
+        cosine: &cosine,
+        basis: &basis,
+        exponents: &exponents,
+        even,
+        odd,
+        initial_real: 0.0,
+        initial_imag: 0.0,
+    });
+    assert!(finite);
+    assert_same_bits(&actual_real, &expected.0);
+    assert_same_bits(&actual_imag, &expected.1);
+}
+
+#[test]
+fn f32_scaled_packet_keeps_partial_simd_tail_on_exact_scalar_path() {
+    let lane_count = Arch::new().dispatch(F32LaneCount);
+    let tail_len = lane_count - 1;
+    let (cosine, basis, exponents) = packet_inputs(tail_len);
+    let even = Complex32::new(0.125, -0.25);
+    let odd = Complex32::new(-0.0625, 0.03125);
+    let expected = scalar_expected(&cosine, &basis, &exponents, even, odd, 0.0, 0.0);
+    let (finite, actual_real, actual_imag) = Arch::new().dispatch(AccumulatePacket {
+        cosine: &cosine,
+        basis: &basis,
+        exponents: &exponents,
+        even,
+        odd,
+        initial_real: 0.0,
+        initial_imag: 0.0,
+    });
+    assert!(finite);
+    assert_same_bits(&actual_real[..tail_len], &expected.0);
+    assert_same_bits(&actual_imag[..tail_len], &expected.1);
 }

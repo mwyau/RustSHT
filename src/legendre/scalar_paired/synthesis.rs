@@ -234,6 +234,21 @@ impl PairedScalarRecurrenceVisitor<f32> for F32SynthesisAccumulator<'_> {
                     }
                     continue;
                 }
+            } else if let Some(finite) = try_accumulate_f32_scaled_synthesis_packet(
+                simd,
+                &cos_theta[lane_start..lane_end],
+                &basis[lane_start..lane_end],
+                &lane_exponents[lane_start..lane_end],
+                &mut staged_real[ring_start + lane_start..ring_start + lane_end],
+                &mut staged_imag[ring_start + lane_start..ring_start + lane_end],
+                even,
+                odd,
+            ) {
+                if !finite {
+                    *finite_sums = false;
+                    return Ok(());
+                }
+                continue;
             }
 
             accumulate_f32_synthesis_scalar_range(
@@ -318,6 +333,145 @@ fn try_accumulate_f32_synthesis_packet<S: Simd>(
     simd.partial_store_f32s(staged_real, next_sum_re);
     simd.partial_store_f32s(staged_imag, next_sum_im);
     Some(true)
+}
+
+/// Accumulates a full f32 packet whose recurrence exponents leave the normal
+/// scale-factor range. Each finite normal product is split into a normal
+/// mantissa and exponent before the exponent is folded; subnormal results use
+/// the exact scalar binary scaler. No output lane is changed until every lane
+/// and the next sums have passed the checks.
+#[inline(always)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scaled packet receives coefficient inputs, recurrence exponents, and staged sums."
+)]
+fn try_accumulate_f32_scaled_synthesis_packet<S: Simd>(
+    simd: S,
+    cos_theta: &[f32],
+    basis: &[f32],
+    exponents: &[i64],
+    staged_real: &mut [f32],
+    staged_imag: &mut [f32],
+    even: Complex32,
+    odd: Complex32,
+) -> Option<bool> {
+    let lanes = S::F32_LANES;
+    if cos_theta.len() != lanes || basis.len() != lanes || exponents.len() != lanes {
+        return None;
+    }
+    if ![even.re, even.im, odd.re, odd.im]
+        .into_iter()
+        .all(f32_is_normal_or_zero)
+    {
+        return None;
+    }
+
+    let cosine = simd.partial_load_f32s(cos_theta);
+    let basis_vector = simd.partial_load_f32s(basis);
+    let coefficient_re =
+        simd.mul_add_f32s(simd.splat_f32s(odd.re), cosine, simd.splat_f32s(even.re));
+    let coefficient_im =
+        simd.mul_add_f32s(simd.splat_f32s(odd.im), cosine, simd.splat_f32s(even.im));
+    if !simd_all_normal_or_zero_f32(simd, coefficient_re)
+        || !simd_all_normal_or_zero_f32(simd, coefficient_im)
+        || !simd_all_normal_or_zero_f32(simd, basis_vector)
+    {
+        return None;
+    }
+
+    let product_re = simd.mul_f32s(coefficient_re, basis_vector);
+    let product_im = simd.mul_f32s(coefficient_im, basis_vector);
+    if !simd_all_normal_or_zero_f32(simd, product_re)
+        || !simd_all_normal_or_zero_f32(simd, product_im)
+    {
+        return None;
+    }
+
+    let mut product_re_lanes = [0.0_f32; LATITUDE_BLOCK_SIZE];
+    let mut product_im_lanes = [0.0_f32; LATITUDE_BLOCK_SIZE];
+    simd.partial_store_f32s(&mut product_re_lanes[..lanes], product_re);
+    simd.partial_store_f32s(&mut product_im_lanes[..lanes], product_im);
+    let mut scale_re = [1.0_f32; LATITUDE_BLOCK_SIZE];
+    let mut scale_im = [1.0_f32; LATITUDE_BLOCK_SIZE];
+    for lane in 0..lanes {
+        // A zero rounded product could hide a nonzero product that becomes
+        // representable under a positive recurrence exponent. Decline that
+        // packet so the scaled scalar helper can recover it exactly.
+        if exponents[lane] > 0 && (product_re_lanes[lane] == 0.0 || product_im_lanes[lane] == 0.0) {
+            return None;
+        }
+        let (mantissa_re, factor_re) =
+            split_scaled_packet_component(product_re_lanes[lane], exponents[lane])?;
+        let (mantissa_im, factor_im) =
+            split_scaled_packet_component(product_im_lanes[lane], exponents[lane])?;
+        product_re_lanes[lane] = mantissa_re;
+        product_im_lanes[lane] = mantissa_im;
+        scale_re[lane] = factor_re;
+        scale_im[lane] = factor_im;
+    }
+
+    let contribution_re = simd.mul_f32s(
+        simd.partial_load_f32s(&product_re_lanes[..lanes]),
+        simd.partial_load_f32s(&scale_re[..lanes]),
+    );
+    let contribution_im = simd.mul_f32s(
+        simd.partial_load_f32s(&product_im_lanes[..lanes]),
+        simd.partial_load_f32s(&scale_im[..lanes]),
+    );
+    let next_sum_re = simd.add_f32s(simd.partial_load_f32s(staged_real), contribution_re);
+    let next_sum_im = simd.add_f32s(simd.partial_load_f32s(staged_imag), contribution_im);
+    if !simd_all_finite_f32(simd, next_sum_re) || !simd_all_finite_f32(simd, next_sum_im) {
+        return Some(false);
+    }
+    simd.partial_store_f32s(staged_real, next_sum_re);
+    simd.partial_store_f32s(staged_imag, next_sum_im);
+    Some(true)
+}
+
+#[inline(always)]
+fn f32_is_normal_or_zero(value: f32) -> bool {
+    value == 0.0 || value.is_normal()
+}
+
+#[inline(always)]
+fn simd_all_normal_or_zero_f32<S: Simd>(simd: S, values: S::f32s) -> bool {
+    let exponent_bits = simd.and_u32s(
+        simd.transmute_u32s_f32s(values),
+        simd.splat_u32s(0x7f80_0000),
+    );
+    let normal = simd.and_m32s(
+        simd.greater_than_u32s(exponent_bits, simd.splat_u32s(0)),
+        simd.less_than_u32s(exponent_bits, simd.splat_u32s(0x7f80_0000)),
+    );
+    let zero = simd.equal_f32s(values, simd.splat_f32s(0.0));
+    simd.first_true_m32s(simd.not_m32s(simd.or_m32s(normal, zero))) == S::F32_LANES
+}
+
+#[inline(always)]
+fn split_scaled_packet_component(value: f32, exponent: i64) -> Option<(f32, f32)> {
+    if value == 0.0 {
+        return Some((value, 1.0));
+    }
+    if !value.is_normal() {
+        return None;
+    }
+    let bits = value.to_bits();
+    let raw_exponent = ((bits >> 23) & 0xff) as i64;
+    let scaled_exponent = exponent.checked_add(raw_exponent - 127)?;
+    let mantissa = f32::from_bits((bits & 0x807f_ffff) | (127_u32 << 23));
+    if (-126..=127).contains(&scaled_exponent) {
+        let factor = f32::from_bits(((scaled_exponent + 127) as u32) << 23);
+        Some((mantissa, factor))
+    } else if scaled_exponent > 127 {
+        None
+    } else {
+        // Keep the existing scalar scaler's subnormal rounding and signed-zero
+        // behavior. Normal outputs use the vector multiply above.
+        Some((
+            super::super::numeric::scale_binary_f32(mantissa, scaled_exponent),
+            1.0,
+        ))
+    }
 }
 
 #[inline(always)]

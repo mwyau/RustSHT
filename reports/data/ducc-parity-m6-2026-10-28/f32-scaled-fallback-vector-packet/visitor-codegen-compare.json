@@ -1,0 +1,12 @@
+{
+  "old_candidate_binary_sha256": "4b5a2ed2583a6a7652656decfa06139800832821be940571b9f66a84ce18ee90",
+  "lint_fixed_rebuild_binary_sha256": "f2673a77e5949afc9e8aee530456c9e7ce884e859137a017e75bc7180d393e43",
+  "old_candidate_text_sha256": "583819bf9cddff155d4437d2d5d42bb2656e6c41fbee51036beed565c9c76d81",
+  "lint_fixed_rebuild_text_sha256": "ebd0444ef691b524a9182c68752fce8c2e34754350913cf49742684f115f18e0",
+  "visitor_symbol": "rustsht::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, rustsht::legendre::scalar_paired::synthesis::F32SynthesisAccumulator>",
+  "visitor_symbol_size_bytes": 13917,
+  "normalized_instruction_lines_old": 2662,
+  "normalized_instruction_lines_new": 2662,
+  "instruction_sequence_same_after_rip_relative_offsets_normalized": true,
+  "method": "Disassembled exact visitor symbol from both release binaries; normalized only RIP-relative addressing and anonymous compiler hashes. Both builds used x86-64-v3 and debuginfo=2. The full .text differs due link-address/layout changes, but this visitor has identical normalized instruction sequence."
+}

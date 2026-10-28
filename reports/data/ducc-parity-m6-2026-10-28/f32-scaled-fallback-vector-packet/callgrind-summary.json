@@ -1,0 +1,70 @@
+{
+  "rust_parent_source": "33c2faba2f9be2f890b27543bd3f887c715f7a25",
+  "rust_candidate_base": "33c2faba2f9be2f890b27543bd3f887c715f7a25",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -C debuginfo=2 -Aunexpected_cfgs",
+  "valgrind": "3.26.0",
+  "scope": "One warmed GL T720 f32 scalar synthesis_into call; setup and workspace preparation outside region; q1 pinned to one physical core.",
+  "work_units": {
+    "full_required_output_degree_latitude_slots": 161199393,
+    "reduced_required_output_degree_latitude_slots": 81210177,
+    "ducc_reference_source": "same-geometry pinned DUCC q1 profile recorded in the 2026-10-28 packet-suffix report; not reprofiled in this candidate screen",
+    "ducc_instruction_refs": {
+      "full": 260801202,
+      "reduced": 108641459
+    }
+  },
+  "cells": {
+    "full": {
+      "parent_ir": 7386721582,
+      "candidate_ir": 6610414010,
+      "instruction_reduction_fraction": 0.10509500911631896,
+      "ir_per_required_slot": {
+        "parent": 45.8235074247457,
+        "candidate": 41.00768549420034,
+        "ducc": 1.617879553677972
+      },
+      "candidate_over_ducc_ir_ratio": 25.346562666532495,
+      "scaled_component_helper": {
+        "parent_calls_each_component": 10443214,
+        "candidate_calls_each_component": 7237292,
+        "parent_ir_each_component_inclusive": [
+          1657262001,
+          1657351058
+        ],
+        "candidate_ir_each_component_inclusive": [
+          1132276841,
+          1132349960
+        ]
+      }
+    },
+    "reduced": {
+      "parent_ir": 2386505645,
+      "candidate_ir": 2124301940,
+      "instruction_reduction_fraction": 0.1098693001415465,
+      "ir_per_required_slot": {
+        "parent": 29.386780489346798,
+        "candidate": 26.15807548356901,
+        "ducc": 1.3377813349674141
+      },
+      "candidate_over_ducc_ir_ratio": 19.553326690872222,
+      "scaled_component_helper": {
+        "parent_calls_each_component": 2893846,
+        "candidate_calls_each_component": 1823007,
+        "parent_ir_each_component_inclusive": [
+          458289753,
+          458174573
+        ],
+        "candidate_ir_each_component_inclusive": [
+          284340623,
+          284257031
+        ]
+      }
+    }
+  },
+  "caveats": [
+    "Callgrind Ir are instruction references, not cycles or elapsed time.",
+    "The candidate route did not use additional dynamic counters; component-helper call counts come from source-attributed Callgrind and do not identify exact packet acceptance counts.",
+    "Per-component inclusive attribution is reported separately and overlaps its caller. Do not add it to whole-call totals."
+  ]
+}

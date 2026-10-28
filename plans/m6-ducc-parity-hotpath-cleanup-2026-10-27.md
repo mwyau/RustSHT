@@ -2,7 +2,7 @@
 
 ## ACTIVE OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first
 
-**Continue native-f32 GL T720 scalar synthesis before returning to f64.** The accepted 32-ring scheduling change (source `335ce4c8`) and native-f32 checked scaled-contribution SIMD packet leaf (source `ec5d56ca`) are complete; preserve them. Latest matched Rust/DUCC whole-transform ratios remain **36.37× / 40.07×** full mmax q1/q8 and **25.11× / 45.32×** reduced mmax q1/q8. Four cells remain **GAP**. These large differences warrant work/algorithm parity, not another succession of 1–3% micro-optimizations. A single-digit Legendre-stage ratio is an intermediate target, not an established expectation or permission to declare M6 complete.
+**Continue native-f32 GL T720 scalar synthesis before returning to f64.** Preserve the accepted 32-ring scheduler (`335ce4c8`) and checked packet leaf (`ec5d56ca`). The former current-source ratios at `ec5d56ca` were **36.37× / 40.07×** full mmax q1/q8 and **25.11× / 45.32×** reduced mmax q1/q8. The bounded scaled-fallback packet-vector candidate on exact parent `33c2faba` is now accepted: it lowers the four whole-transform cells by 5.8–12.7%, to **34.14× / 30.65×** full and **23.11× / 35.47×** reduced q1/q8. All four remain **GAP**. Its exact timings, normalized Callgrind work, numerical checks and controls are in the [single active ledger](../reports/DUCC_PARITY_M6.md) and [candidate evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scaled-fallback-vector-packet/README.md). Continue work/algorithm parity, not another sequence of 1–3% micro-optimizations. A single-digit Legendre-stage ratio is an intermediate target, not an M6 completion criterion.
 
 ### Grounded algorithm difference
 
@@ -18,6 +18,19 @@ RustSHT already has shared f32/f64 recurrence mathematics and a native-f32 fused
 4. **If the handoff is not viable, diagnose precision explicitly.** A throwaway f32-I/O / f64-internal Legendre prototype can be benchmarked solely to distinguish DUCC's wider-exponent strategy from scheduling or codegen effects. It is **diagnostic only**: no widened f32 production arrays, no second maintained implementation, no changed public API, and no automatic adoption. Choose a new bounded algorithmic hypothesis from the evidence, not a broad rewrite or more task-size sweeps.
 5. **Gate any promotion.** Start with 3 randomized/interleaved fresh-process parent/candidate/DUCC q1/q8 pairs; use 15+ paired runs for consequential acceptance. Cover full/reduced f32 T720 scalar synthesis, adjacent f32 scalar analysis and spin-1 analysis/synthesis, and protected f64 GL T1023 spin-1 synthesis q1/q8. Re-run focused tests for low-mode and sectoral analytic fields, coefficient recovery, adjoints, poles, tiny/subnormal/large/nonfinite cases, SIMD tails, finite/repeated/poisoned workspace, capacity, transactional decline and output reset. Do not weaken tolerances. Bitwise equality is preferred but not mandatory if the mathematical order changes; independently substantiate any numerical difference. Protect existing f64 speed wins and report any control regression.
 6. **After measurable algorithmic improvement**, extend the same investigation to the f32 analysis/spin-1 families, then return to smaller f64 gaps. If transition coverage is small or a protected gate fails, preserve negative evidence and change algorithmic hypothesis instead of performing repeated minor tuning. Update only the single live per-cell ledger at `reports/DUCC_PARITY_M6.md` with exact revision, q1/q8 and PASS/GAP/INCONCLUSIVE/UNMEASURED. Profiling, one cell, or docs alone never completes M6.
+
+**Execution checkpoint — 2026-10-28:** exact-source transition census showed
+that fewer than 1% of scaled fallback slots can use ordinary f32 scale factors;
+the suffix-handoff screen was rejected after underflow-safe route limits and
+negligible q8 Legendre-stage benefit. The f32-I/O/f64-internal run remains a
+diagnostic only. The accepted native-f32 fallback packet vectorization
+reduced per-component scaled-helper calls 30.7% full / 37.0% reduced and
+whole-call q1 Ir 10.51% / 10.99%, with 15-pair whole-transform gains in all
+four q1/q8 cells. It did not add a fused recurrence suffix or establish
+parity. **Next:** remeasure current-source f32 scalar analysis and spin-1
+analysis/synthesis versus pinned DUCC, then use their largest measured
+Legendre-stage gap to choose the next bounded algorithmic change. Preserve the
+full evidence and limitations in the current ledger.
 
 **Operations:** Continue directly on `dev`. No main merge or force-push; reconcile remote before push and commit verified meaningful code slices. Preserve exact experiment evidence before cleaning only owned inactive scratch; do not erase parked worktrees. Main Luna Max is the only production writer; **no Sol or Sol reviewer under any circumstances**. On quota/blocker, checkpoint tested code, concise NEXT and evidence, then stop.
 

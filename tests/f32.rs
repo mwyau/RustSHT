@@ -611,6 +611,111 @@ fn f32_t127_sectoral_synthesis_remains_finite_and_matches_analytic_values() {
 }
 
 #[test]
+fn f32_t720_scalar_synthesis_matches_analytic_modes_adjoint_and_workspace_reset() {
+    let lmax = 720;
+    let ntheta = lmax + 1;
+    let phi0 = 0.23;
+    for mmax in [180, 720] {
+        let nphi = if mmax == 180 { 378 } else { 1458 };
+        let plan = ShtPlan::<f32>::new(
+            GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0).unwrap(),
+            HarmonicSpec::scalar(lmax, mmax).unwrap(),
+        )
+        .unwrap();
+        let spec = plan.harmonics();
+        let mut alm = vec![Complex32::new(0.0, 0.0); spec.nalm()];
+        for (degree, order, value) in [
+            (0, 0, Complex32::new(0.7, 0.0)),
+            (1, 0, Complex32::new(-0.2, 0.0)),
+            (2, 0, Complex32::new(0.1, 0.0)),
+            (1, 1, Complex32::new(0.4, 0.3)),
+            (2, 1, Complex32::new(-0.2, 0.15)),
+            (2, 2, Complex32::new(0.1, -0.6)),
+        ] {
+            alm[spec.index(degree, order).unwrap()] = value;
+        }
+
+        let mut expected = Vec::with_capacity(ntheta * nphi);
+        let pi = std::f64::consts::PI;
+        for &theta in plan.grid().theta() {
+            let (sin_theta, cos_theta) = theta.sin_cos();
+            let y00 = 1.0 / (4.0 * pi).sqrt();
+            let y10 = (3.0 / (4.0 * pi)).sqrt() * cos_theta;
+            let y20 = (5.0 / (16.0 * pi)).sqrt() * (3.0 * cos_theta * cos_theta - 1.0);
+            let y11 = -(3.0 / (8.0 * pi)).sqrt() * sin_theta;
+            let y21 = -(15.0 / (8.0 * pi)).sqrt() * sin_theta * cos_theta;
+            let y22 = (15.0 / (32.0 * pi)).sqrt() * sin_theta * sin_theta;
+            for longitude in 0..nphi {
+                let phi = phi0 + std::f64::consts::TAU * longitude as f64 / nphi as f64;
+                let c11 = alm[spec.index(1, 1).unwrap()];
+                let c21 = alm[spec.index(2, 1).unwrap()];
+                let c22 = alm[spec.index(2, 2).unwrap()];
+                let mode11 = 2.0
+                    * (f64::from(c11.re) * y11 * phi.cos() - f64::from(c11.im) * y11 * phi.sin());
+                let mode21 = 2.0
+                    * (f64::from(c21.re) * y21 * phi.cos() - f64::from(c21.im) * y21 * phi.sin());
+                let mode22 = 2.0
+                    * (f64::from(c22.re) * y22 * (2.0 * phi).cos()
+                        - f64::from(c22.im) * y22 * (2.0 * phi).sin());
+                expected.push(
+                    (f64::from(alm[spec.index(0, 0).unwrap()].re) * y00
+                        + f64::from(alm[spec.index(1, 0).unwrap()].re) * y10
+                        + f64::from(alm[spec.index(2, 0).unwrap()].re) * y20
+                        + mode11
+                        + mode21
+                        + mode22) as f32,
+                );
+            }
+        }
+
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
+        let mut map = vec![f32::NAN; ntheta * nphi];
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+        let mut diff_sq = 0.0_f64;
+        let mut expected_sq = 0.0_f64;
+        let mut max_abs = 0.0_f64;
+        for (&actual, &reference) in map.iter().zip(&expected) {
+            let difference = f64::from(actual) - f64::from(reference);
+            diff_sq += difference * difference;
+            expected_sq += f64::from(reference) * f64::from(reference);
+            max_abs = max_abs.max(difference.abs());
+        }
+        let relative_l2 = (diff_sq / expected_sq).sqrt();
+        eprintln!("T720_ANALYTIC mmax={mmax} relative_l2={relative_l2:.9e} max_abs={max_abs:.9e}");
+        assert!(
+            relative_l2 < 2.0e-5,
+            "T720 mmax={mmax}: analytic relative L2={relative_l2:.3e}"
+        );
+        assert!(max_abs < 2.0e-5, "T720 mmax={mmax}: max abs={max_abs:.3e}");
+
+        let first = map.clone();
+        map.fill(f32::NAN);
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+        assert!(map.iter().all(|value| value.is_finite()));
+        assert!(
+            map.iter()
+                .zip(first)
+                .all(|(actual, previous)| actual.to_bits() == previous.to_bits()),
+            "T720 mmax={mmax}: repeated synthesis did not reset workspace/output"
+        );
+
+        let input = arbitrary_map(ntheta, nphi, 0.41);
+        let mut adjoint = vec![Complex32::new(0.0, 0.0); spec.nalm()];
+        plan.adjoint_synthesis_into(&input, &mut adjoint, &mut workspace)
+            .unwrap();
+        let left = map_inner(&map, &input);
+        let right = harmonic_inner(spec, &alm, &adjoint);
+        let adjoint_relative_error =
+            (left - right).abs() / left.abs().max(right.abs()).max(1.0e-12);
+        eprintln!(
+            "T720_ADJOINT mmax={mmax} left={left:.9e} right={right:.9e} relative_error={adjoint_relative_error:.9e}"
+        );
+        assert_close(left, right, 2.0e-4);
+    }
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "The literals retain printed DUCC 0.41.0 float32 analysis references."
