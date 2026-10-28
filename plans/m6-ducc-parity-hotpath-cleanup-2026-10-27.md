@@ -23,7 +23,7 @@ errors, per-worker counts and AVX2 disassembly are in the
 [single M6 ledger](../reports/DUCC_PARITY_M6.md) and
 [candidate evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
 
-Current-source q1 profiling at `0f821099` measured full GL T720 f32 spin-1
+An earlier q1 profile at source `0f821099` measured full GL T720 f32 spin-1
 synthesis at 22.433B Rust versus 520.827M pinned-DUCC Ir (43.07x), and spin-1
 analysis at 15.752B versus 430.972M (36.55x). The synthesis visitor makes two
 indirect `scaled_basis_value_f32` calls for each of 161.324M useful
@@ -42,8 +42,21 @@ success counts or candidate-specific instruction attribution. Exact paired
 timings and the retained patch are in the [single M6 ledger](../reports/DUCC_PARITY_M6.md)
 and [screen report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
 
-The exact current native-f32 GL T720 scalar-synthesis source is `092fe72f`
-(latest dev head `023ba6f3` adds documentation only). Matched parent/DUCC
+A current-parent test-only route census later showed that this one-gate
+candidate left the f32 paired-scalar route inactive: its scalar scratch was
+empty and the f32 prepared-block hook returned `Ok(false)`. An isolated
+adapter using the shared prepared f32 kernel did improve q1, but slowed q8
+(candidate/parent `1.018` full and `1.417` reduced); reject the unconditional
+route. Its counts and three-pair screen are in the
+[single M6 ledger](../reports/DUCC_PARITY_M6.md).
+
+The current-source full-mmax f32 spin-1 analysis baseline at `e094d4f4` is
+36.932x/35.138x DUCC q1/q8 after the accepted scalar-analysis leaf; all cells
+remain GAP. Exact paired timings and numerical checks are in the
+[single M6 ledger](../reports/DUCC_PARITY_M6.md).
+
+The exact scalar-synthesis source is `092fe72f` (latest dev head `e094d4f4`
+adds evidence only). Matched parent/DUCC
 ratios are 32.08×/36.94× full and 22.77×/42.43× reduced q1/q8. A 30-sample
 test-only phase profile puts 99.68–99.82% of the call in Legendre recurrence
 and spectral accumulation.

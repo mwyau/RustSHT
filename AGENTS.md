@@ -26,7 +26,7 @@ leaves the f64 analysis override unchanged. The protected f64 GL T1023
 spin-1 synthesis controls show no meaningful regression; see the candidate
 report and exact measurements in the [single M6 ledger](reports/DUCC_PARITY_M6.md).
 
-The exact-current-source q1 profile at `0f821099` measured GL T720 f32
+An earlier q1 profile at source `0f821099` measured GL T720 f32
 spin-1 synthesis at 22.433B Rust versus 520.827M DUCC Ir (43.07x); spin-1
 analysis measured 15.752B versus 430.972M Ir (36.55x). Rust synthesis used
 the general plus/minus callback over full rings, with two indirect scaled
@@ -34,6 +34,11 @@ basis calls for each of 161.324M useful degree-latitude terms. DUCC's T720
 high-Lmax route converts to two scalar channels, pairs the rings, and executes
 the AVX2 double-FMA scalar kernel. The eight-lane f32 recurrence is already
 shared, but f32 does not enter the prepared paired-spin route.
+
+The current-source GL T720 f32 spin-1 analysis baseline at `e094d4f4` is
+36.932x/35.138x DUCC q1/q8, including the accepted scalar-analysis SIMD leaf;
+all cells remain GAP. See the single M6 ledger for matched timings and
+correctness results.
 
 The narrow f32 spin-1 dispatch into the existing separate-channel paired-scalar
 path was screened at exact parent `092fe72f` and was not promoted. The initial
@@ -44,8 +49,15 @@ success counts or candidate-specific instruction attribution. See the exact
 paired timings and retained patch in the [single M6 ledger](reports/DUCC_PARITY_M6.md)
 and [screen report](reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
 
+A current-parent test-only route census showed that this earlier one-gate
+screen left the f32 paired-scalar route inactive: its scalar scratch was empty
+and the f32 prepared-block hook returned false. A bounded adapter then
+executed the shared f32 kernel and improved q1, but slowed reduced q8 by 41.7%
+and full q8 by 1.8% in the three-pair screen. Reject the unconditional
+adapter; details are in the single M6 ledger.
+
 The latest exact scalar-synthesis source is `092fe72f` (latest dev head
-`023ba6f3` adds documentation only). Matched parent/DUCC ratios are
+`e094d4f4` adds evidence only). Matched parent/DUCC ratios are
 32.08×/36.94× full and 22.77×/42.43× reduced q1/q8; a 30-sample test-only
 phase profile puts 99.68–99.82% of the call in Legendre recurrence and
 spectral accumulation.

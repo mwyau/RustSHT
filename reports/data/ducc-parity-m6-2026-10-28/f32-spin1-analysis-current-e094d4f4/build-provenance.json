@@ -1,0 +1,19 @@
+{
+  "source": "e094d4f4b3a2d42f9ef7e94779ffc4afc078b198",
+  "production_source_parent": "8472668b463e2fe06eae189800b83cf8d5620804",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "runtime_simd": "Pulp V3 / AVX2 + FMA / 8 f32 lanes",
+  "ducc_compiler": "GCC 15.2.0",
+  "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math -ffp-contract=fast",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "binary_sha256": {
+    "rust": "2b246691b086ecac6a37dec27cbdd71a743c82fe6ac0fd9148676314abf9c645",
+    "ducc": "a367f69d718005e5f59c747ba9f01b4e30cc31ca490e0de42f973694067bfdfc"
+  },
+  "paired_screen_runner_sha256": "6e17145577298a555151d2ae3a1918c0651d48d0f756a18feede11dbe044c833",
+  "process_pairs": 3,
+  "case": "GL T720 full mmax=720 spin-1 analysis, ntheta=721, nphi=1458, phi0=0.23",
+  "method": "Three interleaved fresh-process pairs per q; same deterministic inputs; warm reusable plan/workspace; 35 ms warm-call batch target; whole-transform timing."
+}

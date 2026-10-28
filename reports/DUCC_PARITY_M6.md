@@ -128,6 +128,23 @@ f32 spin-1 analysis baseline at current source (the earlier Callgrind was at
 `0f821099`, before the accepted scalar-analysis leaf), then resume the planned
 reflected-ring f32 scalar-synthesis hypothesis. M6 remains open.
 
+## 2026-10-28 current-source f32 GL T720 spin-1 analysis baseline at `e094d4f4`
+
+At the current pushed source, three interleaved warm Rust/pinned-DUCC pairs
+measured full-mmax spin-1 analysis at **36.932× q1** and **35.138× q8**. Rust
+medians were `1071.505 ms` and `140.883 ms`; DUCC medians were `29.013 ms` and
+`4.014 ms`. All workers passed finite-output, repeat-consistency and
+workspace-reset checks. Relative-L2 error against DUCC was `1.569e-5`, with
+maximum absolute error `2.231e-7`. This current-source screen includes the
+accepted f32 scalar-analysis accumulation leaf; all cells remain **GAP**.
+Exact paired results and build provenance are in the
+[spin-1 analysis baseline report](data/ducc-parity-m6-2026-10-28/f32-spin1-analysis-current-e094d4f4/README.md).
+
+This is elapsed whole-transform timing, not Callgrind or a stage-only
+attribution. After this refreshed native-f32 family baseline, return to the
+measured reflected-ring scalar-synthesis work hypothesis; do not switch to
+the smaller f64 gaps. M6 remains open.
+
 ## 2026-10-28 exact-current native-f32 scalar-synthesis baseline — all cells GAP
 
 Production scalar-synthesis source is `092fe72f322bd482dac73b020785b096772bc901`;
