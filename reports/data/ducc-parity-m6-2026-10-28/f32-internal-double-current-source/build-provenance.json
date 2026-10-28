@@ -1,0 +1,34 @@
+{
+  "experiment": "GL T720 native-f32 versus f32-I/O/f64-internal scalar synthesis diagnostic",
+  "repository_head": "096216465ea35ab747ce977d5b65cf27dc4681f1",
+  "production_transform_source": "54b166f2c0698f1c70e88f8679d12fa4376704fe",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "host": "AMD Ryzen 9 5950X, 16 physical cores / 32 logical CPUs",
+  "affinity": {
+    "q1": "CPU 3",
+    "q8": "CPUs 8-15, one physical core each"
+  },
+  "compiler": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "llvm": "23.1.1",
+    "gcc": "15.2.0"
+  },
+  "builds": {
+    "rust_timed": "cargo build --locked --release --features parallel; RUSTFLAGS=-C target-cpu=x86-64-v3",
+    "rust_f64_paired": "same plus temporary feature m6-force-paired; M6_FORCE_PAIRED_F64=1 at runtime",
+    "rust_profile": "same plus isolated m6-legendre-profile feature; used only for one-call stage/counter data",
+    "ducc_timed": "pinned DUCC 0.42.0, -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; adapter -fno-fast-math",
+    "ducc_profile": "separate instrumented clone/binary used only for first-call alm2leg timing and work counts"
+  },
+  "binaries_sha256": {
+    "rust_f32_timed": "753bf55b8cfb4da360e96bc5624c64cc6fe638baca729902a702b32a832873ce",
+    "rust_f64_default_timed": "cea077c05378389ae0d49da167877b2784f7d8d9e50cb377d3c035ee6c5aae9b",
+    "rust_f64_forced_paired_timed": "17e7ee875791196bfef327371b0ac7d66d4adfc955dc30f248b54616a08f8174",
+    "ducc_f32_timed": "c1e4cf936e467b7831e157fbb8fe3633745c1fa3a791cc864cdf5f1a9500cc06",
+    "rust_f32_profile": "eb67a46466d2a2c651808db439142273b5c5f88a308cef6ed721a00f9a21fdbf",
+    "rust_f64_profile": "6ca6e95ffdd0ba00db63fddb5ab1b185f7b4af51b2d0558782fb16ff99568f21",
+    "ducc_f32_profile": "429833a9a1f7e758609744db9cea4a6ccddf0d63ecc2caa62b8c614905a03425"
+  },
+  "method": "Three fresh-process interleaved pairs per cell. Warm reusable-plan/workspace batch medians; process startup and setup excluded. Randomized participant order per pair. f32 fixtures are from scripts/benchmark_ducc_f32_native.py; f64 inputs are exact f32-to-f64 promotions outside timing; f64 outputs are cast to f32 outside timing before comparison with DUCC.",
+  "limitation": "Diagnostic only. No production source or numerical policy changed. Timed native-f32 ratios remain GAP; no acceptance claim from three pairs."
+}

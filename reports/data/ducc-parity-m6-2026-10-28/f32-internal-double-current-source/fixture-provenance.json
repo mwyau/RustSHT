@@ -1,0 +1,44 @@
+{
+  "full": {
+    "case": {
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "spin": 0
+    },
+    "f32_sha256": {
+      "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "f64_promoted_sha256": {
+      "map0": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+      "map1": "4d886dc3fd85bb04c0d5050d5a32f0345d1bc3dbd042aeeee6f7aeeed7b70e59",
+      "alm0": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831",
+      "alm1": "27f0a6fc6153fafa815de422c176cac78cd1e5237a6337edf8e7989a678925f4"
+    }
+  },
+  "reduced": {
+    "case": {
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "spin": 0
+    },
+    "f32_sha256": {
+      "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    },
+    "f64_promoted_sha256": {
+      "map0": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+      "map1": "606ed1e152d2957b98af1fb34eb8b02bfbbeeb64ddb9f7896eca8450d9237a26",
+      "alm0": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21",
+      "alm1": "8075e7c1cc82c8b8feeacb1249e0fc500f0dbff08ba17e90511220791c74b83f"
+    }
+  }
+}

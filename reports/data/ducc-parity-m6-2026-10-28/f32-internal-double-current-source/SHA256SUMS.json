@@ -1,0 +1,17 @@
+{
+  "README.md": "af970e2a8b98fb85fb66d843f57a1b94790fa8ac75ff111e210a10b35b228e88",
+  "assembly-summary.json": "1918f25acf3d3ba1c1c5e57d8a68b2f152e2fc4b79a67f0cfc260b602e2afe2d",
+  "build-provenance.json": "da274b4e2a49e7924868b0afa9dfd202a06ae758b268e3883b454cbf62dfa78f",
+  "ducc-f32_detail_sht_inner_loop_alm2map_kernel.asm.gz": "080e5f108ade4e7f10cf946c2564d5fdce464978df77400d53687bc1bd92af67",
+  "ducc-f32_detail_sht_inner_loop_calc_alm2map.asm.gz": "bde8284083d55359c03d320cd81721087d504fbb930e9091ac750b73d116c983",
+  "ducc-f32_detail_sht_inner_loop_iter_to_ieee.asm.gz": "79704e5c6bc758aa271cfd88dc2b4fd1579af8dcd68e6197d081025523c75357",
+  "first-call-profile-summary.json": "909931e82f2f9589424e91a0240d86b5aede5761a728edac46b981ebdbc03ff0",
+  "fixture-provenance.json": "7a0ea32c95cd09b4744c798063cf2617043848d7c6703d85f5c2e2f2ab0f9634",
+  "instrumentation.patch.gz": "ac2514773cde6a5f95945df775ddfa3ebd198a1337b10ccd73424ecf69aecef3",
+  "rust-f32_FusedSynthesisBlock_f32_true_false.asm.gz": "ebc3633cca2f97a057e9a86c270cf90004ec0d970a5e2c13b99776ccefd68c5a",
+  "rust-f32_multiply_component_scaled_with_normal_factor_f32.asm.gz": "9b90c0dc043a271f0b8359ee6f5d39a06c2ac17c14dbb79b10ec968105b6cecf",
+  "rust-f64-internal_synthesize_ordinary_suffix_vector_pulp_x86_v3_V3.asm.gz": "866b1a7810023bc2b62008891b667a417a67caffa5beabf9f231d845761d7d8f",
+  "rust-f64-paired_FusedSynthesisBlock_f64_false_true.asm.gz": "c80f3a63a136141a720f067a5455e4b3daffe288628bdbc2699cc984b1c45970",
+  "whole-transform-pairs.json": "8c38f5f2c5bfc0d625e1c05691187f364531f346c3cb8da66af9f62f92b1efb8",
+  "whole-transform-summary.json": "25bc526a4a8435171dca88a1f32551bbd20570d817c621425840481fc387605f"
+}

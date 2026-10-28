@@ -1,0 +1,454 @@
+{
+  "full-q1-rust-f32": {
+    "stage_wall_ms": 690.307473,
+    "stage_calls": 1,
+    "worker_count": 1,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 690168253,
+        "calls": 1,
+        "degree_contributions": 161199393,
+        "pair_contributions": 80696637,
+        "recurrence_updates": 80309372
+      }
+    ],
+    "worker_nanos_sum": 690168253,
+    "worker_nanos_max": 690168253,
+    "worker_nanos_min_nonzero": 690168253,
+    "worker_calls": 1,
+    "worker_contributions": 161199393,
+    "worker_pair_contributions": 80696637,
+    "worker_recurrence_updates": 80309372
+  },
+  "full-q1-rust-f64-default": {
+    "stage_wall_ms": 12.656826,
+    "stage_calls": 1,
+    "worker_count": 0,
+    "workers": [],
+    "worker_nanos_sum": 0,
+    "worker_nanos_max": 0,
+    "worker_nanos_min_nonzero": 0,
+    "worker_calls": 0,
+    "worker_contributions": 0,
+    "worker_pair_contributions": 0,
+    "worker_recurrence_updates": 0
+  },
+  "full-q1-rust-f64-paired": {
+    "stage_wall_ms": 85.12693,
+    "stage_calls": 1,
+    "worker_count": 1,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 84733964,
+        "calls": 1,
+        "degree_contributions": 161199393,
+        "pair_contributions": 80696637,
+        "recurrence_updates": 80309372
+      }
+    ],
+    "worker_nanos_sum": 84733964,
+    "worker_nanos_max": 84733964,
+    "worker_nanos_min_nonzero": 84733964,
+    "worker_calls": 1,
+    "worker_contributions": 161199393,
+    "worker_pair_contributions": 80696637,
+    "worker_recurrence_updates": 80309372
+  },
+  "full-q1-ducc-f32": {
+    "stage_ms": 15.811304,
+    "calc_calls": 1139,
+    "requested_contributions": 80729837,
+    "skipped": 0,
+    "scaled_prefix": 0,
+    "fused_suffix": 80729837,
+    "state_updates": 40316358,
+    "padded_updates": 40558328
+  },
+  "full-q8-rust-f32": {
+    "stage_wall_ms": 106.92083,
+    "stage_calls": 1,
+    "worker_count": 8,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 58404149,
+        "calls": 1,
+        "degree_contributions": 3124134,
+        "pair_contributions": 1563286,
+        "recurrence_updates": 1558426
+      },
+      {
+        "worker": 1,
+        "nanos": 97825706,
+        "calls": 5,
+        "degree_contributions": 39720486,
+        "pair_contributions": 19885278,
+        "recurrence_updates": 19785264
+      },
+      {
+        "worker": 2,
+        "nanos": 82643349,
+        "calls": 4,
+        "degree_contributions": 26125624,
+        "pair_contributions": 13079248,
+        "recurrence_updates": 13013578
+      },
+      {
+        "worker": 3,
+        "nanos": 59079464,
+        "calls": 2,
+        "degree_contributions": 14404636,
+        "pair_contributions": 7210876,
+        "recurrence_updates": 7176693
+      },
+      {
+        "worker": 4,
+        "nanos": 106711367,
+        "calls": 2,
+        "degree_contributions": 11403522,
+        "pair_contributions": 5706950,
+        "recurrence_updates": 5686226
+      },
+      {
+        "worker": 5,
+        "nanos": 77788636,
+        "calls": 2,
+        "degree_contributions": 15355332,
+        "pair_contributions": 7686077,
+        "recurrence_updates": 7652464
+      },
+      {
+        "worker": 6,
+        "nanos": 99749308,
+        "calls": 4,
+        "degree_contributions": 28899931,
+        "pair_contributions": 14468082,
+        "recurrence_updates": 14395705
+      },
+      {
+        "worker": 7,
+        "nanos": 60761435,
+        "calls": 3,
+        "degree_contributions": 22165728,
+        "pair_contributions": 11096840,
+        "recurrence_updates": 11041016
+      }
+    ],
+    "worker_nanos_sum": 642963414,
+    "worker_nanos_max": 106711367,
+    "worker_nanos_min_nonzero": 58404149,
+    "worker_calls": 23,
+    "worker_contributions": 161199393,
+    "worker_pair_contributions": 80696637,
+    "worker_recurrence_updates": 80309372
+  },
+  "full-q8-rust-f64-default": {
+    "stage_wall_ms": 2.136843,
+    "stage_calls": 1,
+    "worker_count": 0,
+    "workers": [],
+    "worker_nanos_sum": 0,
+    "worker_nanos_max": 0,
+    "worker_nanos_min_nonzero": 0,
+    "worker_calls": 0,
+    "worker_contributions": 0,
+    "worker_pair_contributions": 0,
+    "worker_recurrence_updates": 0
+  },
+  "full-q8-rust-f64-paired": {
+    "stage_wall_ms": 35.30762,
+    "stage_calls": 1,
+    "worker_count": 7,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 34836467,
+        "calls": 5,
+        "degree_contributions": 28707610,
+        "pair_contributions": 14367525,
+        "recurrence_updates": 14312724
+      },
+      {
+        "worker": 1,
+        "nanos": 9543996,
+        "calls": 3,
+        "degree_contributions": 24986976,
+        "pair_contributions": 12510816,
+        "recurrence_updates": 12441600
+      },
+      {
+        "worker": 2,
+        "nanos": 10236152,
+        "calls": 3,
+        "degree_contributions": 24692722,
+        "pair_contributions": 12362249,
+        "recurrence_updates": 12298762
+      },
+      {
+        "worker": 3,
+        "nanos": 15864264,
+        "calls": 3,
+        "degree_contributions": 21984532,
+        "pair_contributions": 11003854,
+        "recurrence_updates": 10957549
+      },
+      {
+        "worker": 4,
+        "nanos": 9972639,
+        "calls": 3,
+        "degree_contributions": 24855482,
+        "pair_contributions": 12444215,
+        "recurrence_updates": 12378392
+      },
+      {
+        "worker": 5,
+        "nanos": 9615269,
+        "calls": 3,
+        "degree_contributions": 24986976,
+        "pair_contributions": 12510816,
+        "recurrence_updates": 12441600
+      },
+      {
+        "worker": 6,
+        "nanos": 18571653,
+        "calls": 3,
+        "degree_contributions": 10985095,
+        "pair_contributions": 5497162,
+        "recurrence_updates": 5478745
+      }
+    ],
+    "worker_nanos_sum": 108640440,
+    "worker_nanos_max": 34836467,
+    "worker_nanos_min_nonzero": 9543996,
+    "worker_calls": 23,
+    "worker_contributions": 161199393,
+    "worker_pair_contributions": 80696637,
+    "worker_recurrence_updates": 80309372
+  },
+  "full-q8-ducc-f32": {
+    "stage_ms": 2.5477819999999998,
+    "calc_calls": 1139,
+    "requested_contributions": 80729837,
+    "skipped": 0,
+    "scaled_prefix": 0,
+    "fused_suffix": 80729837,
+    "state_updates": 40316358,
+    "padded_updates": 40558328
+  },
+  "reduced-q1-rust-f32": {
+    "stage_wall_ms": 208.101027,
+    "stage_calls": 1,
+    "worker_count": 1,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 208062544,
+        "calls": 1,
+        "degree_contributions": 81210177,
+        "pair_contributions": 40637387,
+        "recurrence_updates": 40508890
+      }
+    ],
+    "worker_nanos_sum": 208062544,
+    "worker_nanos_max": 208062544,
+    "worker_nanos_min_nonzero": 208062544,
+    "worker_calls": 1,
+    "worker_contributions": 81210177,
+    "worker_pair_contributions": 40637387,
+    "worker_recurrence_updates": 40508890
+  },
+  "reduced-q1-rust-f64-default": {
+    "stage_wall_ms": 5.721717,
+    "stage_calls": 1,
+    "worker_count": 0,
+    "workers": [],
+    "worker_nanos_sum": 0,
+    "worker_nanos_max": 0,
+    "worker_nanos_min_nonzero": 0,
+    "worker_calls": 0,
+    "worker_contributions": 0,
+    "worker_pair_contributions": 0,
+    "worker_recurrence_updates": 0
+  },
+  "reduced-q1-rust-f64-paired": {
+    "stage_wall_ms": 29.510612,
+    "stage_calls": 1,
+    "worker_count": 1,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 29444148,
+        "calls": 1,
+        "degree_contributions": 81210177,
+        "pair_contributions": 40637387,
+        "recurrence_updates": 40508890
+      }
+    ],
+    "worker_nanos_sum": 29444148,
+    "worker_nanos_max": 29444148,
+    "worker_nanos_min_nonzero": 29444148,
+    "worker_calls": 1,
+    "worker_contributions": 81210177,
+    "worker_pair_contributions": 40637387,
+    "worker_recurrence_updates": 40508890
+  },
+  "reduced-q1-ducc-f32": {
+    "stage_ms": 7.832329,
+    "calc_calls": 362,
+    "requested_contributions": 40662194,
+    "skipped": 0,
+    "scaled_prefix": 0,
+    "fused_suffix": 40662194,
+    "state_updates": 20314925,
+    "padded_updates": 20449548
+  },
+  "reduced-q8-rust-f32": {
+    "stage_wall_ms": 55.520488,
+    "stage_calls": 1,
+    "worker_count": 8,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 55459383,
+        "calls": 1,
+        "degree_contributions": 3086775,
+        "pair_contributions": 1544590,
+        "recurrence_updates": 1539800
+      },
+      {
+        "worker": 1,
+        "nanos": 22896134,
+        "calls": 4,
+        "degree_contributions": 14619008,
+        "pair_contributions": 7315328,
+        "recurrence_updates": 7292160
+      },
+      {
+        "worker": 2,
+        "nanos": 9931641,
+        "calls": 4,
+        "degree_contributions": 14619008,
+        "pair_contributions": 7315328,
+        "recurrence_updates": 7292160
+      },
+      {
+        "worker": 3,
+        "nanos": 44269754,
+        "calls": 3,
+        "degree_contributions": 10904964,
+        "pair_contributions": 5456822,
+        "recurrence_updates": 5439554
+      },
+      {
+        "worker": 4,
+        "nanos": 9750803,
+        "calls": 4,
+        "degree_contributions": 14619008,
+        "pair_contributions": 7315328,
+        "recurrence_updates": 7292160
+      },
+      {
+        "worker": 5,
+        "nanos": 9044301,
+        "calls": 3,
+        "degree_contributions": 10964256,
+        "pair_contributions": 5486496,
+        "recurrence_updates": 5469120
+      },
+      {
+        "worker": 6,
+        "nanos": 35295056,
+        "calls": 2,
+        "degree_contributions": 5087654,
+        "pair_contributions": 2545831,
+        "recurrence_updates": 2537856
+      },
+      {
+        "worker": 7,
+        "nanos": 15448515,
+        "calls": 2,
+        "degree_contributions": 7309504,
+        "pair_contributions": 3657664,
+        "recurrence_updates": 3646080
+      }
+    ],
+    "worker_nanos_sum": 202095587,
+    "worker_nanos_max": 55459383,
+    "worker_nanos_min_nonzero": 9044301,
+    "worker_calls": 23,
+    "worker_contributions": 81210177,
+    "worker_pair_contributions": 40637387,
+    "worker_recurrence_updates": 40508890
+  },
+  "reduced-q8-rust-f64-default": {
+    "stage_wall_ms": 1.050998,
+    "stage_calls": 1,
+    "worker_count": 0,
+    "workers": [],
+    "worker_nanos_sum": 0,
+    "worker_nanos_max": 0,
+    "worker_nanos_min_nonzero": 0,
+    "worker_calls": 0,
+    "worker_contributions": 0,
+    "worker_pair_contributions": 0,
+    "worker_recurrence_updates": 0
+  },
+  "reduced-q8-rust-f64-paired": {
+    "stage_wall_ms": 15.678485,
+    "stage_calls": 1,
+    "worker_count": 4,
+    "workers": [
+      {
+        "worker": 0,
+        "nanos": 15607703,
+        "calls": 3,
+        "degree_contributions": 21360535,
+        "pair_contributions": 10688750,
+        "recurrence_updates": 10655000
+      },
+      {
+        "worker": 1,
+        "nanos": 6128458,
+        "calls": 3,
+        "degree_contributions": 21928512,
+        "pair_contributions": 10972992,
+        "recurrence_updates": 10938240
+      },
+      {
+        "worker": 2,
+        "nanos": 5799721,
+        "calls": 3,
+        "degree_contributions": 21928512,
+        "pair_contributions": 10972992,
+        "recurrence_updates": 10938240
+      },
+      {
+        "worker": 3,
+        "nanos": 12576214,
+        "calls": 3,
+        "degree_contributions": 15992618,
+        "pair_contributions": 8002653,
+        "recurrence_updates": 7977410
+      }
+    ],
+    "worker_nanos_sum": 40112096,
+    "worker_nanos_max": 15607703,
+    "worker_nanos_min_nonzero": 5799721,
+    "worker_calls": 12,
+    "worker_contributions": 81210177,
+    "worker_pair_contributions": 40637387,
+    "worker_recurrence_updates": 40508890
+  },
+  "reduced-q8-ducc-f32": {
+    "stage_ms": 1.375487,
+    "calc_calls": 362,
+    "requested_contributions": 40662194,
+    "skipped": 0,
+    "scaled_prefix": 0,
+    "fused_suffix": 40662194,
+    "state_updates": 20314925,
+    "padded_updates": 20449548
+  }
+}

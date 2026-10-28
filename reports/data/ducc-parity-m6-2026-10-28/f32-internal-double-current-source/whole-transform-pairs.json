@@ -1,0 +1,698 @@
+[
+  {
+    "cell": "full",
+    "mmax": 720,
+    "threads": 1,
+    "pair": 1,
+    "order": [
+      "rust-f64-paired",
+      "rust-f64-default",
+      "rust-f32",
+      "ducc-f32"
+    ],
+    "runtimes_ms": {
+      "rust-f64-paired": 91.413343,
+      "rust-f64-default": 15.352063000000001,
+      "rust-f32": 723.092887,
+      "ducc-f32": 19.6484305
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-paired": 4.652450128268515,
+      "rust-f64-default": 0.7813378783613277,
+      "rust-f32": 36.80155964620177,
+      "ducc-f32": 1.0
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-paired": {
+        "output_values": 1051218,
+        "relative_l2": 3.8935512864631005e-08,
+        "absolute_l2": 9.181231330270922e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 1051218,
+        "relative_l2": 3.893552943660887e-08,
+        "absolute_l2": 9.181235238044346e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.00017234307359793145,
+        "absolute_l2": 0.04063954756095933,
+        "max_absolute": 0.0009644031524658203,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "full",
+    "mmax": 720,
+    "threads": 1,
+    "pair": 2,
+    "order": [
+      "rust-f32",
+      "rust-f64-default",
+      "rust-f64-paired",
+      "ducc-f32"
+    ],
+    "runtimes_ms": {
+      "rust-f32": 717.2068879999999,
+      "rust-f64-default": 15.214182000000001,
+      "rust-f64-paired": 91.41555650000001,
+      "ducc-f32": 19.532668
+    },
+    "ratios_vs_ducc": {
+      "rust-f32": 36.7183268563209,
+      "rust-f64-default": 0.7789095683190848,
+      "rust-f64-paired": 4.680136707386825,
+      "ducc-f32": 1.0
+    },
+    "accuracy_vs_ducc": {
+      "rust-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.00017234307359793145,
+        "absolute_l2": 0.04063954756095933,
+        "max_absolute": 0.0009644031524658203,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 1051218,
+        "relative_l2": 3.893552943660887e-08,
+        "absolute_l2": 9.181235238044346e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 1051218,
+        "relative_l2": 3.8935512864631005e-08,
+        "absolute_l2": 9.181231330270922e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "full",
+    "mmax": 720,
+    "threads": 1,
+    "pair": 3,
+    "order": [
+      "rust-f64-default",
+      "ducc-f32",
+      "rust-f32",
+      "rust-f64-paired"
+    ],
+    "runtimes_ms": {
+      "rust-f64-default": 15.2291525,
+      "ducc-f32": 19.54840025,
+      "rust-f32": 723.770487,
+      "rust-f64-paired": 91.519687
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-default": 0.7790485310939957,
+      "ducc-f32": 1.0,
+      "rust-f32": 37.02453795419909,
+      "rust-f64-paired": 4.681697009963769
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-default": {
+        "output_values": 1051218,
+        "relative_l2": 3.893552943660887e-08,
+        "absolute_l2": 9.181235238044346e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.00017234307359793145,
+        "absolute_l2": 0.04063954756095933,
+        "max_absolute": 0.0009644031524658203,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 1051218,
+        "relative_l2": 3.8935512864631005e-08,
+        "absolute_l2": 9.181231330270922e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "full",
+    "mmax": 720,
+    "threads": 8,
+    "pair": 1,
+    "order": [
+      "rust-f64-paired",
+      "rust-f32",
+      "ducc-f32",
+      "rust-f64-default"
+    ],
+    "runtimes_ms": {
+      "rust-f64-paired": 33.8693165,
+      "rust-f32": 110.183293,
+      "ducc-f32": 2.7558537000000003,
+      "rust-f64-default": 2.2143698
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-paired": 12.289954470369741,
+      "rust-f32": 39.981546553069926,
+      "ducc-f32": 1.0,
+      "rust-f64-default": 0.8035150051688157
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-paired": {
+        "output_values": 1051218,
+        "relative_l2": 3.8935512864631005e-08,
+        "absolute_l2": 9.181231330270922e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.00017234308517401277,
+        "absolute_l2": 0.04063955029066989,
+        "max_absolute": 0.0009644031524658203,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 1051218,
+        "relative_l2": 3.893552943660887e-08,
+        "absolute_l2": 9.181235238044346e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "full",
+    "mmax": 720,
+    "threads": 8,
+    "pair": 2,
+    "order": [
+      "rust-f64-paired",
+      "ducc-f32",
+      "rust-f32",
+      "rust-f64-default"
+    ],
+    "runtimes_ms": {
+      "rust-f64-paired": 33.007000000000005,
+      "ducc-f32": 2.7524729,
+      "rust-f32": 112.604523,
+      "rust-f64-default": 2.116034125
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-paired": 11.991762026067542,
+      "ducc-f32": 1.0,
+      "rust-f32": 40.910311233218685,
+      "rust-f64-default": 0.7687756435313133
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-paired": {
+        "output_values": 1051218,
+        "relative_l2": 3.8935512864631005e-08,
+        "absolute_l2": 9.181231330270922e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.00017234308517401277,
+        "absolute_l2": 0.04063955029066989,
+        "max_absolute": 0.0009644031524658203,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 1051218,
+        "relative_l2": 3.893552943660887e-08,
+        "absolute_l2": 9.181235238044346e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "full",
+    "mmax": 720,
+    "threads": 8,
+    "pair": 3,
+    "order": [
+      "ducc-f32",
+      "rust-f32",
+      "rust-f64-paired",
+      "rust-f64-default"
+    ],
+    "runtimes_ms": {
+      "ducc-f32": 2.7808295,
+      "rust-f32": 112.587642,
+      "rust-f64-paired": 34.0940685,
+      "rust-f64-default": 2.1288437274999996
+    },
+    "ratios_vs_ducc": {
+      "ducc-f32": 1.0,
+      "rust-f32": 40.48707121382307,
+      "rust-f64-paired": 12.260395144686145,
+      "rust-f64-default": 0.7655427013774126
+    },
+    "accuracy_vs_ducc": {
+      "ducc-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 1051218,
+        "relative_l2": 0.00017234308517401277,
+        "absolute_l2": 0.04063955029066989,
+        "max_absolute": 0.0009644031524658203,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 1051218,
+        "relative_l2": 3.8935512864631005e-08,
+        "absolute_l2": 9.181231330270922e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 1051218,
+        "relative_l2": 3.893552943660887e-08,
+        "absolute_l2": 9.181235238044346e-06,
+        "max_absolute": 1.1920928955078125e-07,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "reduced",
+    "mmax": 180,
+    "threads": 1,
+    "pair": 1,
+    "order": [
+      "rust-f64-default",
+      "rust-f32",
+      "ducc-f32",
+      "rust-f64-paired"
+    ],
+    "runtimes_ms": {
+      "rust-f64-default": 6.42465475,
+      "rust-f32": 221.32366000000002,
+      "ducc-f32": 8.536343666666667,
+      "rust-f64-paired": 31.970846
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-default": 0.7526237228577684,
+      "rust-f32": 25.927219971735752,
+      "ducc-f32": 1.0,
+      "rust-f64-paired": 3.7452622865738263
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-default": {
+        "output_values": 272538,
+        "relative_l2": 3.878762528687453e-08,
+        "absolute_l2": 3.4801116406383687e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.00027254614364372677,
+        "absolute_l2": 0.02445344359420203,
+        "max_absolute": 0.0015478730201721191,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 272538,
+        "relative_l2": 3.8787625290705624e-08,
+        "absolute_l2": 3.4801116409821036e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "reduced",
+    "mmax": 180,
+    "threads": 1,
+    "pair": 2,
+    "order": [
+      "rust-f64-default",
+      "rust-f32",
+      "rust-f64-paired",
+      "ducc-f32"
+    ],
+    "runtimes_ms": {
+      "rust-f64-default": 6.41752775,
+      "rust-f32": 217.700846,
+      "rust-f64-paired": 31.960386999999997,
+      "ducc-f32": 8.605643666666667
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-default": 0.7457347757562662,
+      "rust-f32": 25.297450653604024,
+      "rust-f64-paired": 3.7138868674979215,
+      "ducc-f32": 1.0
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-default": {
+        "output_values": 272538,
+        "relative_l2": 3.878762528687453e-08,
+        "absolute_l2": 3.4801116406383687e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.00027254614364372677,
+        "absolute_l2": 0.02445344359420203,
+        "max_absolute": 0.0015478730201721191,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 272538,
+        "relative_l2": 3.8787625290705624e-08,
+        "absolute_l2": 3.4801116409821036e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "reduced",
+    "mmax": 180,
+    "threads": 1,
+    "pair": 3,
+    "order": [
+      "ducc-f32",
+      "rust-f64-paired",
+      "rust-f32",
+      "rust-f64-default"
+    ],
+    "runtimes_ms": {
+      "ducc-f32": 8.615700833333333,
+      "rust-f64-paired": 31.938245000000002,
+      "rust-f32": 218.628096,
+      "rust-f64-default": 6.3779489
+    },
+    "ratios_vs_ducc": {
+      "ducc-f32": 1.0,
+      "rust-f64-paired": 3.7069816626447785,
+      "rust-f32": 25.375544047925683,
+      "rust-f64-default": 0.7402704693882032
+    },
+    "accuracy_vs_ducc": {
+      "ducc-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 272538,
+        "relative_l2": 3.8787625290705624e-08,
+        "absolute_l2": 3.4801116409821036e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.00027254614364372677,
+        "absolute_l2": 0.02445344359420203,
+        "max_absolute": 0.0015478730201721191,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 272538,
+        "relative_l2": 3.878762528687453e-08,
+        "absolute_l2": 3.4801116406383687e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "reduced",
+    "mmax": 180,
+    "threads": 8,
+    "pair": 1,
+    "order": [
+      "rust-f64-default",
+      "ducc-f32",
+      "rust-f64-paired",
+      "rust-f32"
+    ],
+    "runtimes_ms": {
+      "rust-f64-default": 0.9541751485,
+      "ducc-f32": 1.25357590625,
+      "rust-f64-paired": 16.85083625,
+      "rust-f32": 58.009534
+    },
+    "ratios_vs_ducc": {
+      "rust-f64-default": 0.7611626418015323,
+      "ducc-f32": 1.0,
+      "rust-f64-paired": 13.442214520864798,
+      "rust-f32": 46.27524644561188
+    },
+    "accuracy_vs_ducc": {
+      "rust-f64-default": {
+        "output_values": 272538,
+        "relative_l2": 3.878762528687453e-08,
+        "absolute_l2": 3.4801116406383687e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "ducc-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 272538,
+        "relative_l2": 3.8787625290705624e-08,
+        "absolute_l2": 3.4801116409821036e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0002725461503537522,
+        "absolute_l2": 0.024453444196240372,
+        "max_absolute": 0.0015478730201721191,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "reduced",
+    "mmax": 180,
+    "threads": 8,
+    "pair": 2,
+    "order": [
+      "ducc-f32",
+      "rust-f64-paired",
+      "rust-f32",
+      "rust-f64-default"
+    ],
+    "runtimes_ms": {
+      "ducc-f32": 1.259955476190476,
+      "rust-f64-paired": 16.63804475,
+      "rust-f32": 57.918822999999996,
+      "rust-f64-default": 0.9368858635
+    },
+    "ratios_vs_ducc": {
+      "ducc-f32": 1.0,
+      "rust-f64-paired": 13.205264046556445,
+      "rust-f32": 45.96894421628277,
+      "rust-f64-default": 0.7435864847642955
+    },
+    "accuracy_vs_ducc": {
+      "ducc-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 272538,
+        "relative_l2": 3.8787625290705624e-08,
+        "absolute_l2": 3.4801116409821036e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0002725461503537522,
+        "absolute_l2": 0.024453444196240372,
+        "max_absolute": 0.0015478730201721191,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 272538,
+        "relative_l2": 3.878762528687453e-08,
+        "absolute_l2": 3.4801116406383687e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      }
+    }
+  },
+  {
+    "cell": "reduced",
+    "mmax": 180,
+    "threads": 8,
+    "pair": 3,
+    "order": [
+      "ducc-f32",
+      "rust-f64-default",
+      "rust-f32",
+      "rust-f64-paired"
+    ],
+    "runtimes_ms": {
+      "ducc-f32": 1.2541758333333335,
+      "rust-f64-default": 0.946545111,
+      "rust-f32": 57.770089,
+      "rust-f64-paired": 17.285418749999998
+    },
+    "ratios_vs_ducc": {
+      "ducc-f32": 1.0,
+      "rust-f64-default": 0.7547148380975288,
+      "rust-f32": 46.06219276802627,
+      "rust-f64-paired": 13.782292953340537
+    },
+    "accuracy_vs_ducc": {
+      "ducc-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0,
+        "absolute_l2": 0.0,
+        "max_absolute": 0.0,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-default": {
+        "output_values": 272538,
+        "relative_l2": 3.878762528687453e-08,
+        "absolute_l2": 3.4801116406383687e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f32": {
+        "output_values": 272538,
+        "relative_l2": 0.0002725461503537522,
+        "absolute_l2": 0.024453444196240372,
+        "max_absolute": 0.0015478730201721191,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "rust-f64-paired": {
+        "output_values": 272538,
+        "relative_l2": 3.8787625290705624e-08,
+        "absolute_l2": 3.4801116409821036e-06,
+        "max_absolute": 5.960464477539063e-08,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      }
+    }
+  }
+]
