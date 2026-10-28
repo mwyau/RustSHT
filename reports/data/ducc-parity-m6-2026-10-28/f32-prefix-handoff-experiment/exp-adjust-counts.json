@@ -1,0 +1,30 @@
+{
+  "q1-full": {
+    "orders_with_unscaleable_packets": 2195,
+    "unscaleable_packets": 446244,
+    "exact_lanes": 364030,
+    "safe_lanes": 294829,
+    "safe_packets": 2
+  },
+  "q1-reduced": {
+    "orders_with_unscaleable_packets": 586,
+    "unscaleable_packets": 160361,
+    "exact_lanes": 212049,
+    "safe_lanes": 193683,
+    "safe_packets": 0
+  },
+  "q8-full": {
+    "orders_with_unscaleable_packets": 4313,
+    "unscaleable_packets": 624474,
+    "exact_lanes": 462717,
+    "safe_lanes": 375835,
+    "safe_packets": 2
+  },
+  "q8-reduced": {
+    "orders_with_unscaleable_packets": 1008,
+    "unscaleable_packets": 199189,
+    "exact_lanes": 238999,
+    "safe_lanes": 216979,
+    "safe_packets": 0
+  }
+}

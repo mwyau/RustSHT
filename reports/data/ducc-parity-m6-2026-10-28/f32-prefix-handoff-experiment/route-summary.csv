@@ -1,0 +1,5 @@
+q,shape,order_group_records,executed_contributions,executed_recurrence_updates,scalar_fallback_lanes,scalar_fallback_nonzero_exponent_lanes,packet_leaf_unscaleable_packets,packet_leaf_attempts,packet_leaf_applied,common_fused_success_contributions,fused_kernel_suffix_contributions,packet_leaf_unsafe_contribution
+q1,full,3755,46405916,46170202,3762428,3751507,446244,5350404,5330436,31189360,37627296,19968
+q1,reduced,1070,19769180,19705306,1371196,1360183,160361,2306695,2299748,13876272,16700424,6947
+q8,full,7210,45163996,44934746,5235412,5224491,624474,5016934,4991073,30873008,33888504,25861
+q8,reduced,1947,18740156,18679322,1693972,1682959,199189,2139239,2130773,13796080,15074272,8466

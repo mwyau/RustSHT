@@ -1,0 +1,8 @@
+backend,threads,Ir,source,share_pct
+Rust parent,1,7389581004,whole worker,100
+DUCC 0.42.0,1,260814851,whole worker,100
+Rust parent,8,6928340193,whole worker,100
+DUCC 0.42.0,8,260387345,whole worker,100
+Rust parent,1,4422000000,multiply_complex_scaled_f32 inclusive; rounded from annotation,59.84
+Rust parent,1,1657262001,"multiply_component_scaled_with_normal_factor_f32 inclusive, re",22.43
+Rust parent,1,1657351058,"multiply_component_scaled_with_normal_factor_f32 inclusive, im",22.43

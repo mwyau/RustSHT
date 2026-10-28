@@ -1,0 +1,11 @@
+{
+  "README.md": "b9aea13e5a81083588c417e47930def53e376d19ad579040cf733f47f3282b86",
+  "assembly-summary.md": "a2be69f204752d0a0f4470457521d79c1e84001e950b39535d1a3ae43d04de3f",
+  "callgrind-summary.csv": "5564c439cd46e4628e92e9dd55a2274df30f596996907f1e7bde9ef3c94e2b40",
+  "correctness-errors.csv": "c2972bcedd4cff629b1fae28a74bed533647a9012764778e43a2ab8351cf5bed",
+  "exp-adjust-counts.json": "45ec50fa0c4859197f02080aa0ff8e625c6ad09a18ca42086c34ba0f90851d51",
+  "paired-summary.json": "0d0eb36bcecc481937b4164d24ff37eb854803ed8c3b41b6da87c0cae3622da2",
+  "provenance.json": "f74d3e2d08328dba97e05d8946ef699b6bc7e58053d121fdf1d2db64bd7e3382",
+  "route-summary.csv": "fb82cf5c109c307e03d8d683fb4d0cc653da2c4d6d0de00e01219b3d2bf984b0",
+  "stage-screen.csv": "d3419cfa90d17d51825003a9dcc69f5af519a26897d66f626199a23d17828351"
+}

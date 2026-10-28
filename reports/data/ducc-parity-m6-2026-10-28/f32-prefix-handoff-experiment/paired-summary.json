@@ -1,0 +1,154 @@
+[
+  {
+    "case": "M180-q1",
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_ms": 213.804288,
+        "candidate_ms": 215.818617,
+        "ducc_ms": 8.6564245,
+        "candidate_parent": 1.0094213685742355,
+        "parent_ducc": 24.698914430548086,
+        "candidate_ducc": 24.931612006781783
+      },
+      {
+        "pair": 2,
+        "parent_ms": 216.950826,
+        "candidate_ms": 215.47908900000002,
+        "ducc_ms": 8.481095,
+        "candidate_parent": 0.993216264592604,
+        "parent_ducc": 25.58052067569105,
+        "candidate_ducc": 25.406989191843746
+      },
+      {
+        "pair": 3,
+        "parent_ms": 217.879022,
+        "candidate_ms": 215.121986,
+        "ducc_ms": 8.5496585,
+        "candidate_parent": 0.987346023611213,
+        "parent_ducc": 25.483944417195143,
+        "candidate_ducc": 25.161471186246796
+      }
+    ],
+    "median_parent_ms": 216.950826,
+    "median_candidate_ms": 215.47908900000002,
+    "median_ducc_ms": 8.5496585,
+    "median_candidate_parent": 0.993216264592604,
+    "median_parent_ducc": 25.483944417195143,
+    "median_candidate_ducc": 25.161471186246796
+  },
+  {
+    "case": "M180-q8",
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_ms": 61.50511850000001,
+        "candidate_ms": 60.887783,
+        "ducc_ms": 1.315034375,
+        "candidate_parent": 0.9899628597577613,
+        "parent_ducc": 46.77073061303056,
+        "candidate_ducc": 46.301286230635604
+      },
+      {
+        "pair": 2,
+        "parent_ms": 58.010957499999996,
+        "candidate_ms": 60.5482295,
+        "ducc_ms": 1.289287125,
+        "candidate_parent": 1.04373780591365,
+        "parent_ducc": 44.99459924413656,
+        "candidate_ducc": 46.96256429303907
+      },
+      {
+        "pair": 3,
+        "parent_ms": 59.7639645,
+        "candidate_ms": 59.886559999999996,
+        "ducc_ms": 1.27147625,
+        "candidate_parent": 1.0020513281042458,
+        "parent_ducc": 47.00360270197732,
+        "candidate_ducc": 47.10002251320069
+      }
+    ],
+    "median_parent_ms": 59.7639645,
+    "median_candidate_ms": 60.5482295,
+    "median_ducc_ms": 1.289287125,
+    "median_candidate_parent": 1.0020513281042458,
+    "median_parent_ducc": 46.77073061303056,
+    "median_candidate_ducc": 46.96256429303907
+  },
+  {
+    "case": "M720-q1",
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_ms": 730.6239909999999,
+        "candidate_ms": 716.542821,
+        "ducc_ms": 19.975882,
+        "candidate_parent": 0.9807272000735602,
+        "parent_ducc": 36.575305711157085,
+        "candidate_ducc": 35.87039716193758
+      },
+      {
+        "pair": 2,
+        "parent_ms": 728.5435679999999,
+        "candidate_ms": 710.397352,
+        "ducc_ms": 20.054660499999997,
+        "candidate_parent": 0.9750924765559114,
+        "parent_ducc": 36.32789335925183,
+        "candidate_ducc": 35.423055503731916
+      },
+      {
+        "pair": 3,
+        "parent_ms": 727.148003,
+        "candidate_ms": 726.223265,
+        "ducc_ms": 19.933087,
+        "candidate_parent": 0.9987282671530626,
+        "parent_ducc": 36.47944761390948,
+        "candidate_ducc": 36.43305550214073
+      }
+    ],
+    "median_parent_ms": 728.5435679999999,
+    "median_candidate_ms": 716.542821,
+    "median_ducc_ms": 19.975882,
+    "median_candidate_parent": 0.9807272000735602,
+    "median_parent_ducc": 36.47944761390948,
+    "median_candidate_ducc": 35.87039716193758
+  },
+  {
+    "case": "M720-q8",
+    "pairs": [
+      {
+        "pair": 1,
+        "parent_ms": 117.73643,
+        "candidate_ms": 113.33170600000001,
+        "ducc_ms": 2.794613,
+        "candidate_parent": 0.9625882660107837,
+        "parent_ducc": 42.12977968684751,
+        "candidate_ducc": 40.55363157617889
+      },
+      {
+        "pair": 2,
+        "parent_ms": 115.792293,
+        "candidate_ms": 117.5661,
+        "ducc_ms": 2.8211252499999997,
+        "candidate_parent": 1.0153188692791497,
+        "parent_ducc": 41.04471894681033,
+        "candidate_ducc": 41.67347763095595
+      },
+      {
+        "pair": 3,
+        "parent_ms": 118.971653,
+        "candidate_ms": 111.422976,
+        "ducc_ms": 2.833386,
+        "candidate_parent": 0.9365506252148988,
+        "parent_ducc": 41.98921467106847,
+        "candidate_ducc": 39.32502525247178
+      }
+    ],
+    "median_parent_ms": 117.73643,
+    "median_candidate_ms": 113.33170600000001,
+    "median_ducc_ms": 2.8211252499999997,
+    "median_candidate_parent": 0.9625882660107837,
+    "median_parent_ducc": 41.98921467106847,
+    "median_candidate_ducc": 40.55363157617889
+  }
+]
