@@ -1,0 +1,46 @@
+{
+  "README.md": {
+    "sha256": "e29cb17f960b3fdd98568867f666ad1848f22241401765ffa8a6217a23c2462d",
+    "bytes": 6537
+  },
+  "fallback-route-summary.csv": {
+    "sha256": "b336cdeaae0e2eebb7206d52752e4480eb04a6004b1117002eefa3b79f716b5f",
+    "bytes": 894
+  },
+  "fixture-provenance.json": {
+    "sha256": "7a0ea32c95cd09b4744c798063cf2617043848d7c6703d85f5c2e2f2ab0f9634",
+    "bytes": 1703
+  },
+  "instrumentation.patch.gz": {
+    "sha256": "c90a9fd6b42cef4def7f753159ddeaeee8e8964c609ef276a24c0d02d2c0b5f7",
+    "bytes": 6976
+  },
+  "provenance.json": {
+    "sha256": "2cea16500a7e686a02c6e05faa490163466fa0d64fbb79d3fab32772e463e086",
+    "bytes": 2922
+  },
+  "q8-worker-profile.csv": {
+    "sha256": "b5642c95b90fbaf790be6fa67914f2d3f6546c42fb06be204e370c49fabc1751",
+    "bytes": 884
+  },
+  "raw/full-q1-final-fallback-census.log.gz": {
+    "sha256": "4fbb747f6b9e51531fa453f817d66f4b0f6815079800b375d08940f5425600cd",
+    "bytes": 397
+  },
+  "raw/full-q8-final-fallback-census.log.gz": {
+    "sha256": "6cd7b725b6d88302ad9e557da94628dbc194c2d4fe22efd39b61fa23e43672e4",
+    "bytes": 611
+  },
+  "raw/reduced-q1-final-fallback-census.log.gz": {
+    "sha256": "9f019e4df9c384d7d1b2b2fb832edc8a0a074c9a0a93bf93cf5bf36ca635fa48",
+    "bytes": 390
+  },
+  "raw/reduced-q8-final-fallback-census.log.gz": {
+    "sha256": "69f20d1a076fcab90cfe425ef9bb7a2954c10460aad7b2412349ae120535ba59",
+    "bytes": 584
+  },
+  "raw-census.json": {
+    "sha256": "a21b1a42652616806d3924a7dd3e437dd6a7bf585c6286b72eaaaea40e9bd43c",
+    "bytes": 9694
+  }
+}

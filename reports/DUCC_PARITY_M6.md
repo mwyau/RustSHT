@@ -1,8 +1,38 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 exact scalar-fallback route census
+
+At repository HEAD `bb53b86dc4ed47a9fb2cc01fd06b4e5d8626a7f6` (transform
+source unchanged from `54b166f2c0698f1c70e88f8679d12fa4376704fe`), a feature-only
+instrumented census isolated the existing full-vector scalar fallback for GL
+T720 f32 synthesis. Full/reduced q1/q8 contained 3.730M/5.203M and
+1.338M/1.661M paired fallback slots. Every fallback packet had normal
+coefficient, basis and product lanes; all but two full-mmax packets scaled at
+least one result below the normal exponent range, and no packet overflowed.
+Only 24.9K/35.1K full and 13.0K/16.1K reduced q1/q8 fallback slots passed a
+deferred-scale segment safety screen (0.67–0.97%); a normal exponent-adjust
+packet covered only two full-mmax packets and none reduced. Do not implement
+either low-coverage route. The broad stable-exponent count includes work
+already accepted by the existing packet SIMD path, so it is not a measure of
+removable fallback work. q8 still ran all eight workers across 23 jobs, with
+paired work distributed 4.69–20.40M slots per worker full and 1.54–10.97M
+reduced; the instrumented worker times are not scheduling measurements. See
+the [census and counter definitions](data/ducc-parity-m6-2026-10-28/f32-fallback-transition-census/README.md).
+
+Current whole-transform Rust/DUCC ratios remain `36.591×`/`40.257×` full and
+`25.432×`/`45.090×` reduced q1/q8. The matched q1 profile still attributes
+2.726B self Ir to the scaled-component helper; these are instruction counts,
+not elapsed time. The safe native-f32 suffix opportunity is blocked on the
+random T720 workload by underflow-range scaled contributions. The next measured
+large algorithmic difference is reflected-ring recurrence work (about twice
+DUCC's updates), but the earlier reflected f32 candidate regressed protected
+reduced scalar-analysis q8 and must not be repeated unchanged. Continue with
+current-source native-f32 scalar/spin cells, then seek a synthesis-only route
+that retains reflected work reduction and preserves analysis performance.
+
 ## 2026-10-28 f32-I/O / f64-internal diagnostic
 
-At repository source `096216465ea35ab747ce977d5b65cf27dc4681f1` (transform implementation unchanged from `54b166f2c0698f1c70e88f8679d12fa4376704fe`), a three-pair native-ISA screen reproduced the earlier f32 baseline within run variation. Whole-transform Rust/DUCC ratios were `36.802×`/`40.487×` full and `25.376×`/`46.062×` reduced q1/q8. The f32-I/O/f64-internal default route measured `0.779×`/`0.769×` full and `0.746×`/`0.755×` reduced; forcing the same f64 build through the all-ring paired route cost `4.680×`/`12.260×` full and `3.714×`/`13.442×` reduced. This is diagnostic only; no production precision policy changed. The f64 reflected order-major route's Legendre stage was `0.731–0.839×` DUCC, while the f32 paired stage was `26.6–43.7×`. Instrumented work counts show Rust's all-ring paired route performs about twice DUCC's recurrence updates; DUCC forms both reflected outputs from northern-ring work. Reduced q8 also showed `6.13×` instrumented worker-time skew, but q1 and the near-DUCC f64 reflected route show scheduling is not the primary gap. The next bounded hypothesis is a native-f32 reflected-ring accumulator that reuses the shared recurrence and checked f32 leaf, with existing scaled fallback for unsafe lanes. It must retain the accepted schedule and pass the full numerical/protected-cell gate before promotion. See the [complete diagnostic report](data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md).
+At repository source `096216465ea35ab747ce977d5b65cf27dc4681f1` (transform implementation unchanged from `54b166f2c0698f1c70e88f8679d12fa4376704fe`), a three-pair native-ISA screen reproduced the earlier f32 baseline within run variation. Whole-transform Rust/DUCC ratios were `36.802×`/`40.487×` full and `25.376×`/`46.062×` reduced q1/q8. The f32-I/O/f64-internal default route measured `0.779×`/`0.769×` full and `0.746×`/`0.755×` reduced; forcing the same f64 build through the all-ring paired route cost `4.680×`/`12.260×` full and `3.714×`/`13.442×` reduced. This is diagnostic only; no production precision policy changed. The f64 reflected order-major route's Legendre stage was `0.731–0.839×` DUCC, while the f32 paired stage was `26.6–43.7×`. Instrumented work counts show Rust's all-ring paired route performs about twice DUCC's recurrence updates; DUCC forms both reflected outputs from northern-ring work. Reduced q8 also showed `6.13×` instrumented worker-time skew, but q1 and the near-DUCC f64 reflected route show scheduling is not the primary gap. The reflected-ring f32 candidate was later screened and rejected because reduced scalar-analysis q8 regressed 4.3%; its implementation must not be repeated unchanged. The exact scalar-fallback census above shows normal-range packet handoff covers little of the true scaled fallback. See the [complete diagnostic report](data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md) and [route census](data/ducc-parity-m6-2026-10-28/f32-fallback-transition-census/README.md).
 
 **Generic native-f32/f64 fused scalar-synthesis milestone: complete.** The shared typed recurrence and fused accumulation path, exponent-zero fast paths, native-f32 SIMD leaves, and accepted 32-ring schedule are implemented and validated. M6 performance parity remains open. Current `dev` production scalar-synthesis code matches measured source `54b166f2c0698f1c70e88f8679d12fa4376704fe`; subsequent commits in this ledger do not alter transform code. Against pinned DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, the latest matched GL T720 f32 scalar-synthesis ratios at that source are `36.591×`/`40.257×` full q1/q8 and `25.432×`/`45.090×` reduced q1/q8. All four cells remain **GAP**. The exact-zero suffix candidate was rejected: a real T720 state at `m=40` carried exponents `-320..-160`; applying them turned nonzero recurrence values into zero while scalar scaled multiplication still produced nonzero suffix terms. A guarded route recount completed no nonzero-exponent suffix packets. It covered `37.62M`/`33.88M` full and `16.70M`/`15.07M` reduced paired-lane accumulation slots at q1/q8, but does not establish a timed improvement. The earlier `88.77M`/`86.18M` and `37.95M`/`35.89M` counts included these unsafe transitions and must not be read as safe suffix work. See the [real-state replay and corrected route report](data/ducc-parity-m6-2026-10-28/f32-exact-zero-operand-suffix-rejection/README.md). This file remains the single current M6 performance ledger; dated experiment details and source-specific historical rows below are evidence, not additional current ledgers.
 
@@ -35,12 +65,14 @@ reset integration test passed. The candidate was rejected before completing
 the broad exceptional-input matrix. Exact timings, outputs, hashes, patch and
 validation limits are in the [candidate report](data/ducc-parity-m6-2026-10-28/f32-reflected-ring-candidate/README.md).
 
-Next, measure the current-source f32-I/O/f64-internal diagnostic and use it
-with the real-state replay to separate exponent-range/codegen cost from
-repeated scaled-contribution work and DUCC's reflected-ring work reduction. A
-future handoff must reduce repeated scaled-contribution work itself; admitting
-more output slots to the fused kernel alone did not remove the dominant helper
-instructions.
+The current-source f32-I/O/f64-internal diagnostic and real-state replay have
+since been completed. The fallback census confirms that almost all counted
+scalar packets reach the subnormal/zero exponent region; neither deferred
+aggregation nor normal exponent adjustment has useful route coverage. After
+this documented blocker, measure the other current-source native-f32
+scalar/spin cells, then pursue reflected-ring synthesis with a design that
+does not reproduce the protected scalar-analysis regression. Do not restore
+the rejected candidate unchanged.
 
 **Earlier rejected screens:** the global task-grain candidate hurt protected f64 T1023 spin-1 synthesis; the transactional normal-suffix handoff hurt protected f64 T720 spin-1 analysis; the mixed-lane and per-vector retries did not deliver a stable whole-transform gain. Their source-specific evidence remains linked in the historical sections below.
 

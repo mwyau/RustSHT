@@ -1,0 +1,5 @@
+cell,pair_accumulator_slots,recurrence_updates,scalar_fallback_pair_slots,fallback_vector_terms,fallback_vector_slots_with_unscaleable_exponent,safe_deferred_fallback_pair_slots,safe_deferred_fallback_segments,safe_deferred_fraction_of_fallback,exponent_adjust_safe_packets,exponent_adjust_safe_pair_slots,normal_input_packets_with_adjusted_underflow,normal_input_packets_with_adjusted_overflow,fallback_segments_gt8_terms,all_route_stable_exponent_slots
+full-q1,80696637,80309372,3729696,466212,3569952,24896,944,0.006675074858647997,2,16,466210,0,15223,46373184
+full-q8,80696637,80309372,5202680,650335,4995792,35056,1302,0.006738065766105161,2,16,650333,0,20397,45131264
+reduced-q1,40637387,40508890,1338464,167308,1282888,12968,372,0.009688717813852296,0,0,167308,0,5369,19736448
+reduced-q8,40637387,40508890,1661240,207655,1593512,16120,467,0.009703594905010715,0,0,207655,0,6305,18707424
