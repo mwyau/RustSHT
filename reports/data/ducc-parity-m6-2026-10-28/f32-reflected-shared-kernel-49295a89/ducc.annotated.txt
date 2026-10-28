@@ -1,0 +1,26 @@
+--------------------------------------------------------------------------------
+Profile data file '<experiment-scratch>/callgrind-v2/ducc.out' (creator: callgrind-3.26.0)
+--------------------------------------------------------------------------------
+I1 cache:
+D1 cache:
+LL cache:
+Timerange: Basic block 0 - 23745587
+Trigger: Program termination
+Profiled target:  <experiment-scratch>/ducc-callgrind-build/ducc_f32_full_transform_parity --worker synthesis 0 GL 1 721 1458 720 720 0.23 <experiment-scratch>/runs-15-v2/fixtures/GL-T720-M720-synthesis-q1/map0.f32 <experiment-scratch>/runs-15-v2/fixtures/GL-T720-M720-synthesis-q1/map1.f32 <experiment-scratch>/runs-15-v2/fixtures/GL-T720-M720-synthesis-q1/alm0.f32 <experiment-scratch>/runs-15-v2/fixtures/GL-T720-M720-synthesis-q1/alm1.f32 <experiment-scratch>/callgrind-v2/ducc-out0.f32 <experiment-scratch>/callgrind-v2/ducc-out1.f32 25 (PID <local>, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       2.0
+Include dirs:
+User annotated:
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir
+--------------------------------------------------------------------------------
+260,801,044 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                    file:function
+--------------------------------------------------------------------------------
+150,669,396 (57.77%)  ???:ducc0::detail_sht::detail_sht_inner_loop::alm2map_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double> const*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0] [<experiment-scratch>/ducc-callgrind-build/ducc_f32_full_transform_parity]

@@ -1,0 +1,572 @@
+{
+  "parent_sha": "49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_version": "0.42.0",
+  "rust_flags": "-C target-cpu=x86-64-v3",
+  "ducc_flags": "-O3 -ffast-math -march=x86-64-v3 -ffp-contract=fast",
+  "method": "one first-call Legendre stage, separate profile binaries, not timed production",
+  "rows": [
+    {
+      "case_id": "GL-T720-M720-synthesis-q1",
+      "backend": "parent",
+      "affinity": "0",
+      "rust_workers": [
+        {
+          "worker": "0",
+          "nanos": "634279161",
+          "calls": "1",
+          "degree_contributions": "161199393",
+          "pair_contributions": "80696637",
+          "recurrence_updates": "80309372"
+        }
+      ],
+      "rust_stage": [
+        {
+          "nanos": "634435818",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [],
+      "ducc_stage": []
+    },
+    {
+      "case_id": "GL-T720-M720-synthesis-q1",
+      "backend": "candidate",
+      "affinity": "0",
+      "rust_workers": [],
+      "rust_stage": [
+        {
+          "nanos": "353949767",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [
+        {
+          "blocks": "3384",
+          "normal_candidates": "1221",
+          "fused_successes": "1221",
+          "fused_declines": "0",
+          "fallbacks": "2163",
+          "fused_degree_terms": "26984045",
+          "fallback_degree_terms": "53745792"
+        }
+      ],
+      "ducc_stage": []
+    },
+    {
+      "case_id": "GL-T720-M720-synthesis-q1",
+      "backend": "ducc",
+      "affinity": "0",
+      "rust_workers": [],
+      "rust_stage": [],
+      "reflected_route": [],
+      "ducc_stage": [
+        {
+          "stage_ms": "16.043824999999998",
+          "calls": "1139",
+          "requested_contributions": "80729837",
+          "skipped_prefix_contributions": "0",
+          "scaled_prefix_contributions": "0",
+          "fused_suffix_contributions": "80729837",
+          "prefix_state_updates": "0",
+          "scaled_state_updates": "0",
+          "suffix_state_updates": "40316358",
+          "padded_prefix_state_updates": "0",
+          "padded_scaled_state_updates": "0",
+          "padded_suffix_state_updates": "40558328"
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q1",
+      "backend": "parent",
+      "affinity": "0",
+      "rust_workers": [
+        {
+          "worker": "0",
+          "nanos": "190275809",
+          "calls": "1",
+          "degree_contributions": "81210177",
+          "pair_contributions": "40637387",
+          "recurrence_updates": "40508890"
+        }
+      ],
+      "rust_stage": [
+        {
+          "nanos": "190319752",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [],
+      "ducc_stage": []
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q1",
+      "backend": "candidate",
+      "affinity": "0",
+      "rust_workers": [],
+      "rust_stage": [
+        {
+          "nanos": "117810292",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [
+        {
+          "blocks": "1086",
+          "normal_candidates": "527",
+          "fused_successes": "527",
+          "fused_declines": "0",
+          "fallbacks": "559",
+          "fused_degree_terms": "18682226",
+          "fallback_degree_terms": "21979968"
+        }
+      ],
+      "ducc_stage": []
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q1",
+      "backend": "ducc",
+      "affinity": "0",
+      "rust_workers": [],
+      "rust_stage": [],
+      "reflected_route": [],
+      "ducc_stage": [
+        {
+          "stage_ms": "7.6327149999999993",
+          "calls": "362",
+          "requested_contributions": "40662194",
+          "skipped_prefix_contributions": "0",
+          "scaled_prefix_contributions": "0",
+          "fused_suffix_contributions": "40662194",
+          "prefix_state_updates": "0",
+          "scaled_state_updates": "0",
+          "suffix_state_updates": "20314925",
+          "padded_prefix_state_updates": "0",
+          "padded_scaled_state_updates": "0",
+          "padded_suffix_state_updates": "20449548"
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M720-synthesis-q8",
+      "backend": "parent",
+      "affinity": "0,2,4,6,8,10,12,14",
+      "rust_workers": [
+        {
+          "worker": "0",
+          "nanos": "75597237",
+          "calls": "1",
+          "degree_contributions": "3124134",
+          "pair_contributions": "1563286",
+          "recurrence_updates": "1558426"
+        },
+        {
+          "worker": "1",
+          "nanos": "87829995",
+          "calls": "7",
+          "degree_contributions": "48585606",
+          "pair_contributions": "24324655",
+          "recurrence_updates": "24197432"
+        },
+        {
+          "worker": "2",
+          "nanos": "66394639",
+          "calls": "4",
+          "degree_contributions": "33021714",
+          "pair_contributions": "16532521",
+          "recurrence_updates": "16445962"
+        },
+        {
+          "worker": "3",
+          "nanos": "72798576",
+          "calls": "2",
+          "degree_contributions": "14733510",
+          "pair_contributions": "7374462",
+          "recurrence_updates": "7343664"
+        },
+        {
+          "worker": "4",
+          "nanos": "99519733",
+          "calls": "2",
+          "degree_contributions": "8818771",
+          "pair_contributions": "4413040",
+          "recurrence_updates": "4398454"
+        },
+        {
+          "worker": "5",
+          "nanos": "65151255",
+          "calls": "2",
+          "degree_contributions": "15355332",
+          "pair_contributions": "7686077",
+          "recurrence_updates": "7652464"
+        },
+        {
+          "worker": "6",
+          "nanos": "81347899",
+          "calls": "4",
+          "degree_contributions": "31484682",
+          "pair_contributions": "15761992",
+          "recurrence_updates": "15683477"
+        },
+        {
+          "worker": "7",
+          "nanos": "78675327",
+          "calls": "1",
+          "degree_contributions": "6075644",
+          "pair_contributions": "3040604",
+          "recurrence_updates": "3029493"
+        }
+      ],
+      "rust_stage": [
+        {
+          "nanos": "99722206",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [],
+      "ducc_stage": []
+    },
+    {
+      "case_id": "GL-T720-M720-synthesis-q8",
+      "backend": "candidate",
+      "affinity": "0,2,4,6,8,10,12,14",
+      "rust_workers": [
+        {
+          "worker": "0",
+          "nanos": "46740979",
+          "calls": "23",
+          "degree_contributions": "10551204",
+          "pair_contributions": "5281833",
+          "recurrence_updates": "5256931"
+        },
+        {
+          "worker": "1",
+          "nanos": "46593910",
+          "calls": "22",
+          "degree_contributions": "10358355",
+          "pair_contributions": "5185224",
+          "recurrence_updates": "5161050"
+        },
+        {
+          "worker": "2",
+          "nanos": "46617572",
+          "calls": "23",
+          "degree_contributions": "10160330",
+          "pair_contributions": "5086303",
+          "recurrence_updates": "5061765"
+        },
+        {
+          "worker": "3",
+          "nanos": "46530523",
+          "calls": "22",
+          "degree_contributions": "9664918",
+          "pair_contributions": "4838372",
+          "recurrence_updates": "4814736"
+        },
+        {
+          "worker": "4",
+          "nanos": "46586856",
+          "calls": "22",
+          "degree_contributions": "10277486",
+          "pair_contributions": "5144775",
+          "recurrence_updates": "5120663"
+        },
+        {
+          "worker": "5",
+          "nanos": "46542732",
+          "calls": "23",
+          "degree_contributions": "9797458",
+          "pair_contributions": "4904801",
+          "recurrence_updates": "4880529"
+        },
+        {
+          "worker": "6",
+          "nanos": "46599785",
+          "calls": "23",
+          "degree_contributions": "10002418",
+          "pair_contributions": "5007312",
+          "recurrence_updates": "4982915"
+        },
+        {
+          "worker": "7",
+          "nanos": "46519350",
+          "calls": "23",
+          "degree_contributions": "9917668",
+          "pair_contributions": "4964859",
+          "recurrence_updates": "4940897"
+        }
+      ],
+      "rust_stage": [
+        {
+          "nanos": "47251426",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [
+        {
+          "blocks": "3384",
+          "normal_candidates": "1221",
+          "fused_successes": "1221",
+          "fused_declines": "0",
+          "fallbacks": "2163",
+          "fused_degree_terms": "26984045",
+          "fallback_degree_terms": "53745792"
+        }
+      ],
+      "ducc_stage": [],
+      "order_schedule": {
+        "jobs": 181,
+        "workers_used": 8,
+        "jobs_per_worker": {
+          "0": 23,
+          "1": 22,
+          "2": 23,
+          "3": 22,
+          "4": 22,
+          "5": 23,
+          "6": 23,
+          "7": 23
+        },
+        "min_job_ns": 8837,
+        "max_job_ns": 3859309,
+        "min_job_terms": 123,
+        "max_job_terms": 1038958
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-synthesis-q8",
+      "backend": "ducc",
+      "affinity": "0,2,4,6,8,10,12,14",
+      "rust_workers": [],
+      "rust_stage": [],
+      "reflected_route": [],
+      "ducc_stage": [
+        {
+          "stage_ms": "17.244156999999998",
+          "calls": "1139",
+          "requested_contributions": "80729837",
+          "skipped_prefix_contributions": "0",
+          "scaled_prefix_contributions": "0",
+          "fused_suffix_contributions": "80729837",
+          "prefix_state_updates": "0",
+          "scaled_state_updates": "0",
+          "suffix_state_updates": "40316358",
+          "padded_prefix_state_updates": "0",
+          "padded_scaled_state_updates": "0",
+          "padded_suffix_state_updates": "40558328"
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q8",
+      "backend": "parent",
+      "affinity": "0,2,4,6,8,10,12,14",
+      "rust_workers": [
+        {
+          "worker": "0",
+          "nanos": "50598063",
+          "calls": "1",
+          "degree_contributions": "3086775",
+          "pair_contributions": "1544590",
+          "recurrence_updates": "1539800"
+        },
+        {
+          "worker": "1",
+          "nanos": "32484880",
+          "calls": "7",
+          "degree_contributions": "23361414",
+          "pair_contributions": "11689991",
+          "recurrence_updates": "11653056"
+        },
+        {
+          "worker": "2",
+          "nanos": "13173159",
+          "calls": "4",
+          "degree_contributions": "14619008",
+          "pair_contributions": "7315328",
+          "recurrence_updates": "7292160"
+        },
+        {
+          "worker": "3",
+          "nanos": "13678455",
+          "calls": "4",
+          "degree_contributions": "14619008",
+          "pair_contributions": "7315328",
+          "recurrence_updates": "7292160"
+        },
+        {
+          "worker": "4",
+          "nanos": "39276441",
+          "calls": "2",
+          "degree_contributions": "7250212",
+          "pair_contributions": "3627990",
+          "recurrence_updates": "3616514"
+        },
+        {
+          "worker": "5",
+          "nanos": "15036376",
+          "calls": "1",
+          "degree_contributions": "3654752",
+          "pair_contributions": "1828832",
+          "recurrence_updates": "1823040"
+        },
+        {
+          "worker": "6",
+          "nanos": "10811195",
+          "calls": "2",
+          "degree_contributions": "7309504",
+          "pair_contributions": "3657664",
+          "recurrence_updates": "3646080"
+        },
+        {
+          "worker": "7",
+          "nanos": "8255314",
+          "calls": "2",
+          "degree_contributions": "7309504",
+          "pair_contributions": "3657664",
+          "recurrence_updates": "3646080"
+        }
+      ],
+      "rust_stage": [
+        {
+          "nanos": "50654541",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [],
+      "ducc_stage": []
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q8",
+      "backend": "candidate",
+      "affinity": "0,2,4,6,8,10,12,14",
+      "rust_workers": [
+        {
+          "worker": "0",
+          "nanos": "15598239",
+          "calls": "6",
+          "degree_contributions": "5453047",
+          "pair_contributions": "2728659",
+          "recurrence_updates": "2720119"
+        },
+        {
+          "worker": "1",
+          "nanos": "15254409",
+          "calls": "6",
+          "degree_contributions": "5458926",
+          "pair_contributions": "2731601",
+          "recurrence_updates": "2723050"
+        },
+        {
+          "worker": "2",
+          "nanos": "16548770",
+          "calls": "6",
+          "degree_contributions": "5350078",
+          "pair_contributions": "2677167",
+          "recurrence_updates": "2668657"
+        },
+        {
+          "worker": "3",
+          "nanos": "14480756",
+          "calls": "6",
+          "degree_contributions": "4721983",
+          "pair_contributions": "2362944",
+          "recurrence_updates": "2355471"
+        },
+        {
+          "worker": "4",
+          "nanos": "13878543",
+          "calls": "5",
+          "degree_contributions": "4505824",
+          "pair_contributions": "2254694",
+          "recurrence_updates": "2247567"
+        },
+        {
+          "worker": "5",
+          "nanos": "15953163",
+          "calls": "6",
+          "degree_contributions": "5393422",
+          "pair_contributions": "2698843",
+          "recurrence_updates": "2690317"
+        },
+        {
+          "worker": "6",
+          "nanos": "14380063",
+          "calls": "5",
+          "degree_contributions": "4472084",
+          "pair_contributions": "2237822",
+          "recurrence_updates": "2230704"
+        },
+        {
+          "worker": "7",
+          "nanos": "16835765",
+          "calls": "6",
+          "degree_contributions": "5306830",
+          "pair_contributions": "2655539",
+          "recurrence_updates": "2647045"
+        }
+      ],
+      "rust_stage": [
+        {
+          "nanos": "16993403",
+          "calls": "1"
+        }
+      ],
+      "reflected_route": [
+        {
+          "blocks": "1086",
+          "normal_candidates": "527",
+          "fused_successes": "527",
+          "fused_declines": "0",
+          "fallbacks": "559",
+          "fused_degree_terms": "18682226",
+          "fallback_degree_terms": "21979968"
+        }
+      ],
+      "ducc_stage": [],
+      "order_schedule": {
+        "jobs": 46,
+        "workers_used": 8,
+        "jobs_per_worker": {
+          "0": 6,
+          "1": 6,
+          "2": 6,
+          "3": 6,
+          "4": 5,
+          "5": 6,
+          "6": 5,
+          "7": 6
+        },
+        "min_job_ns": 269680,
+        "max_job_ns": 3912149,
+        "min_job_terms": 181776,
+        "max_job_terms": 1038958
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q8",
+      "backend": "ducc",
+      "affinity": "0,2,4,6,8,10,12,14",
+      "rust_workers": [],
+      "rust_stage": [],
+      "reflected_route": [],
+      "ducc_stage": [
+        {
+          "stage_ms": "6.1124159999999996",
+          "calls": "362",
+          "requested_contributions": "40662194",
+          "skipped_prefix_contributions": "0",
+          "scaled_prefix_contributions": "0",
+          "fused_suffix_contributions": "40662194",
+          "prefix_state_updates": "0",
+          "scaled_state_updates": "0",
+          "suffix_state_updates": "20314925",
+          "padded_prefix_state_updates": "0",
+          "padded_scaled_state_updates": "0",
+          "padded_suffix_state_updates": "20449548"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "case": "GL T720 f32 scalar synthesis, full mmax, q1",
+  "parent_ir": 6612487736,
+  "candidate_ir": 3660560604,
+  "ducc_ir": 260801044,
+  "useful_rust_output_degree_latitude_terms": 161199393,
+  "parent_ir_per_term": 41.020549847852095,
+  "candidate_ir_per_term": 22.708277840723632,
+  "ducc_equivalent_output_ir_per_term": 1.6178785735253978,
+  "candidate_ir_reduction_vs_parent": 0.446417029392582,
+  "note": "Instruction references are not cycles or elapsed time. DUCC computes both hemispheres from northern-ring work."
+}

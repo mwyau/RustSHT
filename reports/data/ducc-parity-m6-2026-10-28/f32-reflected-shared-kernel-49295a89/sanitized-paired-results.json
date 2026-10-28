@@ -1,0 +1,3501 @@
+{
+  "parent_sha": "49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80",
+  "candidate_parent_sha": "49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80",
+  "candidate_patch_sha256": "f62628d42c21db6bada73ee6b0d0ad5001b67e319ed5370c7b77fc2e01b3af31",
+  "parent_binary_sha256": "a24db8d3d4f423b255f490d3ace8e84644b6f06589182d4633c3d392917ea6b6",
+  "candidate_binary_sha256": "f34816e24e241a042d8d5ac1b2b6dd498daf17ed3c73921f112024334f23d8b0",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_version": "0.42.0",
+  "rust_flags": "-C target-cpu=x86-64-v3",
+  "ducc_flags": "-O3 -ffast-math -march=x86-64-v3 -ffp-contract=fast",
+  "pairs_per_cell": 15,
+  "fixture": "scripts/benchmark_ducc_f32_native.py make_fixture, phi0=0.23",
+  "q1_affinity": "0",
+  "q8_affinity": "0,2,4,6,8,10,12,14",
+  "cases": [
+    {
+      "case_id": "GL-T720-M720-synthesis-q1",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 652.261869,
+          "candidate_ms": 357.806356,
+          "ducc_ms": 19.127447973005474,
+          "candidate_parent": 0.5485624302223314,
+          "candidate_ducc": 18.706434674660798,
+          "parent_ducc": 34.10083090648244,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 650.5628650000001,
+          "candidate_ms": 356.75221400000004,
+          "ducc_ms": 18.803276994731277,
+          "candidate_parent": 0.5483746970402315,
+          "candidate_ducc": 18.972874467570882,
+          "parent_ducc": 34.59837693090887,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 651.9857169999999,
+          "candidate_ms": 361.449731,
+          "ducc_ms": 19.30598821491003,
+          "candidate_parent": 0.5543828976241209,
+          "candidate_ducc": 18.722156409525418,
+          "parent_ducc": 33.771165181612965,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 662.156999,
+          "candidate_ms": 356.84192399999995,
+          "ducc_ms": 18.83303327485919,
+          "candidate_parent": 0.5389083322216759,
+          "candidate_ducc": 18.9476606764328,
+          "parent_ducc": 35.15933887739339,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 656.237751,
+          "candidate_ms": 362.66796600000004,
+          "ducc_ms": 18.915474007371813,
+          "candidate_parent": 0.5526472158106613,
+          "candidate_ducc": 19.17308368051785,
+          "parent_ducc": 34.693169769060425,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 670.083945,
+          "candidate_ms": 356.424013,
+          "ducc_ms": 19.000432221218944,
+          "candidate_parent": 0.5319094953095765,
+          "candidate_ducc": 18.758731846213454,
+          "parent_ducc": 35.26677378694977,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 657.681482,
+          "candidate_ms": 376.237807,
+          "ducc_ms": 19.35704448260367,
+          "candidate_parent": 0.572066900615578,
+          "candidate_ducc": 19.43673825506409,
+          "parent_ducc": 33.976337792221514,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 653.294323,
+          "candidate_ms": 379.151629,
+          "ducc_ms": 18.80377542693168,
+          "candidate_parent": 0.5803687796625779,
+          "candidate_ducc": 20.163590576441404,
+          "parent_ducc": 34.74272097848606,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 656.16837,
+          "candidate_ms": 355.348479,
+          "ducc_ms": 18.957433523610234,
+          "candidate_parent": 0.5415507592967336,
+          "candidate_ducc": 18.74454569799424,
+          "parent_ducc": 34.61272166312943,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 652.310151,
+          "candidate_ms": 358.184543,
+          "ducc_ms": 19.09377402625978,
+          "candidate_parent": 0.549101592932286,
+          "candidate_ducc": 18.759232329207766,
+          "parent_ducc": 34.163500107567735,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 653.163355,
+          "candidate_ms": 362.475702,
+          "ducc_ms": 18.646843498572707,
+          "candidate_parent": 0.5549541308850678,
+          "candidate_ducc": 19.43898451379962,
+          "parent_ducc": 35.02809229079417,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 647.3895219999999,
+          "candidate_ms": 359.367481,
+          "ducc_ms": 18.821701989509165,
+          "candidate_parent": 0.5551024055653468,
+          "candidate_ducc": 19.09325103544324,
+          "parent_ducc": 34.3959075731218,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 657.933118,
+          "candidate_ms": 354.47693000000004,
+          "ducc_ms": 19.203731964807957,
+          "candidate_parent": 0.5387735018987143,
+          "candidate_ducc": 18.458752218037684,
+          "parent_ducc": 34.26069053690729,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 653.368482,
+          "candidate_ms": 357.001286,
+          "ducc_ms": 19.329920993186533,
+          "candidate_parent": 0.5464011439719249,
+          "candidate_ducc": 18.468843516010068,
+          "parent_ducc": 33.80088735128825,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 666.4019,
+          "candidate_ms": 353.897494,
+          "ducc_ms": 19.184916454833,
+          "candidate_parent": 0.5310571503472604,
+          "candidate_ducc": 18.446652860500066,
+          "parent_ducc": 34.73572071939475,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.097735336446054e-07,
+              "absolute_l2": 2.5885380688611162e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.2299908284147645,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234307359793145,
+              "absolute_l2": 0.04063954756095933,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q1",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 198.108361,
+          "candidate_ms": 117.958013,
+          "ducc_ms": 8.55937604016314,
+          "candidate_parent": 0.5954216793505247,
+          "candidate_ducc": 13.78114624786969,
+          "parent_ducc": 23.145187227482072,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 194.690877,
+          "candidate_ms": 123.662585,
+          "ducc_ms": 8.543393962706128,
+          "candidate_parent": 0.6351740097200343,
+          "candidate_ducc": 14.474643863997787,
+          "parent_ducc": 22.788469997973905,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 203.14338600000002,
+          "candidate_ms": 118.208898,
+          "ducc_ms": 9.73242529047032,
+          "candidate_parent": 0.5818988268709866,
+          "candidate_ducc": 12.145882909139448,
+          "parent_ducc": 20.872843092760395,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 195.671582,
+          "candidate_ms": 118.645965,
+          "ducc_ms": 8.212048832016686,
+          "candidate_parent": 0.6063525617123083,
+          "candidate_ducc": 14.447790974820998,
+          "parent_ducc": 23.827376821862817,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 194.839638,
+          "candidate_ms": 118.234436,
+          "ducc_ms": 8.301588318621118,
+          "candidate_parent": 0.6068294789174264,
+          "candidate_ducc": 14.242387295307193,
+          "parent_ducc": 23.470163843581513,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 195.112665,
+          "candidate_ms": 117.76801400000001,
+          "ducc_ms": 8.487092525077362,
+          "candidate_parent": 0.6035897977202045,
+          "candidate_ducc": 13.876131743824311,
+          "parent_ducc": 22.989341099261964,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 197.35986499999999,
+          "candidate_ms": 118.682864,
+          "ducc_ms": 8.261988482748468,
+          "candidate_parent": 0.6013525799685767,
+          "candidate_ducc": 14.364927311120924,
+          "parent_ducc": 23.88769548784767,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 196.48553199999998,
+          "candidate_ms": 117.127572,
+          "ducc_ms": 8.543652831576765,
+          "candidate_parent": 0.596112959604578,
+          "candidate_ducc": 13.709308454939134,
+          "parent_ducc": 22.99783662484537,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 194.532767,
+          "candidate_ms": 120.07582,
+          "ducc_ms": 8.424744630853336,
+          "candidate_parent": 0.6172524138311362,
+          "candidate_ducc": 14.252754862177657,
+          "parent_ducc": 23.09064256827164,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 193.692217,
+          "candidate_ms": 118.19469000000001,
+          "ducc_ms": 8.232519185791412,
+          "candidate_parent": 0.61021909827177,
+          "candidate_ducc": 14.35705005145854,
+          "parent_ducc": 23.527697006075048,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 193.31501300000002,
+          "candidate_ms": 115.485155,
+          "ducc_ms": 8.290535847966868,
+          "candidate_parent": 0.5973936178459145,
+          "candidate_ducc": 13.92975763180869,
+          "parent_ducc": 23.317553478453107,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 193.55704200000002,
+          "candidate_ms": 116.196581,
+          "ducc_ms": 8.168135808470348,
+          "candidate_parent": 0.6003221572274285,
+          "candidate_ducc": 14.225593663551024,
+          "parent_ducc": 23.696599387987842,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 193.131186,
+          "candidate_ms": 116.604973,
+          "ducc_ms": 8.22340534068644,
+          "candidate_parent": 0.6037604563770451,
+          "candidate_ducc": 14.179645556699084,
+          "parent_ducc": 23.485548626000064,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 191.95619299999998,
+          "candidate_ms": 116.892357,
+          "ducc_ms": 8.211698189067343,
+          "candidate_parent": 0.6089532990477677,
+          "candidate_ducc": 14.234857919598753,
+          "parent_ducc": 23.37594351136299,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 193.761088,
+          "candidate_ms": 117.940069,
+          "ducc_ms": 8.152222338443002,
+          "candidate_parent": 0.6086881025358404,
+          "candidate_ducc": 14.467229192687284,
+          "parent_ducc": 23.767885609092275,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 8.173817825865634e-08,
+              "absolute_l2": 7.333782714202313e-06,
+              "max_absolute": 1.7881393432617188e-07,
+              "reference_rms": 0.17186583488101023,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.00027254614364372677,
+              "absolute_l2": 0.02445344359420203,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M720-synthesis-q8",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 102.148916,
+          "candidate_ms": 46.885493,
+          "ducc_ms": 2.8516597812995315,
+          "candidate_parent": 0.45899158636201287,
+          "candidate_ducc": 16.441474999038554,
+          "parent_ducc": 35.82086357912221,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 101.455183,
+          "candidate_ms": 47.057954499999994,
+          "ducc_ms": 2.9349233023822308,
+          "candidate_parent": 0.46382997012582383,
+          "candidate_ducc": 16.033793612870156,
+          "parent_ducc": 34.56825700271296,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 108.67112399999999,
+          "candidate_ms": 46.935232,
+          "ducc_ms": 3.219033425141658,
+          "candidate_parent": 0.4319015969688507,
+          "candidate_ducc": 14.58053576996783,
+          "parent_ducc": 33.75892997918087,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 99.46579999999999,
+          "candidate_ms": 46.865985499999994,
+          "ducc_ms": 3.2415302037926654,
+          "candidate_parent": 0.4711768819031265,
+          "candidate_ducc": 14.45798204970162,
+          "parent_ducc": 30.684828999471513,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 98.990024,
+          "candidate_ms": 47.143285500000005,
+          "ducc_ms": 3.459379426203668,
+          "candidate_parent": 0.47624279291012195,
+          "candidate_ducc": 13.627671235743911,
+          "parent_ducc": 28.614965808660056,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 106.638118,
+          "candidate_ms": 47.295033000000004,
+          "ducc_ms": 4.716523981187493,
+          "candidate_parent": 0.4435096369573964,
+          "candidate_ducc": 10.027518822896432,
+          "parent_ducc": 22.609472235345535,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 103.850204,
+          "candidate_ms": 47.243896,
+          "ducc_ms": 4.73821563355159,
+          "candidate_parent": 0.45492347805113603,
+          "candidate_ducc": 9.970820168137374,
+          "parent_ducc": 21.917576579805793,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 99.13054500000001,
+          "candidate_ms": 47.287749,
+          "ducc_ms": 2.85602801401789,
+          "candidate_parent": 0.4770250077814057,
+          "candidate_ducc": 16.55717267754496,
+          "parent_ducc": 34.70923412286216,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 99.45974749999999,
+          "candidate_ms": 52.486228000000004,
+          "ducc_ms": 3.0158839986792634,
+          "candidate_parent": 0.5277132641021435,
+          "candidate_ducc": 17.40326485467781,
+          "parent_ducc": 32.97863828434916,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 98.354367,
+          "candidate_ms": 46.9820405,
+          "ducc_ms": 2.91354744695127,
+          "candidate_parent": 0.4776812858751864,
+          "candidate_ducc": 16.12537339975771,
+          "parent_ducc": 33.75759921223106,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 98.792849,
+          "candidate_ms": 46.901232500000006,
+          "ducc_ms": 3.2303586922353134,
+          "candidate_parent": 0.4747431921919774,
+          "candidate_ducc": 14.518893091573595,
+          "parent_ducc": 30.582625154743496,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 95.396399,
+          "candidate_ms": 46.847365999999994,
+          "ducc_ms": 3.289702943422728,
+          "candidate_parent": 0.491081073196484,
+          "candidate_ducc": 14.240606767752189,
+          "parent_ducc": 28.998484252424955,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 104.015635,
+          "candidate_ms": 46.928028999999995,
+          "ducc_ms": 3.1691775269185505,
+          "candidate_parent": 0.4511632217598825,
+          "candidate_ducc": 14.807636555983338,
+          "parent_ducc": 32.821018739564366,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 98.269007,
+          "candidate_ms": 46.91800500000001,
+          "ducc_ms": 2.867893216067127,
+          "candidate_parent": 0.47744458229846576,
+          "candidate_ducc": 16.359746149942367,
+          "parent_ducc": 34.265225235533975,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 100.31671349999999,
+          "candidate_ms": 46.8744225,
+          "ducc_ms": 3.3226267966840948,
+          "candidate_parent": 0.4672643357679377,
+          "candidate_ducc": 14.107639939213033,
+          "parent_ducc": 30.191989542765914,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 1051218,
+              "relative_l2": 1.1393841968132756e-07,
+              "absolute_l2": 2.6867490467933474e-05,
+              "max_absolute": 2.086162567138672e-07,
+              "reference_rms": 0.22999082843955448,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.00017234308517401277,
+              "absolute_l2": 0.04063955029066989,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 1051218,
+              "relative_l2": 0.0001723430695063516,
+              "absolute_l2": 0.04063954659613986,
+              "max_absolute": 0.0009644031524658203,
+              "reference_rms": 0.22998983199799372,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M180-synthesis-q8",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 51.9895055,
+          "candidate_ms": 18.21415425,
+          "ducc_ms": 1.965410658158362,
+          "candidate_parent": 0.3503429023767114,
+          "candidate_ducc": 9.267352944481898,
+          "parent_ducc": 26.452235457354977,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 55.47898549999999,
+          "candidate_ms": 18.415024250000002,
+          "ducc_ms": 1.4711912663187832,
+          "candidate_parent": 0.33192791980668074,
+          "candidate_ducc": 12.517083720921006,
+          "parent_ducc": 37.710246634905324,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 53.925826,
+          "candidate_ms": 17.4782735,
+          "ducc_ms": 1.2715821503661573,
+          "candidate_parent": 0.3241169361040478,
+          "candidate_ducc": 13.745296357743824,
+          "parent_ducc": 42.40844839200663,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 53.352835999999996,
+          "candidate_ms": 17.93967225,
+          "ducc_ms": 1.2481615121942014,
+          "candidate_parent": 0.3362458979687603,
+          "candidate_ducc": 14.372877287702146,
+          "parent_ducc": 42.745137931875945,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 52.0518585,
+          "candidate_ms": 18.620786250000002,
+          "ducc_ms": 1.2903710012324154,
+          "candidate_parent": 0.35773528144052724,
+          "candidate_ducc": 14.430567822909495,
+          "parent_ducc": 40.3386765901326,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 54.354452499999994,
+          "candidate_ms": 19.78708675,
+          "ducc_ms": 1.2912159630407891,
+          "candidate_parent": 0.3640380105015316,
+          "candidate_ducc": 15.324382068048312,
+          "parent_ducc": 42.095554931025084,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 57.0540625,
+          "candidate_ms": 23.5178815,
+          "ducc_ms": 2.2824081243015826,
+          "candidate_parent": 0.41220345176997697,
+          "candidate_ducc": 10.303977299062796,
+          "parent_ducc": 24.997309592673552,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 56.404072500000005,
+          "candidate_ms": 20.71517075,
+          "ducc_ms": 1.3625022023916245,
+          "candidate_parent": 0.3672637423476824,
+          "candidate_ducc": 15.203770469976702,
+          "parent_ducc": 41.39741748746749,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "parent_ms": 56.3663855,
+          "candidate_ms": 23.2362205,
+          "ducc_ms": 1.9018392389019332,
+          "candidate_parent": 0.4122354182174765,
+          "candidate_ducc": 12.217762692400816,
+          "parent_ducc": 29.63782865924268,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 59.244448500000004,
+          "candidate_ms": 22.22851825,
+          "ducc_ms": 2.364556130487472,
+          "candidate_parent": 0.37520001979594764,
+          "candidate_ducc": 9.400714985529829,
+          "parent_ducc": 25.055209193865192,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "parent_ms": 56.137878,
+          "candidate_ms": 19.27789025,
+          "ducc_ms": 1.6364515176974237,
+          "candidate_parent": 0.34340254631641043,
+          "candidate_ducc": 11.780300266472324,
+          "parent_ducc": 34.30463866047743,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 51.585075,
+          "candidate_ms": 20.4883365,
+          "ducc_ms": 1.5541546316327233,
+          "candidate_parent": 0.3971756656358452,
+          "candidate_ducc": 13.182945945652715,
+          "parent_ducc": 33.19172619638697,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 54.681771999999995,
+          "candidate_ms": 18.49706225,
+          "ducc_ms": 1.2848425321863033,
+          "candidate_parent": 0.3382674257520404,
+          "candidate_ducc": 14.39636514719448,
+          "parent_ducc": 42.5591234958208,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "parent_ms": 56.023437,
+          "candidate_ms": 18.16421725,
+          "ducc_ms": 1.3038596720434725,
+          "candidate_parent": 0.32422532823182554,
+          "candidate_ducc": 13.931113630911026,
+          "parent_ducc": 42.9673823044142,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 55.974744,
+          "candidate_ms": 17.78862875,
+          "ducc_ms": 1.3592730198676388,
+          "candidate_parent": 0.3177974114539943,
+          "candidate_ducc": 13.086869591314477,
+          "parent_ducc": 41.17991248399135,
+          "outputs": {
+            "candidate_vs_parent": {
+              "output_values": 272538,
+              "relative_l2": 9.154716706177995e-08,
+              "absolute_l2": 8.213873192088259e-06,
+              "max_absolute": 1.1920928955078125e-07,
+              "reference_rms": 0.1718658348392936,
+              "finite": true
+            },
+            "parent_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461503537522,
+              "absolute_l2": 0.024453444196240372,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            },
+            "candidate_vs_ducc": {
+              "output_values": 272538,
+              "relative_l2": 0.0002725461719568013,
+              "absolute_l2": 0.02445344613451378,
+              "max_absolute": 0.0015478730201721191,
+              "reference_rms": 0.1718646082623544,
+              "finite": true
+            }
+          },
+          "worker_checks": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

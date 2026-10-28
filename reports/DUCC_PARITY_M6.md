@@ -1,5 +1,24 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 shared-kernel reflected f32 synthesis screen — promising, pending current-source validation
+
+An isolated candidate on exact parent `49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80` extends the shared `FusedSynthesisBlock` and `F32SynthesisAccumulator` with reflected output sums. It evaluates northern GL recurrence states once and writes both hemispheres. This is distinct from the earlier standalone reflected kernel that regressed reduced scalar-analysis q8. Pinned DUCC was `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+
+Fifteen interleaved warm parent/candidate/DUCC pairs per GL T720 f32 scalar-synthesis cell yielded:
+
+| Cell | Parent / candidate / DUCC ms | Candidate/parent paired median | Candidate/DUCC | Status |
+|---|---:|---:|---:|---|
+| Full q1 | 653.368 / 357.806 / 19.000 | 0.549 | 18.76x | **GAP; promising** |
+| Reduced q1 | 194.691 / 117.958 / 8.291 | 0.604 | 14.23x | **GAP; promising** |
+| Full q8 | 99.466 / 46.935 / 3.219 | 0.471 | 14.58x | **GAP; promising** |
+| Reduced q8 | 55.479 / 18.621 / 1.363 | 0.350 | 13.18x | **GAP; promising** |
+
+All 60 candidate/parent pairs were faster. The feature-instrumented route counted 80.730M full and 40.662M reduced northern degree terms, matching DUCC's useful northern work while producing both reflected outputs. Full fused/scaled-fallback terms were 26.984M/53.746M; reduced were 18.682M/21.980M. Full/reduced route counts were 1,221/2,163 and 527/559 fused/fallback blocks, with no fused declines. One q1 full Callgrind profile measured 6.612B parent, 3.661B candidate, and 260.801M DUCC Ir; these are instruction references, not elapsed time.
+
+Candidate/parent relative L2 stayed below `1.14e-7` and max absolute difference below `2.09e-7`. Three-pair adjacent controls remained bitwise equal. f32 spin-1 synthesis q8 had a `1.012` candidate/parent median, and protected f64 T1023 spin-1 synthesis q8 had one `1.075` pair despite a `0.975` median; these require extensions. The isolated candidate passed 2 T720 f32 integration tests and 5 paired-synthesis unit tests, including analytic modes, adjoints, sectoral/tail behavior, subnormal output, overflow/nonfinite decline, and workspace reset.
+
+The screen is not current-head promotion evidence: latest `dev` is `0ce209a1`, and the candidate was based on `49295a89`; current changes since that parent include `src/legendre/mod.rs` and `tests/f32.rs`. Reconcile the candidate with exact current source, repeat all four 15-pair synthesis cells, and extend f32 spin-1 synthesis q8 plus protected f64 T1023 q1/q8 before promotion. Exact hashes, timings, route counts, correctness results, profiles, and scripts are in the [candidate report](data/ducc-parity-m6-2026-10-28/f32-reflected-shared-kernel-49295a89/README.md). M6 remains open.
+
 ## 2026-10-28 block exponent-correction suffix transition rejected at exact parent 746c7e60
 
 An isolated synthesis-only candidate restored both recurrence states from their shared f32 exponent at a block transition, then used the shared fused SIMD suffix. Three interleaved warm parent/candidate/pinned-DUCC pairs per GL T720 full/reduced q1/q8 cell show a clear slowdown in all twelve candidate comparisons. The candidate patch was not promoted.

@@ -1,0 +1,40 @@
+{
+  "rust_parent_sha": "49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80",
+  "dev_head_at_capture": "0ce209a133b5eb1a0ea0657d594522e305cdb79f",
+  "candidate_patch_sha256": "f62628d42c21db6bada73ee6b0d0ad5001b67e319ed5370c7b77fc2e01b3af31",
+  "parent_binary_sha256": "a24db8d3d4f423b255f490d3ace8e84644b6f06589182d4633c3d392917ea6b6",
+  "candidate_binary_sha256": "f34816e24e241a042d8d5ac1b2b6dd498daf17ed3c73921f112024334f23d8b0",
+  "profile_parent_patch_sha256": "57798428c0b64afc4384550b88fdcca6eafe478c911b5b0bbb3490b1b3a4da3f",
+  "profile_candidate_patch_sha256": "d211f55c1c8e981fce8be881ad2a2a6146ef46b17a6587331f3a974b59bcc2e6",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_version": "0.42.0",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "llvm": "23.1.1",
+  "gcc": "15.2.0",
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rust_flags": "-C target-cpu=x86-64-v3",
+  "ducc_flags": "-O3 -ffast-math -march=x86-64-v3 -ffp-contract=fast",
+  "q1_affinity": "0",
+  "q8_affinity": "0,2,4,6,8,10,12,14",
+  "fixture": "scripts/benchmark_ducc_f32_native.py make_fixture; phi0=0.23",
+  "shape": {
+    "grid": "GL",
+    "lmax": 720,
+    "ntheta": 721,
+    "mmax": [720, 180],
+    "nphi": [1458, 378],
+    "threads": [1, 8]
+  },
+  "timing_pairs_per_synthesis_cell": 15,
+  "warm_protocol": "Fresh-process parent/candidate/DUCC order balanced across 15 pairs; each worker warms before collecting repeated batches.",
+  "candidate_route": "f32 GL T720 scalar synthesis only; reflected output adapter reuses FusedSynthesisBlock and F32SynthesisAccumulator with mirrored sums.",
+  "current_source_delta_since_parent": [
+    "src/legendre/mod.rs",
+    "tests/f32.rs"
+  ],
+  "validation_commands": [
+    "cargo test --locked --test f32 f32_t720_ -- --nocapture",
+    "cargo test --locked --lib scalar_paired::synthesis::tests"
+  ],
+  "validation_result": "2 T720 f32 integration tests and 5 paired-synthesis unit tests passed on the isolated candidate worktree."
+}
