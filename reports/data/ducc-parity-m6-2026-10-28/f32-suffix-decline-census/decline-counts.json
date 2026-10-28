@@ -1,0 +1,119 @@
+{
+  "parent_source": "54b166f2c0698f1c70e88f8679d12fa4376704fe (current source code; d2c1/ebc docs-only successors)",
+  "candidate_patch_sha256": "67bcd6dfd59da3077636aec1bf1df09284e4663ea5c0043148e6900b977db242",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "build": "release x86-64-v3 with m6_profile_suffix instrumentation; no timing",
+  "fixtures": "GL T720 f32 synthesis; phi0=0.23; full M720 nphi1458, reduced M180 nphi378",
+  "rows": [
+    {
+      "cell": "M720-q1",
+      "source_sha": "ebc39e38de2da17b34f4f35a106e2282ef53daba",
+      "instrumented_first_transform_only": true,
+      "threads": 1,
+      "declines": 8833,
+      "reason_counts": {
+        "product": 8833
+      },
+      "completed_pairs_before_decline": {
+        "min": 0,
+        "median": 0,
+        "p90": 0,
+        "max": 0,
+        "sum": 0
+      },
+      "declined_suffix_pairs": 1808726,
+      "discarded_fused_pair_lane_updates": 0,
+      "scalar_replayed_suffix_pair_lane_updates": 14469808,
+      "discarded_fraction_of_replayed_fused_pair_lanes": 0.0,
+      "per_worker_declines": {
+        "0": 8833
+      }
+    },
+    {
+      "cell": "M720-q8",
+      "source_sha": "ebc39e38de2da17b34f4f35a106e2282ef53daba",
+      "instrumented_first_transform_only": true,
+      "threads": 8,
+      "declines": 11058,
+      "reason_counts": {
+        "product": 11058
+      },
+      "completed_pairs_before_decline": {
+        "min": 0,
+        "median": 0.0,
+        "p90": 0,
+        "max": 0,
+        "sum": 0
+      },
+      "declined_suffix_pairs": 2211336,
+      "discarded_fused_pair_lane_updates": 0,
+      "scalar_replayed_suffix_pair_lane_updates": 17690688,
+      "discarded_fraction_of_replayed_fused_pair_lanes": 0.0,
+      "per_worker_declines": {
+        "0": 775,
+        "1": 1907,
+        "2": 1684,
+        "3": 1239,
+        "4": 2193,
+        "5": 534,
+        "6": 984,
+        "7": 1742
+      }
+    },
+    {
+      "cell": "M180-q1",
+      "source_sha": "ebc39e38de2da17b34f4f35a106e2282ef53daba",
+      "instrumented_first_transform_only": true,
+      "threads": 1,
+      "declines": 1942,
+      "reason_counts": {
+        "product": 1942
+      },
+      "completed_pairs_before_decline": {
+        "min": 0,
+        "median": 0.0,
+        "p90": 0,
+        "max": 0,
+        "sum": 0
+      },
+      "declined_suffix_pairs": 587501,
+      "discarded_fused_pair_lane_updates": 0,
+      "scalar_replayed_suffix_pair_lane_updates": 4700008,
+      "discarded_fraction_of_replayed_fused_pair_lanes": 0.0,
+      "per_worker_declines": {
+        "0": 1942
+      }
+    },
+    {
+      "cell": "M180-q8",
+      "source_sha": "ebc39e38de2da17b34f4f35a106e2282ef53daba",
+      "instrumented_first_transform_only": true,
+      "threads": 8,
+      "declines": 2350,
+      "reason_counts": {
+        "product": 2350
+      },
+      "completed_pairs_before_decline": {
+        "min": 0,
+        "median": 0.0,
+        "p90": 0,
+        "max": 0,
+        "sum": 0
+      },
+      "declined_suffix_pairs": 704525,
+      "discarded_fused_pair_lane_updates": 0,
+      "scalar_replayed_suffix_pair_lane_updates": 5636200,
+      "discarded_fraction_of_replayed_fused_pair_lanes": 0.0,
+      "per_worker_declines": {
+        "0": 243,
+        "1": 134,
+        "2": 380,
+        "3": 234,
+        "4": 494,
+        "5": 400,
+        "6": 317,
+        "7": 148
+      }
+    }
+  ]
+}
