@@ -1,5 +1,11 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 current-head native-f32 GL T720 spin-1 synthesis baseline — all cells GAP
+
+At exact current source `375c14f1d841acf2a945a99a0fad8bd1a22b6134` against pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, three interleaved whole-transform pairs measured full/reduced GL T720 f32 spin-1 synthesis q1/q8. Paired Rust/DUCC medians were **36.15×/49.14×** full and **34.65×/51.44×** reduced q1/q8. All cells remain **GAP**. Rust q8 speedup from q1 was 5.41×/4.93×, while DUCC's was 7.35×/7.24×. The reduced-q8 ratio spread was wide (`39.88×–51.52×`), but still far from parity.
+
+All workers reported finite, repeat-consistent, reset-consistent output and native Pulp V3 eight-lane f32 execution. Random-fixture relative-L2 / maximum absolute error versus DUCC was `1.4264e-4` / `1.1717e-3` full and `1.41495e-4` / `9.1328e-4` reduced. This baseline does not replace analytic, adjoint, or exceptional-value checks. The spin-synthesis route files remain byte-identical to the `0f821099` profile; its Callgrind and assembly attribution still points to the scalar general-spin callback, while DUCC converts channels and reflects northern-ring work. The current route excludes native f32 from paired spin and excludes T720 from the existing hemisphere degree window; enabling one gate would not activate the intended kernel. Exact timings, fixture hashes, worker checks and build hashes are in the [current-source baseline report](data/ducc-parity-m6-2026-10-28/f32-spin1-current-375c14f1/README.md). Next candidate hypothesis: a bounded f32 dual-channel reflected accumulation route using the shared recurrence and checked exceptional fallback. M6 remains open.
+
 ## 2026-10-28 shared-kernel reflected f32 synthesis screen — promising, pending current-source validation
 
 An isolated candidate on exact parent `49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80` extends the shared `FusedSynthesisBlock` and `F32SynthesisAccumulator` with reflected output sums. It evaluates northern GL recurrence states once and writes both hemispheres. This is distinct from the earlier standalone reflected kernel that regressed reduced scalar-analysis q8. Pinned DUCC was `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
