@@ -83,14 +83,88 @@ run after the targeted screen failed to confirm a gain.
 No candidate-specific route-success counter, Legendre-stage timing, or
 equivalent-work instruction count was collected. Therefore this result does
 not establish that more work reached the fused scalar path. **Decision:** do
-not promote; no whole-transform gain is established. Return to native-f32
-scalar synthesis. The `scalar_paired/synthesis.rs` and scalar-transform
-synthesis sources at `092fe72f` match the earlier reflected-ring census source
-`49295a89`; its approximately 2x useful-work difference versus DUCC is a
-dataflow lead, while its instrumented timings are not acceptance results.
-Re-measure exact-current-source scalar-synthesis whole-call and Legendre-stage
-baselines before selecting a different bounded dataflow experiment. The two
-scaled-prefix suffix candidates remain rejected. M6 remains open.
+not promote; no whole-transform gain is established. The exact-current-source
+scalar-synthesis baseline and stage profile follow.
+
+## 2026-10-28 exact-current native-f32 scalar-synthesis baseline — all cells GAP
+
+Production scalar-synthesis source is `092fe72f322bd482dac73b020785b096772bc901`;
+latest `dev` head `023ba6f3` changes documentation only. Pinned DUCC is
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The GL T720 warm whole-transform
+screen used three interleaved parent/DUCC pairs per cell, identical fixture
+geometry and x86-64-v3 AVX2/FMA settings. Paired parent/DUCC ratios are medians
+of the three per-pair ratios; these are a current baseline screen, not an
+acceptance campaign for a candidate.
+
+| Cell | Rust parent ms | DUCC ms | Paired parent/DUCC | Max Rust/DUCC rel-L2 / abs error | Status |
+|---|---:|---:|---:|---:|---|
+| Full q1 | 642.768 | 20.015 | 32.08× | `1.72343e-4` / `9.64403e-4` | **GAP** |
+| Full q8 | 97.791 | 2.657 | 36.94× | `1.72343e-4` / `9.64403e-4` | **GAP** |
+| Reduced q1 | 191.050 | 8.389 | 22.77× | `2.72546e-4` / `1.54787e-3` | **GAP** |
+| Reduced q8 | 51.287 | 1.205 | 42.43× | `2.72546e-4` / `1.54787e-3` | **GAP** |
+
+An isolated test-only phase probe measured 30 warmed calls per cell. Median
+Legendre recurrence and spectral accumulation consumed `99.68–99.82%` of the
+whole call; inverse FFT and writeback consumed `0.076–1.593 ms`. The current
+source-equivalent census counts 161,199,393/81,210,177 Rust useful
+degree-latitude terms for full/reduced mmax versus 80,729,837/40,662,194 DUCC
+northern-ring terms, with reflected outputs. This is about 2× the recurrence
+visit count, not a cycle estimate. q8 used 23 ring-group jobs; counter-built
+worker contribution totals spanned 3.12M–56.47M full and 3.09M–18.21M reduced,
+but those worker nanoseconds are instrumentation-contaminated and are not
+reliable makespan measurements. q1's 22.77–32.08× gap confirms the dominant
+disparity is not scheduling alone.
+
+The earlier route probe on the byte-identical synthesis source counted
+1,744/4,337 initial all-normal fused blocks and 3,657/7,112 non-polar fallback
+blocks for full q1/q8; reduced had 922/2,036 fused and 972/1,849 fallback
+blocks. That probe did not count polar-excluded or mixed blocks. A later
+guarded transition screen at `746c7e60` did measure the scaled-prefix route;
+the production paired-synthesis and scalar-transform source blobs are exactly
+the same at `746c7e60` and current source `092fe72f`:
+
+| GL T720 f32 synthesis | Completed blocks | Declined blocks | No transition | Partial tails | Prefix terms | Guarded fused suffix terms |
+|---|---:|---:|---:|---:|---:|---:|
+| Full q1 | 3,114 | 445 | 98 | 98 | 8.134M | 33.598M |
+| Full q8 | 6,041 | 940 | 131 | 98 | 7.328M | 33.048M |
+| Reduced q1 | 720 | 159 | 93 | 98 | 3.282M | 13.695M |
+| Reduced q8 | 1,453 | 303 | 93 | 98 | 2.395M | 13.736M |
+
+Transition degree min/median/max was 5/399/720 and 5/392/720 full q1/q8,
+5/130/715 and 5/132/715 reduced q1/q8. The recurrence-state guards did not
+decline after transition; the 159–940 block declines were from later
+coefficient, product or accumulated-output checks. Blocks that declined or
+found no transition discarded prefix work and replayed through the original
+fallback. The candidate regressed whole-transform latency 8.2%, 15.5%, 16.0%
+and 27.0% full q1/q8 and reduced q1/q8; its measured Legendre stage regressed
+7.1%, 25.3%, 14.2% and 26.9%. These are guarded candidate counts, not
+production route counts. The exact patch, paired timings, tests and DUCC AVX2
+body are in the [suffix-screen evidence](data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md).
+
+DUCC's `init_lambda`/`iter_to_ieee` keeps double recurrence states plus a
+per-lane scale through the prefix; `calc_alm2map` applies the residual scale
+once and hands the suffix to a four-degree/two-pair AVX2 double-FMA loop. Rust
+already emits packed f32 YMM FMA in the ordinary kernel, but the guarded route
+added coefficient/product/output checks and transactional replay around that
+kernel. Real-state replay found exponents from -160 to -320 where restoring a
+nonzero recurrence state in f32 produced zero while scaled coefficient
+products remained representable. Keep the original scaled fallback; do not
+repeat the block-check/replay suffix route unchanged.
+
+The separate f32-I/O/f64-internal diagnostic found Rust's existing f64
+reflected order-major route at 0.746–0.779× DUCC, while forcing the same f64
+build through all-ring paired recurrence cost 3.714–13.442× DUCC. This
+quantifies a large dataflow cost beyond f32 exponent range. After this
+documented suffix blocker, continue with remaining native-f32 scalar/spin
+families, then return to reflected-ring scalar synthesis. Keep scalar analysis
+and f64 dispatch unchanged. Current-source AVX2 disassembly shows Rust packed
+f32 YMM FMA; DUCC's executed loop uses packed f64 YMM FMA and an unrolled
+degree suffix. Callgrind on the source-equivalent q1 parent/DUCC profile
+measured 6.610B vs 260.8M Ir (41.01 vs 1.62 Ir per required output
+degree-latitude slot); Ir are instructions, not elapsed time. Source, hashes,
+per-pair timings, phase data, and reproduction notes are in the [baseline
+evidence](data/ducc-parity-m6-2026-10-28/f32-scalar-synthesis-baseline-092fe72f/README.md).
+All four cells remain **GAP** and M6 remains open.
 
 ## 2026-10-28 native-f32 scalar-analysis callback SIMD accepted at parent `4770e1c7`
 

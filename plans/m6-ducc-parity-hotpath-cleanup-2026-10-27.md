@@ -42,14 +42,35 @@ success counts or candidate-specific instruction attribution. Exact paired
 timings and the retained patch are in the [single M6 ledger](../reports/DUCC_PARITY_M6.md)
 and [screen report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
 
-The owner's current priority returns to native-f32 GL T720 scalar synthesis.
-The `scalar_paired/synthesis.rs` and scalar transform synthesis sources are
-byte-identical between latest source `092fe72f` and the earlier reflected work
-census source `49295a89`; that census shows roughly 2× useful degree-latitude
-work versus DUCC but its instrumented timings are not acceptance data.
-Re-measure an exact-current-source baseline and Legendre stage, then choose one
-bounded synthesis-only dataflow change. Do not repeat either scaled-prefix
-suffix candidate unchanged. M6 remains open.
+The exact current native-f32 GL T720 scalar-synthesis source is `092fe72f`
+(latest dev head `023ba6f3` adds documentation only). Matched parent/DUCC
+ratios are 32.08×/36.94× full and 22.77×/42.43× reduced q1/q8. A 30-sample
+test-only phase profile puts 99.68–99.82% of the call in Legendre recurrence
+and spectral accumulation.
+
+The scaled-prefix-to-fused-suffix route is a measured blocker. The production
+paired-synthesis and scalar-transform source blobs at `092fe72f` are identical
+to exact suffix-screen parent `746c7e60`. That isolated candidate completed
+13.695M–33.598M checked suffix contributions per cell, yet regressed all four
+whole-transform cells by 8.2–27.0% and the Legendre stage by 7.1–26.9%.
+Recurrence-state declines were zero; later coefficient/product/output checks
+caused 159–940 block declines, and another 93–131 blocks found no transition.
+Declined work replayed through the original fallback. Do not repeat that
+block-check/replay route unchanged; keep the exact polar, subnormal, nonfinite,
+overflow and tail fallback.
+
+The separate f32-I/O/f64-internal diagnostic at transform source `54b166f2`
+measured the existing f64 reflected order-major route at 0.746–0.779× DUCC;
+forcing that build through the all-ring paired route cost 3.714–13.442× DUCC.
+This identifies a large dataflow cost beyond native-f32 exponent range. After
+this documented suffix blocker, continue with the remaining native-f32
+scalar/spin families, then return to the reflected-ring scalar-synthesis
+opportunity without changing scalar-analysis or f64 dispatch. See the
+[single M6 ledger](../reports/DUCC_PARITY_M6.md), [exact baseline
+evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-synthesis-baseline-092fe72f/README.md),
+[suffix screen](../reports/data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md),
+and [precision diagnostic](../reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md).
+M6 remains open.
 
 ## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
 

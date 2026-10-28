@@ -8,7 +8,7 @@
 
 **Main Luna Max is the only production-code writer.** One previously permitted **Luna-only `benchmark`** subagent is optional for read-only-to-`dev` isolated benchmark work; it must not spawn Sol or any other agent. If the Luna benchmark option is unavailable or would exhaust quota, main Luna should run only essential benchmarks sequentially. Do not add other subagents. **If quota/resources fail, checkpoint, push verified code, clean owned scratch and stop. Never invoke Sol.**
 
-## ACTIVE M6 CONTINUATION OVERRIDE — 2026-10-28: native-f32 families after synthesis blocker
+## ACTIVE M6 CONTINUATION OVERRIDE — 2026-10-28: native-f32 families after measured suffix blocker
 
 The shared f32/f64 fused scalar-synthesis kernel, 32-ring scheduler and
 checked native-f32 packet leaf remain complete. The corrected f32
@@ -44,14 +44,35 @@ success counts or candidate-specific instruction attribution. See the exact
 paired timings and retained patch in the [single M6 ledger](reports/DUCC_PARITY_M6.md)
 and [screen report](reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
 
-The owner's current priority returns to native-f32 GL T720 scalar synthesis.
-The `scalar_paired/synthesis.rs` and scalar transform synthesis sources are
-byte-identical between latest source `092fe72f` and the earlier reflected
-work census source `49295a89`; that census shows roughly 2× useful
-degree-latitude work versus DUCC but its instrumented timings are not acceptance
-data. Re-measure an exact-current-source baseline and Legendre stage, then
-choose one bounded synthesis-only dataflow change. Do not repeat either
-scaled-prefix suffix candidate unchanged. M6 remains open.
+The latest exact scalar-synthesis source is `092fe72f` (latest dev head
+`023ba6f3` adds documentation only). Matched parent/DUCC ratios are
+32.08×/36.94× full and 22.77×/42.43× reduced q1/q8; a 30-sample test-only
+phase profile puts 99.68–99.82% of the call in Legendre recurrence and
+spectral accumulation.
+
+The requested scaled-prefix-to-fused-suffix route is now a measured blocker.
+The production paired-synthesis and scalar-transform source blobs at `092fe72f`
+are identical to exact suffix-screen parent `746c7e60`. That isolated
+candidate completed 13.695M–33.598M checked suffix contributions per cell,
+yet regressed all four whole-transform cells by 8.2–27.0% and the Legendre
+stage by 7.1–26.9%. Recurrence-state declines were zero; later coefficient,
+product and output checks caused 159–940 block declines, while 93–131 blocks
+found no transition. Declined work replayed through the original fallback.
+Do not repeat this block-check/replay route unchanged. Keep the original polar,
+subnormal, nonfinite, overflow and tail fallback.
+
+The separate f32-I/O/f64-internal diagnostic at production transform source
+`54b166f2` measured the f64 reflected order-major route at 0.746–0.779× DUCC;
+forcing that same f64 build through all-ring paired recurrence cost 3.714–
+13.442× DUCC. This isolates a large dataflow cost beyond native-f32 exponent
+range. After documenting this suffix blocker, proceed to the remaining
+native-f32 scalar/spin families, then return to the reflected-ring scalar
+synthesis opportunity without changing scalar-analysis or f64 dispatch.
+See the [single M6 ledger](reports/DUCC_PARITY_M6.md), [exact baseline
+evidence](reports/data/ducc-parity-m6-2026-10-28/f32-scalar-synthesis-baseline-092fe72f/README.md),
+[suffix screen](reports/data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md),
+and [precision diagnostic](reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md).
+M6 remains open.
 
 ## Active M6 goal — real DUCC speed parity, assembly/Callgrind, and careful cleanup
 
