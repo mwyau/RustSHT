@@ -1,0 +1,22 @@
+[
+  {
+    "cell": "M720-q1",
+    "profile": "M6_F32_SUFFIX_PROFILE order_calls=5499 order_len_64=5396 order_len_32=0 initial_fused_success=1744 fallback_blocks=3657 fallback_packets=29256 fallback_generic=98 initial_packet_attempts=5672 initial_packet_successes=5672 initial_packet_declines=0 initial_packet_terms=15246464 prefix_callback_terms=16702624 corrected_transitions=22692 corrected_nonzero_exponent_lanes=0 corrected_transition_terms=59632800 attempts=22692 successes=22692 declines=0 suffix_degree_latitude_terms=59632800 decline_coeff=0 decline_vector=0 decline_recurrence=0 decline_tail=0 suffix_fused_pair_updates=29861816 suffix_fused_recurrence_updates=29680280 declined_replay_pair_updates=0 declined_replay_recurrence_updates=0 suffix_fraction_buckets=372,576,863,1256,1945,2782,4385,10513 succeeded_fraction_buckets=372,576,863,1256,1945,2782,4385,10513",
+    "stdout_sha256": "7389b85d5ed8912d62c0a1218025e2aa6e86c825ae649780e254c735ec2112be"
+  },
+  {
+    "cell": "M720-q8",
+    "profile": "M6_F32_SUFFIX_PROFILE order_calls=11547 order_len_64=0 order_len_32=11444 initial_fused_success=4337 fallback_blocks=7112 fallback_packets=28448 fallback_generic=98 initial_packet_attempts=2256 initial_packet_successes=2256 initial_packet_declines=0 initial_packet_terms=6213152 prefix_callback_terms=21693384 corrected_transitions=24550 corrected_nonzero_exponent_lanes=0 corrected_transition_terms=61194744 attempts=24550 successes=24550 declines=0 suffix_degree_latitude_terms=61194744 decline_coeff=0 decline_vector=0 decline_recurrence=0 decline_tail=0 suffix_fused_pair_updates=30646512 suffix_fused_recurrence_updates=30450112 declined_replay_pair_updates=0 declined_replay_recurrence_updates=0 suffix_fraction_buckets=736,1080,1342,1608,2075,2811,4385,10513 succeeded_fraction_buckets=736,1080,1342,1608,2075,2811,4385,10513",
+    "stdout_sha256": "92ede90901822ae9e91bfff3257f04d8ca3330dae800abc3043da75dd2b0fc40"
+  },
+  {
+    "cell": "M180-q1",
+    "profile": "M6_F32_SUFFIX_PROFILE order_calls=1992 order_len_64=1889 order_len_32=0 initial_fused_success=922 fallback_blocks=972 fallback_packets=7776 fallback_generic=98 initial_packet_attempts=1325 initial_packet_successes=1325 initial_packet_declines=0 initial_packet_terms=6626200 prefix_callback_terms=5285416 corrected_transitions=6195 corrected_nonzero_exponent_lanes=0 corrected_transition_terms=26482624 attempts=6195 successes=6195 declines=0 suffix_degree_latitude_terms=26482624 decline_coeff=0 decline_vector=0 decline_recurrence=0 decline_tail=0 suffix_fused_pair_updates=13253760 suffix_fused_recurrence_updates=13204200 declined_replay_pair_updates=0 declined_replay_recurrence_updates=0 suffix_fraction_buckets=43,59,78,124,230,492,1041,4128 succeeded_fraction_buckets=43,59,78,124,230,492,1041,4128",
+    "stdout_sha256": "c75ffc5b16220d8d67f2949055a9900280f0facfe7a1bd10a77dd226623d5135"
+  },
+  {
+    "cell": "M180-q8",
+    "profile": "M6_F32_SUFFIX_PROFILE order_calls=3983 order_len_64=0 order_len_32=3880 initial_fused_success=2036 fallback_blocks=1849 fallback_packets=7396 fallback_generic=98 initial_packet_attempts=537 initial_packet_successes=537 initial_packet_declines=0 initial_packet_terms=2698936 prefix_callback_terms=6479496 corrected_transitions=6559 corrected_nonzero_exponent_lanes=0 corrected_transition_terms=27159296 attempts=6559 successes=6559 declines=0 suffix_degree_latitude_terms=27159296 decline_coeff=0 decline_vector=0 decline_recurrence=0 decline_tail=0 suffix_fused_pair_updates=13592824 suffix_fused_recurrence_updates=13540352 declined_replay_pair_updates=0 declined_replay_recurrence_updates=0 suffix_fraction_buckets=68,110,156,215,320,521,1041,4128 succeeded_fraction_buckets=68,110,156,215,320,521,1041,4128",
+    "stdout_sha256": "89d2ceef8dd41f8355b5df8eb1fe62ab67eec050f086019c9eeb9f5b5ea464c0"
+  }
+]

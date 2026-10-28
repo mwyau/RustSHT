@@ -1,0 +1,27 @@
+{
+  "parent_revision": "2b531d73049fdbc6e1b94b2132bfb9cb3476d319",
+  "candidate_v1_patch_sha256": "3ffceb2b04e5093777e8ad7be5dd7c3930f3250b85512a161b6876bfb99c22fd",
+  "candidate_v2_patch_sha256": "9bde31c431a71ad3d162b4b61674529c4ebc5b433fca953d35504a0944127c31",
+  "pinned_ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_binaries_sha256": {
+    "parent": "737e9a544c1463b331972d69378ec871acbf42ba759a9eceb32540a7e9eb83e1",
+    "candidate_v1": "2800413c8f604325c155857ec6557d60b8890742d302c37f8d3f973051683586"
+  },
+  "ducc_binary_sha256": "c3bee872242c876ed06a44cbbab66e3335b233f9e18a3995bbc2d9bd2191005e",
+  "rust_toolchain": "rustc/Cargo 1.99.1, LLVM 23.1.1",
+  "rust_flags": "--locked --release; RUSTFLAGS=-C target-cpu=x86-64-v3; runtime Pulp V3 AVX2/FMA",
+  "ducc_flags": "GCC 15.2, -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+  "affinity": {
+    "q1": "CPU 3",
+    "q8": "CPUs 8-15"
+  },
+  "geometry": "GL T720, ntheta=721, phi0=0.23; full mmax=720/nphi=1458; reduced mmax=180/nphi=378",
+  "runner_sha256": "70033f7251358128783f35d7aefa527fa957abce5513571db1142e92e6e38ff0",
+  "alm0_fixture_sha256_by_cell": {
+    "GL-T720-M180-q1": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+    "GL-T720-M180-q8": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+    "GL-T720-M720-q1": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "GL-T720-M720-q8": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96"
+  },
+  "ci_latest": "Rust CI for 2b531d73049fdbc6e1b94b2132bfb9cb3476d319 completed success (run 40697111426)"
+}

@@ -1,0 +1,842 @@
+[
+  {
+    "case": "GL-T720-M720-analysis-s0-q1",
+    "n": 3,
+    "median_candidate_parent": 1.0404227339827374,
+    "faster_pairs": 0,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 545.34524,
+          "candidate": 585.71241,
+          "ducc": 14.0478405
+        },
+        "candidate_parent": 1.0740213117107247,
+        "parent_ducc": 38.82057459294188,
+        "candidate_ducc": 41.69412444567548,
+        "errors_parent_candidate": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230150792575,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 520562,
+          "relative_l2": 1.829360998058256e-05,
+          "absolute_l2": 2.068025281356278e-05,
+          "max_absolute": 4.29514329880476e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 566.3377889999999,
+          "candidate": 569.048165,
+          "ducc": 14.093934749999999
+        },
+        "candidate_parent": 1.0047857940131206,
+        "parent_ducc": 40.18308577737668,
+        "candidate_ducc": 40.37539374871876,
+        "errors_parent_candidate": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230150792575,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 520562,
+          "relative_l2": 1.829360998058256e-05,
+          "absolute_l2": 2.068025281356278e-05,
+          "max_absolute": 4.29514329880476e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 547.494759,
+          "candidate": 569.625994,
+          "ducc": 14.063046750000002
+        },
+        "candidate_parent": 1.0404227339827374,
+        "parent_ducc": 38.93144698534121,
+        "candidate_ducc": 40.5051625103927,
+        "errors_parent_candidate": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230150792575,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 520562,
+          "relative_l2": 1.829360998058256e-05,
+          "absolute_l2": 2.068025281356278e-05,
+          "max_absolute": 4.29514329880476e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "GL-T720-M720-analysis-s0-q8",
+    "n": 3,
+    "median_candidate_parent": 1.0394340602088152,
+    "faster_pairs": 0,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 71.8611135,
+          "candidate": 75.3817665,
+          "ducc": 2.0162558846153846
+        },
+        "candidate_parent": 1.0489924637752794,
+        "parent_ducc": 35.640869816336846,
+        "candidate_ducc": 37.387003839733175,
+        "errors_parent_candidate": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230150792575,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 520562,
+          "relative_l2": 1.829360998058256e-05,
+          "absolute_l2": 2.068025281356278e-05,
+          "max_absolute": 4.29514329880476e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 72.6861125,
+          "candidate": 74.7697535,
+          "ducc": 2.016443076923077
+        },
+        "candidate_parent": 1.028666287525007,
+        "parent_ducc": 36.046696944658066,
+        "candidate_ducc": 37.08002192360043,
+        "errors_parent_candidate": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230150792575,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 520562,
+          "relative_l2": 1.829360998058256e-05,
+          "absolute_l2": 2.068025281356278e-05,
+          "max_absolute": 4.29514329880476e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 72.04780550000001,
+          "candidate": 74.88894300000001,
+          "ducc": 2.0442061923076924
+        },
+        "candidate_parent": 1.0394340602088152,
+        "parent_ducc": 35.2448817399705,
+        "candidate_ducc": 36.634730528557064,
+        "errors_parent_candidate": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230150792575,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 520562,
+          "relative_l2": 1.829360998058256e-05,
+          "absolute_l2": 2.068025281356278e-05,
+          "max_absolute": 4.29514329880476e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "GL-T720-M720-analysis-s1-q1",
+    "n": 3,
+    "median_candidate_parent": 0.997648411380388,
+    "faster_pairs": 2,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 1029.870337,
+          "candidate": 1025.7024139999999,
+          "ducc": 29.028202999999998
+        },
+        "candidate_parent": 0.9959529633486276,
+        "parent_ducc": 35.47826701501295,
+        "candidate_ducc": 35.33468516807602,
+        "errors_parent_candidate": {
+          "output_values": 1041124,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015658156982234965,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 1041124,
+          "relative_l2": 1.5693451383550116e-05,
+          "absolute_l2": 2.5073233527330562e-05,
+          "max_absolute": 2.230517566204071e-07,
+          "reference_rms": 0.0015658157252705987,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 1033.6710170000001,
+          "candidate": 1031.240248,
+          "ducc": 28.880829499999997
+        },
+        "candidate_parent": 0.997648411380388,
+        "parent_ducc": 35.79090472453363,
+        "candidate_ducc": 35.70673924029779,
+        "errors_parent_candidate": {
+          "output_values": 1041124,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015658156982234965,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 1041124,
+          "relative_l2": 1.5693451383550116e-05,
+          "absolute_l2": 2.5073233527330562e-05,
+          "max_absolute": 2.230517566204071e-07,
+          "reference_rms": 0.0015658157252705987,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 1034.452339,
+          "candidate": 1039.2629980000002,
+          "ducc": 29.144621
+        },
+        "candidate_parent": 1.004650440449147,
+        "parent_ducc": 35.49376535038832,
+        "candidate_ducc": 35.658826992466295,
+        "errors_parent_candidate": {
+          "output_values": 1041124,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015658156982234965,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 1041124,
+          "relative_l2": 1.5693451383550116e-05,
+          "absolute_l2": 2.5073233527330562e-05,
+          "max_absolute": 2.230517566204071e-07,
+          "reference_rms": 0.0015658157252705987,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "GL-T720-M720-analysis-s1-q8",
+    "n": 3,
+    "median_candidate_parent": 0.9985537926892097,
+    "faster_pairs": 3,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 135.843127,
+          "candidate": 135.690026,
+          "ducc": 4.8821743571428575
+        },
+        "candidate_parent": 0.9988729573340871,
+        "parent_ducc": 27.824308814627837,
+        "candidate_ducc": 27.792949631444216,
+        "errors_parent_candidate": {
+          "output_values": 1041124,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015658156982234965,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 1041124,
+          "relative_l2": 1.5693451383550116e-05,
+          "absolute_l2": 2.5073233527330562e-05,
+          "max_absolute": 2.230517566204071e-07,
+          "reference_rms": 0.0015658157252705987,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 136.985685,
+          "candidate": 136.779162,
+          "ducc": 4.146893499999999
+        },
+        "candidate_parent": 0.9984923753164429,
+        "parent_ducc": 33.03332603067815,
+        "candidate_ducc": 32.98352417297431,
+        "errors_parent_candidate": {
+          "output_values": 1041124,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015658156982234965,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 1041124,
+          "relative_l2": 1.5693451383550116e-05,
+          "absolute_l2": 2.5073233527330562e-05,
+          "max_absolute": 2.230517566204071e-07,
+          "reference_rms": 0.0015658157252705987,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 136.90084299999998,
+          "candidate": 136.70285600000003,
+          "ducc": 4.1455015714285715
+        },
+        "candidate_parent": 0.9985537926892097,
+        "parent_ducc": 33.023951539071035,
+        "candidate_ducc": 32.97619205892405,
+        "errors_parent_candidate": {
+          "output_values": 1041124,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015658156982234965,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 1041124,
+          "relative_l2": 1.5693451383550116e-05,
+          "absolute_l2": 2.5073233527330562e-05,
+          "max_absolute": 2.230517566204071e-07,
+          "reference_rms": 0.0015658157252705987,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "GL-T720-M720-synthesis-s1-q1",
+    "n": 3,
+    "median_candidate_parent": 0.9860519197509737,
+    "faster_pairs": 2,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 1541.417478,
+          "candidate": 1512.2298700000001,
+          "ducc": 41.933915
+        },
+        "candidate_parent": 0.9810644368468748,
+        "parent_ducc": 36.75825350435322,
+        "candidate_ducc": 36.062215273722956,
+        "errors_parent_candidate": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.2301818695302276,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 0.0001426412049337804,
+          "absolute_l2": 0.04760734751744492,
+          "max_absolute": 0.0011716485023498535,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 1485.712642,
+          "candidate": 1503.570193,
+          "ducc": 41.613474499999995
+        },
+        "candidate_parent": 1.0120195187785177,
+        "parent_ducc": 35.702681880120345,
+        "candidate_ducc": 36.131810935421896,
+        "errors_parent_candidate": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.2301818695302276,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 0.0001426412049337804,
+          "absolute_l2": 0.04760734751744492,
+          "max_absolute": 0.0011716485023498535,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 1487.924548,
+          "candidate": 1467.1708569999998,
+          "ducc": 40.407951499999996
+        },
+        "candidate_parent": 0.9860519197509737,
+        "parent_ducc": 36.82256815221133,
+        "candidate_ducc": 36.30896401664905,
+        "errors_parent_candidate": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.2301818695302276,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 0.0001426412049337804,
+          "absolute_l2": 0.04760734751744492,
+          "max_absolute": 0.0011716485023498535,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "GL-T720-M720-synthesis-s1-q8",
+    "n": 3,
+    "median_candidate_parent": 0.9991090642873086,
+    "faster_pairs": 2,
+    "pairs": [
+      {
+        "pair": 1,
+        "times_ms": {
+          "parent": 270.164274,
+          "candidate": 269.923575,
+          "ducc": 5.5853639
+        },
+        "candidate_parent": 0.9991090642873086,
+        "parent_ducc": 48.37003977484797,
+        "candidate_ducc": 48.326945178988254,
+        "errors_parent_candidate": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.2301818695302276,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 0.0001426412049337804,
+          "absolute_l2": 0.04760734751744492,
+          "max_absolute": 0.0011716485023498535,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 2,
+        "times_ms": {
+          "parent": 269.389487,
+          "candidate": 271.050123,
+          "ducc": 5.6119797
+        },
+        "candidate_parent": 1.006164442489918,
+        "parent_ducc": 48.00257688031195,
+        "candidate_ducc": 48.298486004858496,
+        "errors_parent_candidate": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.2301818695302276,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 0.0001426412049337804,
+          "absolute_l2": 0.04760734751744492,
+          "max_absolute": 0.0011716485023498535,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      },
+      {
+        "pair": 3,
+        "times_ms": {
+          "parent": 273.339396,
+          "candidate": 271.58527300000003,
+          "ducc": 5.6107103
+        },
+        "candidate_parent": 0.9935826191699055,
+        "parent_ducc": 48.71743173052439,
+        "candidate_ducc": 48.404793418045486,
+        "errors_parent_candidate": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.2301818695302276,
+          "finite": true
+        },
+        "errors_candidate_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 0.0001426412049337804,
+          "absolute_l2": 0.04760734751744492,
+          "max_absolute": 0.0011716485023498535,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "repeat_reset_finite": {
+          "parent": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "candidate": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          },
+          "ducc": {
+            "finite": true,
+            "repeat": true,
+            "reset": true
+          }
+        }
+      }
+    ]
+  }
+]

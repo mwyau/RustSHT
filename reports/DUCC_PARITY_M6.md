@@ -1,6 +1,81 @@
 # M6 — current-head DUCC parity triage
 
-## 2026-10-28 native-f32 prefix-to-fused-suffix follow-up — not promoted
+## 2026-10-28 packetized native-f32 suffix screen at `2b531d73` — not promoted
+
+Exact parent `2b531d73049fdbc6e1b94b2132bfb9cb3476d319` was fetched from
+`origin/dev` before the screen. Against pinned DUCC 0.42.0
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, an isolated packet route reused
+the shared f32 recurrence, accumulator, and fused SIMD kernel. It partitions
+declined 32/64-ring blocks into SIMD-width packets, accumulates the scaled
+prefix through the existing callback, stages a checked suffix transactionally,
+and falls back to the untouched recurrence state on decline.
+
+Fifteen interleaved warm whole-transform pairs ran per GL T720 f32 scalar
+synthesis cell. Ratios and intervals are paired candidate/parent results.
+
+| Cell | Parent / candidate / DUCC median ms | Candidate/parent [95% CI] | Candidate/DUCC | Faster pairs | Status |
+|---|---:|---:|---:|---:|---|
+| Full q1 | 680.737 / 643.320 / 20.397 | 0.94630 [0.94251, 0.95308] | 31.59× | 14/15 | **GAP** |
+| Full q8 | 100.357 / 96.367 / 2.873 | 0.95932 [0.94338, 0.97653] | 33.32× | 15/15 | **GAP** |
+| Reduced q1 | 202.371 / 184.452 / 8.894 | 0.91721 [0.91458, 0.91986] | 20.88× | 15/15 | **GAP** |
+| Reduced q8 | 53.510 / 53.061 / 1.324 | 0.98741 [0.93760, 1.00305] | 40.93× | 11/15 | **GAP** |
+
+The q1 gains are repeatable (5.4% full, 8.3% reduced); full q8 improved 4.1%.
+Reduced q8 is inconclusive and effectively neutral. A separate eight-sample
+test-only phase profile measured the Legendre stage independently: full q1
+improved 652.589→613.512 ms, while reduced q1 was highly variable and q8
+stage medians were neutral/noisy. The inverse FFT remained below 1.71 ms.
+Those stage samples are diagnostic; whole-transform pairs determine the screen.
+
+Candidate route counts per fallback packet were, in full/reduced q1/q8 order:
+initial packet fusion `15.246M / 6.213M / 6.626M / 2.699M` terms; scaled
+callback prefix `16.703M / 21.693M / 5.285M / 6.479M`; fused suffix
+`59.633M / 61.195M / 26.483M / 27.159M`. All suffix attempts completed with
+zero decline/replay. However, the corrected state contained **zero nonzero
+exponent lanes** in all four cells. Removing the `normal_range` guard in a
+separate route-only probe did not change any packet or term count. Thus the
+candidate reduces scalar callback work, but its safe fused suffix still waits
+for exponent zero; it does not reproduce DUCC's early scaled-prefix handoff.
+
+The pinned DUCC path initializes a double recurrence plus per-lane scale,
+advances a scaled prefix in `iter_to_ieee`, handles any remaining scaled
+contributions in `calc_alm2map`, then applies the per-lane correction to both
+states once and enters a four-degree (two recurrence-pair) AVX2 double-FMA suffix. Rust's
+checked f32 fallback emits YMM FMA but also per-degree coefficient,
+contribution, and recurrence checks. Its unprofiled V3 fallback symbol is 14,720 bytes
+(3,321 static instructions, 358 static branches, including fallback and tail
+code); DUCC's extracted `alm2map_kernel` is 738 bytes. These are static code
+shapes, not dynamic work, cycles, or elapsed-time estimates. The existing
+[f32-I/O/f64-internal diagnostic](data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md)
+shows that DUCC's reflected-ring reuse is another major factor; that source
+predates this exact parent and is used only as algorithmic context.
+
+Candidate numerical validation passed 23 focused f32 library tests and 12
+f32 integration tests, including T720 analytic modes, scalar adjoint,
+workspace reset, polar decline, overflow, subnormal, nonfinite, mixed exponent,
+and partial-vector cases. All 60 parent/candidate pair cases (120 Rust outputs) were finite and
+repeat/reset consistent. Candidate-parent relative L2 was
+`1.71e-7`–`1.90e-7` (max absolute at most `2.39e-7`); candidate/DUCC relative
+L2 remained `1.7234e-4` full / `2.7255e-4` reduced. Adjacent f32 controls were
+run after the initial screen. Across 15 paired comparisons, scalar analysis
+regressed 3.89% q1 (95% interval `[1.03697,1.04042]`) and 3.95% q8
+(`[1.03518,1.04559]`); only 1/15 q1 and 0/15 q8 pairs were faster. Three-pair
+spin-1 analysis and synthesis controls were approximately neutral. The
+protected f64 T1023 spin-1 timing was not run after this clear adjacent f32
+regression. No source code was promoted. See the [screen report](data/ducc-parity-m6-2026-10-28/f32-corrected-transition-2b531d73/README.md)
+for exact pairs, route counters, stage samples, hashes, assembly and patches.
+
+**Decision and next step:** reject both isolated transition patches. Native f32
+range prevented a nonzero-exponent handoff on these fixtures; the route-only
+probe found no additional safe states. The adjacent scalar-analysis regression
+also fails the no-regression gate. Continue with the active plan's bounded
+current-source synthesis-only reflected-ring work measurement; if it cannot
+support a shared safe route with material whole-transform potential, move on to
+f32 scalar analysis and spin-1 synthesis/analysis. M6 remains active; all four
+synthesis cells remain **GAP**.
+
+
+## Historical 2026-10-28 native-f32 prefix-to-fused-suffix follow-up at earlier source `49295a89` — not promoted
 
 At exact source parent `49295a89f2d13d8b02c2cbfa8566a8c5c21c6a80`
 (`src/` is identical to `ef11ce0a`) against pinned DUCC 0.42.0
@@ -26,11 +101,11 @@ late recurrence-range declines; discarded attempts replayed only 0.09–0.19M
 pair-lane contributions per cell. The f32 Rust/DUCC gap remains 21.72–42.09×.
 The candidate was not promoted and adjacent/f64 controls were not run.
 
-The current exact-parent work census records about 2× Rust recurrence work
-versus DUCC's reflected northern-hemisphere route. Continue with a synthesis
-only reflected-ring hypothesis, leaving scalar analysis and f64 routing
-unchanged. Full route counts, suffix-length bins, stage samples, numerical
-errors, assembly and exact candidate patch are in the [screen report](data/ducc-parity-m6-2026-10-28/f32-prefix-suffix-transition-49295a89/README.md).
+At that earlier source, the work census recorded about 2× Rust recurrence work
+versus DUCC's reflected northern-hemisphere route. The reflected-ring
+hypothesis was later screened separately; the active next step is recorded at
+the top of this ledger. Full route counts, suffix-length bins, stage samples,
+numerical errors, assembly and exact candidate patch are in the [screen report](data/ducc-parity-m6-2026-10-28/f32-prefix-suffix-transition-49295a89/README.md).
 M6 remains open.
 
 ## 2026-10-28 native-f32 T720 all-family baseline at `b3289762`
