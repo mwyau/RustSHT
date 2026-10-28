@@ -1,0 +1,66 @@
+{
+  "candidate_patch": {
+    "gzip_bytes": 8392,
+    "gzip_sha256": "e4bc6159330ca804aea5ce46fac460ed836e6e8c2448e0718581506096ec5b81",
+    "raw_bytes": 46112,
+    "raw_sha256": "bd648142b3209b2e6c4849e0ea4524823a532d9f8a3cf2c994e2d78fbcb06c3d"
+  },
+  "diagnostic_candidate": "exact-zero suffix candidate with suffix attempts skipped whenever any lane exponent is nonzero",
+  "interpretation": "Disabling only nonzero-exponent suffix attempts reduced parent-relative output error from 0.430165/0.376613 to about 2e-7 relative L2. The exact-zero suffix error is isolated to transitions carrying nonzero recurrence exponents. A synthetic +/-80 exponent state handoff passes, so the remaining defect is in how real scaled-recurrence states or their prefix sums reach the transition; the exact subcause remains unproven.",
+  "parent_source": "a69c4c81383335e94f46038c14a3cec95148bfd3",
+  "production_transform_source": "54b166f2c0698f1c70e88f8679d12fa4376704fe",
+  "q1_transform_capture": {
+    "affinity": "same fixed pinned core for parent and candidate",
+    "cells": {
+      "M180_fixture_sha256": {
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+      },
+      "M180_q1": {
+        "absolute_l2": 1.6061509402828443e-05,
+        "bitwise_equal": false,
+        "candidate_output_sha256": "8db91a780ba940bfccdb0ba8b81a21a5a04571f36ad786ad4ea2e60779697cd1",
+        "finite": true,
+        "max_absolute": 1.7881393432617188e-07,
+        "output_values": 272538,
+        "parent_output_sha256": "37f854f69c6180dcef9e44778b93dfe566915481961def5a6ad448142ad932f7",
+        "reference_rms": 0.17186583488101023,
+        "relative_l2": 1.790124646219863e-07
+      },
+      "M720_fixture_sha256": {
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+      },
+      "M720_q1": {
+        "absolute_l2": 4.514999208574065e-05,
+        "bitwise_equal": false,
+        "candidate_output_sha256": "403a086aff1362c4af061e793193fda5a6a74ce5b618be347598fd2f40aa53a7",
+        "finite": true,
+        "max_absolute": 2.384185791015625e-07,
+        "output_values": 1051218,
+        "parent_output_sha256": "260e35799c6f8d3c505fc9d6f2cc5bdbd5443e03d4e75e4d488044904066d45d",
+        "reference_rms": 0.2299908284147645,
+        "relative_l2": 1.9147001293507495e-07
+      }
+    },
+    "compiler_flags": "release; rustc 1.99.1; -C target-cpu=x86-64-v3",
+    "geometry": "GL T720 f32 scalar synthesis; phi0=0.23; ntheta=721; full mmax=720/nphi=1458; reduced mmax=180/nphi=378",
+    "runs": "one first transform per parent/candidate/cell; outputs captured; no timing",
+    "threads": 1
+  },
+  "synthetic_state_test": {
+    "comparison": "native SIMD suffix vs scalar recurrence using exactly rescaled states",
+    "exponents": [
+      -80,
+      80
+    ],
+    "result": "passed",
+    "state": "one scaled prefix pair, then suffix starts at pair 1",
+    "test": "f32_synthesis_suffix_handoff_matches_nonzero_exponent_scaled_prefix"
+  },
+  "timing": "Not measured; this is a correctness isolation control, not a production candidate."
+}
