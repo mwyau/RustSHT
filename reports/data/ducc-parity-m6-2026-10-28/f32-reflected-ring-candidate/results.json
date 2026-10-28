@@ -1,0 +1,334 @@
+{
+  "parent_source_sha": "d2c1ee980ab3b4ee16727f9b5d1f2c610a460bf8",
+  "candidate": "uncommitted post-module-move reflected-ring candidate; source patch is candidate-post-layout.patch.gz (decompressed SHA-256 recorded below)",
+  "candidate_patch_sha256": "4f245065a6722aec02024df42717169b993fef15a834deab8c73b80ed6920f5b",
+  "binaries": {
+    "candidate_sha256": "03a5c182a06bfc9ddd3025ab9049477da1a9f4b459d228656739508308508043",
+    "parent_sha256": "566861000a5c3e978a288154e8cc65d79cac0da5768095bc961f3e13b480bd04",
+    "ducc_sha256": "9d8fc28bafe79feb331c74e85dfda52d1d579bf915492c9762277a92ec23de49"
+  },
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "build": {
+    "rust_flags": "-C target-cpu=x86-64-v3",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+    "target_ms": 25,
+    "fixture": "scripts/benchmark_ducc_f32_native.py make_fixture, phi0=0.23",
+    "q1_affinity": "one fixed CPU (core ID omitted)",
+    "q8_affinity": "fixed set of eight CPUs (core IDs omitted)"
+  },
+  "synthesis_whole_transform_3_pair_screen": {
+    "M180-q1": {
+      "pairs": 3,
+      "parent_ms": [
+        213.27669699999998,
+        213.222923,
+        213.216431
+      ],
+      "candidate_ms": [
+        151.010577,
+        151.16609,
+        151.102567
+      ],
+      "ducc_ms": [
+        9.004891166666667,
+        8.961657166666667,
+        9.078321166666667
+      ],
+      "candidate_parent_ratios": [
+        0.7080500548074412,
+        0.7089579669630549,
+        0.7086816259484242
+      ],
+      "candidate_ducc_ratios": [
+        16.769839213492624,
+        16.86809561988935,
+        16.64432930119403
+      ],
+      "candidate_parent_relative_l2": [
+        5.037001486236655e-07,
+        5.037001486236655e-07,
+        5.037001486236655e-07
+      ],
+      "candidate_parent_max_absolute": [
+        1.7369166016578674e-06,
+        1.7369166016578674e-06,
+        1.7369166016578674e-06
+      ],
+      "candidate_ducc_relative_l2": [
+        0.00027253996740262434,
+        0.00027253996740262434,
+        0.00027253996740262434
+      ],
+      "candidate_ducc_max_absolute": [
+        0.0015479028224945068,
+        0.0015479028224945068,
+        0.0015479028224945068
+      ],
+      "all_finite_repeat_reset": true
+    },
+    "M180-q8": {
+      "pairs": 3,
+      "parent_ms": [
+        55.888608,
+        55.80478049999999,
+        55.8385235
+      ],
+      "candidate_ms": [
+        21.656667999999996,
+        21.621487000000002,
+        21.551668499999998
+      ],
+      "ducc_ms": [
+        1.1849234318181818,
+        1.1903187727272728,
+        1.2140762380952381
+      ],
+      "candidate_parent_ratios": [
+        0.38749700117777125,
+        0.3874486523605268,
+        0.3859641542993163
+      ],
+      "candidate_ducc_ratios": [
+        18.276850147835596,
+        18.16445098186647,
+        17.751495189307363
+      ],
+      "candidate_parent_relative_l2": [
+        5.035845635923715e-07,
+        5.035845635923715e-07,
+        5.035845635923715e-07
+      ],
+      "candidate_parent_max_absolute": [
+        1.7369166016578674e-06,
+        1.7369166016578674e-06,
+        1.7369166016578674e-06
+      ],
+      "candidate_ducc_relative_l2": [
+        0.00027253996740262434,
+        0.00027253996740262434,
+        0.00027253996740262434
+      ],
+      "candidate_ducc_max_absolute": [
+        0.0015479028224945068,
+        0.0015479028224945068,
+        0.0015479028224945068
+      ],
+      "all_finite_repeat_reset": true
+    },
+    "M720-q1": {
+      "pairs": 3,
+      "parent_ms": [
+        710.747056,
+        711.946804,
+        710.758037
+      ],
+      "candidate_ms": [
+        472.87772500000005,
+        474.268587,
+        478.729599
+      ],
+      "ducc_ms": [
+        19.98515025,
+        19.94641,
+        19.807066
+      ],
+      "candidate_parent_ratios": [
+        0.6653249155350706,
+        0.6661573369462025,
+        0.6735479221883214
+      ],
+      "candidate_ducc_ratios": [
+        23.661454584260635,
+        23.777140197158285,
+        24.16963718907182
+      ],
+      "candidate_parent_relative_l2": [
+        4.7604126627430284e-07,
+        4.7604126627430284e-07,
+        4.7604126627430284e-07
+      ],
+      "candidate_parent_max_absolute": [
+        2.7418136596679688e-06,
+        2.7418136596679688e-06,
+        2.7418136596679688e-06
+      ],
+      "candidate_ducc_relative_l2": [
+        0.0001723343938679496,
+        0.0001723343938679496,
+        0.0001723343938679496
+      ],
+      "candidate_ducc_max_absolute": [
+        0.0009643733501434326,
+        0.0009643733501434326,
+        0.0009643733501434326
+      ],
+      "all_finite_repeat_reset": true
+    },
+    "M720-q8": {
+      "pairs": 3,
+      "parent_ms": [
+        105.519839,
+        110.538418,
+        108.30606800000001
+      ],
+      "candidate_ms": [
+        61.606233,
+        61.631543,
+        61.7055315
+      ],
+      "ducc_ms": [
+        2.6618611999999997,
+        2.64331765,
+        2.6771084
+      ],
+      "candidate_parent_ratios": [
+        0.5838355477399847,
+        0.5575576719399042,
+        0.5697329119177329
+      ],
+      "candidate_ducc_ratios": [
+        23.144044099669813,
+        23.315980582205093,
+        23.04932123779523
+      ],
+      "candidate_parent_relative_l2": [
+        4.7599297521779997e-07,
+        4.7599297521779997e-07,
+        4.7599297521779997e-07
+      ],
+      "candidate_parent_max_absolute": [
+        2.7418136596679688e-06,
+        2.7418136596679688e-06,
+        2.7418136596679688e-06
+      ],
+      "candidate_ducc_relative_l2": [
+        0.0001723343938679496,
+        0.0001723343938679496,
+        0.0001723343938679496
+      ],
+      "candidate_ducc_max_absolute": [
+        0.0009643733501434326,
+        0.0009643733501434326,
+        0.0009643733501434326
+      ],
+      "all_finite_repeat_reset": true
+    }
+  },
+  "protected_adjacent_analysis_15_pair_screen": {
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8,
+      "phi0": 0.23
+    },
+    "pairs": 15,
+    "parent_ms": [
+      25.420124,
+      25.496067,
+      25.409975,
+      25.365061,
+      25.348570000000002,
+      25.4444345,
+      25.391796,
+      25.395598,
+      25.4074455,
+      25.5080745,
+      25.541010999999997,
+      25.516180000000002,
+      25.8384455,
+      25.5833855,
+      25.450366
+    ],
+    "candidate_ms": [
+      26.303143499999997,
+      26.4479805,
+      26.566709000000003,
+      26.3625145,
+      26.368151,
+      26.648131499999998,
+      26.59406,
+      26.594791999999998,
+      26.514294999999997,
+      26.5567195,
+      26.691226999999998,
+      26.496592,
+      26.9897335,
+      26.547933,
+      26.5445675
+    ],
+    "ducc_ms": [
+      0.8805481551724138,
+      0.8734463793103449,
+      0.871460125,
+      0.8668334107142857,
+      0.8998123571428571,
+      0.864918275862069,
+      0.8690266724137932,
+      0.8667214999999999,
+      0.8668764482758621,
+      0.86930275,
+      0.8711805862068966,
+      0.8661569827586207,
+      0.9024548035714286,
+      0.8717673448275862,
+      0.8802075172413792
+    ],
+    "candidate_parent_ratios": [
+      1.0347370256730453,
+      1.0373356996590886,
+      1.0455228310929077,
+      1.039323914892221,
+      1.0402224267483333,
+      1.0473068874845695,
+      1.0473485215460931,
+      1.0472205458599557,
+      1.0435639820618723,
+      1.0411103158727248,
+      1.0450340826367446,
+      1.0384231495466798,
+      1.044557169664096,
+      1.0377021055325146,
+      1.042993546733277
+    ],
+    "candidate_parent_median_ratio": 1.042993546733277,
+    "bootstrap_median_ratio_95ci": [
+      1.0384231495466798,
+      1.0455228310929077
+    ],
+    "candidate_faster_pairs": 0,
+    "candidate_parent_bitwise_equal_each_pair": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "all_finite_repeat_reset": true
+  },
+  "validation": {
+    "fmt_check": true,
+    "cargo_check_workspace_all_targets_all_features": true,
+    "cargo_clippy_workspace_all_targets_all_features_deny_warnings": true,
+    "focused_test": "cargo test --test f32 f32_t720_reflected_scalar_synthesis_matches_f64_and_resets_workspace --features parallel -- --exact",
+    "focused_test_result": "1 passed; 130.62 s",
+    "test_assertions": "full/reduced mmax, q1/q8, f32 vs f64 relative-L2/maxabs, Y00/Y10/Y20 analytic modes, reduced q1 adjoint, repeated workspace reset",
+    "production_ci": "Rust CI run 817 at d2c1ee98: Linux format/check/Clippy/workspace tests and Python tests passed; Windows/macOS format/check/Clippy passed"
+  },
+  "decision": "reject: current post-layout candidate was 4.3% slower in the protected reduced GL T720 native-f32 scalar-analysis q8 cell, 95% paired bootstrap interval 1.0384-1.0455; it was slower in all 15 pairs. The reflected synthesis improvement is large, but the collateral regression is not acceptable.",
+  "limitations": "Perf hardware counters are unavailable (perf_event_paranoid=4). The unchanged scalar-analysis math was bitwise equal; function address and executable size shifted, but no causal instruction-cache/cycle attribution was established. No Legendre-only stage timing was collected for this candidate."
+}
