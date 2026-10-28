@@ -17,7 +17,7 @@ All 60 candidate/parent pairs were faster. The feature-instrumented route counte
 
 Candidate/parent relative L2 stayed below `1.14e-7` and max absolute difference below `2.09e-7`. Three-pair adjacent controls remained bitwise equal. f32 spin-1 synthesis q8 had a `1.012` candidate/parent median, and protected f64 T1023 spin-1 synthesis q8 had one `1.075` pair despite a `0.975` median; these require extensions. The isolated candidate passed 2 T720 f32 integration tests and 5 paired-synthesis unit tests, including analytic modes, adjoints, sectoral/tail behavior, subnormal output, overflow/nonfinite decline, and workspace reset.
 
-The screen is not current-head promotion evidence: latest `dev` is `0ce209a1`, and the candidate was based on `49295a89`; current changes since that parent include `src/legendre/mod.rs` and `tests/f32.rs`. Reconcile the candidate with exact current source, repeat all four 15-pair synthesis cells, and extend f32 spin-1 synthesis q8 plus protected f64 T1023 q1/q8 before promotion. Exact hashes, timings, route counts, correctness results, profiles, and scripts are in the [candidate report](data/ducc-parity-m6-2026-10-28/f32-reflected-shared-kernel-49295a89/README.md). M6 remains open.
+The screen is not current-head promotion evidence: latest `dev` is `744ffe6b`, and the candidate was based on `49295a89`; current changes since that parent include `src/legendre/mod.rs`, `src/legendre/scalar.rs`, `src/legendre/scalar/tests.rs`, and `tests/f32.rs`. The archived candidate patch passes `git apply --check` on `744ffe6b`, but has not been rebuilt or retimed there. Repeat all four 15-pair synthesis cells, and extend f32 spin-1 synthesis q8 plus protected f64 T1023 q1/q8 before promotion. Exact hashes, timings, route counts, correctness results, profiles, and scripts are in the [candidate report](data/ducc-parity-m6-2026-10-28/f32-reflected-shared-kernel-49295a89/README.md). M6 remains open.
 
 ## 2026-10-28 block exponent-correction suffix transition rejected at exact parent 746c7e60
 
@@ -69,6 +69,16 @@ The narrow f32 dispatch screen at parent `092fe72f` is recorded below. See the
 [profile report](data/ducc-parity-m6-2026-10-28/f32-spin1-profile-0f821099/README.md)
 for exact flags, hashes, raw profiles, and disassembly. Scalar synthesis stays
 a major GAP and M6 remains open.
+
+## Native-f32 spin-1 reflected-route availability audit at `744ffe6b`
+
+The profiled spin-1 source remains byte-for-byte unchanged from `0f821099` on the current `744ffe6b` checkout for `src/transform/spin.rs`, `src/transform/spin/synthesis.rs`, `src/transform/spin/hemisphere.rs`, `src/legendre/mod.rs`, `src/legendre/scalar_paired/synthesis.rs`, and `src/plan.rs`. The q1 Callgrind attribution and emitted callback/DUCC kernel assembly above therefore still describe the current spin-1 route. The latest matched full-family screen at `b3289762` measured full synthesis at 37.654x/47.938x DUCC q1/q8 and reduced at 35.864x/40.444x; it predates the accepted scalar-analysis leaf and is not a fresh current-head retiming.
+
+The existing reflected `hemisphere::synthesize` route is gated by `spin1_hemisphere_worker_count`: it requires `supports_paired_spin()`, full mmax, GL `ntheta=lmax+1`, q4–q8, and `319<=lmax<=511`. Native f32 reports `supports_paired_spin() == false`, so T720 f32 never enters this route. Its `synthesize_hemisphere_pair_block_dispatched` implementation is currently f64-only; the trait default returns `Ok(false)`, which sends f32 to separate north/south scalar blocks. Simply widening the route gate would therefore not produce reflected f32 work.
+
+The earlier f32 paired-scalar adapter census at parent `8472668b` explains the q8 failure. Its full-mmax q1 candidate entered the one-thread reflected-order route once; q8 entered it zero times and instead created 12 scalar entries, with 1,214 full and 150 reduced outer blocks falling back to general spin synthesis. Candidate/parent ratios were `0.515`/`0.633` q1 but `1.018`/`1.417` q8. The tested unconditional adapter is rejected. This supports one new, untested hypothesis: add a native-f32 dual-channel reflected accumulation leaf to the existing shared hemisphere scheduler, with its checked general-spin fallback, and select it through a narrow f32 policy. Do not treat the earlier adapter timings as evidence for this distinct route, and do not globally enable `supports_paired_spin()`.
+
+This is a source-path audit, not a candidate or performance result. The next screen must measure q1/q8 whole transforms and the Legendre stage, count per-worker ring jobs and fallback work, compare against pinned DUCC, and exercise f32 analytic/adjoint/polar/extreme/tail/reset cases plus protected f64 T1023 controls. M6 remains open.
 
 ## 2026-10-28 f32 spin-1 separate paired-scalar dispatch screen — not promoted
 
