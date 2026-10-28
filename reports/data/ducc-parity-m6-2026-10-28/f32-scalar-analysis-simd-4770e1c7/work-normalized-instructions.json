@@ -1,0 +1,38 @@
+{
+  "work_unit": "useful degree \u00d7 reflected-latitude pair updates, identical required output work for Rust and DUCC",
+  "boundary": "one first full-transform call after plan/workspace setup; all three workers used the same exact fixture and q1 CPU pin; instruction counts are not elapsed time",
+  "cells": [
+    {
+      "mmax": 720,
+      "useful_degree_reflected_latitude_pair_updates": 161199393,
+      "instruction_references": {
+        "parent": 6174114752,
+        "candidate": 4847357931,
+        "ducc": 221749440
+      },
+      "ir_per_useful_update": {
+        "parent": 38.30110422314059,
+        "candidate": 30.070571860031755,
+        "ducc": 1.3756220533659205
+      },
+      "candidate_parent_ir_ratio": 0.7851097891288432,
+      "candidate_ducc_ir_ratio": 21.85961746284455
+    },
+    {
+      "mmax": 180,
+      "useful_degree_reflected_latitude_pair_updates": 81210177,
+      "instruction_references": {
+        "parent": 2379430515,
+        "candidate": 1639654952,
+        "ducc": 91744987
+      },
+      "ir_per_useful_update": {
+        "parent": 29.2996592656115,
+        "candidate": 20.19026447879802,
+        "ducc": 1.1297227809268289
+      },
+      "candidate_parent_ir_ratio": 0.6890955384759365,
+      "candidate_ducc_ir_ratio": 17.871875135804423
+    }
+  ]
+}

@@ -641,6 +641,17 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn accumulate_scalar_analysis_pair_normal(
+        _arch: Arch,
+        _same_real: &[Self],
+        _same_imag: &[Self],
+        _opposite_real: &[Self],
+        _opposite_imag: &[Self],
+        _basis: &[Self],
+        _cos_theta: &[Self],
+    ) -> Option<(Complex<Self>, Complex<Self>)> {
+        None
+    }
     fn prepare_scalar_analysis_pair_inputs(
         _same_real: &[Self],
         _same_imag: &[Self],
@@ -665,9 +676,9 @@ pub(crate) trait ShtScalar:
         reason = "Paired analysis combines two parity spectra with lane recurrence values."
     )]
     fn accumulate_scalar_analysis_pair(
-        _arch: Arch,
-        _products_safe: bool,
-        _normal_range: bool,
+        arch: Arch,
+        products_safe: bool,
+        normal_range: bool,
         same_real: &[Self],
         same_imag: &[Self],
         opposite_real: &[Self],
@@ -682,6 +693,21 @@ pub(crate) trait ShtScalar:
         debug_assert_eq!(opposite_imag.len(), basis.len());
         debug_assert_eq!(exponents.len(), basis.len());
         debug_assert_eq!(cos_theta.len(), basis.len());
+        if products_safe
+            && normal_range
+            && exponents.iter().all(|&exponent| exponent == 0)
+            && let Some(sums) = Self::accumulate_scalar_analysis_pair_normal(
+                arch,
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                basis,
+                cos_theta,
+            )
+        {
+            return sums;
+        }
         let mut same = Complex::new(Self::zero(), Self::zero());
         let mut opposite = Complex::new(Self::zero(), Self::zero());
         for lane in 0..basis.len() {
@@ -2269,6 +2295,42 @@ impl ShtScalar for f32 {
 
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
         scalar::multiply_complex_scaled_f32(value, factor, exponent)
+    }
+
+    fn scalar_analysis_products_safe(
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        cos_theta: &[Self],
+    ) -> bool {
+        scalar::analysis_products_safe_f32(
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cos_theta,
+        )
+    }
+
+    fn accumulate_scalar_analysis_pair_normal(
+        arch: Arch,
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        basis: &[Self],
+        cos_theta: &[Self],
+    ) -> Option<(Complex<Self>, Complex<Self>)> {
+        Some(scalar::accumulate_analysis_pair_normal_f32(
+            arch,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            cos_theta,
+        ))
     }
 
     fn fill_spin_factors(

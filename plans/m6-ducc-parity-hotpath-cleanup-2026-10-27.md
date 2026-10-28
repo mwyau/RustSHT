@@ -11,28 +11,22 @@ do not repeat either suffix trial unchanged. Scalar synthesis remains far from
 DUCC at **33.37×/34.94×** full and **22.75×/40.42×** reduced q1/q8.
 
 The owner's next priority after that blocker is the other native-f32 transform
-families, before returning to the remaining f64 gaps. Current source is
-`72bea50383f57bed6f54f48a3f360f01b180d5c5`; scalar-analysis production code
-is unchanged from the exact 15-pair parent `2b531d73`. Its full q1/q8 ratios
-are **38.94×/35.93×**, and the new reduced three-pair screen is
-**33.38×/29.89×**. All are GAP. Current q1 Callgrind records 38.28/29.28 Rust
-versus 1.33/1.07 DUCC Ir per useful degree × reflected-latitude pair update.
-The Rust scaled complex multiply helper consumes 36.78% of full Ir and 51.39%
-of reduced Ir inclusive; DUCC's AVX2 `map2alm_kernel` suffix consumes 51.9% /
-64.6% of DUCC Ir and advances two degrees over four latitude-pair lanes.
-Native-f32 q8 analysis job counts, useful work and accumulated worker time are
-balanced; scheduling is not the current leading explanation.
+families, before returning to the remaining f64 gaps. A bounded native-f32
+scalar-analysis accumulation leaf has now been accepted on exact parent
+`4770e1c7504d084a979a62ca0d8ef57e9fd293f8`. Across fifteen paired comparisons
+per cell, its candidate/DUCC ratios are **32.44×/26.73×** full and
+**24.37×/19.06×** reduced q1/q8. All remain GAP. The candidate lowers first-call
+Callgrind Ir by 21.5% full and 31.1% reduced; the f64 analysis override and
+scaled exceptional callback remain unchanged. Protected f64 GL T1023 spin-1
+synthesis did not show a meaningful regression. Exact timings, numerical
+errors, per-worker counts and AVX2 disassembly are in the
+[single M6 ledger](../reports/DUCC_PARITY_M6.md) and
+[candidate evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
 
-The next bounded hypothesis is a narrow f32 accumulation leaf for callback
-updates where recurrence state and spectrum products are proven safe, keeping
-all declined, scaled, subnormal, nonfinite and overflow cases on the current
-scalar fallback. First count safe callback contributions and quantify
-coverage; the current normal/mixed block counts do not show useful contribution
-coverage. Keep the f64 analysis visitor unchanged. After this scalar-analysis
-screen, profile spin-1 synthesis and analysis from their measured native-f32
-gaps. See the [single M6 ledger](../reports/DUCC_PARITY_M6.md) and
-[current scalar-analysis profile](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-profile-72bea503/README.md).
-M6 remains open.
+Next profile native-f32 spin-1 synthesis and analysis, then select a bounded
+change from measured work and executed SIMD paths. Keep scalar synthesis on the
+scorecard; its scaled-prefix transition remains a documented blocker, not a
+parity result. M6 remains open.
 
 ## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
 

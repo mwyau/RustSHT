@@ -1,0 +1,54 @@
+{
+  "experiment": "f32 GL T720 scalar-analysis safe native-SIMD accumulation candidate",
+  "parent_source": "4770e1c7504d084a979a62ca0d8ef57e9fd293f8",
+  "origin_dev_at_fetch": "4770e1c7504d084a979a62ca0d8ef57e9fd293f8",
+  "candidate_patch_sha256": "4cd54b1e2a5bfa5f71f02beca6ff655e659bb77753f5e4519ee8bc5dc51c6b52",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b (DUCC 0.42.0)",
+  "host": {
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "rustc_verbose": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+    "cargo": "cargo 1.99.1",
+    "gcc": "g++ 15.2.0",
+    "valgrind": "valgrind-3.26.0",
+    "isa": "x86-64-v3 / AVX2/FMA"
+  },
+  "builds": {
+    "rust": "cargo build --locked --release --features parallel --example ducc_f32_full_transform_parity; RUSTFLAGS=-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "rust_f64_control": "cargo build --locked --release --features parallel --example ducc_spin1_full_transform_parity; same RUSTFLAGS",
+    "ducc": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; adapter -fno-fast-math",
+    "callgrind": "Valgrind 3.26.0, Ir only, q1, one first transform after setup; temporary wrapper early exit added after first transform"
+  },
+  "binary_sha256": {
+    "rust_f32_parent_timed_binary": "fd2244df2fb704f349ed1d366de04d30f69b26697550680f05128fee4e89d751",
+    "rust_f32_candidate_timed_binary": "aaa50718759868c891be25b4076b1f0887741d2147bb83fb431646152b8d6496",
+    "ducc_f32_timed_binary": "dd49d48238dd9119739d253c5996096de2d6e77bd78366ae63c314996bb1b442",
+    "rust_f64_parent_spin1_binary": "411501a34c909897ea66dd398cae0e47af327658ba62802f6e48e8ad54f362de",
+    "rust_f64_candidate_spin1_binary": "fde6826be7ac8fa36b0d35afcc0c4d2df8dfe2ba4efbc88b5ae546cdc7ce678d",
+    "ducc_f64_spin1_binary": "b4d2111ed6f3e8335ff26a1c9b69d30efdf1645ac17cb7346ed3304cfc5a71cf",
+    "ducc_f32_callgrind_driver": "a16a1c7759773c86320f53eaa5857edf6d9181a51cba12e2b8a3dbf4aca3019f"
+  },
+  "fixtures_sha256": {
+    "analysis_full": {
+      "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+      "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+    },
+    "analysis_reduced": {
+      "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+      "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+    },
+    "f64_spin1": {
+      "b.bin": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f",
+      "e.bin": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+      "map0.bin": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+      "map1.bin": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e"
+    }
+  },
+  "affinity": {
+    "q1": "fixed single-core affinity set",
+    "q8": "fixed eight-core affinity set"
+  }
+}

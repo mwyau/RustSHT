@@ -1,0 +1,87 @@
+{
+  "parent": "4770e1c7504d084a979a62ca0d8ef57e9fd293f8",
+  "candidate": "SIMD accumulator patch applied at 4770e1c7",
+  "ducc": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "work_boundary": "one first whole transform, q1, fixture loading and plan/workspace setup included",
+  "results": [
+    {
+      "backend": "parent",
+      "mmax": 720,
+      "nphi": 1458,
+      "callgrind_ir": 6174114752,
+      "callgrind_file": "parent-M720.callgrind",
+      "stdout": "",
+      "stderr": "",
+      "fixtures": {
+        "map0": "map0.f32",
+        "map1": "map1.f32",
+        "alm0": "alm0.f32",
+        "alm1": "alm1.f32"
+      }
+    },
+    {
+      "backend": "candidate",
+      "mmax": 720,
+      "nphi": 1458,
+      "callgrind_ir": 4847357931,
+      "callgrind_file": "candidate-M720.callgrind",
+      "stdout": "",
+      "stderr": "",
+      "fixtures": {
+        "map0": "map0.f32",
+        "map1": "map1.f32",
+        "alm0": "alm0.f32",
+        "alm1": "alm1.f32"
+      }
+    },
+    {
+      "backend": "parent",
+      "mmax": 180,
+      "nphi": 378,
+      "callgrind_ir": 2379430515,
+      "callgrind_file": "parent-M180.callgrind",
+      "stdout": "",
+      "stderr": "",
+      "fixtures": {
+        "map0": "map0.f32",
+        "map1": "map1.f32",
+        "alm0": "alm0.f32",
+        "alm1": "alm1.f32"
+      }
+    },
+    {
+      "backend": "candidate",
+      "mmax": 180,
+      "nphi": 378,
+      "callgrind_ir": 1639654952,
+      "callgrind_file": "candidate-M180.callgrind",
+      "stdout": "",
+      "stderr": "",
+      "fixtures": {
+        "map0": "map0.f32",
+        "map1": "map1.f32",
+        "alm0": "alm0.f32",
+        "alm1": "alm1.f32"
+      }
+    },
+    {
+      "backend": "ducc",
+      "mmax": 720,
+      "nphi": 1458,
+      "callgrind_ir": 221749440,
+      "callgrind_file": "ducc-M720.callgrind",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "backend": "ducc",
+      "mmax": 180,
+      "nphi": 378,
+      "callgrind_ir": 91744987,
+      "callgrind_file": "ducc-M180.callgrind",
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "ducc_work_boundary": "same first whole transform after setup, not warmed; adapter-only early-exit hook, pinned DUCC translation units unchanged"
+}

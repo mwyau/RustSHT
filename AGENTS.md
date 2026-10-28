@@ -10,28 +10,28 @@
 
 ## ACTIVE M6 CONTINUATION OVERRIDE — 2026-10-28: native-f32 families after synthesis blocker
 
-The accepted shared f32/f64 fused scalar-synthesis kernel, 32-ring scheduling,
-and checked f32 packet leaf remain complete. The corrected f32
+The shared f32/f64 fused scalar-synthesis kernel, 32-ring scheduler and
+checked native-f32 packet leaf remain complete. The corrected f32
 scaled-prefix-to-fused-suffix trial is a documented algorithmic blocker: at
-source `2b531d73`, suffixes began only after all recurrence exponents reached
-zero, and the trial also caused a repeatable adjacent f32 scalar-analysis
-regression. Do not repeat that route unchanged. Native-f32 GL T720 scalar
-synthesis remains a major gap at **33.37×/34.94×** full and **22.75×/40.42×**
-reduced q1/q8 against pinned DUCC.
+source `2b531d73`, a useful safe handoff required zero recurrence exponents,
+and the trial caused a repeatable adjacent f32 scalar-analysis regression.
+Do not repeat that route unchanged. Native-f32 GL T720 scalar synthesis remains
+a major gap at **33.37×/34.94×** full and **22.75×/40.42×** reduced q1/q8 against
+pinned DUCC.
 
-Per the owner's continuation direction, proceed now through native-f32 scalar
-analysis and spin-1 synthesis/analysis before returning to the remaining f64
-gaps. At source `72bea503`, scalar analysis is **38.94×/35.93×** full and
-**33.38×/29.89×** reduced q1/q8. Callgrind finds 38.28/29.28 Rust Ir versus
-1.33/1.07 DUCC Ir per useful reflected-latitude pair update; q8 job/work
-observations show balanced workers. The f32 `ShtScalar` default still
-accumulates each fallback pair lane through `multiply_complex_scaled_f32`,
-while DUCC uses a fused AVX2 double-FMA suffix. First count contribution-level
-safe normal-range work, then screen one narrow native-f32 accumulation leaf
-with the existing scaled fallback retained. Do not modify the f64 analysis
-visitor. Keep the f32 spin-1 cells in the single M6 ledger and select their
-next profile from measured work. See the [current M6 ledger](reports/DUCC_PARITY_M6.md)
-and [scalar-analysis profile](reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-profile-72bea503/README.md).
+The first native-f32 scalar-analysis follow-up is now accepted on exact parent
+`4770e1c7`. Its bounded native-f32 accumulation leaf improves GL T720 full
+analysis to **32.44×/26.73×** and reduced analysis to **24.37×/19.06×** DUCC
+q1/q8, with all four cells still GAP. It preserves the scaled callback and
+leaves the f64 analysis override unchanged. The protected f64 GL T1023
+spin-1 synthesis controls show no meaningful regression; see the candidate
+report and exact measurements in the [single M6 ledger](reports/DUCC_PARITY_M6.md).
+
+Continue through native-f32 spin-1 synthesis and analysis before returning to
+the remaining f64 gaps. Profile their current work and executed SIMD paths
+before choosing a bounded change. Keep scalar synthesis on the scorecard and
+resume it after this documented transition blocker if a new work-reduction
+hypothesis is measured. M6 remains open.
 
 ## Active M6 goal — real DUCC speed parity, assembly/Callgrind, and careful cleanup
 

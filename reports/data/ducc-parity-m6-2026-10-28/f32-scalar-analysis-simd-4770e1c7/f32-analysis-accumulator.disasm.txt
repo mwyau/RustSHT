@@ -1,0 +1,470 @@
+
+ducc_f32_full_transform_parity:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+00000000001e2bf0 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32>:
+  1e2bf0:	55                   	push   %rbp
+  1e2bf1:	41 57                	push   %r15
+  1e2bf3:	41 56                	push   %r14
+  1e2bf5:	41 55                	push   %r13
+  1e2bf7:	41 54                	push   %r12
+  1e2bf9:	53                   	push   %rbx
+  1e2bfa:	48 83 ec 78          	sub    $0x78,%rsp
+  1e2bfe:	49 89 cc             	mov    %rcx,%r12
+  1e2c01:	48 89 3c 24          	mov    %rdi,(%rsp)
+  1e2c05:	48 8b bc 24 e8 00 00 	mov    0xe8(%rsp),%rdi
+  1e2c0c:	00
+  1e2c0d:	4c 8b ac 24 e0 00 00 	mov    0xe0(%rsp),%r13
+  1e2c14:	00
+  1e2c15:	4c 8b b4 24 d8 00 00 	mov    0xd8(%rsp),%r14
+  1e2c1c:	00
+  1e2c1d:	48 8b ac 24 d0 00 00 	mov    0xd0(%rsp),%rbp
+  1e2c24:	00
+  1e2c25:	4c 8b 9c 24 c8 00 00 	mov    0xc8(%rsp),%r11
+  1e2c2c:	00
+  1e2c2d:	48 8b 84 24 c0 00 00 	mov    0xc0(%rsp),%rax
+  1e2c34:	00
+  1e2c35:	4c 8b bc 24 b8 00 00 	mov    0xb8(%rsp),%r15
+  1e2c3c:	00
+  1e2c3d:	4c 8b 94 24 b0 00 00 	mov    0xb0(%rsp),%r10
+  1e2c44:	00
+  1e2c45:	40 84 f6             	test   %sil,%sil
+  1e2c48:	0f 84 8c 01 00 00    	je     1e2dda <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x1ea>
+  1e2c4e:	40 0f b6 ce          	movzbl %sil,%ecx
+  1e2c52:	83 f9 01             	cmp    $0x1,%ecx
+  1e2c55:	0f 85 93 02 00 00    	jne    1e2eee <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x2fe>
+  1e2c5b:	4c 89 f6             	mov    %r14,%rsi
+  1e2c5e:	48 c1 ee 03          	shr    $0x3,%rsi
+  1e2c62:	4c 89 4c 24 10       	mov    %r9,0x10(%rsp)
+  1e2c67:	4c 89 64 24 08       	mov    %r12,0x8(%rsp)
+  1e2c6c:	0f 84 cb 02 00 00    	je     1e2f3d <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x34d>
+  1e2c72:	49 c1 ec 03          	shr    $0x3,%r12
+  1e2c76:	4c 89 fb             	mov    %r15,%rbx
+  1e2c79:	4d 89 cf             	mov    %r9,%r15
+  1e2c7c:	49 c1 ef 03          	shr    $0x3,%r15
+  1e2c80:	48 c1 eb 03          	shr    $0x3,%rbx
+  1e2c84:	49 c1 eb 03          	shr    $0x3,%r11
+  1e2c88:	49 89 fe             	mov    %rdi,%r14
+  1e2c8b:	49 c1 ee 03          	shr    $0x3,%r14
+  1e2c8f:	4d 39 de             	cmp    %r11,%r14
+  1e2c92:	4c 89 df             	mov    %r11,%rdi
+  1e2c95:	49 0f 42 fe          	cmovb  %r14,%rdi
+  1e2c99:	48 39 df             	cmp    %rbx,%rdi
+  1e2c9c:	48 0f 43 fb          	cmovae %rbx,%rdi
+  1e2ca0:	4c 39 ff             	cmp    %r15,%rdi
+  1e2ca3:	49 0f 43 ff          	cmovae %r15,%rdi
+  1e2ca7:	4c 39 e7             	cmp    %r12,%rdi
+  1e2caa:	49 0f 43 fc          	cmovae %r12,%rdi
+  1e2cae:	48 8d 4e ff          	lea    -0x1(%rsi),%rcx
+  1e2cb2:	48 39 cf             	cmp    %rcx,%rdi
+  1e2cb5:	48 0f 43 f9          	cmovae %rcx,%rdi
+  1e2cb9:	49 39 fc             	cmp    %rdi,%r12
+  1e2cbc:	0f 84 51 06 00 00    	je     1e3313 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x723>
+  1e2cc2:	49 39 ff             	cmp    %rdi,%r15
+  1e2cc5:	0f 84 6e 06 00 00    	je     1e3339 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x749>
+  1e2ccb:	48 39 fb             	cmp    %rdi,%rbx
+  1e2cce:	0f 84 8b 06 00 00    	je     1e335f <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x76f>
+  1e2cd4:	49 39 fe             	cmp    %rdi,%r14
+  1e2cd7:	4c 8b 4c 24 10       	mov    0x10(%rsp),%r9
+  1e2cdc:	4c 8b 64 24 08       	mov    0x8(%rsp),%r12
+  1e2ce1:	4c 8b bc 24 b8 00 00 	mov    0xb8(%rsp),%r15
+  1e2ce8:	00
+  1e2ce9:	0f 84 96 06 00 00    	je     1e3385 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x795>
+  1e2cef:	49 39 fb             	cmp    %rdi,%r11
+  1e2cf2:	0f 84 2e 06 00 00    	je     1e3326 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x736>
+  1e2cf8:	48 85 c9             	test   %rcx,%rcx
+  1e2cfb:	48 8b bc 24 e8 00 00 	mov    0xe8(%rsp),%rdi
+  1e2d02:	00
+  1e2d03:	4c 8b b4 24 d8 00 00 	mov    0xd8(%rsp),%r14
+  1e2d0a:	00
+  1e2d0b:	0f 84 47 02 00 00    	je     1e2f58 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x368>
+  1e2d11:	48 b9 fe ff ff ff ff 	movabs $0x3fffffffffffffe,%rcx
+  1e2d18:	ff ff 03
+  1e2d1b:	48 21 ce             	and    %rcx,%rsi
+  1e2d1e:	c5 e8 57 d2          	vxorps %xmm2,%xmm2,%xmm2
+  1e2d22:	bb 20 00 00 00       	mov    $0x20,%ebx
+  1e2d27:	45 31 db             	xor    %r11d,%r11d
+  1e2d2a:	c5 f0 57 c9          	vxorps %xmm1,%xmm1,%xmm1
+  1e2d2e:	c5 e0 57 db          	vxorps %xmm3,%xmm3,%xmm3
+  1e2d32:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e2d36:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  1e2d3d:	00 00 00
+  1e2d40:	c5 fc 10 64 1d e0    	vmovups -0x20(%rbp,%rbx,1),%ymm4
+  1e2d46:	c5 dc 59 6c 1a e0    	vmulps -0x20(%rdx,%rbx,1),%ymm4,%ymm5
+  1e2d4c:	c5 fc 10 74 1d 00    	vmovups 0x0(%rbp,%rbx,1),%ymm6
+  1e2d52:	c5 ec 58 d5          	vaddps %ymm5,%ymm2,%ymm2
+  1e2d56:	c4 c1 5c 59 6c 18 e0 	vmulps -0x20(%r8,%rbx,1),%ymm4,%ymm5
+  1e2d5d:	c5 e4 58 dd          	vaddps %ymm5,%ymm3,%ymm3
+  1e2d61:	c4 c1 7c 10 6c 1d e0 	vmovups -0x20(%r13,%rbx,1),%ymm5
+  1e2d68:	c4 c1 54 59 7c 1a e0 	vmulps -0x20(%r10,%rbx,1),%ymm5,%ymm7
+  1e2d6f:	c4 41 7c 10 44 1d 00 	vmovups 0x0(%r13,%rbx,1),%ymm8
+  1e2d76:	c5 dc 59 ff          	vmulps %ymm7,%ymm4,%ymm7
+  1e2d7a:	c5 d4 59 6c 18 e0    	vmulps -0x20(%rax,%rbx,1),%ymm5,%ymm5
+  1e2d80:	c5 f4 58 cf          	vaddps %ymm7,%ymm1,%ymm1
+  1e2d84:	c5 dc 59 e5          	vmulps %ymm5,%ymm4,%ymm4
+  1e2d88:	c5 fc 58 c4          	vaddps %ymm4,%ymm0,%ymm0
+  1e2d8c:	49 83 c3 02          	add    $0x2,%r11
+  1e2d90:	c5 cc 59 24 1a       	vmulps (%rdx,%rbx,1),%ymm6,%ymm4
+  1e2d95:	c4 c1 4c 59 2c 18    	vmulps (%r8,%rbx,1),%ymm6,%ymm5
+  1e2d9b:	c5 ec 58 d4          	vaddps %ymm4,%ymm2,%ymm2
+  1e2d9f:	c5 e4 58 dd          	vaddps %ymm5,%ymm3,%ymm3
+  1e2da3:	c4 c1 3c 59 24 1a    	vmulps (%r10,%rbx,1),%ymm8,%ymm4
+  1e2da9:	c5 cc 59 e4          	vmulps %ymm4,%ymm6,%ymm4
+  1e2dad:	c5 f4 58 cc          	vaddps %ymm4,%ymm1,%ymm1
+  1e2db1:	c5 bc 59 24 18       	vmulps (%rax,%rbx,1),%ymm8,%ymm4
+  1e2db6:	c5 cc 59 e4          	vmulps %ymm4,%ymm6,%ymm4
+  1e2dba:	c5 fc 58 c4          	vaddps %ymm4,%ymm0,%ymm0
+  1e2dbe:	48 83 c3 40          	add    $0x40,%rbx
+  1e2dc2:	4c 39 de             	cmp    %r11,%rsi
+  1e2dc5:	0f 85 75 ff ff ff    	jne    1e2d40 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x150>
+  1e2dcb:	41 f6 c6 08          	test   $0x8,%r14b
+  1e2dcf:	0f 85 96 01 00 00    	jne    1e2f6b <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x37b>
+  1e2dd5:	e9 d3 01 00 00       	jmp    1e2fad <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x3bd>
+  1e2dda:	4d 85 f6             	test   %r14,%r14
+  1e2ddd:	0f 84 6c 01 00 00    	je     1e2f4f <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x35f>
+  1e2de3:	4c 39 df             	cmp    %r11,%rdi
+  1e2de6:	4c 89 de             	mov    %r11,%rsi
+  1e2de9:	48 0f 42 f7          	cmovb  %rdi,%rsi
+  1e2ded:	4c 39 fe             	cmp    %r15,%rsi
+  1e2df0:	49 0f 43 f7          	cmovae %r15,%rsi
+  1e2df4:	4c 39 ce             	cmp    %r9,%rsi
+  1e2df7:	49 0f 43 f1          	cmovae %r9,%rsi
+  1e2dfb:	4c 39 e6             	cmp    %r12,%rsi
+  1e2dfe:	49 0f 43 f4          	cmovae %r12,%rsi
+  1e2e02:	49 8d 4e ff          	lea    -0x1(%r14),%rcx
+  1e2e06:	48 39 ce             	cmp    %rcx,%rsi
+  1e2e09:	48 0f 43 f1          	cmovae %rcx,%rsi
+  1e2e0d:	49 39 f4             	cmp    %rsi,%r12
+  1e2e10:	0f 84 fd 04 00 00    	je     1e3313 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x723>
+  1e2e16:	49 39 f1             	cmp    %rsi,%r9
+  1e2e19:	0f 84 2d 05 00 00    	je     1e334c <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x75c>
+  1e2e1f:	49 39 f7             	cmp    %rsi,%r15
+  1e2e22:	0f 84 4a 05 00 00    	je     1e3372 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x782>
+  1e2e28:	48 39 f7             	cmp    %rsi,%rdi
+  1e2e2b:	0f 84 67 05 00 00    	je     1e3398 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x7a8>
+  1e2e31:	49 39 f3             	cmp    %rsi,%r11
+  1e2e34:	0f 84 ec 04 00 00    	je     1e3326 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x736>
+  1e2e3a:	48 85 c9             	test   %rcx,%rcx
+  1e2e3d:	0f 84 73 04 00 00    	je     1e32b6 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x6c6>
+  1e2e43:	48 b9 f8 ff ff ff ff 	movabs $0x1ffffffffffffff8,%rcx
+  1e2e4a:	ff ff 1f
+  1e2e4d:	48 83 c9 06          	or     $0x6,%rcx
+  1e2e51:	4c 21 f1             	and    %r14,%rcx
+  1e2e54:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e2e58:	31 f6                	xor    %esi,%esi
+  1e2e5a:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+  1e2e60:	c4 c1 7a 10 4c b5 00 	vmovss 0x0(%r13,%rsi,4),%xmm1
+  1e2e67:	c4 c1 7a 10 54 b5 04 	vmovss 0x4(%r13,%rsi,4),%xmm2
+  1e2e6e:	c4 c1 72 59 1c b2    	vmulss (%r10,%rsi,4),%xmm1,%xmm3
+  1e2e74:	c5 f2 59 0c b0       	vmulss (%rax,%rsi,4),%xmm1,%xmm1
+  1e2e79:	c4 e2 79 18 64 b5 00 	vbroadcastss 0x0(%rbp,%rsi,4),%xmm4
+  1e2e80:	c5 fa 10 2c b2       	vmovss (%rdx,%rsi,4),%xmm5
+  1e2e85:	c5 fa 10 74 b2 04    	vmovss 0x4(%rdx,%rsi,4),%xmm6
+  1e2e8b:	c4 c3 51 21 2c b0 10 	vinsertps $0x10,(%r8,%rsi,4),%xmm5,%xmm5
+  1e2e92:	c4 e3 51 21 db 20    	vinsertps $0x20,%xmm3,%xmm5,%xmm3
+  1e2e98:	c4 e3 61 21 c9 30    	vinsertps $0x30,%xmm1,%xmm3,%xmm1
+  1e2e9e:	c5 d8 59 c9          	vmulps %xmm1,%xmm4,%xmm1
+  1e2ea2:	c4 c1 6a 59 5c b2 04 	vmulss 0x4(%r10,%rsi,4),%xmm2,%xmm3
+  1e2ea9:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e2ead:	c5 ea 59 4c b0 04    	vmulss 0x4(%rax,%rsi,4),%xmm2,%xmm1
+  1e2eb3:	c4 e2 79 18 54 b5 04 	vbroadcastss 0x4(%rbp,%rsi,4),%xmm2
+  1e2eba:	c4 c3 49 21 64 b0 04 	vinsertps $0x10,0x4(%r8,%rsi,4),%xmm6,%xmm4
+  1e2ec1:	10
+  1e2ec2:	48 83 c6 02          	add    $0x2,%rsi
+  1e2ec6:	c4 e3 59 21 db 20    	vinsertps $0x20,%xmm3,%xmm4,%xmm3
+  1e2ecc:	c4 e3 61 21 c9 30    	vinsertps $0x30,%xmm1,%xmm3,%xmm1
+  1e2ed2:	c5 e8 59 c9          	vmulps %xmm1,%xmm2,%xmm1
+  1e2ed6:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e2eda:	48 39 f1             	cmp    %rsi,%rcx
+  1e2edd:	75 81                	jne    1e2e60 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x270>
+  1e2edf:	41 f6 c6 01          	test   $0x1,%r14b
+  1e2ee3:	0f 85 d3 03 00 00    	jne    1e32bc <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x6cc>
+  1e2ee9:	e9 07 04 00 00       	jmp    1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e2eee:	48 89 54 24 18       	mov    %rdx,0x18(%rsp)
+  1e2ef3:	4c 89 64 24 20       	mov    %r12,0x20(%rsp)
+  1e2ef8:	4c 89 44 24 28       	mov    %r8,0x28(%rsp)
+  1e2efd:	4c 89 4c 24 30       	mov    %r9,0x30(%rsp)
+  1e2f02:	4c 89 54 24 38       	mov    %r10,0x38(%rsp)
+  1e2f07:	4c 89 7c 24 40       	mov    %r15,0x40(%rsp)
+  1e2f0c:	48 89 44 24 48       	mov    %rax,0x48(%rsp)
+  1e2f11:	4c 89 5c 24 50       	mov    %r11,0x50(%rsp)
+  1e2f16:	48 89 6c 24 58       	mov    %rbp,0x58(%rsp)
+  1e2f1b:	4c 89 74 24 60       	mov    %r14,0x60(%rsp)
+  1e2f20:	4c 89 6c 24 68       	mov    %r13,0x68(%rsp)
+  1e2f25:	48 89 7c 24 70       	mov    %rdi,0x70(%rsp)
+  1e2f2a:	48 8d 74 24 18       	lea    0x18(%rsp),%rsi
+  1e2f2f:	48 8b 3c 24          	mov    (%rsp),%rdi
+  1e2f33:	e8 a8 ee ff ff       	call   1e1de0 <<pulp::x86::v4::V4>::vectorize::imp::<<pulp::x86::v4::V4 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar::AnalysisPairAccumulationF32>>>
+  1e2f38:	e9 c0 03 00 00       	jmp    1e32fd <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x70d>
+  1e2f3d:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e2f41:	c5 e0 57 db          	vxorps %xmm3,%xmm3,%xmm3
+  1e2f45:	c5 f0 57 c9          	vxorps %xmm1,%xmm1,%xmm1
+  1e2f49:	c5 e8 57 d2          	vxorps %xmm2,%xmm2,%xmm2
+  1e2f4d:	eb 5e                	jmp    1e2fad <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x3bd>
+  1e2f4f:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e2f53:	e9 9d 03 00 00       	jmp    1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e2f58:	c5 e8 57 d2          	vxorps %xmm2,%xmm2,%xmm2
+  1e2f5c:	45 31 db             	xor    %r11d,%r11d
+  1e2f5f:	c5 f0 57 c9          	vxorps %xmm1,%xmm1,%xmm1
+  1e2f63:	c5 e0 57 db          	vxorps %xmm3,%xmm3,%xmm3
+  1e2f67:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e2f6b:	49 c1 e3 05          	shl    $0x5,%r11
+  1e2f6f:	c4 a1 7c 10 64 1d 00 	vmovups 0x0(%rbp,%r11,1),%ymm4
+  1e2f76:	c4 a1 5c 59 2c 1a    	vmulps (%rdx,%r11,1),%ymm4,%ymm5
+  1e2f7c:	c5 ec 58 d5          	vaddps %ymm5,%ymm2,%ymm2
+  1e2f80:	c4 81 5c 59 2c 18    	vmulps (%r8,%r11,1),%ymm4,%ymm5
+  1e2f86:	c5 e4 58 dd          	vaddps %ymm5,%ymm3,%ymm3
+  1e2f8a:	c4 81 7c 10 6c 1d 00 	vmovups 0x0(%r13,%r11,1),%ymm5
+  1e2f91:	c4 81 54 59 34 1a    	vmulps (%r10,%r11,1),%ymm5,%ymm6
+  1e2f97:	c5 dc 59 f6          	vmulps %ymm6,%ymm4,%ymm6
+  1e2f9b:	c5 f4 58 ce          	vaddps %ymm6,%ymm1,%ymm1
+  1e2f9f:	c4 a1 54 59 2c 18    	vmulps (%rax,%r11,1),%ymm5,%ymm5
+  1e2fa5:	c5 dc 59 e5          	vmulps %ymm5,%ymm4,%ymm4
+  1e2fa9:	c5 fc 58 c4          	vaddps %ymm4,%ymm0,%ymm0
+  1e2fad:	44 89 f6             	mov    %r14d,%esi
+  1e2fb0:	c4 e3 7d 19 d4 01    	vextractf128 $0x1,%ymm2,%xmm4
+  1e2fb6:	c5 e8 58 d4          	vaddps %xmm4,%xmm2,%xmm2
+  1e2fba:	c5 e9 c6 e2 01       	vshufpd $0x1,%xmm2,%xmm2,%xmm4
+  1e2fbf:	c5 e8 58 d4          	vaddps %xmm4,%xmm2,%xmm2
+  1e2fc3:	c4 e3 7d 19 dc 01    	vextractf128 $0x1,%ymm3,%xmm4
+  1e2fc9:	c5 e0 58 dc          	vaddps %xmm4,%xmm3,%xmm3
+  1e2fcd:	c5 e1 c6 e3 01       	vshufpd $0x1,%xmm3,%xmm3,%xmm4
+  1e2fd2:	c5 e0 58 dc          	vaddps %xmm4,%xmm3,%xmm3
+  1e2fd6:	c4 e3 7d 19 cc 01    	vextractf128 $0x1,%ymm1,%xmm4
+  1e2fdc:	c5 f0 58 cc          	vaddps %xmm4,%xmm1,%xmm1
+  1e2fe0:	c5 f1 c6 e1 01       	vshufpd $0x1,%xmm1,%xmm1,%xmm4
+  1e2fe5:	c5 f0 58 cc          	vaddps %xmm4,%xmm1,%xmm1
+  1e2fe9:	c4 e3 7d 19 c4 01    	vextractf128 $0x1,%ymm0,%xmm4
+  1e2fef:	c5 f8 58 c4          	vaddps %xmm4,%xmm0,%xmm0
+  1e2ff3:	c5 f9 c6 e0 01       	vshufpd $0x1,%xmm0,%xmm0,%xmm4
+  1e2ff8:	c5 f8 58 c4          	vaddps %xmm4,%xmm0,%xmm0
+  1e2ffc:	c5 e8 14 e3          	vunpcklps %xmm3,%xmm2,%xmm4
+  1e3000:	c5 d8 16 e1          	vmovlhps %xmm1,%xmm4,%xmm4
+  1e3004:	c4 e3 59 21 e0 30    	vinsertps $0x30,%xmm0,%xmm4,%xmm4
+  1e300a:	c4 e3 61 21 d2 4c    	vinsertps $0x4c,%xmm2,%xmm3,%xmm2
+  1e3010:	c5 e8 c6 c9 d4       	vshufps $0xd4,%xmm1,%xmm2,%xmm1
+  1e3015:	c4 e3 71 21 c0 70    	vinsertps $0x70,%xmm0,%xmm1,%xmm0
+  1e301b:	c5 d8 58 c0          	vaddps %xmm0,%xmm4,%xmm0
+  1e301f:	83 e6 07             	and    $0x7,%esi
+  1e3022:	0f 84 cd 02 00 00    	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e3028:	44 89 e3             	mov    %r12d,%ebx
+  1e302b:	83 e3 07             	and    $0x7,%ebx
+  1e302e:	49 89 fc             	mov    %rdi,%r12
+  1e3031:	45 89 ce             	mov    %r9d,%r14d
+  1e3034:	41 83 e6 07          	and    $0x7,%r14d
+  1e3038:	41 83 e7 07          	and    $0x7,%r15d
+  1e303c:	4c 8b 9c 24 c8 00 00 	mov    0xc8(%rsp),%r11
+  1e3043:	00
+  1e3044:	41 83 e3 07          	and    $0x7,%r11d
+  1e3048:	41 83 e4 07          	and    $0x7,%r12d
+  1e304c:	4c 8d 4e ff          	lea    -0x1(%rsi),%r9
+  1e3050:	4d 39 f1             	cmp    %r14,%r9
+  1e3053:	4d 0f 43 ce          	cmovae %r14,%r9
+  1e3057:	49 39 d9             	cmp    %rbx,%r9
+  1e305a:	4c 0f 43 cb          	cmovae %rbx,%r9
+  1e305e:	4d 39 f9             	cmp    %r15,%r9
+  1e3061:	4d 0f 43 cf          	cmovae %r15,%r9
+  1e3065:	4d 39 e1             	cmp    %r12,%r9
+  1e3068:	4d 0f 43 cc          	cmovae %r12,%r9
+  1e306c:	4d 39 d9             	cmp    %r11,%r9
+  1e306f:	4c 89 d9             	mov    %r11,%rcx
+  1e3072:	49 0f 42 c9          	cmovb  %r9,%rcx
+  1e3076:	48 39 cb             	cmp    %rcx,%rbx
+  1e3079:	0f 84 29 03 00 00    	je     1e33a8 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x7b8>
+  1e307f:	49 39 ce             	cmp    %rcx,%r14
+  1e3082:	0f 84 36 03 00 00    	je     1e33be <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x7ce>
+  1e3088:	49 39 cf             	cmp    %rcx,%r15
+  1e308b:	0f 84 43 03 00 00    	je     1e33d4 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x7e4>
+  1e3091:	49 39 cc             	cmp    %rcx,%r12
+  1e3094:	48 8b 9c 24 d8 00 00 	mov    0xd8(%rsp),%rbx
+  1e309b:	00
+  1e309c:	0f 84 48 03 00 00    	je     1e33ea <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x7fa>
+  1e30a2:	45 39 cb             	cmp    %r9d,%r11d
+  1e30a5:	4c 8b 74 24 10       	mov    0x10(%rsp),%r14
+  1e30aa:	4c 8b 7c 24 08       	mov    0x8(%rsp),%r15
+  1e30af:	0f 86 4b 03 00 00    	jbe    1e3400 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x810>
+  1e30b5:	48 b9 f8 ff ff ff ff 	movabs $0x1ffffffffffffff8,%rcx
+  1e30bc:	ff ff 1f
+  1e30bf:	49 21 cf             	and    %rcx,%r15
+  1e30c2:	49 21 ce             	and    %rcx,%r14
+  1e30c5:	4c 8b 9c 24 b8 00 00 	mov    0xb8(%rsp),%r11
+  1e30cc:	00
+  1e30cd:	49 21 cb             	and    %rcx,%r11
+  1e30d0:	4c 8b 8c 24 c8 00 00 	mov    0xc8(%rsp),%r9
+  1e30d7:	00
+  1e30d8:	49 21 c9             	and    %rcx,%r9
+  1e30db:	48 21 cf             	and    %rcx,%rdi
+  1e30de:	c4 c1 7a 10 4c bd 00 	vmovss 0x0(%r13,%rdi,4),%xmm1
+  1e30e5:	c4 81 72 59 14 9a    	vmulss (%r10,%r11,4),%xmm1,%xmm2
+  1e30eb:	48 21 cb             	and    %rcx,%rbx
+  1e30ee:	c4 a1 72 59 0c 88    	vmulss (%rax,%r9,4),%xmm1,%xmm1
+  1e30f4:	c4 e2 79 18 5c 9d 00 	vbroadcastss 0x0(%rbp,%rbx,4),%xmm3
+  1e30fb:	c4 a1 7a 10 24 ba    	vmovss (%rdx,%r15,4),%xmm4
+  1e3101:	c4 83 59 21 24 b0 10 	vinsertps $0x10,(%r8,%r14,4),%xmm4,%xmm4
+  1e3108:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e310e:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e3114:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e3118:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e311c:	83 fe 01             	cmp    $0x1,%esi
+  1e311f:	0f 84 d0 01 00 00    	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e3125:	c4 c1 7a 10 4c bd 04 	vmovss 0x4(%r13,%rdi,4),%xmm1
+  1e312c:	c4 81 72 59 54 9a 04 	vmulss 0x4(%r10,%r11,4),%xmm1,%xmm2
+  1e3133:	c4 a1 72 59 4c 88 04 	vmulss 0x4(%rax,%r9,4),%xmm1,%xmm1
+  1e313a:	c4 e2 79 18 5c 9d 04 	vbroadcastss 0x4(%rbp,%rbx,4),%xmm3
+  1e3141:	c4 a1 7a 10 64 ba 04 	vmovss 0x4(%rdx,%r15,4),%xmm4
+  1e3148:	c4 83 59 21 64 b0 04 	vinsertps $0x10,0x4(%r8,%r14,4),%xmm4,%xmm4
+  1e314f:	10
+  1e3150:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e3156:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e315c:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e3160:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e3164:	83 fe 02             	cmp    $0x2,%esi
+  1e3167:	0f 84 88 01 00 00    	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e316d:	c4 c1 7a 10 4c bd 08 	vmovss 0x8(%r13,%rdi,4),%xmm1
+  1e3174:	c4 81 72 59 54 9a 08 	vmulss 0x8(%r10,%r11,4),%xmm1,%xmm2
+  1e317b:	c4 a1 72 59 4c 88 08 	vmulss 0x8(%rax,%r9,4),%xmm1,%xmm1
+  1e3182:	c4 e2 79 18 5c 9d 08 	vbroadcastss 0x8(%rbp,%rbx,4),%xmm3
+  1e3189:	c4 a1 7a 10 64 ba 08 	vmovss 0x8(%rdx,%r15,4),%xmm4
+  1e3190:	c4 83 59 21 64 b0 08 	vinsertps $0x10,0x8(%r8,%r14,4),%xmm4,%xmm4
+  1e3197:	10
+  1e3198:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e319e:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e31a4:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e31a8:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e31ac:	83 fe 03             	cmp    $0x3,%esi
+  1e31af:	0f 84 40 01 00 00    	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e31b5:	c4 c1 7a 10 4c bd 0c 	vmovss 0xc(%r13,%rdi,4),%xmm1
+  1e31bc:	c4 81 72 59 54 9a 0c 	vmulss 0xc(%r10,%r11,4),%xmm1,%xmm2
+  1e31c3:	c4 a1 72 59 4c 88 0c 	vmulss 0xc(%rax,%r9,4),%xmm1,%xmm1
+  1e31ca:	c4 e2 79 18 5c 9d 0c 	vbroadcastss 0xc(%rbp,%rbx,4),%xmm3
+  1e31d1:	c4 a1 7a 10 64 ba 0c 	vmovss 0xc(%rdx,%r15,4),%xmm4
+  1e31d8:	c4 83 59 21 64 b0 0c 	vinsertps $0x10,0xc(%r8,%r14,4),%xmm4,%xmm4
+  1e31df:	10
+  1e31e0:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e31e6:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e31ec:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e31f0:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e31f4:	83 fe 04             	cmp    $0x4,%esi
+  1e31f7:	0f 84 f8 00 00 00    	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e31fd:	c4 c1 7a 10 4c bd 10 	vmovss 0x10(%r13,%rdi,4),%xmm1
+  1e3204:	c4 81 72 59 54 9a 10 	vmulss 0x10(%r10,%r11,4),%xmm1,%xmm2
+  1e320b:	c4 a1 72 59 4c 88 10 	vmulss 0x10(%rax,%r9,4),%xmm1,%xmm1
+  1e3212:	c4 e2 79 18 5c 9d 10 	vbroadcastss 0x10(%rbp,%rbx,4),%xmm3
+  1e3219:	c4 a1 7a 10 64 ba 10 	vmovss 0x10(%rdx,%r15,4),%xmm4
+  1e3220:	c4 83 59 21 64 b0 10 	vinsertps $0x10,0x10(%r8,%r14,4),%xmm4,%xmm4
+  1e3227:	10
+  1e3228:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e322e:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e3234:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e3238:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e323c:	83 fe 05             	cmp    $0x5,%esi
+  1e323f:	0f 84 b0 00 00 00    	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e3245:	c4 c1 7a 10 4c bd 14 	vmovss 0x14(%r13,%rdi,4),%xmm1
+  1e324c:	c4 81 72 59 54 9a 14 	vmulss 0x14(%r10,%r11,4),%xmm1,%xmm2
+  1e3253:	c4 a1 72 59 4c 88 14 	vmulss 0x14(%rax,%r9,4),%xmm1,%xmm1
+  1e325a:	c4 e2 79 18 5c 9d 14 	vbroadcastss 0x14(%rbp,%rbx,4),%xmm3
+  1e3261:	c4 a1 7a 10 64 ba 14 	vmovss 0x14(%rdx,%r15,4),%xmm4
+  1e3268:	c4 83 59 21 64 b0 14 	vinsertps $0x10,0x14(%r8,%r14,4),%xmm4,%xmm4
+  1e326f:	10
+  1e3270:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e3276:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e327c:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e3280:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e3284:	83 fe 06             	cmp    $0x6,%esi
+  1e3287:	74 6c                	je     1e32f5 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x705>
+  1e3289:	c4 c1 7a 10 4c bd 18 	vmovss 0x18(%r13,%rdi,4),%xmm1
+  1e3290:	c4 81 72 59 54 9a 18 	vmulss 0x18(%r10,%r11,4),%xmm1,%xmm2
+  1e3297:	c4 a1 72 59 4c 88 18 	vmulss 0x18(%rax,%r9,4),%xmm1,%xmm1
+  1e329e:	c4 e2 79 18 5c 9d 18 	vbroadcastss 0x18(%rbp,%rbx,4),%xmm3
+  1e32a5:	c4 a1 7a 10 64 ba 18 	vmovss 0x18(%rdx,%r15,4),%xmm4
+  1e32ac:	c4 83 59 21 64 b0 18 	vinsertps $0x10,0x18(%r8,%r14,4),%xmm4,%xmm4
+  1e32b3:	10
+  1e32b4:	eb 2b                	jmp    1e32e1 <rustsht::legendre::scalar::accumulate_analysis_pair_normal_f32+0x6f1>
+  1e32b6:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e32ba:	31 f6                	xor    %esi,%esi
+  1e32bc:	c4 c1 7a 10 4c b5 00 	vmovss 0x0(%r13,%rsi,4),%xmm1
+  1e32c3:	c4 c1 72 59 14 b2    	vmulss (%r10,%rsi,4),%xmm1,%xmm2
+  1e32c9:	c5 f2 59 0c b0       	vmulss (%rax,%rsi,4),%xmm1,%xmm1
+  1e32ce:	c4 e2 79 18 5c b5 00 	vbroadcastss 0x0(%rbp,%rsi,4),%xmm3
+  1e32d5:	c5 fa 10 24 b2       	vmovss (%rdx,%rsi,4),%xmm4
+  1e32da:	c4 c3 59 21 24 b0 10 	vinsertps $0x10,(%r8,%rsi,4),%xmm4,%xmm4
+  1e32e1:	c4 e3 59 21 d2 20    	vinsertps $0x20,%xmm2,%xmm4,%xmm2
+  1e32e7:	c4 e3 69 21 c9 30    	vinsertps $0x30,%xmm1,%xmm2,%xmm1
+  1e32ed:	c5 e0 59 c9          	vmulps %xmm1,%xmm3,%xmm1
+  1e32f1:	c5 f8 58 c1          	vaddps %xmm1,%xmm0,%xmm0
+  1e32f5:	48 8b 04 24          	mov    (%rsp),%rax
+  1e32f9:	c5 f8 11 00          	vmovups %xmm0,(%rax)
+  1e32fd:	48 8b 04 24          	mov    (%rsp),%rax
+  1e3301:	48 83 c4 78          	add    $0x78,%rsp
+  1e3305:	5b                   	pop    %rbx
+  1e3306:	41 5c                	pop    %r12
+  1e3308:	41 5d                	pop    %r13
+  1e330a:	41 5e                	pop    %r14
+  1e330c:	41 5f                	pop    %r15
+  1e330e:	5d                   	pop    %rbp
+  1e330f:	c5 f8 77             	vzeroupper
+  1e3312:	c3                   	ret
+  1e3313:	48 8d 15 46 af 09 00 	lea    0x9af46(%rip),%rdx        # 27e260 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x348>
+  1e331a:	4c 89 e7             	mov    %r12,%rdi
+  1e331d:	4c 89 e6             	mov    %r12,%rsi
+  1e3320:	ff 15 62 20 0a 00    	call   *0xa2062(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e3326:	48 8d 15 93 af 09 00 	lea    0x9af93(%rip),%rdx        # 27e2c0 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x3a8>
+  1e332d:	4c 89 df             	mov    %r11,%rdi
+  1e3330:	4c 89 de             	mov    %r11,%rsi
+  1e3333:	ff 15 4f 20 0a 00    	call   *0xa204f(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e3339:	48 8d 15 38 af 09 00 	lea    0x9af38(%rip),%rdx        # 27e278 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x360>
+  1e3340:	4c 89 ff             	mov    %r15,%rdi
+  1e3343:	4c 89 fe             	mov    %r15,%rsi
+  1e3346:	ff 15 3c 20 0a 00    	call   *0xa203c(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e334c:	48 8d 15 25 af 09 00 	lea    0x9af25(%rip),%rdx        # 27e278 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x360>
+  1e3353:	4c 89 cf             	mov    %r9,%rdi
+  1e3356:	4c 89 ce             	mov    %r9,%rsi
+  1e3359:	ff 15 29 20 0a 00    	call   *0xa2029(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e335f:	48 8d 15 2a af 09 00 	lea    0x9af2a(%rip),%rdx        # 27e290 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x378>
+  1e3366:	48 89 df             	mov    %rbx,%rdi
+  1e3369:	48 89 de             	mov    %rbx,%rsi
+  1e336c:	ff 15 16 20 0a 00    	call   *0xa2016(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e3372:	48 8d 15 17 af 09 00 	lea    0x9af17(%rip),%rdx        # 27e290 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x378>
+  1e3379:	4c 89 ff             	mov    %r15,%rdi
+  1e337c:	4c 89 fe             	mov    %r15,%rsi
+  1e337f:	ff 15 03 20 0a 00    	call   *0xa2003(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e3385:	48 8d 15 1c af 09 00 	lea    0x9af1c(%rip),%rdx        # 27e2a8 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x390>
+  1e338c:	4c 89 f7             	mov    %r14,%rdi
+  1e338f:	4c 89 f6             	mov    %r14,%rsi
+  1e3392:	ff 15 f0 1f 0a 00    	call   *0xa1ff0(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e3398:	48 8d 15 09 af 09 00 	lea    0x9af09(%rip),%rdx        # 27e2a8 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x390>
+  1e339f:	48 89 fe             	mov    %rdi,%rsi
+  1e33a2:	ff 15 e0 1f 0a 00    	call   *0xa1fe0(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e33a8:	48 8d 15 39 ae 09 00 	lea    0x9ae39(%rip),%rdx        # 27e1e8 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x2d0>
+  1e33af:	48 89 df             	mov    %rbx,%rdi
+  1e33b2:	48 89 de             	mov    %rbx,%rsi
+  1e33b5:	c5 f8 77             	vzeroupper
+  1e33b8:	ff 15 ca 1f 0a 00    	call   *0xa1fca(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e33be:	48 8d 15 3b ae 09 00 	lea    0x9ae3b(%rip),%rdx        # 27e200 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x2e8>
+  1e33c5:	4c 89 f7             	mov    %r14,%rdi
+  1e33c8:	4c 89 f6             	mov    %r14,%rsi
+  1e33cb:	c5 f8 77             	vzeroupper
+  1e33ce:	ff 15 b4 1f 0a 00    	call   *0xa1fb4(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e33d4:	48 8d 15 3d ae 09 00 	lea    0x9ae3d(%rip),%rdx        # 27e218 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x300>
+  1e33db:	4c 89 ff             	mov    %r15,%rdi
+  1e33de:	4c 89 fe             	mov    %r15,%rsi
+  1e33e1:	c5 f8 77             	vzeroupper
+  1e33e4:	ff 15 9e 1f 0a 00    	call   *0xa1f9e(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e33ea:	48 8d 15 3f ae 09 00 	lea    0x9ae3f(%rip),%rdx        # 27e230 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x318>
+  1e33f1:	4c 89 e7             	mov    %r12,%rdi
+  1e33f4:	4c 89 e6             	mov    %r12,%rsi
+  1e33f7:	c5 f8 77             	vzeroupper
+  1e33fa:	ff 15 88 1f 0a 00    	call   *0xa1f88(%rip)        # 285388 <_DYNAMIC+0x260>
+  1e3400:	48 8d 15 41 ae 09 00 	lea    0x9ae41(%rip),%rdx        # 27e248 <anon.d9a4588c4a7ee39838710d823fe4634f.62.llvm.16494763972627904120+0x330>
+  1e3407:	4c 89 df             	mov    %r11,%rdi
+  1e340a:	4c 89 de             	mov    %r11,%rsi
+  1e340d:	c5 f8 77             	vzeroupper
+  1e3410:	ff 15 72 1f 0a 00    	call   *0xa1f72(%rip)        # 285388 <_DYNAMIC+0x260>
+
+Disassembly of section .init:
+
+Disassembly of section .fini:
+
+Disassembly of section .plt:

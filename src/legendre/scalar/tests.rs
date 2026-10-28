@@ -68,6 +68,83 @@ fn reference_scale_binary(mut value: f64, mut exponent: i64) -> f64 {
     value * 2.0_f64.powi(exponent as i32)
 }
 
+#[test]
+fn f32_scalar_analysis_simd_accumulator_matches_scalar_products_with_tail() {
+    let lane_count = 19;
+    let same_real = (0..lane_count)
+        .map(|lane| (lane as f32 - 9.0) * 0.000_91)
+        .collect::<Vec<_>>();
+    let same_imag = (0..lane_count)
+        .map(|lane| (lane as f32 - 11.0) * -0.000_77)
+        .collect::<Vec<_>>();
+    let opposite_real = (0..lane_count)
+        .map(|lane| 0.12 - lane as f32 * 0.001_03)
+        .collect::<Vec<_>>();
+    let opposite_imag = (0..lane_count)
+        .map(|lane| -0.08 + lane as f32 * 0.000_67)
+        .collect::<Vec<_>>();
+    let basis = (0..lane_count)
+        .map(|lane| 0.35 + lane as f32 * 0.002_1)
+        .collect::<Vec<_>>();
+    let cosine = (0..lane_count)
+        .map(|lane| 0.94 - lane as f32 * 0.012_3)
+        .collect::<Vec<_>>();
+    assert!(analysis_products_safe_f32(
+        &same_real,
+        &same_imag,
+        &opposite_real,
+        &opposite_imag,
+        &cosine,
+    ));
+
+    let actual = accumulate_analysis_pair_normal_f32(
+        Arch::new(),
+        &same_real,
+        &same_imag,
+        &opposite_real,
+        &opposite_imag,
+        &basis,
+        &cosine,
+    );
+    let mut expected = (Complex32::new(0.0, 0.0), Complex32::new(0.0, 0.0));
+    for lane in 0..lane_count {
+        expected.0.re += same_real[lane] * basis[lane];
+        expected.0.im += same_imag[lane] * basis[lane];
+        expected.1.re += (opposite_real[lane] * cosine[lane]) * basis[lane];
+        expected.1.im += (opposite_imag[lane] * cosine[lane]) * basis[lane];
+    }
+    for (actual, expected) in [actual.0, actual.1]
+        .into_iter()
+        .zip([expected.0, expected.1])
+    {
+        for (actual, expected) in [(actual.re, expected.re), (actual.im, expected.im)] {
+            assert!((actual - expected).abs() <= 2.0e-6 * expected.abs().max(1.0));
+        }
+    }
+}
+
+#[test]
+fn f32_scalar_analysis_simd_preflight_declines_exceptional_inputs() {
+    let safe = |value: f32, cosine: f32| {
+        analysis_products_safe_f32(&[value], &[0.0], &[value], &[-0.0], &[cosine])
+    };
+    assert!(safe(0.5, 1.0));
+    for value in [
+        f32::from_bits(1),
+        f32::NAN,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        f32::MAX,
+    ] {
+        assert!(
+            !safe(value, 1.0),
+            "accepted exceptional spectrum value {value:?}"
+        );
+    }
+    assert!(!safe(0.5, f32::NAN));
+    assert!(!safe(0.5, 1.0 + f32::EPSILON));
+}
+
 fn values(m: usize, lmax: usize, theta: f64) -> Vec<f64> {
     let norms = sectoral_normalizations(m).unwrap();
     let mut epsilon = vec![0.0; lmax + 1];

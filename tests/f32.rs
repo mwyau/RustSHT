@@ -716,6 +716,123 @@ fn f32_t720_scalar_synthesis_matches_analytic_modes_adjoint_and_workspace_reset(
 }
 
 #[test]
+fn f32_t720_scalar_analysis_matches_analytic_modes_adjoint_and_workspace_reset() {
+    let lmax = 720;
+    let ntheta = lmax + 1;
+    let phi0 = 0.23;
+    let thread_counts: &[usize] = if cfg!(feature = "parallel") {
+        &[1, 8]
+    } else {
+        &[1]
+    };
+    for mmax in [180, 720] {
+        let nphi = if mmax == 180 { 378 } else { 1458 };
+        let coefficients = {
+            let plan = ShtPlan::<f32>::new(
+                GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0).unwrap(),
+                HarmonicSpec::scalar(lmax, mmax).unwrap(),
+            )
+            .unwrap();
+            f32_coefficients(plan.harmonics())
+        };
+        for &threads in thread_counts {
+            let plan = ShtPlan::<f32>::new(
+                GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0).unwrap(),
+                HarmonicSpec::scalar(lmax, mmax).unwrap(),
+            )
+            .unwrap();
+            let spec = plan.harmonics();
+            let mut workspace = plan.workspace().unwrap();
+            plan.prepare_workspace(&mut workspace, threads).unwrap();
+            let mut analytic_map = Vec::with_capacity(ntheta * nphi);
+            let y00 = 1.0 / (4.0 * std::f64::consts::PI).sqrt();
+            let c11 = coefficients[spec.index(1, 1).unwrap()];
+            let c21 = coefficients[spec.index(2, 1).unwrap()];
+            let c22 = coefficients[spec.index(2, 2).unwrap()];
+            for &theta in plan.grid().theta() {
+                let (sin_theta, cos_theta) = theta.sin_cos();
+                let y10 = (3.0 / (4.0 * std::f64::consts::PI)).sqrt() * cos_theta;
+                let y20 = (5.0 / (16.0 * std::f64::consts::PI)).sqrt()
+                    * (3.0 * cos_theta * cos_theta - 1.0);
+                let y11 = -(3.0 / (8.0 * std::f64::consts::PI)).sqrt() * sin_theta;
+                let y21 = -(15.0 / (8.0 * std::f64::consts::PI)).sqrt() * sin_theta * cos_theta;
+                let y22 = (15.0 / (32.0 * std::f64::consts::PI)).sqrt() * sin_theta * sin_theta;
+                for longitude in 0..nphi {
+                    let phi = phi0 + TAU * longitude as f64 / nphi as f64;
+                    let mode11 = 2.0
+                        * (f64::from(c11.re) * y11 * phi.cos()
+                            - f64::from(c11.im) * y11 * phi.sin());
+                    let mode21 = 2.0
+                        * (f64::from(c21.re) * y21 * phi.cos()
+                            - f64::from(c21.im) * y21 * phi.sin());
+                    let mode22 = 2.0
+                        * (f64::from(c22.re) * y22 * (2.0 * phi).cos()
+                            - f64::from(c22.im) * y22 * (2.0 * phi).sin());
+                    analytic_map.push(
+                        (f64::from(coefficients[spec.index(0, 0).unwrap()].re) * y00
+                            + f64::from(coefficients[spec.index(1, 0).unwrap()].re) * y10
+                            + f64::from(coefficients[spec.index(2, 0).unwrap()].re) * y20
+                            + mode11
+                            + mode21
+                            + mode22) as f32,
+                    );
+                }
+            }
+
+            let mut analyzed = vec![Complex32::new(f32::NAN, f32::NAN); spec.nalm()];
+            plan.analysis_into(&analytic_map, &mut analyzed, &mut workspace)
+                .unwrap();
+            let mut diff_sq = 0.0_f64;
+            let mut expected_sq = 0.0_f64;
+            let mut max_abs = 0.0_f64;
+            for (&actual, &expected) in analyzed.iter().zip(&coefficients) {
+                let delta_re = f64::from(actual.re) - f64::from(expected.re);
+                let delta_im = f64::from(actual.im) - f64::from(expected.im);
+                diff_sq += delta_re * delta_re + delta_im * delta_im;
+                expected_sq += f64::from(expected.re).powi(2) + f64::from(expected.im).powi(2);
+                max_abs = max_abs.max(delta_re.hypot(delta_im));
+            }
+            let relative_l2 = (diff_sq / expected_sq).sqrt();
+            eprintln!(
+                "T720_ANALYSIS_ANALYTIC mmax={mmax} q={threads} relative_l2={relative_l2:.9e} max_abs={max_abs:.9e}"
+            );
+            assert!(
+                relative_l2 < 1.0e-4,
+                "T720 analysis rel-L2={relative_l2:.3e}"
+            );
+            assert!(max_abs < 2.0e-5, "T720 analysis max abs={max_abs:.3e}");
+
+            let first = analyzed.clone();
+            analyzed.fill(Complex32::new(f32::NAN, f32::NAN));
+            plan.analysis_into(&analytic_map, &mut analyzed, &mut workspace)
+                .unwrap();
+            assert!(
+                analyzed
+                    .iter()
+                    .all(|value| value.re.is_finite() && value.im.is_finite())
+            );
+            assert!(analyzed.iter().zip(first).all(|(actual, previous)| {
+                actual.re.to_bits() == previous.re.to_bits()
+                    && actual.im.to_bits() == previous.im.to_bits()
+            }));
+
+            let map = arbitrary_map(ntheta, nphi, 0.41);
+            let mut analyzed = vec![Complex32::new(0.0, 0.0); spec.nalm()];
+            plan.analysis_into(&map, &mut analyzed, &mut workspace)
+                .unwrap();
+            let mut adjoint_map = vec![0.0_f32; ntheta * nphi];
+            plan.adjoint_analysis_into(&coefficients, &mut adjoint_map, &mut workspace)
+                .unwrap();
+            assert_close(
+                harmonic_inner(spec, &analyzed, &coefficients),
+                map_inner(&map, &adjoint_map),
+                2.0e-4,
+            );
+        }
+    }
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "The literals retain printed DUCC 0.41.0 float32 analysis references."

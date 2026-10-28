@@ -1120,6 +1120,131 @@ fn scale_normal_binary(value: f64, exponent: i64) -> f64 {
     scale_binary(value, exponent)
 }
 
+/// Checks whether native-f32 spectra can use the ordinary paired accumulator.
+/// The conservative input bound covers a sum over any representable latitude
+/// count; exceptional and oversized values retain the scaled scalar path.
+pub(crate) fn analysis_products_safe_f32(
+    same_real: &[f32],
+    same_imag: &[f32],
+    opposite_real: &[f32],
+    opposite_imag: &[f32],
+    cos_theta: &[f32],
+) -> bool {
+    debug_assert_eq!(same_real.len(), same_imag.len());
+    debug_assert_eq!(same_real.len(), opposite_real.len());
+    debug_assert_eq!(same_real.len(), opposite_imag.len());
+    debug_assert_eq!(same_real.len(), cos_theta.len());
+    let max_input = (f32::MAX * 0.25 / BIG_F32) / usize::MAX as f32;
+    for lane in 0..same_real.len() {
+        if [
+            same_real[lane],
+            same_imag[lane],
+            opposite_real[lane],
+            opposite_imag[lane],
+        ]
+        .into_iter()
+        .any(|value| !(value.is_normal() || value == 0.0) || value.abs() > max_input)
+            || !cos_theta[lane].is_finite()
+            || cos_theta[lane].abs() > 1.0
+        {
+            return false;
+        }
+    }
+    true
+}
+
+/// Accumulates a checked ordinary f32 paired-analysis packet with native SIMD.
+/// Products retain the scalar operation order; only the latitude reduction
+/// tree changes. Scaled or exceptional packets use the shared scalar callback.
+pub(crate) fn accumulate_analysis_pair_normal_f32(
+    arch: Arch,
+    same_real: &[f32],
+    same_imag: &[f32],
+    opposite_real: &[f32],
+    opposite_imag: &[f32],
+    basis: &[f32],
+    cos_theta: &[f32],
+) -> (Complex32, Complex32) {
+    arch.dispatch(AnalysisPairAccumulationF32 {
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        basis,
+        cos_theta,
+    })
+}
+
+struct AnalysisPairAccumulationF32<'a> {
+    same_real: &'a [f32],
+    same_imag: &'a [f32],
+    opposite_real: &'a [f32],
+    opposite_imag: &'a [f32],
+    basis: &'a [f32],
+    cos_theta: &'a [f32],
+}
+
+impl WithSimd for AnalysisPairAccumulationF32<'_> {
+    type Output = (Complex32, Complex32);
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let (same_real_vectors, same_real_tail) = S::as_simd_f32s(self.same_real);
+        let (same_imag_vectors, same_imag_tail) = S::as_simd_f32s(self.same_imag);
+        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f32s(self.opposite_real);
+        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f32s(self.opposite_imag);
+        let (basis_vectors, basis_tail) = S::as_simd_f32s(self.basis);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f32s(self.cos_theta);
+        debug_assert_eq!(same_real_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(same_imag_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(opposite_real_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
+
+        let zero = simd.splat_f32s(0.0);
+        let mut same_re = zero;
+        let mut same_im = zero;
+        let mut opposite_re = zero;
+        let mut opposite_im = zero;
+        for index in 0..basis_vectors.len() {
+            same_re = simd.add_f32s(
+                same_re,
+                simd.mul_f32s(same_real_vectors[index], basis_vectors[index]),
+            );
+            same_im = simd.add_f32s(
+                same_im,
+                simd.mul_f32s(same_imag_vectors[index], basis_vectors[index]),
+            );
+            opposite_re = simd.add_f32s(
+                opposite_re,
+                simd.mul_f32s(
+                    simd.mul_f32s(opposite_real_vectors[index], cosine_vectors[index]),
+                    basis_vectors[index],
+                ),
+            );
+            opposite_im = simd.add_f32s(
+                opposite_im,
+                simd.mul_f32s(
+                    simd.mul_f32s(opposite_imag_vectors[index], cosine_vectors[index]),
+                    basis_vectors[index],
+                ),
+            );
+        }
+        let mut same = Complex32::new(simd.reduce_sum_f32s(same_re), simd.reduce_sum_f32s(same_im));
+        let mut opposite = Complex32::new(
+            simd.reduce_sum_f32s(opposite_re),
+            simd.reduce_sum_f32s(opposite_im),
+        );
+        for lane in 0..basis_tail.len() {
+            same.re += same_real_tail[lane] * basis_tail[lane];
+            same.im += same_imag_tail[lane] * basis_tail[lane];
+            opposite.re += (opposite_real_tail[lane] * cosine_tail[lane]) * basis_tail[lane];
+            opposite.im += (opposite_imag_tail[lane] * cosine_tail[lane]) * basis_tail[lane];
+        }
+        (same, opposite)
+    }
+}
+
 pub(crate) fn multiply_complex_scaled_f32(
     value: Complex32,
     factor: f32,

@@ -1,0 +1,3127 @@
+{
+  "source_parent": "4770e1c7504d084a979a62ca0d8ef57e9fd293f8",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "pairs_per_cell": 15,
+  "cases": [
+    {
+      "case": "GL-T720-M720-analysis-s0-q1",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 1
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 541.333111,
+            "candidate": 453.85360000000003,
+            "ducc": 14.166858999999999
+          },
+          "candidate_parent_ratio": 0.8383998517319589,
+          "rust_ducc_ratios": {
+            "parent": 38.211230238121246,
+            "candidate": 32.03628976613659
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 14.063698,
+            "candidate": 455.415394,
+            "parent": 553.834547
+          },
+          "candidate_parent_ratio": 0.8222950273992207,
+          "rust_ducc_ratios": {
+            "parent": 39.380435145862776,
+            "candidate": 32.38233599726046
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 455.42381,
+            "parent": 540.597589,
+            "ducc": 14.0129449
+          },
+          "candidate_parent_ratio": 0.8424451371350826,
+          "rust_ducc_ratios": {
+            "parent": 38.57844249426828,
+            "candidate": 32.50022127754174
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 540.60212,
+            "candidate": 453.460152,
+            "ducc": 14.0058773
+          },
+          "candidate_parent_ratio": 0.8388057227744501,
+          "rust_ducc_ratios": {
+            "parent": 38.59823332880404,
+            "candidate": 32.376419005184346
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 13.976269299999998,
+            "candidate": 453.433691,
+            "parent": 540.235917
+          },
+          "candidate_parent_ratio": 0.8393253331210854,
+          "rust_ducc_ratios": {
+            "parent": 38.653799909250466,
+            "candidate": 32.44311348522743
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 450.741918,
+            "parent": 539.791436,
+            "ducc": 14.009833700000001
+          },
+          "candidate_parent_ratio": 0.8350297687938866,
+          "rust_ducc_ratios": {
+            "parent": 38.529467769485365,
+            "candidate": 32.17325256330487
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 539.3202150000001,
+            "candidate": 452.901925,
+            "ducc": 13.9694823
+          },
+          "candidate_parent_ratio": 0.8397644152834136,
+          "rust_ducc_ratios": {
+            "parent": 38.607029481686666,
+            "candidate": 32.42080953851812
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 14.068601999999998,
+            "candidate": 453.653067,
+            "parent": 561.243409
+          },
+          "candidate_parent_ratio": 0.8083000347537266,
+          "rust_ducc_ratios": {
+            "parent": 39.89333190319835,
+            "candidate": 32.24578156379717
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 461.439581,
+            "parent": 542.930557,
+            "ducc": 14.1100144
+          },
+          "candidate_parent_ratio": 0.849905342498525,
+          "rust_ducc_ratios": {
+            "parent": 38.47838433106064,
+            "candidate": 32.70298441367997
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 541.4712440000001,
+            "candidate": 457.460351,
+            "ducc": 14.007459299999999
+          },
+          "candidate_parent_ratio": 0.8448469906187667,
+          "rust_ducc_ratios": {
+            "parent": 38.65592127760101,
+            "candidate": 32.658338760977166
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 14.0421439,
+            "candidate": 455.924575,
+            "parent": 561.959225
+          },
+          "candidate_parent_ratio": 0.8113125556396019,
+          "rust_ducc_ratios": {
+            "parent": 40.0194748752005,
+            "candidate": 32.46830243635375
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 453.318283,
+            "parent": 580.268692,
+            "ducc": 14.1313146
+          },
+          "candidate_parent_ratio": 0.7812213363391317,
+          "rust_ducc_ratios": {
+            "parent": 41.06261224981857,
+            "candidate": 32.078988815378864
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 543.264759,
+            "candidate": 458.18733699999996,
+            "ducc": 14.0680509
+          },
+          "candidate_parent_ratio": 0.8433960226748298,
+          "rust_ducc_ratios": {
+            "parent": 38.61691735846649,
+            "candidate": 32.56935450809323
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 13.973465899999999,
+            "candidate": 455.41258600000003,
+            "parent": 571.0050719999999
+          },
+          "candidate_parent_ratio": 0.7975631186687604,
+          "rust_ducc_ratios": {
+            "parent": 40.86352491832395,
+            "candidate": 32.59124037365705
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 456.33633499999996,
+            "parent": 542.701864,
+            "ducc": 13.9268417
+          },
+          "candidate_parent_ratio": 0.8408600840921379,
+          "rust_ducc_ratios": {
+            "parent": 38.968050020989324,
+            "candidate": 32.76667781755572
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M720-analysis-s0-q8",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 8
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 71.9301435,
+            "candidate": 59.7871,
+            "ducc": 2.2880359375
+          },
+          "candidate_parent_ratio": 0.8311828267101956,
+          "rust_ducc_ratios": {
+            "parent": 31.43750599415574,
+            "candidate": 26.130315096941086
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 2.2522096874999997,
+            "candidate": 60.25963925,
+            "parent": 71.547444
+          },
+          "candidate_parent_ratio": 0.8422332913807515,
+          "rust_ducc_ratios": {
+            "parent": 31.76766550516847,
+            "candidate": 26.755785477900805
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 60.0488905,
+            "parent": 71.47106725,
+            "ducc": 2.19337521875
+          },
+          "candidate_parent_ratio": 0.8401846063100449,
+          "rust_ducc_ratios": {
+            "parent": 32.58497070589282,
+            "candidate": 27.377390784154905
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 72.06762850000001,
+            "candidate": 59.97067725,
+            "ducc": 2.2458704687499997
+          },
+          "candidate_parent_ratio": 0.8321444523458961,
+          "rust_ducc_ratios": {
+            "parent": 32.08895147907226,
+            "candidate": 26.702642954906615
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 2.20812340625,
+            "candidate": 60.024792,
+            "parent": 71.7622755
+          },
+          "candidate_parent_ratio": 0.8364393629073258,
+          "rust_ducc_ratios": {
+            "parent": 32.49921417293975,
+            "candidate": 27.18362199780246
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 59.945743,
+            "parent": 72.81106025,
+            "ducc": 2.2532488125
+          },
+          "candidate_parent_ratio": 0.8233054537892134,
+          "rust_ducc_ratios": {
+            "parent": 32.31381276940094,
+            "candidate": 26.604138285771317
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 72.06781375,
+            "candidate": 60.0791475,
+            "ducc": 2.3092267333333334
+          },
+          "candidate_parent_ratio": 0.8336474269694354,
+          "rust_ducc_ratios": {
+            "parent": 31.208634782246442,
+            "candidate": 26.016998085448574
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 2.6138916000000005,
+            "candidate": 59.98969075,
+            "parent": 71.90460225000001
+          },
+          "candidate_parent_ratio": 0.8342955648572549,
+          "rust_ducc_ratios": {
+            "parent": 27.508639704110145,
+            "candidate": 22.950336100395283
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 60.1371875,
+            "parent": 71.43374850000001,
+            "ducc": 2.2630366875
+          },
+          "candidate_parent_ratio": 0.841859607857482,
+          "rust_ducc_ratios": {
+            "parent": 31.565439877562746,
+            "candidate": 26.5736688371739
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 72.048585,
+            "candidate": 60.0559035,
+            "ducc": 2.2464265625
+          },
+          "candidate_parent_ratio": 0.8335473000614793,
+          "rust_ducc_ratios": {
+            "parent": 32.07253074848736,
+            "candidate": 26.733971411540413
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 2.24319696875,
+            "candidate": 60.189216,
+            "parent": 72.51525050000001
+          },
+          "candidate_parent_ratio": 0.8300214863079042,
+          "rust_ducc_ratios": {
+            "parent": 32.326742372698746,
+            "candidate": 26.83189075168012
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 60.07836125,
+            "parent": 71.74701175000001,
+            "ducc": 2.2243193750000003
+          },
+          "candidate_parent_ratio": 0.8373639512589176,
+          "rust_ducc_ratios": {
+            "parent": 32.25571496449335,
+            "candidate": 27.009772933349552
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 72.487255,
+            "candidate": 60.219052500000004,
+            "ducc": 2.2245927187500003
+          },
+          "candidate_parent_ratio": 0.8307536614540032,
+          "rust_ducc_ratios": {
+            "parent": 32.58450609365054,
+            "candidate": 27.069697743970465
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 2.22310646875,
+            "candidate": 60.21537275,
+            "parent": 71.71573000000001
+          },
+          "candidate_parent_ratio": 0.8396396822565982,
+          "rust_ducc_ratios": {
+            "parent": 32.25924219469527,
+            "candidate": 27.086139866192585
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 60.46111275,
+            "parent": 71.6502235,
+            "ducc": 2.392503794117647
+          },
+          "candidate_parent_ratio": 0.8438370432996626,
+          "rust_ducc_ratios": {
+            "parent": 29.947799320596076,
+            "candidate": 25.271062432023438
+          },
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 7.367884435582255e-07,
+            "absolute_l2": 8.329117308731779e-07,
+            "max_absolute": 2.2351741790771484e-08,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8295094668603794e-05,
+            "absolute_l2": 2.0681919085797507e-05,
+            "max_absolute": 4.2765168473124504e-07,
+            "reference_rms": 0.0015668230157071374,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M180-analysis-s0-q1",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 1
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 189.23056,
+            "candidate": 140.672273,
+            "ducc": 5.772124884615385
+          },
+          "candidate_parent_ratio": 0.7433908825297563,
+          "rust_ducc_ratios": {
+            "parent": 32.78351799081163,
+            "candidate": 24.3709683716196
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 5.809461346153846,
+            "candidate": 140.42845300000002,
+            "parent": 188.22729199999998
+          },
+          "candidate_parent_ratio": 0.7460578724152289,
+          "rust_ducc_ratios": {
+            "parent": 32.40012813315573,
+            "candidate": 24.172370661002965
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 140.286654,
+            "parent": 188.805406,
+            "ducc": 5.723711769230769
+          },
+          "candidate_parent_ratio": 0.7430224429061104,
+          "rust_ducc_ratios": {
+            "parent": 32.986532797645445,
+            "candidate": 24.509734182309053
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 187.738868,
+            "candidate": 140.36341,
+            "ducc": 5.769092653846154
+          },
+          "candidate_parent_ratio": 0.747652372123603,
+          "rust_ducc_ratios": {
+            "parent": 32.542182846524014,
+            "candidate": 24.330240199283704
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 5.698405384615384,
+            "candidate": 140.16805,
+            "parent": 188.91546400000001
+          },
+          "candidate_parent_ratio": 0.7419617591495844,
+          "rust_ducc_ratios": {
+            "parent": 33.15233846121864,
+            "candidate": 24.59776736460821
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 140.54070499999997,
+            "parent": 187.2693,
+            "ducc": 5.765236076923077
+          },
+          "candidate_parent_ratio": 0.7504738096420501,
+          "rust_ducc_ratios": {
+            "parent": 32.482503318397704,
+            "candidate": 24.37726801206846
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 187.44032299999998,
+            "candidate": 140.193998,
+            "ducc": 5.761475923076923
+          },
+          "candidate_parent_ratio": 0.7479393748163783,
+          "rust_ducc_ratios": {
+            "parent": 32.53338649723928,
+            "candidate": 24.333000757404747
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 5.8334252499999995,
+            "candidate": 141.670032,
+            "parent": 199.571469
+          },
+          "candidate_parent_ratio": 0.7098711690096343,
+          "rust_ducc_ratios": {
+            "parent": 34.211712749726246,
+            "candidate": 24.28590852346998
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 140.653448,
+            "parent": 199.654726,
+            "ducc": 5.752129384615385
+          },
+          "candidate_parent_ratio": 0.7044834390747153,
+          "rust_ducc_ratios": {
+            "parent": 34.70970707543462,
+            "candidate": 24.45241380977816
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 187.02543699999998,
+            "candidate": 141.21741600000001,
+            "ducc": 5.723623076923078
+          },
+          "candidate_parent_ratio": 0.755070637797788,
+          "rust_ducc_ratios": {
+            "parent": 32.67605754020785,
+            "candidate": 24.672731607601964
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 5.749667807692308,
+            "candidate": 140.06506499999998,
+            "parent": 188.839972
+          },
+          "candidate_parent_ratio": 0.741713015081362,
+          "rust_ducc_ratios": {
+            "parent": 32.84363172205473,
+            "candidate": 24.360549110787083
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 139.535844,
+            "parent": 188.113898,
+            "ducc": 5.746790807692308
+          },
+          "candidate_parent_ratio": 0.7417625464334379,
+          "rust_ducc_ratios": {
+            "parent": 32.73372988419938,
+            "candidate": 24.280654833168054
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 188.335326,
+            "candidate": 140.454551,
+            "ducc": 5.74269775
+          },
+          "candidate_parent_ratio": 0.7457684863645815,
+          "rust_ducc_ratios": {
+            "parent": 32.79561874904526,
+            "candidate": 24.45793895386537
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 5.747237,
+            "candidate": 140.543731,
+            "parent": 199.73485799999997
+          },
+          "candidate_parent_ratio": 0.7036514928205473,
+          "rust_ducc_ratios": {
+            "parent": 34.75319671000169,
+            "candidate": 24.45413874527882
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 141.07157,
+            "parent": 188.595909,
+            "ducc": 5.808940692307693
+          },
+          "candidate_parent_ratio": 0.7480097036463288,
+          "rust_ducc_ratios": {
+            "parent": 32.466488984771736,
+            "candidate": 24.285248803935907
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M180-analysis-s0-q8",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 8
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 26.041100999999998,
+            "candidate": 19.058108625,
+            "ducc": 0.9498747023809524
+          },
+          "candidate_parent_ratio": 0.7318472680936187,
+          "rust_ducc_ratios": {
+            "parent": 27.41530112837564,
+            "candidate": 20.06381323476561
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 1.00038515,
+            "candidate": 19.071701875000002,
+            "parent": 26.158927166666665
+          },
+          "candidate_parent_ratio": 0.7290704910598304,
+          "rust_ducc_ratios": {
+            "parent": 26.148855934803375,
+            "candidate": 19.064359237039856
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 19.08605025,
+            "parent": 25.55881166666667,
+            "ducc": 0.9677960609756098
+          },
+          "candidate_parent_ratio": 0.7467502988369241,
+          "rust_ducc_ratios": {
+            "parent": 26.40929499227503,
+            "candidate": 19.721148927553863
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 25.99963816666667,
+            "candidate": 19.09358075,
+            "ducc": 1.0745121375
+          },
+          "candidate_parent_ratio": 0.7343787104883363,
+          "rust_ducc_ratios": {
+            "parent": 24.196690999841472,
+            "candidate": 17.769534734548312
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 5,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 0.9517729324324324,
+            "candidate": 19.567499625,
+            "parent": 25.577534
+          },
+          "candidate_parent_ratio": 0.7650268249081401,
+          "rust_ducc_ratios": {
+            "parent": 26.873567348287434,
+            "candidate": 20.5589999024154
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 6,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 19.060053500000002,
+            "parent": 25.49153266666667,
+            "ducc": 1.3487678125
+          },
+          "candidate_parent_ratio": 0.7477013543765212,
+          "rust_ducc_ratios": {
+            "parent": 18.899867293998515,
+            "candidate": 14.131456373259205
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 28.338668333333338,
+            "candidate": 22.791817625,
+            "ducc": 1.3435792179487178
+          },
+          "candidate_parent_ratio": 0.8042656541553557,
+          "rust_ducc_ratios": {
+            "parent": 21.09192219912334,
+            "candidate": 16.9635086048718
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 8,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 1.396792275,
+            "candidate": 19.39810125,
+            "parent": 25.58181033333333
+          },
+          "candidate_parent_ratio": 0.7582771116367828,
+          "rust_ducc_ratios": {
+            "parent": 18.314684861307192,
+            "candidate": 13.887606337169927
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 9,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 19.501285375000002,
+            "parent": 25.488700666666666,
+            "ducc": 0.9793830384615385
+          },
+          "candidate_parent_ratio": 0.7650953114492486,
+          "rust_ducc_ratios": {
+            "parent": 26.025262502713474,
+            "candidate": 19.911806320062016
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 25.588598333333337,
+            "candidate": 19.083065875000003,
+            "ducc": 1.124244075
+          },
+          "candidate_parent_ratio": 0.7457644075072759,
+          "rust_ducc_ratios": {
+            "parent": 22.76071442345234,
+            "candidate": 16.974130706448243
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 11,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 0.9404322051282052,
+            "candidate": 19.145050875000003,
+            "parent": 25.5322465
+          },
+          "candidate_parent_ratio": 0.7498380871029113,
+          "rust_ducc_ratios": {
+            "parent": 27.149481228707277,
+            "candidate": 20.35771507037026
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 12,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 19.163524375,
+            "parent": 25.532585499999996,
+            "ducc": 0.9776601538461538
+          },
+          "candidate_parent_ratio": 0.7505516578021448,
+          "rust_ducc_ratios": {
+            "parent": 26.116013217429177,
+            "candidate": 19.601417015524195
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 25.48044666666667,
+            "candidate": 19.121097166666665,
+            "ducc": 1.356726034883721
+          },
+          "candidate_parent_ratio": 0.750422369623557,
+          "rust_ducc_ratios": {
+            "parent": 18.780834163656696,
+            "candidate": 14.09355807659831
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 14,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 1.355467512820513,
+            "candidate": 20.88583775,
+            "parent": 25.571959999999997
+          },
+          "candidate_parent_ratio": 0.8167476309989536,
+          "rust_ducc_ratios": {
+            "parent": 18.865785980210475,
+            "candidate": 15.408586006270179
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 15,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 19.953492,
+            "parent": 25.469337166666666,
+            "ducc": 1.0416432564102565
+          },
+          "candidate_parent_ratio": 0.7834319310874882,
+          "rust_ducc_ratios": {
+            "parent": 24.451113190556132,
+            "candidate": 19.155782824116145
+          },
+          "errors_parent_candidate": {
+            "output_values": 228422,
+            "relative_l2": 8.553704137316618e-07,
+            "absolute_l2": 1.1867241154679782e-06,
+            "max_absolute": 4.470348358154297e-08,
+            "reference_rms": 0.002902863257754407,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.205176560600415e-05,
+            "absolute_l2": 3.059418656383863e-05,
+            "max_absolute": 9.057112038135529e-07,
+            "reference_rms": 0.0029028632561572763,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,60 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 native-f32 scalar-analysis callback SIMD accepted at parent `4770e1c7`
+
+A narrow f32-only accumulation leaf now handles callback contributions only
+when the shared recurrence reports normal range, all exponents are zero, and
+a conservative spectrum/product bound passes. Declined, scaled, subnormal,
+nonfinite, oversized and unsupported inputs retain the existing scalar scaled
+callback. The shared f64 analysis override is unchanged. Exact parent was
+`4770e1c7504d084a979a62ca0d8ef57e9fd293f8`; candidate patch SHA-256 is recorded
+in the linked evidence report.
+
+Fifteen interleaved paired whole-transform comparisons per GL T720 f32 scalar-
+analysis cell show repeatable gains. Candidate/parent intervals are paired
+percentile bootstraps; all four cells remain **GAP**:
+
+| Cell | Parent / candidate / DUCC ms | Candidate/parent [95% CI] | Candidate/DUCC | Max candidate-parent rel-L2 | Status |
+|---|---:|---:|---:|---:|---|
+| Full q1 | 542.702 / 455.413 / 14.013 | 0.839 [0.811, 0.841] | 32.44× | 7.368e-7 | **GAP** |
+| Full q8 | 71.905 / 60.078 / 2.246 | 0.834 [0.831, 0.840] | 26.73× | 7.368e-7 | **GAP** |
+| Reduced q1 | 188.596 / 140.455 / 5.752 | 0.743 [0.742, 0.748] | 24.37× | 8.554e-7 | **GAP** |
+| Reduced q8 | 25.572 / 19.145 / 1.042 | 0.750 [0.746, 0.765] | 19.06× | 8.554e-7 | **GAP** |
+
+The test-only contribution census found 58.829M/80.730M full and
+32.554M/40.662M reduced useful paired degree-latitude terms safe for the
+ordinary f32 accumulator (72.9%/80.0%). Every normal-range term passed; scaled
+terms remained on the fallback. q8 job/work counts were balanced. The same
+one-first-transform Callgrind boundary measured 6.174B→4.847B Rust Ir full and
+2.379B→1.640B reduced; normalized to 161.199M/81.210M useful updates, this is
+38.30→30.07 and 29.30→20.19 Ir/update. Pinned DUCC measured 1.38/1.13
+Ir/update on that boundary. These are instruction counts, not elapsed time.
+The inspected AVX2 path uses eight f32 lanes and separate multiply/add
+operations, then a horizontal reduction. Full route counts, raw profiles and
+disassembly are retained in the [candidate report](data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
+
+The operation-order change is small but non-bitwise: maximum parent-relative
+L2/absolute error is `8.554e-7` / `4.471e-8`; max candidate/DUCC relative-L2
+is `2.205e-5`. The explicit T720 analytic mode test measures relative-L2
+`4.321e-5`–`4.323e-5` and max absolute error below `4.65e-6`, under its
+`1e-4` / `2e-5` bounds. Adjoint, poison/reset, 19-lane tail, f32 extreme-value
+and paired-analysis tests pass; no tolerance was weakened. Strict all-target,
+all-feature Clippy passes.
+
+Protected GL T1023 f64 spin-1 synthesis is bitwise identical to parent. q1 is
+neutral across three pairs. q8 has fifteen pairs, candidate/parent median
+`1.002×` and bootstrap interval `[0.980, 1.047]`; the variable q8 timing does
+not establish a meaningful regression. Adjacent full-mmax f32 spin-1 analysis
+is also bitwise identical and about 4% faster in the three-pair q1/q8 screen;
+spin synthesis is neutral/noisy and is not counted as a gain.
+
+This is a material scalar-analysis improvement, not parity. Native-f32 scalar
+synthesis remains a documented transition blocker at the current
+code-equivalent source: no nonzero-exponent handoff was safe, and the existing
+f32 synthesis ratios are still 33.37×/34.94× full and 22.75×/40.42× reduced
+q1/q8. Continue with f32 spin-1 synthesis/analysis profiling, then revisit the
+remaining f64 gaps. M6 stays open.
+
 ## 2026-10-28 current native-f32 scalar-analysis profile at `72bea503`
 
 After the corrected scalar-synthesis suffix candidate was rejected as a

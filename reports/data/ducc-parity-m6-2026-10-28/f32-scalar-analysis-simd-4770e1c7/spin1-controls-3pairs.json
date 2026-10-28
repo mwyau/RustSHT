@@ -1,0 +1,680 @@
+{
+  "parent": "4770e1c7504d084a979a62ca0d8ef57e9fd293f8",
+  "candidate": "uncommitted-simd-accumulator",
+  "ducc": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "pairs_per_cell": 3,
+  "cases": [
+    {
+      "case": "GL-T720-M720-s1-analysis-q1",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "spin": 1,
+        "operation": "analysis",
+        "threads": 1
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 1071.0019360000001,
+            "candidate": 1023.5883939999999,
+            "ducc": 28.754531166666666
+          },
+          "candidate_parent_ratio": 0.9557297326864961,
+          "rust_ducc_ratios": {
+            "parent": 37.24637100818204,
+            "candidate": 35.59746420719188
+          },
+          "errors_parent_candidate": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451654630796e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 29.057631,
+            "candidate": 1044.033929,
+            "parent": 1067.990863
+          },
+          "candidate_parent_ratio": 0.9775682219483557,
+          "rust_ducc_ratios": {
+            "parent": 36.75423034314119,
+            "candidate": 35.92976760562483
+          },
+          "errors_parent_candidate": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451654630796e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 1020.8474620000001,
+            "parent": 1066.069982,
+            "ducc": 28.876730666666667
+          },
+          "candidate_parent_ratio": 0.9575801581851501,
+          "rust_ducc_ratios": {
+            "parent": 36.91795980320579,
+            "candidate": 35.351905788226816
+          },
+          "errors_parent_candidate": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451654630796e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M720-s1-analysis-q8",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "spin": 1,
+        "operation": "analysis",
+        "threads": 8
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 140.844287,
+            "candidate": 135.098283,
+            "ducc": 4.322652055555556
+          },
+          "candidate_parent_ratio": 0.9592031446756516,
+          "rust_ducc_ratios": {
+            "parent": 32.58284154954924,
+            "candidate": 31.253564076796113
+          },
+          "errors_parent_candidate": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451654630796e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 4.411221722222223,
+            "candidate": 135.212479,
+            "parent": 140.61158700000001
+          },
+          "candidate_parent_ratio": 0.961602680723602,
+          "rust_ducc_ratios": {
+            "parent": 31.875882885606735,
+            "candidate": 30.651934433231023
+          },
+          "errors_parent_candidate": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451654630796e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 135.374836,
+            "parent": 141.445984,
+            "ducc": 4.403622333333333
+          },
+          "candidate_parent_ratio": 0.9570779754340708,
+          "rust_ducc_ratios": {
+            "parent": 32.120371206522634,
+            "candidate": 30.741699844529506
+          },
+          "errors_parent_candidate": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451654630796e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M720-s1-synthesis-q1",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 1486.277305,
+            "candidate": 1496.989618,
+            "ducc": 41.634361
+          },
+          "candidate_parent_ratio": 1.0072074793606567,
+          "rust_ducc_ratios": {
+            "parent": 35.69833352312048,
+            "candidate": 35.955628525198215
+          },
+          "errors_parent_candidate": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 2102436,
+            "relative_l2": 0.00014264004915299702,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 41.7226,
+            "candidate": 1502.01489,
+            "parent": 1513.87511
+          },
+          "candidate_parent_ratio": 0.9921656549330545,
+          "rust_ducc_ratios": {
+            "parent": 36.28429460292503,
+            "candidate": 36.000030918495014
+          },
+          "errors_parent_candidate": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 2102436,
+            "relative_l2": 0.00014264004915299702,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 1512.085916,
+            "parent": 1537.693483,
+            "ducc": 43.556422999999995
+          },
+          "candidate_parent_ratio": 0.9833467675560149,
+          "rust_ducc_ratios": {
+            "parent": 35.30348401199061,
+            "candidate": 34.71556688665642
+          },
+          "errors_parent_candidate": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 2102436,
+            "relative_l2": 0.00014264004915299702,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M720-s1-synthesis-q8",
+      "parameters": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "times_ms": {
+            "parent": 275.218169,
+            "candidate": 309.18132199999997,
+            "ducc": 8.176959
+          },
+          "candidate_parent_ratio": 1.123404472616777,
+          "rust_ducc_ratios": {
+            "parent": 33.65776555807605,
+            "candidate": 37.81128436622954
+          },
+          "errors_parent_candidate": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 2102436,
+            "relative_l2": 0.00014264004915299702,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "times_ms": {
+            "ducc": 7.676055249999999,
+            "candidate": 279.64661,
+            "parent": 289.70173
+          },
+          "candidate_parent_ratio": 0.9652914740964785,
+          "rust_ducc_ratios": {
+            "parent": 37.74096467062298,
+            "candidate": 36.43103142072877
+          },
+          "errors_parent_candidate": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 2102436,
+            "relative_l2": 0.00014264004915299702,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "times_ms": {
+            "candidate": 273.629032,
+            "parent": 301.98017300000004,
+            "ducc": 8.028345214285714
+          },
+          "candidate_parent_ratio": 0.9061158859591751,
+          "rust_ducc_ratios": {
+            "parent": 37.61424863278844,
+            "candidate": 34.082868224587784
+          },
+          "errors_parent_candidate": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 2102436,
+            "relative_l2": 0.00014264004915299702,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "candidate": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "parent": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            },
+            "ducc": {
+              "finite_outputs": true,
+              "repeat_consistent": true,
+              "reset_consistent": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
