@@ -1,0 +1,68 @@
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index 2c82e455..7359f6d8 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -13,6 +13,63 @@ use crate::plan::LegendreReuseEstimate;
+ #[cfg(feature = "parallel")]
+ use crate::transform::scheduling::weighted_order_midpoint;
+
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "isolated M6 q1/q8 scalar-analysis route and worker census"]
++fn m6_temp_f32_scalar_analysis_worker_census() {
++    for (mmax, nphi, threads) in [(720, 1458, 1), (720, 1458, 8), (180, 378, 1), (180, 378, 8)] {
++        let plan = ShtPlan::<f32>::new(
++            GridSpec::new(GridKind::GaussLegendre, 721, nphi, 0.23).unwrap(),
++            HarmonicSpec::scalar(720, mmax).unwrap(),
++        )
++        .unwrap();
++        let pool = rayon::ThreadPoolBuilder::new()
++            .num_threads(threads)
++            .build()
++            .unwrap();
++        let mut workspace = pool.install(|| plan.workspace()).unwrap();
++        pool.install(|| plan.prepare_workspace(&mut workspace, threads))
++            .unwrap();
++        let map = (0..plan.sample_count)
++            .map(|index| {
++                let x = index as f64;
++                ((x * 0.000_173).sin() + 0.2 * (x * 0.000_071).cos()) as f32
++            })
++            .collect::<Vec<_>>();
++        let mut alm = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
++        pool.install(|| plan.analysis_into(&map, &mut alm, &mut workspace))
++            .unwrap();
++        let expected = alm.clone();
++        let profile = workspace.observe_analysis_leaves();
++        let started = std::time::Instant::now();
++        pool.install(|| plan.analysis_into(&map, &mut alm, &mut workspace))
++            .unwrap();
++        let wall_ns = started.elapsed().as_nanos();
++        assert!(alm.iter().zip(&expected).all(|(a, b)| {
++            a.re.to_bits() == b.re.to_bits() && a.im.to_bits() == b.im.to_bits()
++        }));
++        let leaves = profile.lock().unwrap().clone();
++        let mut by_worker = std::collections::BTreeMap::<usize, (usize, u128, u128, u128, usize, usize, usize)>::new();
++        for leaf in &leaves {
++            let worker = leaf.worker.unwrap_or(usize::MAX);
++            let entry = by_worker.entry(worker).or_default();
++            entry.0 += 1;
++            entry.1 += leaf.estimated_work;
++            entry.2 += leaf.active_ring_order_pairs;
++            entry.3 += leaf.elapsed_ns;
++            entry.4 += leaf.normal_blocks;
++            entry.5 += leaf.scaled_blocks;
++            entry.6 += leaf.mixed_blocks;
++        }
++        eprintln!(
++            "M6_F32_ANALYSIS_CENSUS mmax={mmax} q={threads} wall_ms={:.6} jobs={} workers={:?}",
++            wall_ns as f64 / 1.0e6,
++            leaves.len(),
++            by_worker
++        );
++    }
++}
++
+ fn make_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64) -> ShtPlan {
+     ShtPlan::new(
+         GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0).unwrap(),

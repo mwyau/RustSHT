@@ -1,0 +1,91 @@
+
+M6_RUST_CALLGRIND_BINARY:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+000000000018cf20 <rustsht::legendre::scalar::multiply_complex_scaled_f32>:
+  18cf20:	vmovdqa %xmm0,%xmm3
+  18cf24:	test   %rdi,%rdi
+  18cf27:	je     18cfea <rustsht::legendre::scalar::multiply_complex_scaled_f32+0xca>
+  18cf2d:	push   %rbx
+  18cf2e:	sub    $0x20,%rsp
+  18cf32:	vmovss %xmm1,0xc(%rsp)
+  18cf38:	vmovd  %xmm2,%eax
+  18cf3c:	and    $0x7f800000,%eax
+  18cf41:	dec    %eax
+  18cf43:	cmp    $0x7f7fffff,%eax
+  18cf48:	vmovd  %xmm2,0x10(%rsp)
+  18cf4e:	jae    18cff3 <rustsht::legendre::scalar::multiply_complex_scaled_f32+0xd3>
+  18cf54:	vmovd  %xmm3,%eax
+  18cf58:	and    $0x7f800000,%eax
+  18cf5d:	dec    %eax
+  18cf5f:	cmp    $0x7f7ffffe,%eax
+  18cf64:	ja     18d02e <rustsht::legendre::scalar::multiply_complex_scaled_f32+0x10e>
+  18cf6a:	vmovd  0xc(%rsp),%xmm0
+  18cf70:	vmovd  %xmm0,%eax
+  18cf74:	and    $0x7f800000,%eax
+  18cf79:	dec    %eax
+  18cf7b:	cmp    $0x7f7fffff,%eax
+  18cf80:	jae    18d02e <rustsht::legendre::scalar::multiply_complex_scaled_f32+0x10e>
+  18cf86:	vmulss %xmm2,%xmm3,%xmm0
+  18cf8a:	vmovd  %xmm0,%eax
+  18cf8e:	and    $0x7f800000,%eax
+  18cf93:	dec    %eax
+  18cf95:	cmp    $0x7f7ffffe,%eax
+  18cf9a:	ja     18d02e <rustsht::legendre::scalar::multiply_complex_scaled_f32+0x10e>
+  18cfa0:	vmulss 0xc(%rsp),%xmm2,%xmm1
+  18cfa6:	vmovd  %xmm1,%eax
+  18cfaa:	and    $0x7f800000,%eax
+  18cfaf:	dec    %eax
+  18cfb1:	cmp    $0x7f7ffffe,%eax
+  18cfb6:	ja     18d02e <rustsht::legendre::scalar::multiply_complex_scaled_f32+0x10e>
+  18cfb8:	vmovss %xmm3,0x8(%rsp)
+  18cfbe:	lea    0x14(%rsp),%rax
+  18cfc3:	mov    %rdi,%rsi
+  18cfc6:	mov    %rax,%rdi
+  18cfc9:	mov    %rsi,%rbx
+  18cfcc:	call   18d490 <rustsht::legendre::scalar::scale_complex_normal_binary_f32>
+  18cfd1:	cmpl   $0x1,0x14(%rsp)
+  18cfd6:	jne    18d01f <rustsht::legendre::scalar::multiply_complex_scaled_f32+0xff>
+  18cfd8:	vmovss 0x18(%rsp),%xmm0
+  18cfde:	vmovss 0x1c(%rsp),%xmm1
+  18cfe4:	add    $0x20,%rsp
+  18cfe8:	pop    %rbx
+  18cfe9:	ret
+  18cfea:	vmulss %xmm2,%xmm3,%xmm0
+  18cfee:	vmulss %xmm2,%xmm1,%xmm1
+  18cff2:	ret
+  18cff3:	vmovdqa %xmm3,%xmm0
+  18cff7:	vmovdqa %xmm2,%xmm1
+  18cffb:	mov    %rdi,%rbx
+  18cffe:	call   18d070 <rustsht::legendre::scalar::multiply_component_scaled_f32>
+  18d003:	vmovd  %xmm0,0x8(%rsp)
+  18d009:	vmovss 0xc(%rsp),%xmm0
+  18d00f:	vmovss 0x10(%rsp),%xmm1
+  18d015:	mov    %rbx,%rdi
+  18d018:	call   18d070 <rustsht::legendre::scalar::multiply_component_scaled_f32>
+  18d01d:	jmp    18d058 <rustsht::legendre::scalar::multiply_complex_scaled_f32+0x138>
+  18d01f:	mov    %rbx,%rdi
+  18d022:	vmovss 0x10(%rsp),%xmm2
+  18d028:	vmovss 0x8(%rsp),%xmm3
+  18d02e:	vmovaps %xmm3,%xmm0
+  18d032:	vmovaps %xmm2,%xmm1
+  18d036:	mov    %rdi,%rbx
+  18d039:	call   18d510 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32>
+  18d03e:	vmovss %xmm0,0x8(%rsp)
+  18d044:	vmovss 0xc(%rsp),%xmm0
+  18d04a:	vmovss 0x10(%rsp),%xmm1
+  18d050:	mov    %rbx,%rdi
+  18d053:	call   18d510 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32>
+  18d058:	vmovaps %xmm0,%xmm1
+  18d05c:	vmovss 0x8(%rsp),%xmm0
+  18d062:	add    $0x20,%rsp
+  18d066:	pop    %rbx
+  18d067:	ret
+
+Disassembly of section .init:
+
+Disassembly of section .fini:
+
+Disassembly of section .plt:

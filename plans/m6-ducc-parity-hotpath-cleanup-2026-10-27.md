@@ -1,6 +1,40 @@
 # M6 — DUCC parity engineering and repository consolidation
 
-## ACTIVE OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first
+## ACTIVE OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
+
+The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and
+checked native-f32 packet leaf remain in production. The later corrected
+scaled-prefix-to-fused-suffix candidate at exact parent `2b531d73` found no
+safe nonzero-exponent handoff and caused a repeatable adjacent f32
+scalar-analysis regression. This is a quantified blocker for that transition;
+do not repeat either suffix trial unchanged. Scalar synthesis remains far from
+DUCC at **33.37×/34.94×** full and **22.75×/40.42×** reduced q1/q8.
+
+The owner's next priority after that blocker is the other native-f32 transform
+families, before returning to the remaining f64 gaps. Current source is
+`72bea50383f57bed6f54f48a3f360f01b180d5c5`; scalar-analysis production code
+is unchanged from the exact 15-pair parent `2b531d73`. Its full q1/q8 ratios
+are **38.94×/35.93×**, and the new reduced three-pair screen is
+**33.38×/29.89×**. All are GAP. Current q1 Callgrind records 38.28/29.28 Rust
+versus 1.33/1.07 DUCC Ir per useful degree × reflected-latitude pair update.
+The Rust scaled complex multiply helper consumes 36.78% of full Ir and 51.39%
+of reduced Ir inclusive; DUCC's AVX2 `map2alm_kernel` suffix consumes 51.9% /
+64.6% of DUCC Ir and advances two degrees over four latitude-pair lanes.
+Native-f32 q8 analysis job counts, useful work and accumulated worker time are
+balanced; scheduling is not the current leading explanation.
+
+The next bounded hypothesis is a narrow f32 accumulation leaf for callback
+updates where recurrence state and spectrum products are proven safe, keeping
+all declined, scaled, subnormal, nonfinite and overflow cases on the current
+scalar fallback. First count safe callback contributions and quantify
+coverage; the current normal/mixed block counts do not show useful contribution
+coverage. Keep the f64 analysis visitor unchanged. After this scalar-analysis
+screen, profile spin-1 synthesis and analysis from their measured native-f32
+gaps. See the [single M6 ledger](../reports/DUCC_PARITY_M6.md) and
+[current scalar-analysis profile](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-profile-72bea503/README.md).
+M6 remains open.
+
+## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
 
 **Continue native-f32 GL T720 scalar synthesis before returning to f64.** Preserve the accepted 32-ring scheduler (`335ce4c8`) and scaled-fallback packet leaf (`acc625d7`; current HEAD `2b531d73`). At that exact parent, matched Rust/DUCC medians are **33.37× / 34.94×** full mmax q1/q8 and **22.75× / 40.42×** reduced q1/q8; all four remain **GAP**. The guarded zero-exponent prefix-to-fused-suffix candidate at earlier parent `ef11ce0a` was rejected after regressing three cells and raising full-q1 Callgrind work by 4.77%. A later corrected packet suffix screen at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but found no safe nonzero-exponent handoff; it was rejected after 15-pair adjacent f32 scalar analysis showed a repeatable 3.9% regression in q1 and q8. Details for both screens are in the [single active ledger](../reports/DUCC_PARITY_M6.md) and their linked evidence. Continue toward a measured algorithmic reduction, not another isolated 1–3% shortcut. A single-digit Legendre-stage ratio is an intermediate target, not an M6 completion criterion.
 
@@ -10,7 +44,7 @@ Pinned DUCC 0.42.0 (`42ce8ab5`) in `src/ducc0/sht/sht_inner_loop.h` uses `init_l
 
 RustSHT already has shared f32/f64 recurrence mathematics and a native-f32 fused normal-range SIMD kernel. But `src/legendre/scalar_paired/synthesis.rs::synthesize_paired_scalar_order_prepared_f32` enters that kernel only on initially all-normal blocks. Initially scaled blocks keep per-degree callback/scaling work; `F32SynthesisAccumulator` and the new packet leaf only reduce some of that cost. Exact-parent route counters estimate 45.164M / 18.740M full/reduced fallback contributions, 10.195M / 3.213M with nonzero exponent, with about 5.001M / 1.560M nonzero-exponent contributions eligible for packet SIMD. Historical matched whole-call Callgrind was ~8.37B Rust vs ~0.253B DUCC Ir **at its recorded earlier source**, not current-HEAD time or cycles. The same recurrence equations do not guarantee the same execution strategy, cache behavior, instruction counts, or numeric range.
 
-### Required bounded execution — updated after suffix rejection
+### Historical required bounded execution — updated after suffix rejection
 
 1. **Confirm the comparison.** Fetch/reconcile `origin/dev`; pin Rust parent and DUCC SHAs. Verify geometry, input/output types, `phi0`, sampling, ISA, affinity, q1/q8, and warm-call boundaries. Measure Legendre-only **and** whole-transform times separately, with useful degree×latitude work counts, instruction references, and inspected executed SIMD loops. Report CPU time/wall time separately. Do not add overlapping inclusive Callgrind counters.
 2. **Instrument scaled→normal transitions before writing the candidate.** For active eight-lane packets and orders, record first degree where both recurrence states and accumulated output can be safely converted to normal native f32; later range declines; usable suffix contribution count/length; polar-mixed lanes, tails, zero/nonzero exponents, exceptional values, and required retry/rollback. Distinguish raw exponent eligibility from the full finite/subnormal/overflow proof. Compare full/reduced GL T720 q1/q8, plus a small analytic/extreme fixture. Preserve compact evidence; do not instrument timed production binaries.

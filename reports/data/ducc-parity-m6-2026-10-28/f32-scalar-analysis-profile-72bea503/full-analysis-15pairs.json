@@ -1,0 +1,545 @@
+{
+  "source_revision": "72bea50383f57bed6f54f48a3f360f01b180d5c5",
+  "timing_parent": "2b531d73049fdbc6e1b94b2132bfb9cb3476d319",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cases": [
+    {
+      "case": "GL-T720-M720-analysis-s0-q1",
+      "pairs": [
+        {
+          "pair": 1,
+          "times_ms": {
+            "parent": 545.34524,
+            "candidate": 585.71241,
+            "ducc": 14.0478405
+          },
+          "candidate_parent": 1.0740213117107247,
+          "parent_ducc": 38.82057459294188,
+          "candidate_ducc": 41.69412444567548,
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.829360998058256e-05,
+            "absolute_l2": 2.068025281356278e-05,
+            "max_absolute": 4.29514329880476e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "candidate": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "ducc": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "times_ms": {
+            "parent": 566.3377889999999,
+            "candidate": 569.048165,
+            "ducc": 14.093934749999999
+          },
+          "candidate_parent": 1.0047857940131206,
+          "parent_ducc": 40.18308577737668,
+          "candidate_ducc": 40.37539374871876,
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.829360998058256e-05,
+            "absolute_l2": 2.068025281356278e-05,
+            "max_absolute": 4.29514329880476e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "candidate": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "ducc": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "times_ms": {
+            "parent": 547.494759,
+            "candidate": 569.625994,
+            "ducc": 14.063046750000002
+          },
+          "candidate_parent": 1.0404227339827374,
+          "parent_ducc": 38.93144698534121,
+          "candidate_ducc": 40.5051625103927,
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.829360998058256e-05,
+            "absolute_l2": 2.068025281356278e-05,
+            "max_absolute": 4.29514329880476e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "candidate": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "ducc": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "times_ms": {
+            "parent": 545.840364,
+            "candidate": 567.251519,
+            "ducc": 13.98844525
+          },
+          "candidate_parent": 1.039226038256123,
+          "parent_ducc": 39.02080283010723,
+          "candidate_ducc": 40.55143433470564
+        },
+        {
+          "pair": 5,
+          "times_ms": {
+            "parent": 544.798268,
+            "candidate": 567.801607,
+            "ducc": 14.284462000000001
+          },
+          "candidate_parent": 1.0422235905493002,
+          "parent_ducc": 38.139222044204395,
+          "candidate_ducc": 39.749596939667725
+        },
+        {
+          "pair": 6,
+          "times_ms": {
+            "parent": 546.683522,
+            "candidate": 566.268626,
+            "ducc": 14.09601275
+          },
+          "candidate_parent": 1.035825305157085,
+          "parent_ducc": 38.78284814973653,
+          "candidate_ducc": 40.17225551956173
+        },
+        {
+          "pair": 7,
+          "times_ms": {
+            "parent": 547.262554,
+            "candidate": 567.494246,
+            "ducc": 13.99882125
+          },
+          "candidate_parent": 1.0369688951895655,
+          "parent_ducc": 39.09347395945927,
+          "candidate_ducc": 40.53871650086253
+        },
+        {
+          "pair": 8,
+          "times_ms": {
+            "parent": 545.835681,
+            "candidate": 567.506378,
+            "ducc": 13.988429
+          },
+          "candidate_parent": 1.039701869544875,
+          "parent_ducc": 39.020513382882385,
+          "candidate_ducc": 40.56970071478363
+        },
+        {
+          "pair": 9,
+          "times_ms": {
+            "parent": 546.508971,
+            "candidate": 568.002505,
+            "ducc": 14.01720325
+          },
+          "candidate_parent": 1.0393287853274784,
+          "parent_ducc": 38.98844592982555,
+          "candidate_ducc": 40.521814150051654
+        },
+        {
+          "pair": 10,
+          "times_ms": {
+            "parent": 564.359149,
+            "candidate": 563.5326689999999,
+            "ducc": 13.94223675
+          },
+          "candidate_parent": 0.9985355424795282,
+          "parent_ducc": 40.47837941067814,
+          "candidate_ducc": 40.41910054353366
+        },
+        {
+          "pair": 11,
+          "times_ms": {
+            "parent": 543.54081,
+            "candidate": 564.5306420000001,
+            "ducc": 13.9856135
+          },
+          "candidate_parent": 1.0386168464516954,
+          "parent_ducc": 38.864280783964176,
+          "candidate_ducc": 40.365096747454096
+        },
+        {
+          "pair": 12,
+          "times_ms": {
+            "parent": 544.4018649999999,
+            "candidate": 565.590833,
+            "ducc": 14.043896
+          },
+          "candidate_parent": 1.0389215565967982,
+          "parent_ducc": 38.76430479120608,
+          "candidate_ducc": 40.27307187407255
+        },
+        {
+          "pair": 13,
+          "times_ms": {
+            "parent": 542.8420120000001,
+            "candidate": 567.076457,
+            "ducc": 14.090885
+          },
+          "candidate_parent": 1.0446436430200245,
+          "parent_ducc": 38.52433768354508,
+          "candidate_ducc": 40.244204462672144
+        },
+        {
+          "pair": 14,
+          "times_ms": {
+            "parent": 544.076071,
+            "candidate": 564.912689,
+            "ducc": 14.011385
+          },
+          "candidate_parent": 1.0382972512680126,
+          "parent_ducc": 38.83099857722844,
+          "candidate_ducc": 40.318119086728395
+        },
+        {
+          "pair": 15,
+          "times_ms": {
+            "parent": 545.0978520000001,
+            "candidate": 566.2949980000001,
+            "ducc": 13.925133249999998
+          },
+          "candidate_parent": 1.0388868639313589,
+          "parent_ducc": 39.144893065924535,
+          "candidate_ducc": 40.667115196186735
+        }
+      ]
+    },
+    {
+      "case": "GL-T720-M720-analysis-s0-q8",
+      "pairs": [
+        {
+          "pair": 1,
+          "times_ms": {
+            "parent": 71.8611135,
+            "candidate": 75.3817665,
+            "ducc": 2.0162558846153846
+          },
+          "candidate_parent": 1.0489924637752794,
+          "parent_ducc": 35.640869816336846,
+          "candidate_ducc": 37.387003839733175,
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.829360998058256e-05,
+            "absolute_l2": 2.068025281356278e-05,
+            "max_absolute": 4.29514329880476e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "candidate": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "ducc": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            }
+          }
+        },
+        {
+          "pair": 2,
+          "times_ms": {
+            "parent": 72.6861125,
+            "candidate": 74.7697535,
+            "ducc": 2.016443076923077
+          },
+          "candidate_parent": 1.028666287525007,
+          "parent_ducc": 36.046696944658066,
+          "candidate_ducc": 37.08002192360043,
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.829360998058256e-05,
+            "absolute_l2": 2.068025281356278e-05,
+            "max_absolute": 4.29514329880476e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "candidate": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "ducc": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            }
+          }
+        },
+        {
+          "pair": 3,
+          "times_ms": {
+            "parent": 72.04780550000001,
+            "candidate": 74.88894300000001,
+            "ducc": 2.0442061923076924
+          },
+          "candidate_parent": 1.0394340602088152,
+          "parent_ducc": 35.2448817399705,
+          "candidate_ducc": 36.634730528557064,
+          "errors_parent_candidate": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230150792575,
+            "finite": true
+          },
+          "errors_candidate_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.829360998058256e-05,
+            "absolute_l2": 2.068025281356278e-05,
+            "max_absolute": 4.29514329880476e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "repeat_reset_finite": {
+            "parent": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "candidate": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            },
+            "ducc": {
+              "finite": true,
+              "repeat": true,
+              "reset": true
+            }
+          }
+        },
+        {
+          "pair": 4,
+          "times_ms": {
+            "parent": 72.5192195,
+            "candidate": 74.4818555,
+            "ducc": 2.011790125
+          },
+          "candidate_parent": 1.0270636668945394,
+          "parent_ducc": 36.04710978487381,
+          "candidate_ducc": 37.02267675660253
+        },
+        {
+          "pair": 5,
+          "times_ms": {
+            "parent": 72.26025,
+            "candidate": 75.2433895,
+            "ducc": 2.007214846153846
+          },
+          "candidate_parent": 1.041283271231417,
+          "parent_ducc": 36.000256842690526,
+          "candidate_ducc": 37.486465210328
+        },
+        {
+          "pair": 6,
+          "times_ms": {
+            "parent": 72.3818515,
+            "candidate": 75.24099000000001,
+            "ducc": 2.0069713333333334
+          },
+          "candidate_parent": 1.0395007649120445,
+          "parent_ducc": 36.06521443422045,
+          "candidate_ducc": 37.48981799108906
+        },
+        {
+          "pair": 7,
+          "times_ms": {
+            "parent": 72.4177655,
+            "candidate": 74.86874949999999,
+            "ducc": 2.0032988846153845
+          },
+          "candidate_parent": 1.0338450652692397,
+          "parent_ducc": 36.14925663671178,
+          "candidate_ducc": 37.37273058701579
+        },
+        {
+          "pair": 8,
+          "times_ms": {
+            "parent": 72.1356775,
+            "candidate": 74.9574235,
+            "ducc": 2.010148576923077
+          },
+          "candidate_parent": 1.039117203827468,
+          "parent_ducc": 35.88574413261416,
+          "candidate_ducc": 37.28949410034999
+        },
+        {
+          "pair": 9,
+          "times_ms": {
+            "parent": 72.176179,
+            "candidate": 75.4670515,
+            "ducc": 2.0093096153846153
+          },
+          "candidate_parent": 1.045594994714253,
+          "parent_ducc": 35.92088468963221,
+          "candidate_ducc": 37.55869723718728
+        },
+        {
+          "pair": 10,
+          "times_ms": {
+            "parent": 72.5343685,
+            "candidate": 75.21789100000001,
+            "ducc": 2.0239903076923076
+          },
+          "candidate_parent": 1.0369965652902873,
+          "parent_ducc": 35.83731020071014,
+          "candidate_ducc": 37.163167587379
+        },
+        {
+          "pair": 11,
+          "times_ms": {
+            "parent": 72.9274985,
+            "candidate": 76.3492205,
+            "ducc": 2.0152571153846153
+          },
+          "candidate_parent": 1.0469195032104386,
+          "parent_ducc": 36.1876893738602,
+          "candidate_ducc": 37.88559778161539
+        },
+        {
+          "pair": 12,
+          "times_ms": {
+            "parent": 72.56828300000001,
+            "candidate": 75.1213715,
+            "ducc": 2.0283691153846153
+          },
+          "candidate_parent": 1.0351818782869644,
+          "parent_ducc": 35.77666532663596,
+          "candidate_ducc": 37.03535561167112
+        },
+        {
+          "pair": 13,
+          "times_ms": {
+            "parent": 72.2870455,
+            "candidate": 75.5021035,
+            "ducc": 2.0118856923076924
+          },
+          "candidate_parent": 1.0444762678812207,
+          "parent_ducc": 35.92999630962365,
+          "candidate_ducc": 37.52802845046175
+        },
+        {
+          "pair": 14,
+          "times_ms": {
+            "parent": 72.266832,
+            "candidate": 75.693514,
+            "ducc": 2.0301825384615384
+          },
+          "candidate_parent": 1.0474170778649878,
+          "parent_ducc": 35.59622380299035,
+          "candidate_ducc": 37.284092718756284
+        },
+        {
+          "pair": 15,
+          "times_ms": {
+            "parent": 72.5026125,
+            "candidate": 75.506587,
+            "ducc": 2.015987346153846
+          },
+          "candidate_parent": 1.0414326380308019,
+          "parent_ducc": 35.96382320470533,
+          "candidate_ducc": 37.45389927374964
+        }
+      ]
+    }
+  ]
+}

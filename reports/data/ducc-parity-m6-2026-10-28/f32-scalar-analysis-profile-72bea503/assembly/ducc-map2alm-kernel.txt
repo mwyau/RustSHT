@@ -1,0 +1,169 @@
+
+M6_DUCC_BINARY:     file format elf64-x86-64
+
+
+Disassembly of section .init:
+
+Disassembly of section .plt:
+
+Disassembly of section .plt.got:
+
+Disassembly of section .plt.sec:
+
+Disassembly of section .text:
+
+000000000067cb60 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]>:
+  67cb60:	push   %rbp
+  67cb61:	lea    0x2(%rcx),%rax
+  67cb65:	mov    %rsi,%r11
+  67cb68:	mov    %rdx,%r10
+  67cb6b:	mov    %rsp,%rbp
+  67cb6e:	push   %r13
+  67cb70:	push   %r12
+  67cb72:	mov    %r8,%r12
+  67cb75:	mov    0x10(%rbp),%r8
+  67cb79:	push   %rbx
+  67cb7a:	mov    %rcx,%rbx
+  67cb7d:	cmp    %rax,%r9
+  67cb80:	jb     67cd19 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1b9>
+  67cb86:	shl    $0x4,%rcx
+  67cb8a:	mov    %r12,%rsi
+  67cb8d:	add    %rdx,%rcx
+  67cb90:	mov    %r8,%rdx
+  67cb93:	shl    $0x4,%rsi
+  67cb97:	shl    $0x5,%rdx
+  67cb9b:	add    %r11,%rsi
+  67cb9e:	add    %rdi,%rdx
+  67cba1:	test   %r8,%r8
+  67cba4:	je     67ccee <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x18e>
+  67cbaa:	nopw   0x0(%rax,%rax,1)
+  67cbb0:	vxorpd %xmm11,%xmm11,%xmm11
+  67cbb5:	vbroadcastsd (%rsi),%ymm15
+  67cbba:	mov    %rdi,%rax
+  67cbbd:	vbroadcastsd 0x8(%rsi),%ymm7
+  67cbc3:	vbroadcastsd 0x10(%rsi),%ymm6
+  67cbc9:	vmovapd %ymm11,%ymm9
+  67cbce:	vmovapd %ymm11,%ymm12
+  67cbd3:	vmovapd %ymm11,%ymm3
+  67cbd7:	vbroadcastsd 0x18(%rsi),%ymm5
+  67cbdd:	vmovapd %ymm11,%ymm13
+  67cbe2:	vmovapd %ymm11,%ymm10
+  67cbe7:	vmovapd %ymm11,%ymm14
+  67cbec:	vmovapd %ymm11,%ymm4
+  67cbf0:	vmovapd 0x2800(%rax),%ymm2
+  67cbf8:	vmovapd %ymm15,%ymm0
+  67cbfc:	add    $0x20,%rax
+  67cc00:	vmovapd 0x1fe0(%rax),%ymm1
+  67cc08:	vmovapd 0x2fe0(%rax),%ymm8
+  67cc10:	vfmadd231pd 0x37e0(%rax),%ymm1,%ymm14
+  67cc19:	vfmadd231pd 0x3fe0(%rax),%ymm1,%ymm10
+  67cc22:	vfmadd132pd %ymm2,%ymm7,%ymm0
+  67cc27:	vfmadd213pd 0x17e0(%rax),%ymm1,%ymm0
+  67cc30:	vfmadd132pd %ymm6,%ymm5,%ymm2
+  67cc35:	vfmadd231pd 0x37e0(%rax),%ymm0,%ymm12
+  67cc3e:	vfmadd231pd %ymm8,%ymm1,%ymm4
+  67cc43:	vfmadd231pd 0x3fe0(%rax),%ymm0,%ymm9
+  67cc4c:	vfmadd231pd 0x47e0(%rax),%ymm0,%ymm11
+  67cc55:	vfmadd231pd 0x47e0(%rax),%ymm1,%ymm13
+  67cc5e:	vmovapd %ymm0,0x17e0(%rax)
+  67cc66:	vfmadd231pd %ymm0,%ymm8,%ymm3
+  67cc6b:	vfmadd132pd %ymm2,%ymm1,%ymm0
+  67cc70:	vmovapd %ymm0,0x1fe0(%rax)
+  67cc78:	cmp    %rax,%rdx
+  67cc7b:	jne    67cbf0 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x90>
+  67cc81:	vhaddpd %ymm14,%ymm4,%ymm4
+  67cc86:	vhaddpd %ymm13,%ymm10,%ymm10
+  67cc8b:	add    $0x2,%r12
+  67cc8f:	add    $0x40,%rcx
+  67cc93:	vhaddpd %ymm12,%ymm3,%ymm3
+  67cc98:	vhaddpd %ymm11,%ymm9,%ymm9
+  67cc9d:	add    $0x20,%rsi
+  67cca1:	lea    0x4(%rbx),%r13
+  67cca5:	add    $0x6,%rbx
+  67cca9:	vperm2f128 $0x31,%ymm10,%ymm4,%ymm0
+  67ccaf:	vinsertf128 $0x1,%xmm10,%ymm4,%ymm4
+  67ccb5:	vaddpd %ymm4,%ymm0,%ymm0
+  67ccb9:	vaddpd -0x40(%rcx),%ymm0,%ymm0
+  67ccbe:	vmovupd %ymm0,-0x40(%rcx)
+  67ccc3:	vperm2f128 $0x31,%ymm9,%ymm3,%ymm0
+  67ccc9:	vinsertf128 $0x1,%xmm9,%ymm3,%ymm3
+  67cccf:	vaddpd %ymm3,%ymm0,%ymm0
+  67ccd3:	vaddpd -0x20(%rcx),%ymm0,%ymm0
+  67ccd8:	vmovupd %ymm0,-0x20(%rcx)
+  67ccdd:	cmp    %rbx,%r9
+  67cce0:	jb     67cd20 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1c0>
+  67cce2:	mov    %r13,%rbx
+  67cce5:	test   %r8,%r8
+  67cce8:	jne    67cbb0 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x50>
+  67ccee:	vxorpd %xmm11,%xmm11,%xmm11
+  67ccf3:	vmovapd %ymm11,%ymm9
+  67ccf8:	vmovapd %ymm11,%ymm12
+  67ccfd:	vmovapd %ymm11,%ymm3
+  67cd01:	vmovapd %ymm11,%ymm13
+  67cd06:	vmovapd %ymm11,%ymm10
+  67cd0b:	vmovapd %ymm11,%ymm14
+  67cd10:	vmovapd %ymm11,%ymm4
+  67cd14:	jmp    67cc81 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x121>
+  67cd19:	mov    %rcx,%r13
+  67cd1c:	nopl   0x0(%rax)
+  67cd20:	cmp    %r13,%r9
+  67cd23:	jb     67ce14 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x2b4>
+  67cd29:	mov    %r13,%rax
+  67cd2c:	mov    %r8,%rdx
+  67cd2f:	shl    $0x4,%r12
+  67cd33:	shl    $0x4,%rax
+  67cd37:	shl    $0x5,%rdx
+  67cd3b:	add    %r12,%r11
+  67cd3e:	add    %rax,%r10
+  67cd41:	add    %rdi,%rdx
+  67cd44:	nop
+  67cd45:	data16 cs nopw 0x0(%rax,%rax,1)
+  67cd50:	test   %r8,%r8
+  67cd53:	je     67ce20 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x2c0>
+  67cd59:	vxorpd %xmm4,%xmm4,%xmm4
+  67cd5d:	vbroadcastsd (%r11),%ymm7
+  67cd62:	vbroadcastsd 0x8(%r11),%ymm6
+  67cd68:	mov    %rdi,%rax
+  67cd6b:	vmovapd %ymm4,%ymm3
+  67cd6f:	vmovapd %ymm4,%ymm5
+  67cd73:	vmovapd %ymm4,%ymm2
+  67cd77:	nopw   0x0(%rax,%rax,1)
+  67cd80:	vmovapd %ymm7,%ymm1
+  67cd84:	vmovapd 0x2000(%rax),%ymm0
+  67cd8c:	add    $0x20,%rax
+  67cd90:	vfmadd132pd 0x27e0(%rax),%ymm6,%ymm1
+  67cd99:	vfmadd231pd 0x2fe0(%rax),%ymm0,%ymm2
+  67cda2:	vfmadd213pd 0x17e0(%rax),%ymm0,%ymm1
+  67cdab:	vfmadd231pd 0x37e0(%rax),%ymm0,%ymm5
+  67cdb4:	vmovapd %ymm0,0x17e0(%rax)
+  67cdbc:	vfmadd231pd 0x3fe0(%rax),%ymm0,%ymm3
+  67cdc5:	vfmadd231pd 0x47e0(%rax),%ymm0,%ymm4
+  67cdce:	vmovapd %ymm1,0x1fe0(%rax)
+  67cdd6:	cmp    %rdx,%rax
+  67cdd9:	jne    67cd80 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x220>
+  67cddb:	vhaddpd %ymm5,%ymm2,%ymm2
+  67cddf:	vhaddpd %ymm4,%ymm3,%ymm3
+  67cde3:	add    $0x2,%r13
+  67cde7:	add    $0x20,%r10
+  67cdeb:	add    $0x10,%r11
+  67cdef:	vperm2f128 $0x31,%ymm3,%ymm2,%ymm0
+  67cdf5:	vinsertf128 $0x1,%xmm3,%ymm2,%ymm2
+  67cdfb:	vaddpd %ymm2,%ymm0,%ymm0
+  67cdff:	vaddpd -0x20(%r10),%ymm0,%ymm0
+  67ce05:	vmovupd %ymm0,-0x20(%r10)
+  67ce0b:	cmp    %r13,%r9
+  67ce0e:	jae    67cd50 <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x1f0>
+  67ce14:	vzeroupper
+  67ce17:	pop    %rbx
+  67ce18:	pop    %r12
+  67ce1a:	pop    %r13
+  67ce1c:	pop    %rbp
+  67ce1d:	ret
+  67ce1e:	xchg   %ax,%ax
+  67ce20:	vxorpd %xmm4,%xmm4,%xmm4
+  67ce24:	vmovapd %ymm4,%ymm3
+  67ce28:	vmovapd %ymm4,%ymm5
+  67ce2c:	vmovapd %ymm4,%ymm2
+  67ce30:	jmp    67cddb <ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0]+0x27b>
+
+Disassembly of section .fini:

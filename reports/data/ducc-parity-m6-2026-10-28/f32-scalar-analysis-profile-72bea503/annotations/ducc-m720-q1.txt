@@ -1,0 +1,28 @@
+--------------------------------------------------------------------------------
+Profile data file 'M6_CALLGRIND_PROFILES/ducc-m720-q1.callgrind' (creator: callgrind-3.26.0)
+--------------------------------------------------------------------------------
+I1 cache:
+D1 cache:
+LL cache:
+Timerange: Basic block 0 - 23709840
+Trigger: Program termination
+Profiled target:  M6_DUCC_BINARY --worker analysis 0 GL 1 721 1458 720 720 0.23 M6_SCRATCH/fixtures/GL-T720-M720-q1/map0.f32 M6_SCRATCH/fixtures/GL-T720-M720-q1/map1.f32 M6_SCRATCH/fixtures/GL-T720-M720-q1/alm0.f32 M6_SCRATCH/fixtures/GL-T720-M720-q1/alm1.f32 M6_SCRATCH/outputs/ducc-m720-q1.out0 M6_SCRATCH/outputs/ducc-m720-q1.out1 25 (profiled worker, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       1.0
+Include dirs:
+User annotated:
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir
+--------------------------------------------------------------------------------
+214,206,155 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                    file:function
+--------------------------------------------------------------------------------
+
+111,218,403 (51.92%)  < ???:ducc0::detail_sht::detail_sht_inner_loop::calc_map2alm(std::complex<double>*, ducc0::detail_sht::detail_sht_inner_loop::Ylmgen const&, ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, unsigned long, unsigned long, unsigned long) (1,139x) [M6_DUCC_BINARY]
+111,218,403 (51.92%)  *  ???:ducc0::detail_sht::detail_sht_inner_loop::map2alm_kernel(ducc0::detail_sht::detail_sht_inner_loop::s0data_v&, std::vector<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2, std::allocator<ducc0::detail_sht::detail_sht_inner_loop::Ylmgen::dbl2> > const&, std::complex<double>*, unsigned long, unsigned long, unsigned long, unsigned long) [clone .isra.0] [M6_DUCC_BINARY]

@@ -1,0 +1,164 @@
+[
+  {
+    "mmax": 180,
+    "q": 1,
+    "pairs": [
+      {
+        "pair": 1,
+        "rust_ms": 193.014859,
+        "ducc_ms": 5.7824955,
+        "ratio": 33.37916285451498,
+        "error": {
+          "output_values": 228422,
+          "relative_l2": 2.2052645955887e-05,
+          "absolute_l2": 3.059542794851377e-05,
+          "max_absolute": 9.057112038135529e-07,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        },
+        "rust_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      },
+      {
+        "pair": 2,
+        "rust_ms": 192.552384,
+        "ducc_ms": 5.7809618,
+        "ratio": 33.308018745254465,
+        "error": {
+          "output_values": 228422,
+          "relative_l2": 2.2052645955887e-05,
+          "absolute_l2": 3.059542794851377e-05,
+          "max_absolute": 9.057112038135529e-07,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        },
+        "rust_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      },
+      {
+        "pair": 3,
+        "rust_ms": 193.067348,
+        "ducc_ms": 5.7594752,
+        "ratio": 33.52169100406926,
+        "error": {
+          "output_values": 228422,
+          "relative_l2": 2.2052645955887e-05,
+          "absolute_l2": 3.059542794851377e-05,
+          "max_absolute": 9.057112038135529e-07,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        },
+        "rust_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    ],
+    "rust_median_ms": 193.014859,
+    "ducc_median_ms": 5.7809618,
+    "ratio_median": 33.37916285451498
+  },
+  {
+    "mmax": 180,
+    "q": 8,
+    "pairs": [
+      {
+        "pair": 1,
+        "rust_ms": 26.004478499999998,
+        "ducc_ms": 0.8788432500000001,
+        "ratio": 29.58943873096823,
+        "error": {
+          "output_values": 228422,
+          "relative_l2": 2.2052645955887e-05,
+          "absolute_l2": 3.059542794851377e-05,
+          "max_absolute": 9.057112038135529e-07,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        },
+        "rust_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      },
+      {
+        "pair": 2,
+        "rust_ms": 26.055941,
+        "ducc_ms": 0.865091724137931,
+        "ratio": 30.11928131200758,
+        "error": {
+          "output_values": 228422,
+          "relative_l2": 2.2052645955887e-05,
+          "absolute_l2": 3.059542794851377e-05,
+          "max_absolute": 9.057112038135529e-07,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        },
+        "rust_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      },
+      {
+        "pair": 3,
+        "rust_ms": 26.1751165,
+        "ducc_ms": 0.8756254107142858,
+        "ratio": 29.89305264524909,
+        "error": {
+          "output_values": 228422,
+          "relative_l2": 2.2052645955887e-05,
+          "absolute_l2": 3.059542794851377e-05,
+          "max_absolute": 9.057112038135529e-07,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        },
+        "rust_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc_checks": {
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    ],
+    "rust_median_ms": 26.055941,
+    "ducc_median_ms": 0.8756254107142858,
+    "ratio_median": 29.89305264524909
+  }
+]

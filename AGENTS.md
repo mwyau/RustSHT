@@ -8,6 +8,31 @@
 
 **Main Luna Max is the only production-code writer.** One previously permitted **Luna-only `benchmark`** subagent is optional for read-only-to-`dev` isolated benchmark work; it must not spawn Sol or any other agent. If the Luna benchmark option is unavailable or would exhaust quota, main Luna should run only essential benchmarks sequentially. Do not add other subagents. **If quota/resources fail, checkpoint, push verified code, clean owned scratch and stop. Never invoke Sol.**
 
+## ACTIVE M6 CONTINUATION OVERRIDE — 2026-10-28: native-f32 families after synthesis blocker
+
+The accepted shared f32/f64 fused scalar-synthesis kernel, 32-ring scheduling,
+and checked f32 packet leaf remain complete. The corrected f32
+scaled-prefix-to-fused-suffix trial is a documented algorithmic blocker: at
+source `2b531d73`, suffixes began only after all recurrence exponents reached
+zero, and the trial also caused a repeatable adjacent f32 scalar-analysis
+regression. Do not repeat that route unchanged. Native-f32 GL T720 scalar
+synthesis remains a major gap at **33.37×/34.94×** full and **22.75×/40.42×**
+reduced q1/q8 against pinned DUCC.
+
+Per the owner's continuation direction, proceed now through native-f32 scalar
+analysis and spin-1 synthesis/analysis before returning to the remaining f64
+gaps. At source `72bea503`, scalar analysis is **38.94×/35.93×** full and
+**33.38×/29.89×** reduced q1/q8. Callgrind finds 38.28/29.28 Rust Ir versus
+1.33/1.07 DUCC Ir per useful reflected-latitude pair update; q8 job/work
+observations show balanced workers. The f32 `ShtScalar` default still
+accumulates each fallback pair lane through `multiply_complex_scaled_f32`,
+while DUCC uses a fused AVX2 double-FMA suffix. First count contribution-level
+safe normal-range work, then screen one narrow native-f32 accumulation leaf
+with the existing scaled fallback retained. Do not modify the f64 analysis
+visitor. Keep the f32 spin-1 cells in the single M6 ledger and select their
+next profile from measured work. See the [current M6 ledger](reports/DUCC_PARITY_M6.md)
+and [scalar-analysis profile](reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-profile-72bea503/README.md).
+
 ## Active M6 goal — real DUCC speed parity, assembly/Callgrind, and careful cleanup
 
 **M6 is a NEW, OPEN goal.** The prior session's “goal achieved” referred to completed shared f32/f64 scalar+spin algorithms and module test folders. **It does not mean performance parity or release readiness.** Follow [M6 hotpath execution](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md): (1) current-HEAD validated native DUCC/f64/f32 whole-transform baseline, (2) disjoint and equivalent-work-normalized Callgrind profiler attribution **plus inspected emitted assembly** of executed inner loops, (3) one high-leverage source optimization at a time with exact parent/candidate/DUCC q1/q8 matched tests, (4) per-cell PASS/GAP/INCONCLUSIVE/UNMEASURED parity ledger, then (5) code/Cargo/script and current docs cleanups in **separate behavior-preserving commits**. **Do not stop when profiling or cleanup is complete.** Do not claim parity until supported matched cells pass at latest source.
@@ -16,7 +41,7 @@
 
 **Exit discipline:** No Sol reviewer/model in any role, including quota fallback. When Luna quota runs out, push verified work, save a precise NEXT plus latest perf ledger/profiles summary, cleanup owned scratch and stop. No merge to `main` on green CI. Previous architecture/test-layout steps are finished; don't redo them. Documentation is also a scoped M6 deliverable: use an available technical-writing skill for Markdown quality if installed, but this must neither block the numerical work nor introduce a reviewer/agent. Preserve mathematical provenance and reports; reduce contradictory active front-page guidance instead of removing history.
 
-## ACTIVE EXECUTION OVERRIDE — f32 DUCC algorithm-parity milestone (2026-10-28)
+## HISTORICAL EXECUTION OVERRIDE — f32 DUCC algorithm-parity milestone (2026-10-28; superseded above)
 
 **FIRST follow the [current M6 algorithm-parity override](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md#active-owner-override--2026-10-28-ducc-algorithmic-execution-parity-first).** The production scalar-synthesis source is the accepted packet-vector leaf at `acc625d7` (current HEAD `2b531d73`), following the accepted 32-ring scheduler. At exact parent `2b531d73`, matched GL T720 Rust/DUCC medians are **33.37×/34.94×** full q1/q8 and **22.75×/40.42×** reduced q1/q8; all four remain **GAP**. A corrected packet suffix candidate moved up to 61.2M terms into fused suffixes but found no safe nonzero-exponent handoff; it was rejected after a repeatable 3.9% adjacent f32 scalar-analysis regression. See the [single M6 ledger](reports/DUCC_PARITY_M6.md) and [screen evidence](reports/data/ducc-parity-m6-2026-10-28/f32-corrected-transition-2b531d73/README.md). Continue toward a measured algorithmic reduction, not another isolated 1–3% shortcut. A single-digit Legendre-stage ratio is an intermediate target, not an M6 completion criterion.
 

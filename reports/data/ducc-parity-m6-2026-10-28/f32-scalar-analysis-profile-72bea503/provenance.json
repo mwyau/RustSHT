@@ -1,0 +1,21 @@
+{
+  "source_revision": "72bea50383f57bed6f54f48a3f360f01b180d5c5",
+  "production_parent_for_scalar_analysis_timings": "2b531d73049fdbc6e1b94b2132bfb9cb3476d319",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "cxx": "g++ 15.2.0",
+  "cpu": "AMD Ryzen 9 5950X",
+  "isa": "Rust and DUCC Callgrind workers built for x86-64-v3/AVX2; Pulp V3",
+  "threads": "Callgrind q1, pinned CPU 3; worker census q1 and q8 pinned to CPUs 3-10",
+  "callgrind": "3.26.0; Ir only; --instr-atstart=no --cache-sim=no --branch-sim=no; one warmed analysis call after repeat/poisoned-reset validation",
+  "rust_callgrind_binary_sha256": "4b86558c92e4fe83fbf3944ccd812e10405f3a22cfdb6695daaa0353b5969ec1",
+  "rust_timing_binary_sha256": "5bbf440faf0cf97a29074fc6fb232445cdca0949771cacbb785a6235ccccec43",
+  "ducc_binary_sha256": "b71234b2f0232c6550ae336b71c48ffa4caa9ff0f5f1f4a39d47f06c24f7e175",
+  "fixture_sha256": {
+    "full_map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "reduced_map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5"
+  },
+  "profile_outputs": "Finite, repeat-consistent, reset-consistent",
+  "worker_census": "Test-only existing RecurrenceWorkspace leaf counters plus deterministic nonzero map; timing from this instrumented census is diagnostic only",
+  "callgrind_accuracy": "Rust/DUCC output differences are covered by the matched timing runs; profiling run verifies finite, repeated/reset output invariance"
+}

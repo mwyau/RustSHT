@@ -1,5 +1,51 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 current native-f32 scalar-analysis profile at `72bea503`
+
+After the corrected scalar-synthesis suffix candidate was rejected as a
+transition blocker, profiling moved to the other native-f32 families as
+directed. Current source `72bea50383f57bed6f54f48a3f360f01b180d5c5` is
+documentation-only beyond scalar-analysis code at exact timing parent
+`2b531d73049fdbc6e1b94b2132bfb9cb3476d319`. Pinned DUCC 0.42.0 remains
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+
+| GL T720 f32 scalar analysis | Rust ms | DUCC ms | Rust/DUCC | Pairs | Max rel-L2 | Max abs | Status |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Full q1 | 545.836 | 14.017 | 38.94× | 15 | 1.829e-5 | 4.295e-7 | **GAP** |
+| Full q8 | 72.382 | 2.015 | 35.93× | 15 | 1.829e-5 | 4.295e-7 | **GAP** |
+| Reduced q1 | 193.015 | 5.781 | 33.38× | 3 | 2.205e-5 | 9.057e-7 | **GAP** |
+| Reduced q8 | 26.056 | 0.876 | 29.89× | 3 | 2.205e-5 | 9.057e-7 | **GAP** |
+
+The reduced screen is baseline-only and does not certify a candidate. All
+workers passed finite, repeat and workspace-reset checks. q1 Callgrind records
+6.170B/2.378B Rust Ir versus 214.2M/86.5M DUCC Ir full/reduced. Normalized to
+161.199M/81.210M useful degree × reflected-latitude pair updates, that is
+38.28/29.28 Rust Ir and 1.33/1.07 DUCC Ir per update. Rust's
+`multiply_complex_scaled_f32` is called 14.21M full and 40.69M reduced times;
+it accounts for 36.78% full and 51.39% reduced inclusive Ir. DUCC's AVX2
+`map2alm_kernel` accounts for 51.9%/64.6% of DUCC Ir and fuses recurrence with
+two-degree, four-pair-lane accumulation. The Rust f32 `ShtScalar` default
+still accumulates the callback lane-by-lane; its f64 override is vectorized.
+The exact disassembly, nested callgrind attribution, call counts and
+source-derived worker data are in the [profile report](data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-profile-72bea503/README.md).
+
+The existing test-only per-order census observed all eight q8 workers. Full
+used 721 order jobs (89–91 per worker) with similar per-worker elapsed leaf
+time; reduced used 181 jobs (22–23 per worker), also balanced. This makes
+scheduling an unlikely leading cause of the scalar-analysis gap. The next
+bounded hypothesis is an f32-native safe accumulation leaf with the current
+scaled scalar fallback retained; count safe callback contributions before
+coding. Keep the f64 analysis visitor unchanged. Then profile the f32 spin-1
+families. M6 remains active.
+
+The existing three-pair spin-1 baseline at source `b3289762` is code-equivalent
+for these cells: `git diff b3289762 72bea503 -- src` contains only scalar
+synthesis and its tests. Its full/reduced q1/q8 ratios are 35.21×/32.69× and
+30.74×/28.09× for spin-1 analysis, and 37.65×/47.94× and 35.86×/40.44× for
+spin-1 synthesis. These remain baseline GAPs, not a fresh exact-HEAD timing
+certification. The paired runs and error checks are in the [all-family source
+baseline](data/ducc-parity-m6-2026-10-28/f32-all-family-current-source/README.md).
+
 ## 2026-10-28 packetized native-f32 suffix screen at `2b531d73` — not promoted
 
 Exact parent `2b531d73049fdbc6e1b94b2132bfb9cb3476d319` was fetched from
@@ -65,14 +111,12 @@ protected f64 T1023 spin-1 timing was not run after this clear adjacent f32
 regression. No source code was promoted. See the [screen report](data/ducc-parity-m6-2026-10-28/f32-corrected-transition-2b531d73/README.md)
 for exact pairs, route counters, stage samples, hashes, assembly and patches.
 
-**Decision and next step:** reject both isolated transition patches. Native f32
-range prevented a nonzero-exponent handoff on these fixtures; the route-only
-probe found no additional safe states. The adjacent scalar-analysis regression
-also fails the no-regression gate. Continue with the active plan's bounded
-current-source synthesis-only reflected-ring work measurement; if it cannot
-support a shared safe route with material whole-transform potential, move on to
-f32 scalar analysis and spin-1 synthesis/analysis. M6 remains active; all four
-synthesis cells remain **GAP**.
+**Decision at that checkpoint:** reject both isolated transition patches.
+Native-f32 range prevented a nonzero-exponent handoff on these fixtures; the
+route-only probe found no additional safe states. The adjacent scalar-analysis
+regression also fails the no-regression gate. The subsequent current-source
+scalar-analysis profile above supersedes the reflected-ring measurement as the
+immediate task. M6 remains active; all four synthesis cells remain **GAP**.
 
 
 ## Historical 2026-10-28 native-f32 prefix-to-fused-suffix follow-up at earlier source `49295a89` — not promoted

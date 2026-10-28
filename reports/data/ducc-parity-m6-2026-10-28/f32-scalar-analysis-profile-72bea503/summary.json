@@ -1,0 +1,262 @@
+{
+  "source_revision": "72bea50383f57bed6f54f48a3f360f01b180d5c5",
+  "production_transform_parent": "2b531d73049fdbc6e1b94b2132bfb9cb3476d319",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "callgrind": {
+    "events": "Ir only; no cache or branch simulation",
+    "rust_total_ir": {
+      "m720": 6170457791,
+      "m180": 2377721728
+    },
+    "ducc_total_ir": {
+      "m720": 214206155,
+      "m180": 86529402
+    },
+    "useful_degree_latitude_pair_updates": {
+      "m720": 161199393,
+      "m180": 81210177
+    },
+    "rust_ir_per_useful_update": {
+      "m720": 38.27841827543358,
+      "m180": 29.278617727923436
+    },
+    "ducc_ir_per_useful_update": {
+      "m720": 1.3288273051995922,
+      "m180": 1.06549948782897
+    },
+    "rust_over_ducc_ir_ratio": {
+      "m720": 28.80616474816048,
+      "m180": 27.478772221261856
+    },
+    "dominant_dynamic_calls": {
+      "rust_m720_multiply_complex_scaled_f32": 14210434,
+      "rust_m180_multiply_complex_scaled_f32": 40694538,
+      "rust_m720_powisf2": 9745355
+    }
+  },
+  "route_counts": {
+    "m720": {
+      "q1": {
+        "jobs": 1,
+        "updates": 161199393,
+        "active_ring_order_pairs": 387265,
+        "normal_blocks": 423,
+        "scaled_only_blocks": 0,
+        "mixed_blocks": 716
+      },
+      "q8": {
+        "jobs": 721,
+        "workers": [
+          {
+            "worker": 0,
+            "jobs": 90,
+            "estimated_updates": 20047612,
+            "active_ring_order_pairs": 48376,
+            "elapsed_ns": 68620253,
+            "normal_blocks": 52,
+            "scaled_blocks": 0,
+            "mixed_blocks": 90
+          },
+          {
+            "worker": 1,
+            "jobs": 90,
+            "estimated_updates": 20144388,
+            "active_ring_order_pairs": 48388,
+            "elapsed_ns": 68621028,
+            "normal_blocks": 53,
+            "scaled_blocks": 0,
+            "mixed_blocks": 89
+          },
+          {
+            "worker": 2,
+            "jobs": 90,
+            "estimated_updates": 20167504,
+            "active_ring_order_pairs": 48470,
+            "elapsed_ns": 68631715,
+            "normal_blocks": 54,
+            "scaled_blocks": 0,
+            "mixed_blocks": 89
+          },
+          {
+            "worker": 3,
+            "jobs": 90,
+            "estimated_updates": 20272400,
+            "active_ring_order_pairs": 48510,
+            "elapsed_ns": 68616797,
+            "normal_blocks": 54,
+            "scaled_blocks": 0,
+            "mixed_blocks": 89
+          },
+          {
+            "worker": 4,
+            "jobs": 89,
+            "estimated_updates": 19934109,
+            "active_ring_order_pairs": 47731,
+            "elapsed_ns": 68639732,
+            "normal_blocks": 52,
+            "scaled_blocks": 0,
+            "mixed_blocks": 88
+          },
+          {
+            "worker": 5,
+            "jobs": 91,
+            "estimated_updates": 20412618,
+            "active_ring_order_pairs": 48875,
+            "elapsed_ns": 68628680,
+            "normal_blocks": 54,
+            "scaled_blocks": 0,
+            "mixed_blocks": 90
+          },
+          {
+            "worker": 6,
+            "jobs": 91,
+            "estimated_updates": 20127301,
+            "active_ring_order_pairs": 48673,
+            "elapsed_ns": 68626759,
+            "normal_blocks": 52,
+            "scaled_blocks": 0,
+            "mixed_blocks": 91
+          },
+          {
+            "worker": 7,
+            "jobs": 90,
+            "estimated_updates": 20093461,
+            "active_ring_order_pairs": 48242,
+            "elapsed_ns": 68619735,
+            "normal_blocks": 52,
+            "scaled_blocks": 0,
+            "mixed_blocks": 90
+          }
+        ]
+      }
+    },
+    "m180": {
+      "q1": {
+        "jobs": 1,
+        "updates": 81210177,
+        "active_ring_order_pairs": 128497,
+        "normal_blocks": 186,
+        "scaled_only_blocks": 0,
+        "mixed_blocks": 176
+      },
+      "q8": {
+        "jobs": 181,
+        "workers": [
+          {
+            "worker": 0,
+            "jobs": 23,
+            "estimated_updates": 10327886,
+            "active_ring_order_pairs": 16329,
+            "elapsed_ns": 23690536,
+            "normal_blocks": 24,
+            "scaled_blocks": 0,
+            "mixed_blocks": 22
+          },
+          {
+            "worker": 1,
+            "jobs": 23,
+            "estimated_updates": 10352001,
+            "active_ring_order_pairs": 16335,
+            "elapsed_ns": 23566379,
+            "normal_blocks": 23,
+            "scaled_blocks": 0,
+            "mixed_blocks": 23
+          },
+          {
+            "worker": 2,
+            "jobs": 22,
+            "estimated_updates": 9856289,
+            "active_ring_order_pairs": 15620,
+            "elapsed_ns": 23177373,
+            "normal_blocks": 22,
+            "scaled_blocks": 0,
+            "mixed_blocks": 22
+          },
+          {
+            "worker": 3,
+            "jobs": 23,
+            "estimated_updates": 10323965,
+            "active_ring_order_pairs": 16323,
+            "elapsed_ns": 23840379,
+            "normal_blocks": 23,
+            "scaled_blocks": 0,
+            "mixed_blocks": 23
+          },
+          {
+            "worker": 4,
+            "jobs": 22,
+            "estimated_updates": 9889339,
+            "active_ring_order_pairs": 15630,
+            "elapsed_ns": 23200516,
+            "normal_blocks": 23,
+            "scaled_blocks": 0,
+            "mixed_blocks": 21
+          },
+          {
+            "worker": 5,
+            "jobs": 23,
+            "estimated_updates": 10277139,
+            "active_ring_order_pairs": 16311,
+            "elapsed_ns": 24191361,
+            "normal_blocks": 24,
+            "scaled_blocks": 0,
+            "mixed_blocks": 22
+          },
+          {
+            "worker": 6,
+            "jobs": 23,
+            "estimated_updates": 10297663,
+            "active_ring_order_pairs": 16317,
+            "elapsed_ns": 23916867,
+            "normal_blocks": 24,
+            "scaled_blocks": 0,
+            "mixed_blocks": 22
+          },
+          {
+            "worker": 7,
+            "jobs": 22,
+            "estimated_updates": 9885895,
+            "active_ring_order_pairs": 15632,
+            "elapsed_ns": 23174420,
+            "normal_blocks": 23,
+            "scaled_blocks": 0,
+            "mixed_blocks": 21
+          }
+        ]
+      }
+    }
+  },
+  "whole_transform_ratios": {
+    "m720_q1": {
+      "rust_median_ms": 545.835681,
+      "ducc_median_ms": 14.01720325,
+      "rust_over_ducc_median_pair_ratio": 38.93144698534121,
+      "pairs": 15
+    },
+    "m720_q8": {
+      "rust_median_ms": 72.3818515,
+      "ducc_median_ms": 2.0152571153846153,
+      "rust_over_ducc_median_pair_ratio": 35.92999630962365,
+      "pairs": 15
+    },
+    "m180_q1": {
+      "rust_median_ms": 193.014859,
+      "ducc_median_ms": 5.7809618,
+      "rust_over_ducc_median_pair_ratio": 33.37916285451498,
+      "pairs": 3
+    },
+    "m180_q8": {
+      "rust_median_ms": 26.055941,
+      "ducc_median_ms": 0.8756254107142858,
+      "rust_over_ducc_median_pair_ratio": 29.89305264524909,
+      "pairs": 3
+    }
+  },
+  "numerical_comparison": {
+    "m720_max_rel_l2_vs_ducc": 1.829360998058256e-05,
+    "m720_max_abs_vs_ducc": 4.29514329880476e-07,
+    "m180_rel_l2_vs_ducc": 2.2052645955887e-05,
+    "m180_max_abs_vs_ducc": 9.057112038135529e-07,
+    "finite_repeat_reset": "passed in all compared workers"
+  }
+}

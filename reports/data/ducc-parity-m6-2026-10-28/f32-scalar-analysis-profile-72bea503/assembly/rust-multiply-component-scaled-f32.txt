@@ -1,0 +1,252 @@
+
+M6_RUST_CALLGRIND_BINARY:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+000000000018d510 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32>:
+  18d510:	sub    $0x18,%rsp
+  18d514:	vmovd  %xmm0,%eax
+  18d518:	mov    %eax,%ecx
+  18d51a:	and    $0x7f800000,%ecx
+  18d520:	dec    %ecx
+  18d522:	cmp    $0x7f7ffffe,%ecx
+  18d528:	ja     18d58b <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x7b>
+  18d52a:	lea    -0x1001(%rdi),%rcx
+  18d531:	cmp    $0xffffffffffffdfff,%rcx
+  18d538:	jb     18d58b <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x7b>
+  18d53a:	vmulss %xmm1,%xmm0,%xmm2
+  18d53e:	vmovd  %xmm2,%ecx
+  18d542:	mov    %ecx,%edx
+  18d544:	and    $0x7f800000,%edx
+  18d54a:	add    $0x80800000,%edx
+  18d550:	cmp    $0x80800000,%edx
+  18d556:	jbe    18d58b <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x7b>
+  18d558:	mov    %ecx,%edx
+  18d55a:	shr    $0x17,%edx
+  18d55d:	movzbl %dl,%edx
+  18d560:	lea    (%rdi,%rdx,1),%rsi
+  18d564:	dec    %rsi
+  18d567:	cmp    $0xfd,%rsi
+  18d56e:	ja     18d58b <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x7b>
+  18d570:	add    %rdx,%rdi
+  18d573:	and    $0x807fffff,%ecx
+  18d579:	shl    $0x17,%edi
+  18d57c:	or     %ecx,%edi
+  18d57e:	vmovd  %edi,%xmm2
+  18d582:	vmovdqa %xmm2,%xmm0
+  18d586:	add    $0x18,%rsp
+  18d58a:	ret
+  18d58b:	mov    %eax,%ecx
+  18d58d:	and    $0x7fffffff,%ecx
+  18d593:	lea    -0x800000(%rcx),%edx
+  18d599:	cmp    $0x7f000000,%edx
+  18d59f:	setb   %dl
+  18d5a2:	dec    %ecx
+  18d5a4:	cmp    $0x7fffff,%ecx
+  18d5aa:	setb   %cl
+  18d5ad:	or     %dl,%cl
+  18d5af:	je     18d68d <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x17d>
+  18d5b5:	mov    %eax,%ecx
+  18d5b7:	shr    $0x17,%ecx
+  18d5ba:	movzbl %cl,%ecx
+  18d5bd:	vmovss -0x1732ed(%rip),%xmm2        # 1a2d8 <__abi_tag+0x19fdc>
+  18d5c5:	vmulss %xmm2,%xmm0,%xmm0
+  18d5c9:	vmovd  %xmm0,%esi
+  18d5cd:	mov    %esi,%edx
+  18d5cf:	shr    $0x17,%edx
+  18d5d2:	test   %ecx,%ecx
+  18d5d4:	movzbl %dl,%edx
+  18d5d7:	cmovne %ecx,%edx
+  18d5da:	lea    -0x7e(%rdx),%r8
+  18d5de:	add    $0xffffffffffffff6a,%rdx
+  18d5e5:	test   %ecx,%ecx
+  18d5e7:	cmove  %esi,%eax
+  18d5ea:	cmovne %r8,%rdx
+  18d5ee:	lea    (%rdi,%rdx,1),%rcx
+  18d5f2:	sar    $0x3f,%rcx
+  18d5f6:	movabs $0x8000000000000000,%r8
+  18d600:	xor    %r8,%rcx
+  18d603:	add    %rdi,%rdx
+  18d606:	vmovd  %xmm1,%esi
+  18d60a:	cmovo  %rcx,%rdx
+  18d60e:	mov    %esi,%ecx
+  18d610:	shr    $0x17,%ecx
+  18d613:	movzbl %cl,%edi
+  18d616:	vmulss %xmm2,%xmm1,%xmm0
+  18d61a:	vmovd  %xmm0,%r9d
+  18d61f:	mov    %r9d,%ecx
+  18d622:	shr    $0x17,%ecx
+  18d625:	test   %edi,%edi
+  18d627:	movzbl %cl,%ecx
+  18d62a:	cmovne %edi,%ecx
+  18d62d:	lea    -0x7e(%rcx),%r10
+  18d631:	add    $0xffffffffffffff6a,%rcx
+  18d638:	test   %edi,%edi
+  18d63a:	cmove  %r9d,%esi
+  18d63e:	cmovne %r10,%rcx
+  18d642:	lea    (%rdx,%rcx,1),%rdi
+  18d646:	sar    $0x3f,%rdi
+  18d64a:	xor    %r8,%rdi
+  18d64d:	add    %rdx,%rcx
+  18d650:	cmovo  %rdi,%rcx
+  18d654:	and    $0x807fffff,%eax
+  18d659:	or     $0x3f000000,%eax
+  18d65e:	vmovd  %eax,%xmm0
+  18d662:	and    $0x807fffff,%esi
+  18d668:	or     $0x3f000000,%esi
+  18d66e:	vmovd  %esi,%xmm1
+  18d672:	vmulss %xmm1,%xmm0,%xmm2
+  18d676:	vxorps %xmm0,%xmm0,%xmm0
+  18d67a:	vucomiss %xmm0,%xmm2
+  18d67e:	jne    18d715 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x205>
+  18d684:	vmovaps %xmm2,%xmm0
+  18d688:	add    $0x18,%rsp
+  18d68c:	ret
+  18d68d:	vmulss %xmm1,%xmm0,%xmm2
+  18d691:	vmovd  %xmm2,%eax
+  18d695:	mov    %eax,%ecx
+  18d697:	and    $0x7fffffff,%ecx
+  18d69d:	cmp    $0x7f800000,%ecx
+  18d6a3:	sete   %dl
+  18d6a6:	test   %ecx,%ecx
+  18d6a8:	sete   %sil
+  18d6ac:	or     %dl,%sil
+  18d6af:	cmp    $0x7f800001,%ecx
+  18d6b5:	setge  %cl
+  18d6b8:	or     %sil,%cl
+  18d6bb:	jne    18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d6bd:	cmp    $0x1000,%rdi
+  18d6c4:	jg     18d73f <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x22f>
+  18d6c6:	cmp    $0xfffffffffffff000,%rdi
+  18d6cd:	jl     18d773 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x263>
+  18d6d3:	mov    %eax,%ecx
+  18d6d5:	shr    $0x17,%ecx
+  18d6d8:	movzbl %cl,%ecx
+  18d6db:	lea    (%rdi,%rcx,1),%rdx
+  18d6df:	dec    %rdx
+  18d6e2:	cmp    $0xfe,%rdx
+  18d6e9:	setb   %dl
+  18d6ec:	mov    %ecx,%esi
+  18d6ee:	dec    %esi
+  18d6f0:	cmp    $0xfe,%esi
+  18d6f6:	setb   %sil
+  18d6fa:	test   %dl,%sil
+  18d6fd:	je     18d785 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x275>
+  18d703:	add    %rcx,%rdi
+  18d706:	and    $0x807fffff,%eax
+  18d70b:	shl    $0x17,%edi
+  18d70e:	or     %eax,%edi
+  18d710:	jmp    18d57e <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x6e>
+  18d715:	vmovd  %xmm2,%eax
+  18d719:	lea    (%rax,%rax,1),%edx
+  18d71c:	cmp    $0xff000000,%edx
+  18d722:	setae  %dl
+  18d725:	test   %rcx,%rcx
+  18d728:	je     18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d72e:	test   %dl,%dl
+  18d730:	jne    18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d736:	cmp    $0x1000,%rcx
+  18d73d:	jle    18d76a <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x25a>
+  18d73f:	vbroadcastss -0x173328(%rip),%xmm0        # 1a420 <__abi_tag+0x1a124>
+  18d748:	vandps %xmm0,%xmm2,%xmm0
+  18d74c:	vbroadcastss -0x1735cd(%rip),%xmm1        # 1a188 <__abi_tag+0x19e8c>
+  18d755:	vorps  %xmm1,%xmm0,%xmm0
+  18d759:	vmulss -0x173299(%rip),%xmm0,%xmm2        # 1a4c8 <__abi_tag+0x1a1cc>
+  18d761:	vmovaps %xmm2,%xmm0
+  18d765:	add    $0x18,%rsp
+  18d769:	ret
+  18d76a:	cmp    $0xfffffffffffff000,%rcx
+  18d771:	jge    18d7c7 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x2b7>
+  18d773:	vbroadcastss -0x17335c(%rip),%xmm0        # 1a420 <__abi_tag+0x1a124>
+  18d77c:	vandps %xmm0,%xmm2,%xmm0
+  18d780:	add    $0x18,%rsp
+  18d784:	ret
+  18d785:	cmp    $0x80,%rdi
+  18d78c:	jl     18d804 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x2f4>
+  18d78e:	vmovss -0x173616(%rip),%xmm0        # 1a180 <__abi_tag+0x19e84>
+  18d796:	cs nopw 0x0(%rax,%rax,1)
+  18d7a0:	vmulss %xmm0,%xmm2,%xmm2
+  18d7a4:	vmovd  %xmm2,%eax
+  18d7a8:	add    %eax,%eax
+  18d7aa:	cmp    $0xfeffffff,%eax
+  18d7af:	ja     18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d7b5:	lea    -0x7f(%rdi),%rax
+  18d7b9:	cmp    $0xfe,%rdi
+  18d7c0:	mov    %rax,%rdi
+  18d7c3:	jg     18d7a0 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x290>
+  18d7c5:	jmp    18d807 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x2f7>
+  18d7c7:	mov    %eax,%edx
+  18d7c9:	shr    $0x17,%edx
+  18d7cc:	movzbl %dl,%edx
+  18d7cf:	lea    -0x1(%rdx),%esi
+  18d7d2:	cmp    $0xfd,%esi
+  18d7d8:	ja     18d83e <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x32e>
+  18d7da:	lea    (%rcx,%rdx,1),%rsi
+  18d7de:	dec    %rsi
+  18d7e1:	cmp    $0xfe,%rsi
+  18d7e8:	jae    18d83e <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x32e>
+  18d7ea:	add    %rdx,%rcx
+  18d7ed:	and    $0x807fffff,%eax
+  18d7f2:	shl    $0x17,%ecx
+  18d7f5:	or     %eax,%ecx
+  18d7f7:	vmovd  %ecx,%xmm2
+  18d7fb:	vmovdqa %xmm2,%xmm0
+  18d7ff:	add    $0x18,%rsp
+  18d803:	ret
+  18d804:	mov    %rdi,%rax
+  18d807:	cmp    $0xffffffffffffff81,%rax
+  18d80b:	jg     18d8ac <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x39c>
+  18d811:	vmovss -0x1730e9(%rip),%xmm0        # 1a730 <__abi_tag+0x1a434>
+  18d819:	vxorps %xmm1,%xmm1,%xmm1
+  18d81d:	vmulss %xmm0,%xmm2,%xmm2
+  18d821:	vucomiss %xmm1,%xmm2
+  18d825:	jne    18d82d <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x31d>
+  18d827:	jnp    18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d82d:	lea    0x7e(%rax),%rdi
+  18d831:	cmp    $0xffffffffffffff04,%rax
+  18d837:	mov    %rdi,%rax
+  18d83a:	jl     18d81d <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x30d>
+  18d83c:	jmp    18d8af <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x39f>
+  18d83e:	cmp    $0x80,%rcx
+  18d845:	jl     18d876 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x366>
+  18d847:	vmovss -0x1736cf(%rip),%xmm0        # 1a180 <__abi_tag+0x19e84>
+  18d84f:	vmulss %xmm0,%xmm2,%xmm2
+  18d853:	vmovd  %xmm2,%eax
+  18d857:	add    %eax,%eax
+  18d859:	cmp    $0xfeffffff,%eax
+  18d85e:	ja     18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d864:	lea    -0x7f(%rcx),%rax
+  18d868:	cmp    $0xfe,%rcx
+  18d86f:	mov    %rax,%rcx
+  18d872:	jg     18d84f <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x33f>
+  18d874:	jmp    18d879 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x369>
+  18d876:	mov    %rcx,%rax
+  18d879:	cmp    $0xffffffffffffff81,%rax
+  18d87d:	jg     18d8ac <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x39c>
+  18d87f:	vmovss -0x173157(%rip),%xmm0        # 1a730 <__abi_tag+0x1a434>
+  18d887:	vxorps %xmm1,%xmm1,%xmm1
+  18d88b:	vmulss %xmm0,%xmm2,%xmm2
+  18d88f:	vucomiss %xmm1,%xmm2
+  18d893:	jne    18d89b <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x38b>
+  18d895:	jnp    18d684 <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x174>
+  18d89b:	lea    0x7e(%rax),%rdi
+  18d89f:	cmp    $0xffffffffffffff04,%rax
+  18d8a5:	mov    %rdi,%rax
+  18d8a8:	jl     18d88b <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x37b>
+  18d8aa:	jmp    18d8af <rustsht::legendre::scalar::multiply_component_scaled_with_normal_factor_f32+0x39f>
+  18d8ac:	mov    %rax,%rdi
+  18d8af:	vmovaps %xmm2,(%rsp)
+  18d8b4:	vmovss -0x1734ec(%rip),%xmm0        # 1a3d0 <__abi_tag+0x1a0d4>
+  18d8bc:	call   *0xa9086(%rip)        # 236948 <_DYNAMIC+0x930>
+  18d8c2:	vmovaps (%rsp),%xmm2
+  18d8c7:	vmulss %xmm0,%xmm2,%xmm2
+  18d8cb:	vmovaps %xmm2,%xmm0
+  18d8cf:	add    $0x18,%rsp
+  18d8d3:	ret
+
+Disassembly of section .init:
+
+Disassembly of section .fini:
+
+Disassembly of section .plt:

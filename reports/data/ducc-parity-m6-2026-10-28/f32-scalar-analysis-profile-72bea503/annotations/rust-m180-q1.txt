@@ -1,0 +1,29 @@
+--------------------------------------------------------------------------------
+Profile data file 'M6_CALLGRIND_PROFILES/rust-m180-q1.callgrind' (creator: callgrind-3.26.0)
+--------------------------------------------------------------------------------
+I1 cache:
+D1 cache:
+LL cache:
+Timerange: Basic block 0 - 503932281
+Trigger: Program termination
+Profiled target:  M6_RUST_CALLGRIND_BINARY 180 1 M6_SCRATCH/fixtures/GL-T720-M180-q1/map0.f32 M6_SCRATCH/outputs/rust-m180-q1.alm (profiled worker, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       1.0
+Include dirs:
+User annotated:
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir
+--------------------------------------------------------------------------------
+2,377,721,728 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                    file:function
+--------------------------------------------------------------------------------
+
+2,093,200,170 (88.03%)  < ???:<rustsht::plan::ShtPlan<f32>>::analyze_symmetric_order_group::{closure#3} (342,906x) [M6_RUST_CALLGRIND_BINARY]
+871,387,692 (36.65%)  *  ???:<f32 as rustsht::legendre::ShtScalar>::accumulate_scalar_analysis_pair [M6_RUST_CALLGRIND_BINARY]
+1,221,812,478 (51.39%)  >   ???:<f32 as rustsht::legendre::ShtScalar>::multiply_complex_scaled (40,694,538x) [M6_RUST_CALLGRIND_BINARY]
