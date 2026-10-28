@@ -3,7 +3,7 @@
   "parent_source": "e28ca1c65a384ca613d4527f777a479980818e94 (production code matches 54b166f2c0698f1c70e88f8679d12fa4376704fe)",
   "ducc_reference": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b (not built or timed in this census)",
   "base_suffix_patch_uncompressed_sha256": "67bcd6dfd59da3077636aec1bf1df09284e4663ea5c0043148e6900b977db242",
-  "normal_or_zero_condition": "For the suffix product check, require every lane product to be either normal or exactly zero; all recurrence, coefficient, accumulated-sum and overflow checks remain active.",
+  "normal_or_zero_condition": "For the suffix product check, accept a normal result or a bitwise-zero result. This does not prove the product is mathematically zero because underflow can round a nonzero product to zero.",
   "candidate_census_patch_gzip_sha256": "dd53e0c0db7d035458b9eb0785743c6d64bb80c6d5fd7f59505f20a1040bb0a3",
   "rust_flags": "release; -C target-cpu=x86-64-v3; --cfg m6_profile_suffix for census only",
   "fixture": "GL T720 f32 scalar synthesis; phi0=0.23; full M720 nphi1458; reduced M180 nphi378; deterministic scripts/benchmark_ducc_f32_native.py fixture",
