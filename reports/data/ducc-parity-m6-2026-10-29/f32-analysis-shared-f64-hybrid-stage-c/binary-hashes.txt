@@ -1,0 +1,4 @@
+8e462e4f574f1614309dd437dbb852630739344589581ee50353fe142ae18e20  native-f32 Rust parent executable
+19a76a4f7e749edd9414d5a0f25171adb94e6b41e37a8c939d2c7631809aabd0  f32-I/O/f64-analysis baseline candidate executable
+92bdcab75412455bd9b7964ff42b18b309069447e0cbe4619152e4c24591f04b  direct-spectrum candidate executable
+654d11fe9d7b3c0e3cef4b1b8b10f7318dff73abe2c7d847a824a73927ef1119  pinned DUCC native-f32 executable

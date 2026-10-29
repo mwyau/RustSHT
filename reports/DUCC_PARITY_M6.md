@@ -1,3 +1,20 @@
+## 2026-10-29 f32 scalar analysis with a shared f64 recurrence remains above DUCC
+
+An isolated current-source f32-I/O/f64-analysis backend reuses the f32 plan's
+native longitude FFT and the existing shared f64 scalar recurrence. Its
+15-pair GL T720 spin-0 analysis timings are `1.129–1.368x` native-f32 DUCC in
+full/reduced q1/q8, so all four cells remain GAP. It reduces the native-f32
+parent from `19.05–448.38 ms` to `1.264–16.224 ms`, with maximum relative-L2
+error `1.34–1.46e-7` against DUCC. It is not promoted because it misses the
+acceptance target in every cell.
+
+Callgrind and source inspection show the f64 analysis transform remains the
+main cost. A bounded next hypothesis caches the per-ring rounded
+`ring_weight / nphi` scale currently recomputed for every harmonic order. The
+candidate patch, complete 15-pair record, rejected direct-spectrum screen,
+Callgrind profiles, executable hashes and validation summary are in the
+[Stage C analysis evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-shared-f64-hybrid-stage-c/README.md).
+
 ## 2026-10-29 f32-I/O/f64-internal spin-1 synthesis integration not promoted
 
 At exact parent `f66ff4ed571374c664885f054f31711000075805`, an isolated

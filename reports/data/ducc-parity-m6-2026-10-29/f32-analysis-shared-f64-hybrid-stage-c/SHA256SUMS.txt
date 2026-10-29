@@ -1,0 +1,11 @@
+88aac617942b9942fec41311a586d92465af1f730bdf9c8fa16db7676a8b7b03  ./README.md
+48e4fb7a9fb4c3c9a50c733214f75a8aa10f757eca2af77c505298f8458defdc  ./benchmark-direct-spectrum-screen.py
+925062ca6318c430747a6a87fbde08af2cd2f5fbd820481611bc300595459431  ./binary-hashes.txt
+33d7e69547419256164b7bd258f9a47efd286e44d1b8ae3b2628b132aaed4f4b  ./callgrind/ducc-full-q1.out.gz
+48b1966554f3ed19c3891e3735cf0172105a71ff12685f7f88ccefa186c445ff  ./callgrind/rust-calltree.txt.gz
+fb47a4d7174d0bc38e6780411446650b73389c2289ccb88990ede2301cf8e7b4  ./callgrind/rust-full-q1.out.gz
+855b0e7e47e73baec623c89c76de527b446b9160761ef87ef61ccce876e34ca7  ./rejected-direct-spectrum-3.tsv
+ccb817933bacf872fc837af2b499b3ef44df178d68ab2539d8ac145cf986ca35  ./rejected-direct-spectrum.patch.gz
+4121b36901f8c4c1f60b6f6c3e4c589b377aae431ede93375185d5610efffa57  ./results-15.json.gz
+14e9c9d661844c1e83fc6ca77c1b40cb923e95f60a61aaa28f9a00c0d59d1931  ./results-15.tsv
+2c22d0d940bc69722261303e67f02e00944c9ada39c53ee25d30cd0d10677336  ./source-candidate.patch.gz
