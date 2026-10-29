@@ -1,3 +1,5 @@
+> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+
 # General-grid synthesis performance investigation
 
 **Status:** active, evidence gathering. This focused work complements the all-cases f64 spin-0/1 DUCC parity plan; it does not replace that goal.

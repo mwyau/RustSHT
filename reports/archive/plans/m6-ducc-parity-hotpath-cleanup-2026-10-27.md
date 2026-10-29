@@ -1,3 +1,5 @@
+> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+
 # M6 — DUCC parity engineering and repository consolidation
 
 ## ACTIVE OWNER OVERRIDE — 2026-10-29: close the native-f32 DUCC gap
@@ -6,7 +8,7 @@ The reusable guarded f32-I/O/f64-internal scalar-synthesis backend remains in
 production on the four measured GL T720 spin-0 synthesis cells at
 `0.775–0.961x` native-f32 DUCC; conversions and writeback are included. The
 Stage B 16-cell diagnostic and production evidence remain in the [single M6
-ledger](../reports/DUCC_PARITY_M6.md).
+ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md).
 
 Three isolated native-f32 dual-channel reflected spin-1 candidates are now
 rejected. V1 activated on all blocks but made q8 2.196x/3.145x slower than
@@ -16,9 +18,9 @@ packet path handled 425k–524k full-cell packets without decline, but q8 remain
 1.996x/2.585x parent and q1 showed no substantial gain. Each remains tens of
 multiples slower than DUCC, and candidate random-fixture error remained worse
 than parent. Exact patches, route counts, whole-call timings, and the V1
-Callgrind attribution are in the [V1](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md),
-[V2](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v2-packet-scale/README.md),
-and [V3](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v3-fourrow/README.md)
+Callgrind attribution are in the [V1](../../data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md),
+[V2](../../data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v2-packet-scale/README.md),
+and [V3](../../data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v3-fourrow/README.md)
 evidence packages.
 
 Stop native-f32 reflected spin-1 leaf variants. The reusable f32-I/O/f64-
@@ -27,7 +29,7 @@ internal spin-1 production adapter was evaluated on current source parent
 full q8, and reduced q8 missed at `1.654x`, `1.328x`, and `1.161x`. Keep its
 patch isolated. A 15-pair protected f64 T1023 spin-1 q8 control showed no
 repeatable regression. Callgrind and phase profiles are in the [single M6
-ledger](../reports/DUCC_PARITY_M6.md) and [candidate package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-f64-internal-backend-v1/README.md).
+ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md) and [candidate package](../../data/ducc-parity-m6-2026-10-29/f32-spin1-f64-internal-backend-v1/README.md).
 
 Stage A is complete on exact parent `3d46caaf89a8fcd3796fe43c49aa8ef82e481cad`.
 The archived `49295a89` reflected-ring patch is rejected: its normal f32 T720
@@ -36,7 +38,7 @@ controls repeat 1.1% regressions, q1 spin-1 synthesis regresses 1.7%, and the
 protected f64 T1023 spin-1 q8 path regresses 6.3% over 30 pairs. Keep the patch
 isolated. The full-source route census, 15-pair T720 scalar-synthesis matrix,
 adjacent controls, tests, fixture hashes, and binaries are in the [current
-source Stage A evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
+source Stage A evidence package](../../data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
 
 The corrected current-source direct-spectrum analysis screen used explicit
 x86-64-v3 flags for all four q1/q8 full/reduced cells and 15 interleaved
@@ -48,7 +50,7 @@ route's f64 recurrence/gather accounts for about 79–89% of the profiled
 work. Reusable workspace capacity ranges from 15.1 MB to 56.2 MB, including an
 unused full-size f64 spectrum buffer; q8 also makes one small warm-call
 allocation on this route, the promoted route, and the native route. See the [corrected direct-
-spectrum evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
+spectrum evidence](../../data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
 
 The isolated Stage C scalar-analysis tile-512 screen is complete and rejected.
 At exact source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, the 15-pair
@@ -57,7 +59,7 @@ of four q1/q8 full/reduced cells remained slower than native-f32 DUCC. Only
 reduced q8 passed the diagnostic parity comparison. Three-pair native-f32 and
 protected f64 T1023 spin-1 synthesis controls showed no established regression,
 but do not support production promotion. The exact evidence and candidate patch
-are in the [tile-512 package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md).
+are in the [tile-512 package](../../data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md).
 
 The current-source Stage C profile is complete at exact parent
 `d507297c2c7cdc777557e0b1dcc08813aae92de5`. Callgrind attributes 30.3% of
@@ -67,7 +69,7 @@ already uses fused four-double vectors without YMM spills. Test-only counters
 recorded 723,324 ordinary suffix pair steps, no counted two-pair scaled-prefix
 advances, and no mixed-suffix steps; one-pair early returns are not counted.
 This is instruction attribution, not a timing comparison or an optimization.
-See the [profile package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
+See the [profile package](../../data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
 
 **NEXT:** in a fresh isolated worktree, distinguish scaled one-pair early
 returns from ordinary promotions in `fused_scalar_analysis_pair_block_impl`
@@ -100,8 +102,8 @@ Callgrind Ir by 21.5% full and 31.1% reduced; the f64 analysis override and
 scaled exceptional callback remain unchanged. Protected f64 GL T1023 spin-1
 synthesis did not show a meaningful regression. Exact timings, numerical
 errors, per-worker counts and AVX2 disassembly are in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md) and
-[candidate evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
+[single M6 ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md) and
+[candidate evidence](../../data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
 
 An earlier q1 profile at source `0f821099` measured full GL T720 f32 spin-1
 synthesis at 22.433B Rust versus 520.827M pinned-DUCC Ir (43.07x), and spin-1
@@ -119,8 +121,8 @@ three-pair matrix was mixed; a 15-pair reduced-q8 extension gave paired
 candidate/parent median `1.006`, 95% bootstrap interval `[0.823, 1.036]`, and
 only 6/15 candidate-faster pairs. The run did not capture separate-route
 success counts or candidate-specific instruction attribution. Exact paired
-timings and the retained patch are in the [single M6 ledger](../reports/DUCC_PARITY_M6.md)
-and [screen report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
+timings and the retained patch are in the [single M6 ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md)
+and [screen report](../../data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
 
 A current-parent test-only route census later showed that this one-gate
 candidate left the f32 paired-scalar route inactive: its scalar scratch was
@@ -128,12 +130,12 @@ empty and the f32 prepared-block hook returned `Ok(false)`. An isolated
 adapter using the shared prepared f32 kernel did improve q1, but slowed q8
 (candidate/parent `1.018` full and `1.417` reduced); reject the unconditional
 route. Its counts and three-pair screen are in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md).
+[single M6 ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md).
 
 The current-source full-mmax f32 spin-1 analysis baseline at `e094d4f4` is
 36.932x/35.138x DUCC q1/q8 after the accepted scalar-analysis leaf; all cells
 remain GAP. Exact paired timings and numerical checks are in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md).
+[single M6 ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md).
 
 The exact scalar-synthesis source is `092fe72f` (latest dev head `e094d4f4`
 adds evidence only). Matched parent/DUCC
@@ -159,15 +161,15 @@ This identifies a large dataflow cost beyond native-f32 exponent range. After
 this documented suffix blocker, continue with the remaining native-f32
 scalar/spin families, then return to the reflected-ring scalar-synthesis
 opportunity without changing scalar-analysis or f64 dispatch. See the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md), [exact baseline
-evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-synthesis-baseline-092fe72f/README.md),
-[suffix screen](../reports/data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md),
-and [precision diagnostic](../reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md).
+[single M6 ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md), [exact baseline
+evidence](../../data/ducc-parity-m6-2026-10-28/f32-scalar-synthesis-baseline-092fe72f/README.md),
+[suffix screen](../../data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md),
+and [precision diagnostic](../../data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md).
 M6 remains open.
 
 ## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
 
-**Continue native-f32 GL T720 scalar synthesis before returning to f64.** Preserve the accepted 32-ring scheduler (`335ce4c8`) and scaled-fallback packet leaf (`acc625d7`; current HEAD `2b531d73`). At that exact parent, matched Rust/DUCC medians are **33.37× / 34.94×** full mmax q1/q8 and **22.75× / 40.42×** reduced q1/q8; all four remain **GAP**. The guarded zero-exponent prefix-to-fused-suffix candidate at earlier parent `ef11ce0a` was rejected after regressing three cells and raising full-q1 Callgrind work by 4.77%. A later corrected packet suffix screen at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but found no safe nonzero-exponent handoff; it was rejected after 15-pair adjacent f32 scalar analysis showed a repeatable 3.9% regression in q1 and q8. Details for both screens are in the [single active ledger](../reports/DUCC_PARITY_M6.md) and their linked evidence. Continue toward a measured algorithmic reduction, not another isolated 1–3% shortcut. A single-digit Legendre-stage ratio is an intermediate target, not an M6 completion criterion.
+**Continue native-f32 GL T720 scalar synthesis before returning to f64.** Preserve the accepted 32-ring scheduler (`335ce4c8`) and scaled-fallback packet leaf (`acc625d7`; current HEAD `2b531d73`). At that exact parent, matched Rust/DUCC medians are **33.37× / 34.94×** full mmax q1/q8 and **22.75× / 40.42×** reduced q1/q8; all four remain **GAP**. The guarded zero-exponent prefix-to-fused-suffix candidate at earlier parent `ef11ce0a` was rejected after regressing three cells and raising full-q1 Callgrind work by 4.77%. A later corrected packet suffix screen at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but found no safe nonzero-exponent handoff; it was rejected after 15-pair adjacent f32 scalar analysis showed a repeatable 3.9% regression in q1 and q8. Details for both screens are in the [single active ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md) and their linked evidence. Continue toward a measured algorithmic reduction, not another isolated 1–3% shortcut. A single-digit Legendre-stage ratio is an intermediate target, not an M6 completion criterion.
 
 ### Grounded algorithm difference
 
@@ -179,7 +181,7 @@ RustSHT already has shared f32/f64 recurrence mathematics and a native-f32 fused
 
 1. **Confirm the comparison.** Fetch/reconcile `origin/dev`; pin Rust parent and DUCC SHAs. Verify geometry, input/output types, `phi0`, sampling, ISA, affinity, q1/q8, and warm-call boundaries. Measure Legendre-only **and** whole-transform times separately, with useful degree×latitude work counts, instruction references, and inspected executed SIMD loops. Report CPU time/wall time separately. Do not add overlapping inclusive Callgrind counters.
 2. **Instrument scaled→normal transitions before writing the candidate.** For active eight-lane packets and orders, record first degree where both recurrence states and accumulated output can be safely converted to normal native f32; later range declines; usable suffix contribution count/length; polar-mixed lanes, tails, zero/nonzero exponents, exceptional values, and required retry/rollback. Distinguish raw exponent eligibility from the full finite/subnormal/overflow proof. Compare full/reduced GL T720 q1/q8, plus a small analytic/extreme fixture. Preserve compact evidence; do not instrument timed production binaries.
-3. **Suffix handoff screens completed and rejected.** Exact parent `ef11ce0a` was compared with an isolated guarded all-zero-exponent handoff. The candidate split each 32-ring fallback group into 8-lane traversals and generalized the shared fused kernel for arbitrary suffix starts. It slowed full q1/q8 and reduced q1, and increased full-q1 Ir by 4.77%; reduced q8 was inconclusive at three pairs. A corrected packetized route at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but still made no nonzero-exponent transition. It was rejected after 15-pair adjacent f32 scalar-analysis comparisons showed repeatable 3.9% q1/q8 regressions; reduced synthesis q8 was also neutral. Do not restore either candidate unchanged. Evidence is in the [first suffix rejection report](../reports/data/ducc-parity-m6-2026-10-28/f32-zero-exponent-suffix-screen/README.md) and [corrected-transition screen](../reports/data/ducc-parity-m6-2026-10-28/f32-corrected-transition-2b531d73/README.md).
+3. **Suffix handoff screens completed and rejected.** Exact parent `ef11ce0a` was compared with an isolated guarded all-zero-exponent handoff. The candidate split each 32-ring fallback group into 8-lane traversals and generalized the shared fused kernel for arbitrary suffix starts. It slowed full q1/q8 and reduced q1, and increased full-q1 Ir by 4.77%; reduced q8 was inconclusive at three pairs. A corrected packetized route at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but still made no nonzero-exponent transition. It was rejected after 15-pair adjacent f32 scalar-analysis comparisons showed repeatable 3.9% q1/q8 regressions; reduced synthesis q8 was also neutral. Do not restore either candidate unchanged. Evidence is in the [first suffix rejection report](../../data/ducc-parity-m6-2026-10-28/f32-zero-exponent-suffix-screen/README.md) and [corrected-transition screen](../../data/ducc-parity-m6-2026-10-28/f32-corrected-transition-2b531d73/README.md).
 4. **Next measure synthesis-only reflected-ring reuse.** DUCC's measured GL route computes both hemispheres from northern-ring recurrence work; the prior work census shows approximately half the useful recurrence updates of Rust's all-ring route. Design a scoped experiment that reuses the existing shared native-f32 recurrence and changes only scalar synthesis routing/accumulation. Keep scalar analysis and f64 dispatch untouched. Do not restore the prior duplicated reflected f32 implementation, which regressed reduced scalar-analysis q8. First collect current-source route/work counts and Legendre-stage timing; implement only if the measured work reduction survives polar, tail, and numerical constraints.
 5. **Use the f32-I/O / f64-internal run as a diagnostic only.** It showed near-DUCC timing on the reflected order-major route and several-times-DUCC timing when forced through the all-ring paired route. This separates large dataflow and exponent/codegen effects; it does not justify widened production arrays or a second maintained implementation.
 6. **Gate any promotion.** Start with 3 randomized/interleaved fresh-process parent/candidate/DUCC q1/q8 pairs; use 15+ paired runs for consequential acceptance. Cover full/reduced f32 T720 scalar synthesis, adjacent f32 scalar analysis and spin-1 analysis/synthesis, and protected f64 GL T1023 spin-1 synthesis q1/q8. Re-run focused tests for low-mode and sectoral analytic fields, coefficient recovery, adjoints, poles, tiny/subnormal/large/nonfinite cases, SIMD tails, finite/repeated/poisoned workspace, capacity, transactional decline and output reset. Do not weaken tolerances. Bitwise equality is preferred but not mandatory if the mathematical order changes; independently substantiate any numerical difference. Protect existing f64 speed wins and report any control regression.
@@ -204,9 +206,9 @@ implementation.
 
 ## Prior owner direction — 2026-10-27 (historical, superseded above)
 
-The generic f32/f64 fused scalar-synthesis kernel milestone is **complete**: shared recurrence/accumulation, zero-exponent paths, and native-f32 SIMD leaves are implemented and validated. Do not restart that work. Current source is `ec5d56ca29ec6ad4e34fe80443d934677b0515f8`, based on exact parent `3816adce3226a92669a5807241b03f80cb6d8cfd`, with pinned DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. It adds a checked native-f32 SIMD leaf for scaled contribution packets after accepting the separate 32-ring q8 task split. Against the exact source parent, full/reduced q1/q8 candidate/parent is `0.9783`/`0.9754` and `0.9685`/`0.9901`; the reduced-q8 result is inconclusive. Candidate/DUCC remains `36.37×`/`40.07×` full and `25.11×`/`45.32×` reduced q1/q8. All four cells remain **GAP**. The previous scheduling screen established that q1 does not execute the parallel task route, eight q8 workers were active, 12→23 jobs reduced skew, workspace grew 738 KB, and scans were small. Exact timings, numerical criteria, ring costs and worker diagnostics remain in the [current ledger](../reports/DUCC_PARITY_M6.md), [32-ring report](../reports/data/ducc-parity-m6-2026-10-27/f32-32-ring-schedule-2026-10-27/README.md), and [packet-leaf report](../reports/data/ducc-parity-m6-2026-10-27/f32-scaled-packet-leaf-2026-10-27/README.md). **Next:** measure the first normal-range transition and useful suffix length for each active eight-ring packet; only then test a bounded f32-synthesis handoff that leaves the shared f32/f64 recurrence and f64 analysis route unchanged.
+The generic f32/f64 fused scalar-synthesis kernel milestone is **complete**: shared recurrence/accumulation, zero-exponent paths, and native-f32 SIMD leaves are implemented and validated. Do not restart that work. Current source is `ec5d56ca29ec6ad4e34fe80443d934677b0515f8`, based on exact parent `3816adce3226a92669a5807241b03f80cb6d8cfd`, with pinned DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. It adds a checked native-f32 SIMD leaf for scaled contribution packets after accepting the separate 32-ring q8 task split. Against the exact source parent, full/reduced q1/q8 candidate/parent is `0.9783`/`0.9754` and `0.9685`/`0.9901`; the reduced-q8 result is inconclusive. Candidate/DUCC remains `36.37×`/`40.07×` full and `25.11×`/`45.32×` reduced q1/q8. All four cells remain **GAP**. The previous scheduling screen established that q1 does not execute the parallel task route, eight q8 workers were active, 12→23 jobs reduced skew, workspace grew 738 KB, and scans were small. Exact timings, numerical criteria, ring costs and worker diagnostics remain in the [current ledger](../DUCC_PARITY_M6-2026-10-29-pre-native-generic.md), [32-ring report](../../data/ducc-parity-m6-2026-10-27/f32-32-ring-schedule-2026-10-27/README.md), and [packet-leaf report](../../data/ducc-parity-m6-2026-10-27/f32-scaled-packet-leaf-2026-10-27/README.md). **Next:** measure the first normal-range transition and useful suffix length for each active eight-ring packet; only then test a bounded f32-synthesis handoff that leaves the shared f32/f64 recurrence and f64 analysis route unchanged.
 
-**Fallback-screen history — 2026-10-27.** At exact parent `0677b5bf`, the all-active normal-suffix handoff was not promoted because its shared early-stop traversal slowed protected f64 T720 spin-1 analysis q8 in all three pairs. The lane-level profile found only 12.9% of mixed pair-lane contributions could fit disjoint width-eight normal suffix spans under an optimistic partition. The global min-groups-per-task-one candidate was also rejected after protected f64 GL T1023 spin-1 synthesis q8 slowed in all three pairs. These rejected candidates do not change the current route. See the [mixed-span profile](../reports/data/ducc-parity-m6-2026-10-27/f32-mixed-span-route-profile-2026-10-27/README.md), [safe-suffix screen](../reports/data/ducc-parity-m6-2026-10-27/f32-safe-suffix-handoff-2026-10-27/README.md), and [global schedule screen](../reports/data/ducc-parity-m6-2026-10-27/f32-task-grain-global-screen-2026-10-27/README.md).
+**Fallback-screen history — 2026-10-27.** At exact parent `0677b5bf`, the all-active normal-suffix handoff was not promoted because its shared early-stop traversal slowed protected f64 T720 spin-1 analysis q8 in all three pairs. The lane-level profile found only 12.9% of mixed pair-lane contributions could fit disjoint width-eight normal suffix spans under an optimistic partition. The global min-groups-per-task-one candidate was also rejected after protected f64 GL T1023 spin-1 synthesis q8 slowed in all three pairs. These rejected candidates do not change the current route. See the [mixed-span profile](../../data/ducc-parity-m6-2026-10-27/f32-mixed-span-route-profile-2026-10-27/README.md), [safe-suffix screen](../../data/ducc-parity-m6-2026-10-27/f32-safe-suffix-handoff-2026-10-27/README.md), and [global schedule screen](../../data/ducc-parity-m6-2026-10-27/f32-task-grain-global-screen-2026-10-27/README.md).
 
 **New owner goal — 2026-10-27 04:46 UTC.** The former Luna session's “goal achieved” applied **only** to algorithm convergence and unit-test layout. It was completed and pushed at `b7bb2ac49b3b673bd344ad1caf154e52d3130070`, with 317 workspace tests passing, 37 ignored, zero failed, and temporary builds cleaned. **This new M6 goal is not achieved, and must not be declared achieved, by clean CI, successful profiling, documentation work, or completing a handful of short screens.**
 

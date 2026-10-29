@@ -1,3 +1,5 @@
+> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+
 # Resume goal — finish RustSHT Legendre precision convergence (NO SOL)
 
 **Owner handoff: 2026-10-27 01:07 UTC.** This is the **current executable work plan** for the next Luna Max session and supersedes earlier agent-model permissions, old priorities, and instructions to re-evaluate retired experiments. Work against the latest fetched `origin/dev` (at plan creation: `50fa612719465c099da5ace5b0579d3030025909`). **The prior agent exhausted its quota and improperly invoked a Sol reviewer; do not repeat that behavior.**
@@ -40,7 +42,7 @@ After the last duplicate whole-body implementation is replaced or cleanly specia
 
 ## Mandatory test-layout follow-up (separate from numerical source changes)
 
-**Owner decision 2026-10-27 02:19 UTC:** [One Rust unit-test layout](../docs/TEST_LAYOUT.md) is required. **No inline test bodies and no sibling `*_tests.rs` files** in the final Rust crate. For each production source module, use only `#[cfg(test)] mod tests;` with test bodies under its natural `<module>/tests.rs` path; large suites may put narrower test-only child modules under that test folder. Keep root `tests/*.rs` as Cargo integration tests. **Complete the current spin-family numerical consolidation first; only then mechanically migrate the existing internal tests in a separate commit without changing algorithms or numerical assertions.** Compare test counts/feature paths; do not benchmark pure test moves. Never call Sol.
+**Owner decision 2026-10-27 02:19 UTC:** [One Rust unit-test layout](../../../docs/TEST_LAYOUT.md) is required. **No inline test bodies and no sibling `*_tests.rs` files** in the final Rust crate. For each production source module, use only `#[cfg(test)] mod tests;` with test bodies under its natural `<module>/tests.rs` path; large suites may put narrower test-only child modules under that test folder. Keep root `tests/*.rs` as Cargo integration tests. **Complete the current spin-family numerical consolidation first; only then mechanically migrate the existing internal tests in a separate commit without changing algorithms or numerical assertions.** Compare test counts/feature paths; do not benchmark pure test moves. Never call Sol.
 
 ## Validation/performance cadence
 

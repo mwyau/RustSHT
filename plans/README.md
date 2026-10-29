@@ -1,11 +1,16 @@
-# RustSHT plans — active execution order
+# Plans and contracts
 
-**CURRENT M6 IMPLEMENTATION GOAL — updated 2026-10-27 12:41 UTC:** [M6 DUCC parity and cleanup](m6-ducc-parity-hotpath-cleanup-2026-10-27.md), now with the **native-f32 immediate-priority override**. Latest measured f32 GL T720 full scalar synthesis q8 is 139.613× slower than pinned DUCC; [Callgrind evidence](../reports/data/ducc-parity-m6-2026-10-27/f32-scalar-synthesis-profile-q8-2026-10-27/README.md) points to scaled-complex contribution multiplication. **First next step:** measure exponent distribution, identify actual hot SIMD/scalar operations, test a correctness-preserving zero-exponent fast path if supported, and compare exact parent/candidate/DUCC for f32 full/reduced q1/q8. Continue with substantial f32 recurrence/accumulation changes if that one case is insufficient. Earlier f64 T720 analysis profiling is complete enough to defer repeated ~1% screens; its gap (~1.25–1.30× DUCC) and CC reduced q1 (~1.61×) remain open. The earlier refactor is complete, performance parity is not. No Sol, no merge to `main`, preserve numerical/tests, archive evidence and immediately clean verified-owned scratch.
+The only active execution plan is [M6 — native-generic SHT execution and DUCC
+parity](m6-native-generic-ducc-parity.md). `AGENTS.md` points to its current
+next action and the live per-cell performance ledger.
 
-**Mandatory agent/experiment rules:** [AGENTS.md](../AGENTS.md) and [experiment hygiene](../docs/EXPERIMENT_HYGIENE.md). **No Sol model/reviewer/fallback, period.** Optional Luna-only read-only-production benchmark subagent. Preserve evidence, then promptly clean every experiment-owned target/cache/venv/DUCC build and temp worktree; avoid filling `/tmp`. Main Luna works on `dev` only, no force-push, `main` unchanged.
+The following files are stable reference contracts, not execution queues:
 
-**Full parity-matrix acceptance:** [Earlier f64/f32 continuation plan](ducc-performance-parity-continuation-2026-10-27.md). **Source-backed existing evidence:** [Current selected performance and gaps](../PERFORMANCE_STATUS.md), [prior f64 per-cell parity plan and matched profiling methodology](f64-ducc-parity-all-cases-2026-10-24.md), [performance candidates and negative experiments](../reports/PERFORMANCE_CANDIDATES.md), [rolling status](../reports/PROGRESS.md). Prior results must be retested on the post-refactor current source before claiming latest-head parity. Maintain a compact PASS/GAP/INCONCLUSIVE/UNMEASURED ledger for the new optimization phase.
+- [DUCC provenance and license](01-ducc-provenance-and-license.md)
+- [Numerics and grids](02-numerics-and-grids.md)
+- [DUCC contract crosswalk](06-ducc-contract-crosswalk.md)
+- [Python and native FFI compatibility](18-pyspharm-and-native-ffi-compatibility.md)
 
-**Completed refactor, not the current assignment:** [NO-SOL scalar/spin convergence](resume-legendre-convergence-no-sol-2026-10-27.md), [precision-module architecture](final-legendre-precision-convergence-2026-10-26.md), [older full-architecture plan](shared-sht-final-architecture-steering-2026-10-26.md), [kernel refactor work](shared-sht-kernels-f32-f64-grid-spin-2026-10-26.md), [B32–B35 recovery](rejected-shared-kernel-candidate-recovery-2026-10-26.md). Both `scalar_f32.rs` and `spin_f32.rs` have been retired; one [unit-test folder pattern](../docs/TEST_LAYOUT.md) has been implemented. Do not restart these completed stages.
-
-**Stable contracts:** [DUCC provenance/license](01-ducc-provenance-and-license.md), [numerical methods/grids](02-numerics-and-grids.md), [DUCC API crosswalk](06-ducc-contract-crosswalk.md). [Python/FFI compatibility Plan 18](18-pyspharm-and-native-ffi-compatibility.md) is separate unless changed performance source affects it. Historical documents under [archive](../reports/archive/README.md) are research inputs, not active execution instructions.
+Superseded implementation plans and performance narratives are in
+[`reports/archive/plans/`](../reports/archive/plans/README.md). They remain
+historical evidence and do not override the active plan.

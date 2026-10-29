@@ -1,11 +1,17 @@
-# Archived performance studies and superseded plans
+# Historical RustSHT evidence
 
-**Historical evidence only — not an execution queue.** Current: [AGENTS](../../AGENTS.md), [status](../../PERFORMANCE_STATUS.md), [one parity plan](../../plans/f64-ducc-parity-all-cases-2026-10-24.md). For failures/neutral trials read the [concise negative index](../NEGATIVE_EXPERIMENTS.md), not this archive by default.
+Use the [active plan](../../plans/m6-native-generic-ducc-parity.md),
+[live parity ledger](../DUCC_PARITY_M6.md) and [progress](../PROGRESS.md) for
+current work. Nothing under this directory is an active execution queue.
 
-- [October 24 cleanup and exact original-root-report/plan/doc manifest](retired-active-docs-2026-10-24/README.md).
-- [October 23 agent/plan historical context](context-2026-10-23/README.md).
-- [Earlier experiment reports](experiments/) and [earlier reviews](reviews/).
-- [Historical architecture/performance plans](plans/).
-- [Consolidated October 19 findings](performance-findings-2026-10-19-consolidated.md).
+- [Archived M6 and architecture plans](plans/README.md)
+- [M6 experiment index](M6_EXPERIMENT_INDEX.md)
+- [Full pre-generic M6 ledger](DUCC_PARITY_M6-2026-10-29-pre-native-generic.md)
+- [Earlier experiment narratives and reviews](experiments/)
+- [October 23 session context](context-2026-10-23/README.md)
+- [Retired active-document context](retired-active-docs-2026-10-24/README.md)
 
-**Source records under `reports/data/` are intentionally not moved or rewritten.** Archive contents retain old relative links/measurements, which can be stale; use exact Git SHAs and the current branch before acting on an idea.
+Source-specific data packages remain in `reports/data/` and are linked from
+the live ledger or archived full ledger. Raw files that are untracked or whose
+ownership is unclear have been left intact; they are not treated as committed
+evidence until reviewed.

@@ -1,3 +1,5 @@
+> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+
 # Owner steering: converge Legendre precision modules and finish numerical deduplication
 
 **Current resumed execution (2026-10-27):** [NO-SOL cleanup-first restart plan](resume-legendre-convergence-no-sol-2026-10-27.md) is authoritative for implementation and reviewer policy. **Sol is prohibited for this assignment even as a one-time, read-only, fallback or quota-recovery reviewer.** Begin with safe scratch/worktree cleanup, then ordinary scalar, paired scalar, native-spin traversal and analysis accumulation. This plan remains the architectural reference; its old audit/seed prerequisites have already been completed.

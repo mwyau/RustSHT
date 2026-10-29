@@ -1,3 +1,5 @@
+> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+
 # RustSHT performance phase — continue toward DUCC parity
 
 **ACTIVE IMPLEMENTATION OVERRIDE (2026-10-27 04:46 UTC):** [M6 hot-loop Callgrind/assembly-guided optimization and repository cleanup](m6-ducc-parity-hotpath-cleanup-2026-10-27.md) is the new Luna Max assignment. This document supplies the broader per-cell f64/f32 parity acceptance matrix and historical prioritization. M6 requires actual source optimization, not only refactor completion, profiling, a ledger, or docs work; no Sol in any role.

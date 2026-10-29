@@ -1,41 +1,42 @@
-# Experiment lifecycle and disk-space hygiene
+# Experiment and scratch hygiene
 
-**Standing owner instruction (updated 2026-10-27 01:07 UTC).** This file governs all local RustSHT experiments, performance A/B trials, CPU profiling, temporary test/reference environments, and agent-run benchmark work. It takes precedence over older directions to retain/reuse experimental binaries, compilation objects, benchmark worktrees, or virtual environments. See `AGENTS.md`.
+These rules apply to builds, benchmarks, profiles, temporary reference
+environments and isolated worktrees. The [active M6 plan](../plans/m6-native-generic-ducc-parity.md)
+defines the experiment sequence. The primary session is the only worker; do
+not delegate.
 
-## Absolute model and reviewer prohibition for this assignment
+## Before an experiment
 
-- **DO NOT invoke any Sol model or Sol reviewer at all, for any purpose.** No Sol High, background or read-only Sol, scheduled Sol review, quota-exhaustion fallback, automatically assigned Sol, or one-time review exception. Historical approvals are revoked; the current owner specifically forbids Sol for this resumed work.
-- Main Luna Max alone writes to `dev`. The previously authorized **Luna-only `benchmark`** worker can carry out isolated read-only-to-production measurement when available; it **may not** ask Sol or any other subagent for help. If Luna resources are exhausted, save verified evidence, clean scratch, push the last coherent state and stop. Do not replace Luna with Sol.
-- The main agent performs its own review, code inspection and tests. No external reviewer is a prerequisite to continue.
+1. Pin the parent source, candidate patch, DUCC revision, fixture hashes,
+   compiler/ISA flags, operation, warm-call boundary and q1/q8 thread counts.
+   Define the minimum evidence to preserve before building.
+2. Inspect Git status, worktrees, relevant processes, and available bytes and
+   inodes (`df -h` and `df -i`) on the intended scratch filesystem.
+3. Create a unique scratch root owned by this experiment. Keep its worktree,
+   `CARGO_TARGET_DIR`, reference build, fixtures, binaries, logs, profiles and
+   temporary environments under that root. Do not use the checkout's normal
+   `target/` directory.
+4. Build and benchmark sequentially with bounded resource use. Reuse source
+   provenance and compact results, not long-lived experiment build trees.
 
-## First action after a paused or quota-exhausted session
+## Preserve and clean after each experiment
 
-- Before **any new build**, inspect remote/working tree status, active worker processes, experiment worktree registrations, `/tmp` bytes/inodes and existing experiment scratch. Enumerate only confirmed-owned inactive temporary targets, virtual environments, profilers, compiled workers, and comparison worktrees. Save and verify any unique reports/data/source in durable storage **before** deleting their exact paths. Do **not** delete uncertain or active scratch, unrelated parked Git worktrees, other sessions' files, or shared package/toolchain installations.
-- Record what was safely removed and reclaimed. If nothing can be proved safe to delete, say so and continue implementation; never claim local cleanup from a GitHub tree check alone. This is the startup Phase 0 in [the current resume plan](../plans/resume-legendre-convergence-no-sol-2026-10-27.md).
+1. Stop and join only processes started for this experiment.
+2. Save durable evidence before deleting scratch: exact source/reference
+   revisions, flags, fixture hashes, source patch or commit, correctness and
+   reset results, paired whole-transform timings, dispersion and limitations.
+   Store compact reports and data under `reports/`; larger unique evidence may
+   use a documented persistent location. A `/tmp` path alone is not durable.
+3. Verify saved files can be read. Then remove only this experiment's exact
+   inactive scratch root and verify it is gone.
+4. Preserve useful failed-candidate patches and conclusions. Do not retain
+   disposable build products in the repository or clean shared caches.
+5. If ownership or uniqueness is uncertain, leave the data untouched. Never
+   remove another worktree, untracked user work, shared toolchains or the only
+   copy of benchmark evidence. Do not run broad deletion or worktree-prune
+   commands.
 
-## Before starting each experiment
-
-1. Identify the experiment (precise source SHA, baseline/DUCC SHA, compiler/flags, problem, expected inputs, essential test/benchmark cells), and define the **minimum data to preserve** before any build starts.
-2. Check available bytes and inodes on `/tmp` (`df -h /tmp`, `df -i /tmp`), plus expected compiler, target, virtualenv, profiler, baseline and candidate footprints. Prefer `/tmp` **only when there is adequate headroom**. On hosts where `/tmp` is RAM-backed or small, use a larger *designated transient* filesystem after checking its capacity; do not exhaust tmpfs, system RAM, the root volume or shared storage.
-3. Give the experiment a unique, owned scratch directory (e.g. `mktemp -d /tmp/rustsht-exp.XXXXXXXX`), record that exact location, and put **all experiment-owned temporary files underneath it**: isolated Git worktrees if needed, `CARGO_TARGET_DIR`, `UV_CACHE_DIR`, `CARGO_HOME` only if experiment-local, Python `VIRTUAL_ENV`/`.venv`, Maturin wheels, DUCC/reference builds, native object files, temporary harness executables, Callgrind/perf raw output, stdout/stderr logs, and unpacked test fixtures. Prefer reusing the installed compiler/toolchain itself, but do **not** create persistent experiment build environments.
-4. Limit resource use: keep a headroom margin, avoid concurrent builds or benchmark processes, check `du -sh`/free space during long jobs, and cap logs/artifacts. For paired timings, build parent/candidate/reference into distinct transient subdirectories and perform all necessary comparisons within the **same bounded experiment**, then discard their build outputs.
-5. Do not put bulk `target/`, `.venv/`, `build/`, `dist/`, temporary worktrees, caches, object files, benchmark JSON logs, or profiling databases in the tracked repository or a permanent checkout. Use an experiment-specific output directory, not the normal shared `target/`.
-
-## Mandatory after-run sequence — apply to success, rejection, interruption and failure
-
-1. **Stop and join all worker/benchmark/profiler processes** associated with this experiment; no child should still need its files.
-2. **Persist durable evidence outside the scratch area *before* deleting anything.** At minimum save a compact report containing: exact parent/candidate/reference SHA and build flags; source decisions/patch or recoverable commit; cases, inputs and tolerances; passed/failed correctness, numerical differences and repeat/reset results; paired runtimes, sample counts, dispersion/host-wait caveats; benchmark provenance; why the change was retained/rejected. Persist the minimal quantitative table as CSV/JSON or compressed data in a stable, documented location. Commit appropriately sized reports and compact data under `reports/` (or other designated tracked evidence), or use a separately identified *persistent* artifact location for larger data. A path under `/tmp` is **not durable storage**. Verify saved files exist and can be read; record exact paths/checksums as useful. Never delete the only copy of a required raw record before it is preserved.
-3. **Immediately after evidence is saved and verified, remove ALL experiment-owned transient build artifacts and build environments.** This includes release/debug `target` trees, Cargo/UV experimental caches, Python venvs, compiled wheels/extensions, DUCC/reference temporary builds and objects, profiler intermediates, source/build worktrees and ephemeral raw output (after compact/persistent evidence is safe). Do this **at the end of each individual experiment**, not after the entire campaign or the agent session; do not stockpile many experiments' build environments for anticipated re-use.
-4. Verify the owned scratch path was removed, list any intentionally retained durable output and approximate reclaimed size, and report any cleanup failure promptly. If a job crashes or is interrupted, preserve failure evidence first and finish cleanup; use a narrowly scoped exit/signal handler as a backup, never as a substitute for the verified save-then-delete order.
-5. For the next experiment, rebuild in a new owned scratch area from the retained source SHA and durable fixtures/reports. Avoid long-lived compiled parent/DUCC workers across experiments despite the compile cost. Reuse *source provenance and saved measured results*, not physical build directories.
-6. If durable evidence could not be persisted, **do not destroy its only copy**; report the blocker and resolve persistence/space before continuing more experiments. Never silently claim successful cleanup or evidence preservation.
-
-## Safety and scope of deletion
-
-- Delete **only paths created/owned by the current experiment**, after proving the path and content belong to it. Prefer paths under one unique scratch root. Never run generic `rm -rf /tmp/*`, `rm -rf target` against an uncertain current directory, or broad process/pattern deletion.
-- Do **not** delete the user's files, other sessions' scratch/worktrees, existing non-experiment virtualenvs, installed Rust toolchains, global package managers/caches used by others, retained Git commits, tracked source, or durable evidence. Do not remove active paths from another worker; coordinate main Luna and the benchmark agent.
-- An old untracked directory is not automatically disposable. If ownership or durability is unclear, inspect and record before acting; ask for authorization before deleting unrelated/shared data.
-- If the host does not have enough scratch space even after cleanup, stop adding build environments and report the capacity blocker instead of filling `/tmp`, the root filesystem or memory.
-- Documentation/checkpoint updates are not reasons to spawn fresh build environments. A pure source read or report update needs no build and no scratch allocation.
-
-**Acceptance checkpoint for every experiment:** evidence written and verified; experiment-specific `target`/`venv`/binaries/profiles/temp-worktrees removed; no orphaned workers; reclaimed space checked; the next experiment starts from a fresh bounded temporary directory. The user prioritizes conserving disk space over avoiding recompilation.
+Do not report cleanup unless reclaimed paths and space were checked. If
+resources are insufficient, record the exact capacity issue and stop adding
+build environments. On interruption, leave exact source SHAs, completed
+validation, risks and the next action in the live report.
