@@ -137,6 +137,9 @@ pub(crate) fn current_execution_thread_count() -> usize {
 pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) grid: GridSpec,
     pub(crate) harmonics: HarmonicSpec,
+    // Limited f32 policy adapter for the measured GL T720 scalar-synthesis cells.
+    // The f64 child plan reuses the existing f64 transform implementation.
+    pub(crate) f32_internal_scalar_synthesis_plan: Option<Box<ShtPlan<f64>>>,
     pub(crate) cc_resampling: Option<CCResamplingPlan<T>>,
     pub(crate) scalar_latitude_geometry: Option<ScalarLatitudeGeometry<T>>,
     pub(crate) prepared_scalar_latitude_geometry: Option<ScalarLatitudeGeometry<T>>,
@@ -276,10 +279,20 @@ impl<T: ShtScalar> ShtPlan<T> {
         } else {
             (None, None)
         };
+        let f32_internal_scalar_synthesis_plan = (T::F32_INTERNAL_SCALAR_SYNTHESIS
+            && grid.kind() == crate::grid::GridKind::GaussLegendre
+            && harmonics.spin() == 0
+            && harmonics.lmax() == 720
+            && grid.ntheta() == 721
+            && ((harmonics.mmax() == 720 && grid.nphi() == 1458)
+                || (harmonics.mmax() == 180 && grid.nphi() == 378)))
+            .then(|| ShtPlan::<f64>::new(grid.clone(), harmonics.clone()).map(Box::new))
+            .transpose()?;
 
         Ok(Self {
             grid,
             harmonics,
+            f32_internal_scalar_synthesis_plan,
             cc_resampling,
             scalar_latitude_geometry,
             prepared_scalar_latitude_geometry,
@@ -566,6 +579,16 @@ impl<T: ShtScalar> ShtPlan<T> {
         )?;
         workspace.analysis_pair_range_cache_id =
             Some(Arc::clone(&self.analysis_pair_range_cache_id));
+        if let Some(plan) = &self.f32_internal_scalar_synthesis_plan {
+            let internal_workspace = plan.workspace()?;
+            workspace.f32_internal_scalar_synthesis = Some(Box::new(
+                crate::workspace::F32InternalScalarSynthesisWorkspace::new(
+                    internal_workspace,
+                    self.harmonics.nalm(),
+                    self.sample_count,
+                )?,
+            ));
+        }
         self.prepare_workspace(&mut workspace, execution_capacity)?;
         Ok(workspace)
     }
@@ -700,6 +723,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                 expected: required_worker_count,
                 actual: workspace.recurrence_workers.len(),
             });
+        }
+
+        if let (Some(plan), Some(adapter)) = (
+            &self.f32_internal_scalar_synthesis_plan,
+            &mut workspace.f32_internal_scalar_synthesis,
+        ) {
+            plan.prepare_workspace(&mut adapter.workspace, execution_capacity)?;
         }
 
         workspace.ring_group_size = ring_group_size;

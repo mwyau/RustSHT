@@ -12,7 +12,25 @@ package](../reports/data/ducc-parity-m6-2026-10-28/f32-reflected-current-source-
 
 Stage B has now measured complete f32-I/O/f64-internal calls at all 16 GL T720 scalar/spin synthesis/analysis full/reduced q1/q8 cells, against the pinned DUCC native-f32 API. Fifteen interleaved pairs per cell show 5 PASS and 11 GAP. Shared f64 scalar synthesis passes all four cells (candidate/DUCC 0.746–0.927x); full-mmax spin-1 synthesis q1 also passes at 0.964x. Scalar analysis remains 1.052–1.179x DUCC; most f64 spin routes remain 1.189–1.635x. Complete conversions, FFT, writeback and warm workspace are included. Evidence and executable/source hashes are in the [Stage B package](../reports/data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md).
 
-Next, implement a reusable, explicitly guarded f64-internal backend for the passing scalar-synthesis T720 family using only the existing shared f64 plan/recurrence. Preserve the native-f32 path for subnormal/extreme/nonfinite inputs and for output-range declines. Keep the candidate scoped to measured geometry until T255/T511/T1023, longitude parity and other grid-family validation justifies wider dispatch. Verify full public calls, reset and adjoints, then remeasure all four cells plus scalar-analysis, spin-1 and protected f64 controls. Do not route the remaining 11 cells through f64 merely because scalar synthesis passes: their measured transform costs still miss DUCC. Continue with a cause-based shared-kernel/dispatch experiment on the remaining gaps after this reusable path is checkpointed. M6 stays open.
+The guarded production f64-internal backend is now implemented on exact source
+parent `17a23bd1345fa4c5aad2bc1c67cfada8d2e9c2d4`, reusing the existing f64
+plan and shared recurrence. Fifteen interleaved complete public f32/DUCC calls
+pass all four GL T720 scalar-synthesis cells at `0.775–0.961x` DUCC, with
+conversion and writeback included. The native-f32 path remains for exceptional
+or out-of-range values, and dispatch remains limited to the two measured
+geometries. The other 12 scalar/spin T720 cells remain GAP; see the current
+[M6 ledger](../reports/DUCC_PARITY_M6.md) and the [production evidence
+package](../reports/data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
+
+Next, evaluate a bounded high-band spin-1 route through the existing reflected
+hemisphere scheduler, first on the f64-internal backend because its full-mmax
+q1 measurement is already near DUCC, then decide from complete native-DUCC-f32
+calls whether q8/reduced dispatch can use it. Do not merely widen a selector or
+enable the existing native paired-spin flag. Capture route counters and stage
+costs; preserve native f32 for declined exceptional blocks. Extend independent
+E/B-to-Q/U signs, spin adjoints, extremes, tails, reset, and protected f64
+T1023 controls before promotion. After spin-1, attack the separately measured
+scalar-analysis gap by cause. M6 stays open.
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
 The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and

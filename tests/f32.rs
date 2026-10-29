@@ -611,6 +611,43 @@ fn f32_t127_sectoral_synthesis_remains_finite_and_matches_analytic_values() {
 }
 
 #[test]
+fn f32_t720_sectoral_synthesis_matches_independent_analytic_mode() {
+    let lmax = 720;
+    let ntheta = lmax + 1;
+    let nphi = 1458;
+    let phi0 = 0.23;
+    let plan = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0).unwrap(),
+        HarmonicSpec::scalar(lmax, lmax).unwrap(),
+    )
+    .unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
+    let mut alm = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    alm[plan.harmonics().index(lmax, lmax).unwrap()] = Complex32::new(1.0, 0.0);
+    let mut map = vec![f32::NAN; ntheta * nphi];
+    plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+    assert!(map.iter().all(|value| value.is_finite()));
+
+    let mut sectoral_norm = 1.0_f64 / (4.0 * std::f64::consts::PI).sqrt();
+    for order in 1..=lmax {
+        sectoral_norm *= ((2 * order + 1) as f64 / (2 * order) as f64).sqrt();
+    }
+    for (ring, &theta) in plan.grid().theta().iter().enumerate() {
+        let amplitude = 2.0 * sectoral_norm * theta.sin().powi(lmax as i32);
+        for longitude in 0..nphi {
+            let phi = phi0 + TAU * longitude as f64 / nphi as f64;
+            let expected = (amplitude * (lmax as f64 * phi).cos()) as f32;
+            let actual = map[ring * nphi + longitude];
+            assert!(
+                (actual - expected).abs() <= 1.0e-4 * expected.abs().max(1.0e-6),
+                "T720 sectoral sample ring={ring} longitude={longitude}: actual={actual}, expected={expected}"
+            );
+        }
+    }
+}
+
+#[test]
 fn f32_t720_scalar_synthesis_matches_analytic_modes_adjoint_and_workspace_reset() {
     let lmax = 720;
     let ntheta = lmax + 1;

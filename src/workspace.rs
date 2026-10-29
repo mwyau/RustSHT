@@ -68,6 +68,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) spin1_analysis_pair_range_geometry: Option<(usize, usize, usize)>,
     pub(crate) ring_group_size: usize,
     pub(crate) execution_capacity: usize,
+    // Present only for the guarded measured f32 scalar-synthesis policy.
+    pub(crate) f32_internal_scalar_synthesis: Option<Box<F32InternalScalarSynthesisWorkspace>>,
     pub(crate) fft: RealFftWorkspace<T>,
     #[cfg(feature = "parallel")]
     pub(crate) spin_order_output_scratch: Vec<SpinOrderOutputScratch<T>>,
@@ -80,6 +82,31 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     // Appended to preserve offsets of the existing workspace fields.
     #[cfg(feature = "parallel")]
     pub(crate) spin1_scalar_coefficient_finite_orders: Vec<u8>,
+}
+
+/// Reusable f64 buffers and transform scratch owned by one f32 workspace.
+/// The boxed edge from `ShtWorkspace` keeps the recursive workspace types sized.
+pub(crate) struct F32InternalScalarSynthesisWorkspace {
+    pub(crate) workspace: ShtWorkspace<f64>,
+    pub(crate) coefficients: Vec<Complex<f64>>,
+    pub(crate) map: Vec<f64>,
+}
+
+impl F32InternalScalarSynthesisWorkspace {
+    pub(crate) fn new(
+        workspace: ShtWorkspace<f64>,
+        coefficient_count: usize,
+        sample_count: usize,
+    ) -> Result<Self, ShtError> {
+        Ok(Self {
+            workspace,
+            coefficients: allocate_complex(
+                coefficient_count,
+                "f32 internal f64 scalar-synthesis coefficients",
+            )?,
+            map: allocate_real(sample_count, "f32 internal f64 scalar-synthesis map")?,
+        })
+    }
 }
 
 #[cfg(feature = "parallel")]
@@ -1023,6 +1050,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             spin1_analysis_pair_range_geometry: None,
             ring_group_size,
             execution_capacity,
+            f32_internal_scalar_synthesis: None,
             fft: fft.workspace()?,
             #[cfg(feature = "parallel")]
             spin_order_output_scratch: Vec::new(),

@@ -32,6 +32,69 @@ Independent analytic modes, scalar and spin analysis/synthesis adjoints, sectora
 The complete per-cell table, fixture hashes, 15-pair data, candidate source/binary hashes, conversions, allocation snapshots and numerical evidence are in the [Stage B evidence package](data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md). **Next:** implement the reusable guarded f64-internal backend for the four passing scalar-synthesis T720 cells, preserve native-f32 fallback for exceptional inputs/outputs, then extend shapes and attack the 11 analysis/spin gaps from measured transform cost. M6 remains open.
 # M6 — current-head DUCC parity triage
 
+## 2026-10-29 production f32-I/O / f64-internal scalar-synthesis checkpoint
+
+On exact parent `17a23bd1345fa4c5aad2bc1c67cfada8d2e9c2d4`, a reusable
+f32-input/f32-output adapter now dispatches the four measured GL T720 spin-0
+synthesis geometries through RustSHT's existing shared f64 plan and recurrence.
+The timed candidate patch is SHA256
+`19a19bc691dd0fa4aad95a9cd0989bd9a02479a08d5c8febe118dcfbd50cd9e9`; current
+production-only diff is SHA256
+`76ae61ebb68cd174a0c9c56f13e78a2e3cd040545cdf60082ba0a5a17adb7a9a`.
+Pinned DUCC is `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` (0.42.0). The adapter
+keeps reusable Complex64/f64 map buffers, includes both conversions and
+writeback in public-call timing, and falls back to native f32 on guarded input
+or output range declines. No parallel f32 recurrence was added.
+
+Fifteen interleaved warm public-call pairs per cell against native DUCC f32
+close all four scalar-synthesis cells. Conversion, FFT, transform and output
+writeback are timed; setup is amortized outside the warm-call boundary.
+
+| Cell | Parent / Rust / DUCC ms | Rust/DUCC paired median [95% CI] | Max rel-L2 vs DUCC | Status |
+|---|---:|---:|---:|---|
+| GL T720 full spin-0 synthesis q1 | 645.518 / 15.836 / 19.131 | 0.829 [0.823, 0.834] | 3.89e-8 | **PASS** |
+| GL T720 reduced spin-0 synthesis q1 | 191.266 / 6.486 / 8.385 | 0.775 [0.770, 0.779] | 3.88e-8 | **PASS** |
+| GL T720 full spin-0 synthesis q8 | 98.573 / 2.790 / 2.884 | 0.961 [0.934, 0.974] | 3.89e-8 | **PASS** |
+| GL T720 reduced spin-0 synthesis q8 | 56.005 / 1.184 / 1.298 | 0.885 [0.793, 0.918] | 3.88e-8 | **PASS** |
+
+The complete current-source 16-cell matrix is in the [production evidence
+CSV](data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/results-16-cell.csv).
+The other 12 cells remain **GAP**: spin-0 analysis is 31.97/26.02x full and
+22.77/19.74x reduced q1/q8; spin-1 synthesis is 35.92/40.68x full and
+34.57/45.29x reduced; spin-1 analysis is 36.07/31.02x full and 31.59/26.67x
+reduced. The q8 scalar-analysis full/reduced and reduced spin-1 synthesis
+adjacent controls were extended to 15 pairs; q1 scalar-analysis reduced was
+also extended to 15. Other spin-1 controls are three-pair directional screens
+because this policy does not construct an adapter for spin-1 plans. Current
+spin routes remain native f32. Candidate/parent ratios were 0.994 (95% CI
+`[0.989, 0.996]`) for full scalar-analysis q8, 1.005 (`[0.990, 1.065]`) for
+reduced scalar-analysis q8, and 1.000 (`[0.993, 1.071]`) for reduced spin-1
+synthesis q8; no adjacent regression was established. Several control runners
+retained candidate/parent intervals but not Rust/DUCC intervals; the CSV marks
+those limits rather than inferring missing uncertainty.
+
+The protected f64 GL T1023 spin-1 synthesis q1/q8 15-pair controls were
+88.822/14.206 ms candidate versus 89.948/14.282 ms parent and 120.125/19.893
+ms DUCC. Candidate/parent was 0.984/0.993 with paired 95% intervals
+`[0.983, 0.985]` / `[0.986, 0.995]`; outputs were bitwise equal to the parent.
+The reusable adapter adds 29.7/32.6 MB full q1/q8 and 8.6/10.0 MB reduced
+q1/q8 over the native parent. Warm synthesis made zero allocations. Exact
+allocation counts, conversion-buffer capacity, numerical guards, source and
+binary hashes, test results and sanitized paired data are in the [checkpoint
+package](data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
+
+Focused Rust validation passed: f32 integration suite (14 passed, 1 ignored),
+the two internal-route/range-decline unit tests, the T255/T511/T1023 native
+scope test, extreme FFT scaling (4 passed), `cargo fmt --check`, and
+`cargo check --all-features`. No tolerance was relaxed. The f64-internal
+precision policy and its exceptional-value fallback are documented in
+`docs/F32_INTERNAL_PRECISION.md`.
+
+This completes the scalar-synthesis portion of the current f32 priority, not
+the f32 family. Next, test a bounded high-band spin-1 reflected route through
+the existing hemisphere scheduler, with route counters and separate q1/q8
+whole-call decisions. M6 remains open.
+
 ## 2026-10-28 current-source reflected f32 scalar synthesis — rejected on controls
 
 At exact parent `1b2041491e621fffe94464667619baf788d31835`, the reconciled
