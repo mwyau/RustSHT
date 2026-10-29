@@ -175,6 +175,20 @@ per pair versus 19. This is a cost screen, not whole-transform timing, so the
 double-single path stays isolated. Full results are in the
 [compensated recurrence probe](archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
 
+## Test-only residual-state integration screen
+
+The cheaper first-order f32 residual update was carried through the scaled
+prefix and ordinary suffix in the isolated generic candidate. A three-round
+whole-transform screen covered full/reduced q1/q8. The residual route measured
+`2.22–2.53x` DUCC and retained `1.888e-4` full / `1.898e-4` reduced relative
+L2 error, essentially unchanged from the generic f32 baseline. It is rejected
+and does not change production dispatch. An isolated 208-output replay did
+reduce recurrence error against the same f32 setup to `1.49e-6` relative RMS;
+the remaining map error is consistent with the previously measured
+amplification from f32-rounded geometry, factors and sectoral setup. See the
+[complete integration screen](archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md)
+and its exact patch/results.
+
 ## Decisions and remaining scope
 
 - The production sidecar is temporary and must be removed after native shared
@@ -202,9 +216,12 @@ double-single path stays isolated. Full results are in the
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** test a cheaper f32 residual correction that covers both recurrence
-contractions and state updates. Require the same independent replay and a
-materially lower AVX2 instruction cost before building a test-only
-end-to-end transform route. Keep production dispatch unchanged, then retain
-the exceptional-range, adjoint, reset, and whole-transform checks for any
-route that advances. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and [compensated replay record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
+**NEXT:** in a bounded `m=1–16,l=600–720` replay, isolate f32 rounding in
+`cos²`, recurrence factors, and the sectoral seed against DUCC's double
+constants. Test high/low native-f32 constant leaves with residual propagation
+limited to the affected low orders; screen numerical gain and AVX2 cost before
+another whole-transform run. Do not repeat all-order residual propagation:
+it is more than 2.2x DUCC and did not improve full-transform error. Keep
+production dispatch unchanged. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md),
+[compensated replay record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md),
+and [integration screen](archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md).

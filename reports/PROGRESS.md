@@ -1,31 +1,12 @@
 # Recent substantive checkpoints
 
-- **2026-10-29 — native-f32 paired zonal leaf and recurrence error screen.** The
-  integrated f32 double-single recurrence corrects the isolated T720
-  `l=720,m=0` probe to `3.19e-8` maximum absolute error and passed the initial
-  paired-source library suite (319 passed, 37 ignored). Its three-pair full
-  q1/q8 timings remain 1.256/1.272x DUCC; random-transform relative-L2 error
-  is unchanged. The intersection screen measures `m=1–32,l=600–719` at
-  `3.25e-4` relative L2. Ringwise errors peak at polar-end rings 5/717;
-  order bands put `m=5–8` at `4.61e-4` relative L2 and `m=9–16` at
-  `3.42e-4` maximum absolute error. A test-only observer found no scaled
-  prefix in 736 batches for `m=1–16`; those cases run the full ordinary f32
-  suffix. A 208-value replay attributed `1.6448e-4` relative RMS to ordinary
-  recurrence rounding and `1.0311e-6` to accumulation rounding, with both
-  material at the equator. One-at-a-time setup sensitivities measured f64
-  geometry at `9.00e-4`, paired factors at `1.51e-4`, and the sectoral seed at
-  `2.18e-5` relative RMS; they are not additive terms. A direct setup
-  comparison found matching f64 GL geometry and f32-rounded recurrence tables
-  against DUCC for all 720
-  rings and 968 high-degree order pairs. DUCC keeps double Legendre state
-  behind its f32 API. A test-only twofold replay lowers selected recurrence
-  error from `1.6448e-4` to `1.2002e-12` only when both recurrence
-  contractions and state updates are compensated; retaining the f32-rounded
-  contraction leaves `1.6343e-4`. Its AVX2 microkernel costs `17.24x` the
-  ordinary loop, so the candidate remains isolated without whole-transform
-  timing. The paired source passed 319 library tests (39 ignored); the leaf
-  remains isolated.
-  See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
+- **2026-10-29 — all-order residual integration rejected.** The native-f32
+  first-order correction lowered a selected widened recurrence replay to
+  `1.49e-6` relative RMS, but cost `2.22–2.53x` DUCC across full/reduced q1/q8
+  and left random-transform error near `1.9e-4`. The remaining error tracks
+  f32-rounded geometry, recurrence factors and sectoral setup. No production
+  dispatch changed. Next screen: high/low constant leaves for `m=1–16` only.
+  See the [integration record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

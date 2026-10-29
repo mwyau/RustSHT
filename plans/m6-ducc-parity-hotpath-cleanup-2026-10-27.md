@@ -62,30 +62,25 @@ reuse. This is a targeted generalization, not a mechanical `f64` replacement.
 - The latest diagnostic scalar-analysis tile-512 change yielded about 1% improvement and was rejected; its subsequent Callgrind attributed 30.3% of process Ir to a checked scaled f64 analysis path and 16.6% to ordinary fused suffix work. These profiles are clues, **not** license to continue optimizing the f64-internal f32 route. See [tile report](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md) and [profile](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
 - The earlier reflected native-f32 scalar-synthesis patch was rejected on current source due to adjacent and f64 regressions. Native-f32 reflected spin-1 V1–V3 and f64 spin-1 loop tiling also regressed. Do not repeat those exact designs unchanged. Provenance is in the [M6 ledger](../reports/DUCC_PARITY_M6.md).
 
-**Latest scalar-synthesis diagnostic:** an isolated native-f32 paired
-recurrence corrects the zonal probe to `3.19e-8` maximum absolute error, but
-its three-pair full q1/q8 timings remain `1.256/1.272x` DUCC and random
-transform error is unchanged. For `m=1–16,l=600–720`, the f32 recurrence
-replay contributes `1.6448e-4` relative RMS versus `1.0311e-6` from
-accumulation rounding. An observer found no scaled-prefix work in 736 ring
-batches. The setup comparison finds bitwise-identical f64 GL geometry and
-f32-rounded recurrence tables; DUCC's f32 API uses double scalar Legendre
-state. These observations point to native-f32 recurrence arithmetic, not a
-setup formula mismatch. A test-only twofold replay lowers the selected
-high-degree recurrence error from `1.6448e-4` to `1.2002e-12` relative RMS,
-but only when both the `A*cos²+B` contraction and state update are
-compensated. Keeping the leading contraction rounded in f32 leaves
-`1.6343e-4`. The AVX2 recurrence-plus-real-accumulation microkernel costs
-`17.24x` the ordinary f32 loop; its test callback emits 116 instructions per
-pair versus 19. This is not whole-transform timing. Full setup and replay
-provenance are in the [setup comparison](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md)
-and [compensated recurrence record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
+**Latest scalar-synthesis diagnostic:** the first-order residual update was
+integrated through the test-only scaled prefix and ordinary suffix. Across
+three interleaved whole-transform rounds it cost `2.22–2.53x` DUCC in the four
+T720 scalar cells and left the random-map error at about `1.9e-4`, so this
+all-order route is rejected. It lowered a 208-value high-degree recurrence
+replay to `1.49e-6` relative RMS against the same f32 setup, but did not correct
+the f32-versus-DUCC transform difference. Earlier setup screens measured
+amplification from f32-rounded geometry, recurrence factors and the sectoral
+seed; direct source comparisons found matching formulas and nearest-f32
+tables. The full source patch, fixture hashes, binaries and paired results are
+in the [residual integration record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md).
+The original twofold callback remains rejected at `17.24x` ordinary-loop cost;
+see the [compensated recurrence record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
 
-**NEXT:** investigate a lower-cost f32 residual correction that compensates
-both the leading contraction and recurrence update without the current
-double-single helper sequence. First pass the same independent recurrence
-replay and AVX2 instruction screen; only a credible vector cost warrants a
-test-only end-to-end transform timing. Keep production dispatch unchanged.
+**NEXT:** in a bounded `m=1–16,l=600–720` replay, isolate rounding in `cos²`,
+recurrence factors and the sectoral seed against DUCC's double constants. Test
+high/low native-f32 constant leaves with residual propagation limited to those
+low orders; require a material accuracy gain at a feasible AVX2 cost before
+another whole-transform run. Keep production dispatch unchanged.
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
 

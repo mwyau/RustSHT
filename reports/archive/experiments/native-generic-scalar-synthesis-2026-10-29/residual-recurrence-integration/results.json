@@ -1,0 +1,1291 @@
+{
+  "status": "rejected exploratory integration; no production dispatch",
+  "method": "Three interleaved process rounds for each GL T720 scalar-synthesis geometry. Each worker used identical deterministic f32 fixtures, reusable plan/workspace, warm calls, and 25 ms calibrated batches. Ratios are screening ranges, not confidence intervals or acceptance evidence.",
+  "source": {
+    "production_parent_commit": "e7e8f06ba00d0d778ed191aa51c73d825544576b",
+    "native_generic_base_commit": "b6a96aa7161a64f678b614d73478496f50f0551e",
+    "native_generic_runtime_patch_sha256_at_benchmark": "704666bca0b5fb71adc3cc7346c1f36dbc5d49bb98c99d17c4ea66d0fea5c6ba",
+    "native_generic_postscreen_patch_sha256": "bcc2687a714de94254aa7e1e78acd31f8dce396e6c5707aa10e62aa4fee4e515",
+    "note": "After the screen, the isolated worktree changed only a Clippy expectation attribute and a test-only assertion in an ignored decomposition probe. The example worker binary was rebuilt; runtime behavior is unchanged, but its post-screen hash is recorded separately."
+  },
+  "build": {
+    "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "rust_profile": "release; parallel feature",
+    "native_generic_execution": "f32 inputs, recurrence, coefficients, FFT buffers and outputs; AVX2/FMA, 8 f32 lanes; no f32-to-f64 conversion in the generic route",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_cxx_compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3, driver -fno-fast-math -ffp-contract=fast",
+    "host": "AMD Ryzen 9 5950X 16-Core Processor",
+    "affinity": {
+      "q1": "0",
+      "q8": "0,1,2,3,4,5,6,7"
+    },
+    "batch_target_ms": 25.0,
+    "process_pairs": 3
+  },
+  "binary_sha256": {
+    "production_parent": "8e462e4f574f1614309dd437dbb852630739344589581ee50353fe142ae18e20",
+    "native_generic_baseline": "d9158760d31937718f43e2ad09542a60ca2ca90e0018164238b2445345d3d932",
+    "native_generic_residual": "3d7eaa76139f53b849629f255d6242de2b0b782447bf98bfe2b06b04e800c7f5",
+    "ducc": "be18c89ea434258e4a07c28ccd8fd31d6262ac3503dcaf81d8aa5176415f1484"
+  },
+  "cases": [
+    {
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "backends": {
+        "production_parent": {
+          "median_ms": 15.931567000000001,
+          "ducc_median_ms": 19.25507975,
+          "median_ratio_to_ducc": 0.8273955344173529,
+          "paired_ratio_min_max": [
+            0.8194274331694399,
+            0.8339786071654254
+          ],
+          "max_relative_l2_vs_ducc": 3.893552943660887e-08
+        },
+        "native_generic_baseline": {
+          "median_ms": 23.696912750000003,
+          "ducc_median_ms": 19.25507975,
+          "median_ratio_to_ducc": 1.2282410997382796,
+          "paired_ratio_min_max": [
+            1.2264356240851197,
+            1.2505016296074054
+          ],
+          "max_relative_l2_vs_ducc": 0.00018676470470747246
+        },
+        "native_generic_residual": {
+          "median_ms": 48.535913,
+          "ducc_median_ms": 19.25507975,
+          "median_ratio_to_ducc": 2.526325734901202,
+          "paired_ratio_min_max": [
+            2.5145952906185185,
+            2.5351608468839704
+          ],
+          "max_relative_l2_vs_ducc": 0.00018879986902729302
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "backend": "production_parent",
+          "backend_median_ms": 15.8095185,
+          "ducc_median_ms": 19.293372249999997,
+          "ratio_to_ducc": 0.8194274331694399,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 3.893552943660887e-08,
+            "absolute_l2": 9.181235238044346e-06,
+            "max_absolute": 1.1920928955078125e-07,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 23.696912750000003,
+          "ducc_median_ms": 19.293372249999997,
+          "ratio_to_ducc": 1.2282410997382796,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018676470470747246,
+            "absolute_l2": 0.04404025610785528,
+            "max_absolute": 0.0005298256874084473,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 48.515023,
+          "ducc_median_ms": 19.293372249999997,
+          "ratio_to_ducc": 2.5145952906185185,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018879986902729302,
+            "absolute_l2": 0.0445201602632301,
+            "max_absolute": 0.0005505084991455078,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "production_parent",
+          "backend_median_ms": 15.931567000000001,
+          "ducc_median_ms": 19.25507975,
+          "ratio_to_ducc": 0.8273955344173529,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 3.893552943660887e-08,
+            "absolute_l2": 9.181235238044346e-06,
+            "max_absolute": 1.1920928955078125e-07,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 23.61511575,
+          "ducc_median_ms": 19.25507975,
+          "ratio_to_ducc": 1.2264356240851197,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018676470470747246,
+            "absolute_l2": 0.04404025610785528,
+            "max_absolute": 0.0005298256874084473,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 48.6446035,
+          "ducc_median_ms": 19.25507975,
+          "ratio_to_ducc": 2.526325734901202,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018879986902729302,
+            "absolute_l2": 0.0445201602632301,
+            "max_absolute": 0.0005505084991455078,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "production_parent",
+          "backend_median_ms": 15.9666055,
+          "ducc_median_ms": 19.145102,
+          "ratio_to_ducc": 0.8339786071654254,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 3.893552943660887e-08,
+            "absolute_l2": 9.181235238044346e-06,
+            "max_absolute": 1.1920928955078125e-07,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 23.94098125,
+          "ducc_median_ms": 19.145102,
+          "ratio_to_ducc": 1.2505016296074054,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018676470470747246,
+            "absolute_l2": 0.04404025610785528,
+            "max_absolute": 0.0005298256874084473,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 48.535913,
+          "ducc_median_ms": 19.145102,
+          "ratio_to_ducc": 2.5351608468839704,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018879986902729302,
+            "absolute_l2": 0.0445201602632301,
+            "max_absolute": 0.0005505084991455078,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        }
+      ]
+    },
+    {
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "backends": {
+        "production_parent": {
+          "median_ms": 2.27259385,
+          "ducc_median_ms": 2.7028024999999998,
+          "median_ratio_to_ducc": 0.8408286769011054,
+          "paired_ratio_min_max": [
+            0.7804440252365804,
+            0.8451178864751263
+          ],
+          "max_relative_l2_vs_ducc": 3.893552943660887e-08
+        },
+        "native_generic_baseline": {
+          "median_ms": 3.4385877500000004,
+          "ducc_median_ms": 2.7028024999999998,
+          "median_ratio_to_ducc": 1.2722304903891426,
+          "paired_ratio_min_max": [
+            1.113055850208081,
+            1.2816383756172824
+          ],
+          "max_relative_l2_vs_ducc": 0.00018676470470747246
+        },
+        "native_generic_residual": {
+          "median_ms": 6.538467125,
+          "ducc_median_ms": 2.7028024999999998,
+          "median_ratio_to_ducc": 2.4191435093759166,
+          "paired_ratio_min_max": [
+            2.277527495380467,
+            2.419776874009941
+          ],
+          "max_relative_l2_vs_ducc": 0.00018879986902729302
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "backend": "production_parent",
+          "backend_median_ms": 2.27394695,
+          "ducc_median_ms": 2.6906860999999997,
+          "ratio_to_ducc": 0.8451178864751263,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 3.893552943660887e-08,
+            "absolute_l2": 9.181235238044346e-06,
+            "max_absolute": 1.1920928955078125e-07,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 3.4484865625000003,
+          "ducc_median_ms": 2.6906860999999997,
+          "ratio_to_ducc": 1.2816383756172824,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018676470470747246,
+            "absolute_l2": 0.04404025610785528,
+            "max_absolute": 0.0005298256874084473,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 6.510859999999999,
+          "ducc_median_ms": 2.6906860999999997,
+          "ratio_to_ducc": 2.419776874009941,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018879986902729302,
+            "absolute_l2": 0.0445201602632301,
+            "max_absolute": 0.0005505084991455078,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "production_parent",
+          "backend_median_ms": 2.2654498499999995,
+          "ducc_median_ms": 2.902770444444444,
+          "ratio_to_ducc": 0.7804440252365804,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 3.893552943660887e-08,
+            "absolute_l2": 9.181235238044346e-06,
+            "max_absolute": 1.1920928955078125e-07,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 3.230945625,
+          "ducc_median_ms": 2.902770444444444,
+          "ratio_to_ducc": 1.113055850208081,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018676470470747246,
+            "absolute_l2": 0.04404025610785528,
+            "max_absolute": 0.0005298256874084473,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 6.6111395,
+          "ducc_median_ms": 2.902770444444444,
+          "ratio_to_ducc": 2.277527495380467,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018879986902729302,
+            "absolute_l2": 0.0445201602632301,
+            "max_absolute": 0.0005505084991455078,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "production_parent",
+          "backend_median_ms": 2.27259385,
+          "ducc_median_ms": 2.7028024999999998,
+          "ratio_to_ducc": 0.8408286769011054,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 3.893552943660887e-08,
+            "absolute_l2": 9.181235238044346e-06,
+            "max_absolute": 1.1920928955078125e-07,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 3.4385877500000004,
+          "ducc_median_ms": 2.7028024999999998,
+          "ratio_to_ducc": 1.2722304903891426,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018676470470747246,
+            "absolute_l2": 0.04404025610785528,
+            "max_absolute": 0.0005298256874084473,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 6.538467125,
+          "ducc_median_ms": 2.7028024999999998,
+          "ratio_to_ducc": 2.4191435093759166,
+          "error_vs_ducc": {
+            "output_values": 1051218,
+            "relative_l2": 0.00018879986902729302,
+            "absolute_l2": 0.0445201602632301,
+            "max_absolute": 0.0005505084991455078,
+            "reference_rms": 0.22998983199799372,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        }
+      ]
+    },
+    {
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 1
+      },
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "backends": {
+        "production_parent": {
+          "median_ms": 6.511903125,
+          "ducc_median_ms": 8.374070166666666,
+          "median_ratio_to_ducc": 0.7776270075835883,
+          "paired_ratio_min_max": [
+            0.7601618713744218,
+            0.7786519741873471
+          ],
+          "max_relative_l2_vs_ducc": 3.878762528687453e-08
+        },
+        "native_generic_baseline": {
+          "median_ms": 8.306726124999999,
+          "ducc_median_ms": 8.374070166666666,
+          "median_ratio_to_ducc": 0.9903568151039216,
+          "paired_ratio_min_max": [
+            0.9718055273118094,
+            0.9919580275390177
+          ],
+          "max_relative_l2_vs_ducc": 0.0001891436924736675
+        },
+        "native_generic_residual": {
+          "median_ms": 18.706476000000002,
+          "ducc_median_ms": 8.374070166666666,
+          "median_ratio_to_ducc": 2.226910092220272,
+          "paired_ratio_min_max": [
+            2.18247556152748,
+            2.241666134435105
+          ],
+          "max_relative_l2_vs_ducc": 0.00018975161386166513
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "backend": "production_parent",
+          "backend_median_ms": 6.515513875,
+          "ducc_median_ms": 8.571219,
+          "ratio_to_ducc": 0.7601618713744218,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 3.878762528687453e-08,
+            "absolute_l2": 3.4801116406383687e-06,
+            "max_absolute": 5.960464477539063e-08,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 8.329557999999999,
+          "ducc_median_ms": 8.571219,
+          "ratio_to_ducc": 0.9718055273118094,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.0001891436924736675,
+            "absolute_l2": 0.01697039097038195,
+            "max_absolute": 0.0005021989345550537,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 18.706476000000002,
+          "ducc_median_ms": 8.571219,
+          "ratio_to_ducc": 2.18247556152748,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.00018975161386166513,
+            "absolute_l2": 0.017024935023628732,
+            "max_absolute": 0.00046947598457336426,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "production_parent",
+          "backend_median_ms": 6.511903125,
+          "ducc_median_ms": 8.374070166666666,
+          "ratio_to_ducc": 0.7776270075835883,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 3.878762528687453e-08,
+            "absolute_l2": 3.4801116406383687e-06,
+            "max_absolute": 5.960464477539063e-08,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 8.306726124999999,
+          "ducc_median_ms": 8.374070166666666,
+          "ratio_to_ducc": 0.9919580275390177,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.0001891436924736675,
+            "absolute_l2": 0.01697039097038195,
+            "max_absolute": 0.0005021989345550537,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 18.7718695,
+          "ducc_median_ms": 8.374070166666666,
+          "ratio_to_ducc": 2.241666134435105,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.00018975161386166513,
+            "absolute_l2": 0.017024935023628732,
+            "max_absolute": 0.00046947598457336426,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "production_parent",
+          "backend_median_ms": 6.506520625,
+          "ducc_median_ms": 8.3561345,
+          "ratio_to_ducc": 0.7786519741873471,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 3.878762528687453e-08,
+            "absolute_l2": 3.4801116406383687e-06,
+            "max_absolute": 5.960464477539063e-08,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 8.27555475,
+          "ducc_median_ms": 8.3561345,
+          "ratio_to_ducc": 0.9903568151039216,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.0001891436924736675,
+            "absolute_l2": 0.01697039097038195,
+            "max_absolute": 0.0005021989345550537,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 18.608360249999997,
+          "ducc_median_ms": 8.3561345,
+          "ratio_to_ducc": 2.226910092220272,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.00018975161386166513,
+            "absolute_l2": 0.017024935023628732,
+            "max_absolute": 0.00046947598457336426,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        }
+      ]
+    },
+    {
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "spin": 0,
+        "operation": "synthesis",
+        "threads": 8
+      },
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "backends": {
+        "production_parent": {
+          "median_ms": 0.9787106956521738,
+          "ducc_median_ms": 1.227084119047619,
+          "median_ratio_to_ducc": 0.8033790987883425,
+          "paired_ratio_min_max": [
+            0.775242446453808,
+            0.8076677155938866
+          ],
+          "max_relative_l2_vs_ducc": 3.878762528687453e-08
+        },
+        "native_generic_baseline": {
+          "median_ms": 1.23538640625,
+          "ducc_median_ms": 1.227084119047619,
+          "median_ratio_to_ducc": 1.0007361186444248,
+          "paired_ratio_min_max": [
+            0.9967013199228352,
+            1.0253998773252462
+          ],
+          "max_relative_l2_vs_ducc": 0.0001891436924736675
+        },
+        "native_generic_residual": {
+          "median_ms": 2.72144525,
+          "ducc_median_ms": 1.227084119047619,
+          "median_ratio_to_ducc": 2.2207310183776556,
+          "paired_ratio_min_max": [
+            2.2045317503980804,
+            2.227178974593138
+          ],
+          "max_relative_l2_vs_ducc": 0.00018975161386166513
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "backend": "production_parent",
+          "backend_median_ms": 0.9570194999999999,
+          "ducc_median_ms": 1.2344776842105263,
+          "ratio_to_ducc": 0.775242446453808,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 3.878762528687453e-08,
+            "absolute_l2": 3.4801116406383687e-06,
+            "max_absolute": 5.960464477539063e-08,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 1.23538640625,
+          "ducc_median_ms": 1.2344776842105263,
+          "ratio_to_ducc": 1.0007361186444248,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.0001891436924736675,
+            "absolute_l2": 0.01697039097038195,
+            "max_absolute": 0.0005021989345550537,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 1,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 2.72144525,
+          "ducc_median_ms": 1.2344776842105263,
+          "ratio_to_ducc": 2.2045317503980804,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.00018975161386166513,
+            "absolute_l2": 0.017024935023628732,
+            "max_absolute": 0.00046947598457336426,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "production_parent",
+          "backend_median_ms": 0.9787106956521738,
+          "ducc_median_ms": 1.2182426666666668,
+          "ratio_to_ducc": 0.8033790987883425,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 3.878762528687453e-08,
+            "absolute_l2": 3.4801116406383687e-06,
+            "max_absolute": 5.960464477539063e-08,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 1.249185880952381,
+          "ducc_median_ms": 1.2182426666666668,
+          "ratio_to_ducc": 1.0253998773252462,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.0001891436924736675,
+            "absolute_l2": 0.01697039097038195,
+            "max_absolute": 0.0005021989345550537,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 2,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 2.705389277777778,
+          "ducc_median_ms": 1.2182426666666668,
+          "ratio_to_ducc": 2.2207310183776556,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.00018975161386166513,
+            "absolute_l2": 0.017024935023628732,
+            "max_absolute": 0.00046947598457336426,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "production_parent",
+          "backend_median_ms": 0.9910762272727272,
+          "ducc_median_ms": 1.227084119047619,
+          "ratio_to_ducc": 0.8076677155938866,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 3.878762528687453e-08,
+            "absolute_l2": 3.4801116406383687e-06,
+            "max_absolute": 5.960464477539063e-08,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_baseline",
+          "backend_median_ms": 1.2230363611111112,
+          "ducc_median_ms": 1.227084119047619,
+          "ratio_to_ducc": 0.9967013199228352,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.0001891436924736675,
+            "absolute_l2": 0.01697039097038195,
+            "max_absolute": 0.0005021989345550537,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        },
+        {
+          "round": 3,
+          "backend": "native_generic_residual",
+          "backend_median_ms": 2.73293595,
+          "ducc_median_ms": 1.227084119047619,
+          "ratio_to_ducc": 2.227178974593138,
+          "error_vs_ducc": {
+            "output_values": 272538,
+            "relative_l2": 0.00018975161386166513,
+            "absolute_l2": 0.017024935023628732,
+            "max_absolute": 0.00046947598457336426,
+            "reference_rms": 0.1718646082623544,
+            "finite": true
+          },
+          "backend_execution": {
+            "backend": "rustsht",
+            "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+            "f32_lanes": 8,
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          },
+          "ducc_execution": {
+            "backend": "ducc",
+            "finite_outputs": true,
+            "repeat_consistent": true,
+            "reset_consistent": true
+          }
+        }
+      ]
+    }
+  ]
+}
