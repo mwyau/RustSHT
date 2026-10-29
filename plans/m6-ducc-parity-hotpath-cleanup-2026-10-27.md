@@ -1,324 +1,63 @@
-# M6 — DUCC parity engineering and repository consolidation
-
-## ACTIVE OWNER OVERRIDE — 2026-10-29: close the native-f32 DUCC gap
-
-The reusable guarded f32-I/O/f64-internal scalar-synthesis backend remains in
-production on the four measured GL T720 spin-0 synthesis cells at
-`0.775–0.961x` native-f32 DUCC; conversions and writeback are included. The
-Stage B 16-cell diagnostic and production evidence remain in the [single M6
-ledger](../reports/DUCC_PARITY_M6.md).
-
-Three isolated native-f32 dual-channel reflected spin-1 candidates are now
-rejected. V1 activated on all blocks but made q8 2.196x/3.145x slower than
-parent. V2 checked packet accumulation reduced some q1 latency, but q8 remained
-2.019x/2.545x parent. V3 fused the four coefficient rows and proved the new
-packet path handled 425k–524k full-cell packets without decline, but q8 remained
-1.996x/2.585x parent and q1 showed no substantial gain. Each remains tens of
-multiples slower than DUCC, and candidate random-fixture error remained worse
-than parent. Exact patches, route counts, whole-call timings, and the V1
-Callgrind attribution are in the [V1](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md),
-[V2](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v2-packet-scale/README.md),
-and [V3](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v3-fourrow/README.md)
-evidence packages.
-
-Stop native-f32 reflected spin-1 leaf variants. The reusable f32-I/O/f64-
-internal spin-1 production adapter was evaluated on current source parent
-`f66ff4ed`: full T720 q1 passed at `0.973x` DUCC in 15 pairs, but reduced q1,
-full q8, and reduced q8 missed at `1.654x`, `1.328x`, and `1.161x`. Keep its
-patch isolated. A 15-pair protected f64 T1023 spin-1 q8 control showed no
-repeatable regression. Callgrind and phase profiles are in the [single M6
-ledger](../reports/DUCC_PARITY_M6.md) and [candidate package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-f64-internal-backend-v1/README.md).
-
-Stage A is complete on exact parent `3d46caaf89a8fcd3796fe43c49aa8ef82e481cad`.
-The archived `49295a89` reflected-ring patch is rejected: its normal f32 T720
-public route is preempted by the accepted f64 sidecar, q1 scalar-analysis
-controls repeat 1.1% regressions, q1 spin-1 synthesis regresses 1.7%, and the
-protected f64 T1023 spin-1 q8 path regresses 6.3% over 30 pairs. Keep the patch
-isolated. The full-source route census, 15-pair T720 scalar-synthesis matrix,
-adjacent controls, tests, fixture hashes, and binaries are in the [current
-source Stage A evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
-
-The corrected current-source direct-spectrum analysis screen used explicit
-x86-64-v3 flags for all four q1/q8 full/reduced cells and 15 interleaved
-parent/candidate/DUCC comparisons per cell. Candidate/DUCC is `1.049x` reduced
-q1, `1.035x` full q1, `1.041x` full q8, and `0.973x` reduced q8 with its
-interval crossing parity. The direct view improves promoted-spectrum q8 by
-9.4%/11.6%, but q1 remains neutral and the route is test-only. The direct
-route's f64 recurrence/gather accounts for about 79–89% of the profiled
-work. Reusable workspace capacity ranges from 15.1 MB to 56.2 MB, including an
-unused full-size f64 spectrum buffer; q8 also makes one small warm-call
-allocation on this route, the promoted route, and the native route. See the [corrected direct-
-spectrum evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
-
-The isolated Stage C scalar-analysis tile-512 screen is complete and rejected.
-At exact source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, the 15-pair
-direct-spectrum screen improved its tile-256 parent by only about 1%; three
-of four q1/q8 full/reduced cells remained slower than native-f32 DUCC. Only
-reduced q8 passed the diagnostic parity comparison. Three-pair native-f32 and
-protected f64 T1023 spin-1 synthesis controls showed no established regression,
-but do not support production promotion. The exact evidence and candidate patch
-are in the [tile-512 package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md).
-
-The current-source Stage C profile is complete at exact parent
-`d507297c2c7cdc777557e0b1dcc08813aae92de5`. Callgrind attributes 30.3% of
-process Ir to `FusedScaledScalarAnalysisPair<true,false>` and 16.6% to the
-ordinary fused suffix; executed AVX2 inspection confirms the ordinary suffix
-already uses fused four-double vectors without YMM spills. Test-only counters
-recorded 723,324 ordinary suffix pair steps, no counted two-pair scaled-prefix
-advances, and no mixed-suffix steps; one-pair early returns are not counted.
-This is instruction attribution, not a timing comparison or an optimization.
-See the [profile package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
-
-**NEXT:** in a fresh isolated worktree, distinguish scaled one-pair early
-returns from ordinary promotions in `fused_scalar_analysis_pair_block_impl`
-and `FusedScaledScalarAnalysisPair::with_simd` in
-`src/legendre/scalar_paired/analysis.rs`. Only test a fast-promotion variant
-if this route census identifies a substantial common path; reuse
-`prepare_analysis_scale_corrections` and `promote_analysis_pair_to_ordinary`
-with the checked scaled fallback intact. Begin with all four GL T720 direct
-f32-spectrum/f64-recurrence cells against parent and native-f32 DUCC. Do not
-repeat the rejected mask substitution, block-wide scan, or whole-block replay
-variants unchanged. M6 remains open.
-
-## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
-
-The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and
-checked native-f32 packet leaf remain in production. The later corrected
-scaled-prefix-to-fused-suffix candidate at exact parent `2b531d73` found no
-safe nonzero-exponent handoff and caused a repeatable adjacent f32
-scalar-analysis regression. This is a quantified blocker for that transition;
-do not repeat either suffix trial unchanged. Scalar synthesis remains far from
-DUCC at **32.60×/36.12×** full and **21.84×/42.15×** reduced q1/q8 on exact parent 746c7e60. The latest exponent-correction suffix screen completed useful work but slowed all four cells by 8.2–27.0% and the Legendre stage by 7.1–26.9%; see the linked screen in the single ledger. Do not repeat either suffix route unchanged.
-
-The owner's next priority after that blocker is the other native-f32 transform
-families, before returning to the remaining f64 gaps. A bounded native-f32
-scalar-analysis accumulation leaf has now been accepted on exact parent
-`4770e1c7504d084a979a62ca0d8ef57e9fd293f8`. Across fifteen paired comparisons
-per cell, its candidate/DUCC ratios are **32.44×/26.73×** full and
-**24.37×/19.06×** reduced q1/q8. All remain GAP. The candidate lowers first-call
-Callgrind Ir by 21.5% full and 31.1% reduced; the f64 analysis override and
-scaled exceptional callback remain unchanged. Protected f64 GL T1023 spin-1
-synthesis did not show a meaningful regression. Exact timings, numerical
-errors, per-worker counts and AVX2 disassembly are in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md) and
-[candidate evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-analysis-simd-4770e1c7/README.md).
-
-An earlier q1 profile at source `0f821099` measured full GL T720 f32 spin-1
-synthesis at 22.433B Rust versus 520.827M pinned-DUCC Ir (43.07x), and spin-1
-analysis at 15.752B versus 430.972M (36.55x). The synthesis visitor makes two
-indirect `scaled_basis_value_f32` calls for each of 161.324M useful
-degree-latitude terms. DUCC's high-Lmax spin-1 route converts to two scalar
-channels, evaluates 361 north/equator ring records for this 721-ring grid,
-and mirrors the results; Callgrind confirms the scalar AVX2 double-FMA kernel
-runs while the spin kernel does not. Rust's f32 `supports_paired_spin` policy
-keeps this transform on the general spin callback.
-
-The narrow f32 spin-1 dispatch into the existing separate-channel paired-scalar
-path was screened at exact parent `092fe72f` and was not promoted. The initial
-three-pair matrix was mixed; a 15-pair reduced-q8 extension gave paired
-candidate/parent median `1.006`, 95% bootstrap interval `[0.823, 1.036]`, and
-only 6/15 candidate-faster pairs. The run did not capture separate-route
-success counts or candidate-specific instruction attribution. Exact paired
-timings and the retained patch are in the [single M6 ledger](../reports/DUCC_PARITY_M6.md)
-and [screen report](../reports/data/ducc-parity-m6-2026-10-28/f32-spin1-paired-scalar-screen-092fe72f/README.md).
-
-A current-parent test-only route census later showed that this one-gate
-candidate left the f32 paired-scalar route inactive: its scalar scratch was
-empty and the f32 prepared-block hook returned `Ok(false)`. An isolated
-adapter using the shared prepared f32 kernel did improve q1, but slowed q8
-(candidate/parent `1.018` full and `1.417` reduced); reject the unconditional
-route. Its counts and three-pair screen are in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md).
-
-The current-source full-mmax f32 spin-1 analysis baseline at `e094d4f4` is
-36.932x/35.138x DUCC q1/q8 after the accepted scalar-analysis leaf; all cells
-remain GAP. Exact paired timings and numerical checks are in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md).
+# M6 — Native f32/f64 generic execution and verified DUCC parity
 
-The exact scalar-synthesis source is `092fe72f` (latest dev head `e094d4f4`
-adds evidence only). Matched parent/DUCC
-ratios are 32.08×/36.94× full and 22.77×/42.43× reduced q1/q8. A 30-sample
-test-only phase profile puts 99.68–99.82% of the call in Legendre recurrence
-and spectral accumulation.
-
-The scaled-prefix-to-fused-suffix route is a measured blocker. The production
-paired-synthesis and scalar-transform source blobs at `092fe72f` are identical
-to exact suffix-screen parent `746c7e60`. That isolated candidate completed
-13.695M–33.598M checked suffix contributions per cell, yet regressed all four
-whole-transform cells by 8.2–27.0% and the Legendre stage by 7.1–26.9%.
-Recurrence-state declines were zero; later coefficient/product/output checks
-caused 159–940 block declines, and another 93–131 blocks found no transition.
-Declined work replayed through the original fallback. Do not repeat that
-block-check/replay route unchanged; keep the exact polar, subnormal, nonfinite,
-overflow and tail fallback.
-
-The separate f32-I/O/f64-internal diagnostic at transform source `54b166f2`
-measured the existing f64 reflected order-major route at 0.746–0.779× DUCC;
-forcing that build through the all-ring paired route cost 3.714–13.442× DUCC.
-This identifies a large dataflow cost beyond native-f32 exponent range. After
-this documented suffix blocker, continue with the remaining native-f32
-scalar/spin families, then return to the reflected-ring scalar-synthesis
-opportunity without changing scalar-analysis or f64 dispatch. See the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md), [exact baseline
-evidence](../reports/data/ducc-parity-m6-2026-10-28/f32-scalar-synthesis-baseline-092fe72f/README.md),
-[suffix screen](../reports/data/ducc-parity-m6-2026-10-28/f32-scaled-prefix-suffix-746c7e60/README.md),
-and [precision diagnostic](../reports/data/ducc-parity-m6-2026-10-28/f32-internal-double-current-source/README.md).
-M6 remains open.
+**Active owner direction (2026-10-29).** This plan supersedes every earlier M6 implementation override, including requests to optimize an f32-input/f64-internal backend. The prior full M6 plan is preserved as [historical evidence](archive/m6-pre-native-generic-2026-10-29.md); historical NEXT instructions are not active. Read [AGENTS.md](../AGENTS.md) first for session, numerical, and Git rules.
 
-## HISTORICAL OWNER OVERRIDE — 2026-10-28: DUCC algorithmic execution parity first (superseded above)
+## Durable target and current baseline
 
-**Continue native-f32 GL T720 scalar synthesis before returning to f64.** Preserve the accepted 32-ring scheduler (`335ce4c8`) and scaled-fallback packet leaf (`acc625d7`; current HEAD `2b531d73`). At that exact parent, matched Rust/DUCC medians are **33.37× / 34.94×** full mmax q1/q8 and **22.75× / 40.42×** reduced q1/q8; all four remain **GAP**. The guarded zero-exponent prefix-to-fused-suffix candidate at earlier parent `ef11ce0a` was rejected after regressing three cells and raising full-q1 Callgrind work by 4.77%. A later corrected packet suffix screen at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but found no safe nonzero-exponent handoff; it was rejected after 15-pair adjacent f32 scalar analysis showed a repeatable 3.9% regression in q1 and q8. Details for both screens are in the [single active ledger](../reports/DUCC_PARITY_M6.md) and their linked evidence. Continue toward a measured algorithmic reduction, not another isolated 1–3% shortcut. A single-digit Legendre-stage ratio is an intermediate target, not an M6 completion criterion.
-
-### Grounded algorithm difference
+Implement the same **optimized mathematical transform algorithms** as Rust generics specialized for native f32 and f64. Both precisions must execute their own native spectral buffers, FFT, Legendre recurrence/accumulation, and output storage. No f32-to-f64 transform-sidecar architecture, nested f64 plan for an f32 request, or second maintained numerical algorithm. Small precision-specific SIMD leaves, numerical scaling policies, and plan-time constants are allowed.
 
-Pinned DUCC 0.42.0 (`42ce8ab5`) in `src/ducc0/sht/sht_inner_loop.h` uses `init_lambda` → `iter_to_ieee` → `calc_alm2map` → `alm2map_kernel`: advance the scaled paired-recurrence prefix, accumulate through the scaled-to-ordinary transition, apply a one-time correction to the remaining recurrence states, then execute the degree suffix as an unrolled fused SIMD recurrence/accumulation loop. `src/ducc0/sht/sht.cc::alm2leg` dynamically schedules harmonic orders and batches active latitudes. DUCC's f32 input/output adapter uses f64 internally for the Legendre work.
+Match or beat pinned native DUCC 0.42.0 at `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` in warm whole-transform time for equivalent operations, independently per required cell (`Rust/DUCC <= 1`, with credible uncertainty); retain independently validated numerical correctness and protected f64 performance. M6 remains OPEN.
 
-RustSHT already has shared f32/f64 recurrence mathematics and a native-f32 fused normal-range SIMD kernel. But `src/legendre/scalar_paired/synthesis.rs::synthesize_paired_scalar_order_prepared_f32` enters that kernel only on initially all-normal blocks. Initially scaled blocks keep per-degree callback/scaling work; `F32SynthesisAccumulator` and the new packet leaf only reduce some of that cost. Exact-parent route counters estimate 45.164M / 18.740M full/reduced fallback contributions, 10.195M / 3.213M with nonzero exponent, with about 5.001M / 1.560M nonzero-exponent contributions eligible for packet SIMD. Historical matched whole-call Callgrind was ~8.37B Rust vs ~0.253B DUCC Ir **at its recorded earlier source**, not current-HEAD time or cycles. The same recurrence equations do not guarantee the same execution strategy, cache behavior, instruction counts, or numeric range.
+**Evidence at decision time (not native-f32 parity):**
+- Production GL T720 f32 scalar synthesis currently uses a guarded **f64 child-plan and conversion sidecar**, passing four full/reduced q1/q8 cells at 0.775–0.961x native DUCC. It is **temporary technical debt**, not the desired final architecture. See [production evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
+- Native-f32 scalar analysis and spin-1 transforms remain far from DUCC. Isolated f32-I/O/f64-recurrence analysis and spin diagnostics are near parity in some cases but do **not** prove that a native-f32 instantiation is fast.
+- The latest diagnostic scalar-analysis tile-512 change yielded about 1% improvement and was rejected; its subsequent Callgrind attributed 30.3% of process Ir to a checked scaled f64 analysis path and 16.6% to ordinary fused suffix work. These profiles are clues, **not** license to continue optimizing the f64-internal f32 route. See [tile report](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md) and [profile](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
+- The earlier reflected native-f32 scalar-synthesis patch was rejected on current source due to adjacent and f64 regressions. Native-f32 reflected spin-1 V1–V3 and f64 spin-1 loop tiling also regressed. Do not repeat those exact designs unchanged. Provenance is in the [M6 ledger](../reports/DUCC_PARITY_M6.md).
 
-### Historical required bounded execution — updated after suffix rejection
-
-1. **Confirm the comparison.** Fetch/reconcile `origin/dev`; pin Rust parent and DUCC SHAs. Verify geometry, input/output types, `phi0`, sampling, ISA, affinity, q1/q8, and warm-call boundaries. Measure Legendre-only **and** whole-transform times separately, with useful degree×latitude work counts, instruction references, and inspected executed SIMD loops. Report CPU time/wall time separately. Do not add overlapping inclusive Callgrind counters.
-2. **Instrument scaled→normal transitions before writing the candidate.** For active eight-lane packets and orders, record first degree where both recurrence states and accumulated output can be safely converted to normal native f32; later range declines; usable suffix contribution count/length; polar-mixed lanes, tails, zero/nonzero exponents, exceptional values, and required retry/rollback. Distinguish raw exponent eligibility from the full finite/subnormal/overflow proof. Compare full/reduced GL T720 q1/q8, plus a small analytic/extreme fixture. Preserve compact evidence; do not instrument timed production binaries.
-3. **Suffix handoff screens completed and rejected.** Exact parent `ef11ce0a` was compared with an isolated guarded all-zero-exponent handoff. The candidate split each 32-ring fallback group into 8-lane traversals and generalized the shared fused kernel for arbitrary suffix starts. It slowed full q1/q8 and reduced q1, and increased full-q1 Ir by 4.77%; reduced q8 was inconclusive at three pairs. A corrected packetized route at exact parent `2b531d73` moved up to 61.2M terms into fused suffixes but still made no nonzero-exponent transition. It was rejected after 15-pair adjacent f32 scalar-analysis comparisons showed repeatable 3.9% q1/q8 regressions; reduced synthesis q8 was also neutral. Do not restore either candidate unchanged. Evidence is in the [first suffix rejection report](../reports/data/ducc-parity-m6-2026-10-28/f32-zero-exponent-suffix-screen/README.md) and [corrected-transition screen](../reports/data/ducc-parity-m6-2026-10-28/f32-corrected-transition-2b531d73/README.md).
-4. **Next measure synthesis-only reflected-ring reuse.** DUCC's measured GL route computes both hemispheres from northern-ring recurrence work; the prior work census shows approximately half the useful recurrence updates of Rust's all-ring route. Design a scoped experiment that reuses the existing shared native-f32 recurrence and changes only scalar synthesis routing/accumulation. Keep scalar analysis and f64 dispatch untouched. Do not restore the prior duplicated reflected f32 implementation, which regressed reduced scalar-analysis q8. First collect current-source route/work counts and Legendre-stage timing; implement only if the measured work reduction survives polar, tail, and numerical constraints.
-5. **Use the f32-I/O / f64-internal run as a diagnostic only.** It showed near-DUCC timing on the reflected order-major route and several-times-DUCC timing when forced through the all-ring paired route. This separates large dataflow and exponent/codegen effects; it does not justify widened production arrays or a second maintained implementation.
-6. **Gate any promotion.** Start with 3 randomized/interleaved fresh-process parent/candidate/DUCC q1/q8 pairs; use 15+ paired runs for consequential acceptance. Cover full/reduced f32 T720 scalar synthesis, adjacent f32 scalar analysis and spin-1 analysis/synthesis, and protected f64 GL T1023 spin-1 synthesis q1/q8. Re-run focused tests for low-mode and sectoral analytic fields, coefficient recovery, adjoints, poles, tiny/subnormal/large/nonfinite cases, SIMD tails, finite/repeated/poisoned workspace, capacity, transactional decline and output reset. Do not weaken tolerances. Bitwise equality is preferred but not mandatory if the mathematical order changes; independently substantiate any numerical difference. Protect existing f64 speed wins and report any control regression.
-7. **After measurable algorithmic improvement**, extend the same investigation to the f32 analysis/spin-1 families, then return to smaller f64 gaps. If the measured dataflow change does not reduce whole-transform work, preserve negative evidence and change algorithmic hypothesis instead of performing repeated minor tuning. Update only the single live per-cell ledger at `reports/DUCC_PARITY_M6.md` with exact revision, q1/q8 and PASS/GAP/INCONCLUSIVE/UNMEASURED. Profiling, one cell, or docs alone never completes M6.
+## Milestone 0 — Bound and archive documentation
 
-**Execution checkpoint — 2026-10-28:** the accepted native-f32 fallback
-packet vectorization lowered scaled-helper calls and whole-call q1 Ir, with
-15-pair whole-transform gains in all four cells; it did not add a recurrence
-suffix or establish parity. The guarded all-zero-exponent suffix candidate was
-then screened on exact parent `ef11ce0a` and rejected after three of four
-whole-transform cells regressed and q1 full Ir rose 4.77%. The earlier
-37.62M/33.88M full and 16.70M/15.07M reduced suffix-slot counts are route
-opportunity, not evidence that the candidate completed that work. DUCC's
-reflected-ring work reduction is now the next measured hypothesis. Keep the
-existing scaled path for polar, mixed, exceptional, tail, and declined cases;
-do not restore the rejected shared early-stop visitor or duplicate reflected
-implementation.
+Keep [AGENTS.md](../AGENTS.md) short and stable. This file is the **only active implementation plan** for M6. Keep [reports/DUCC_PARITY_M6.md](../reports/DUCC_PARITY_M6.md) as a compact current-source per-cell matrix with links, and [reports/PROGRESS.md](../reports/PROGRESS.md) at five substantive checkpoints.
 
-**Operations:** Continue directly on `dev`. No main merge or force-push; reconcile remote before push and commit verified meaningful code slices. Preserve exact experiment evidence before cleaning only owned inactive scratch; do not erase parked worktrees. Main Luna Max is the only production writer; **no Sol or Sol reviewer under any circumstances**. On quota/blocker, checkpoint tested code, concise NEXT and evidence, then stop.
+Move superseded narrative plans and completed/rejected experiment reports into a discoverable archive with a small index: decision, parent/candidate/DUCC SHAs, validation scope, source patch/checksums, benchmark summary, and limitations. Preserve unique evidence and reproducibility. Deduplicate only after checking contents and references. Do not delete independent reference fixtures, necessary tests, unpublished work, or another agent's scratch. Do not rewrite Git history. Make one bounded documentation-cleanup milestone, then return to implementation.
 
----
+## Milestone 1 — Genericize fast order-major/reflected scalar synthesis
 
-## Prior owner direction — 2026-10-27 (historical, superseded above)
+Start with:
+- `src/legendre/scalar_ordered.rs`
+- `src/legendre/scalar_ordered/kernel.rs`
+- `src/legendre/scalar_paired/synthesis.rs`
+- `src/legendre/numeric.rs`, `src/legendre/mod.rs`
+- `src/transform/scalar.rs`, `src/plan.rs`, `src/workspace.rs`
 
-The generic f32/f64 fused scalar-synthesis kernel milestone is **complete**: shared recurrence/accumulation, zero-exponent paths, and native-f32 SIMD leaves are implemented and validated. Do not restart that work. Current source is `ec5d56ca29ec6ad4e34fe80443d934677b0515f8`, based on exact parent `3816adce3226a92669a5807241b03f80cb6d8cfd`, with pinned DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. It adds a checked native-f32 SIMD leaf for scaled contribution packets after accepting the separate 32-ring q8 task split. Against the exact source parent, full/reduced q1/q8 candidate/parent is `0.9783`/`0.9754` and `0.9685`/`0.9901`; the reduced-q8 result is inconclusive. Candidate/DUCC remains `36.37×`/`40.07×` full and `25.11×`/`45.32×` reduced q1/q8. All four cells remain **GAP**. The previous scheduling screen established that q1 does not execute the parallel task route, eight q8 workers were active, 12→23 jobs reduced skew, workspace grew 738 KB, and scans were small. Exact timings, numerical criteria, ring costs and worker diagnostics remain in the [current ledger](../reports/DUCC_PARITY_M6.md), [32-ring report](../reports/data/ducc-parity-m6-2026-10-27/f32-32-ring-schedule-2026-10-27/README.md), and [packet-leaf report](../reports/data/ducc-parity-m6-2026-10-27/f32-scaled-packet-leaf-2026-10-27/README.md). **Next:** measure the first normal-range transition and useful suffix length for each active eight-ring packet; only then test a bounded f32-synthesis handoff that leaves the shared f32/f64 recurrence and f64 analysis route unchanged.
+The present fast scalar-ordered/reflected kernel is specialized for f64: `Complex64`, `f64` scratch, and `S::f64s`. It already has some generic infrastructure (`ScalarOrderedScratch<T>`, disjoint spectrum output, typed fused-synthesis precision). **Genericize its order-major scheduling, north/south reflection, scaled-prefix/bulk-recurrence/accumulation algorithm once**, with small typed scalar/SIMD leaves for f32/f64. Prefer monomorphized static dispatch. Do not copy an independent f32 recurrence or add runtime precision switches in hot loops.
 
-**Fallback-screen history — 2026-10-27.** At exact parent `0677b5bf`, the all-active normal-suffix handoff was not promoted because its shared early-stop traversal slowed protected f64 T720 spin-1 analysis q8 in all three pairs. The lane-level profile found only 12.9% of mixed pair-lane contributions could fit disjoint width-eight normal suffix spans under an optimistic partition. The global min-groups-per-task-one candidate was also rejected after protected f64 GL T1023 spin-1 synthesis q8 slowed in all three pairs. These rejected candidates do not change the current route. See the [mixed-span profile](../reports/data/ducc-parity-m6-2026-10-27/f32-mixed-span-route-profile-2026-10-27/README.md), [safe-suffix screen](../reports/data/ducc-parity-m6-2026-10-27/f32-safe-suffix-handoff-2026-10-27/README.md), and [global schedule screen](../reports/data/ducc-parity-m6-2026-10-27/f32-task-grain-global-screen-2026-10-27/README.md).
+Use native f32 coefficients, f32 FFT and Fourier buffers, f32 recurrence/accumulation, and f32 map writes throughout the f32 transform. No promotion of runtime f32 inputs or whole recurrence to f64. Plan-time numerical constants may use higher precision when justified.
 
-**New owner goal — 2026-10-27 04:46 UTC.** The former Luna session's “goal achieved” applied **only** to algorithm convergence and unit-test layout. It was completed and pushed at `b7bb2ac49b3b673bd344ad1caf154e52d3130070`, with 317 workspace tests passing, 37 ignored, zero failed, and temporary builds cleaned. **This new M6 goal is not achieved, and must not be declared achieved, by clean CI, successful profiling, documentation work, or completing a handful of short screens.**
+**Critical numerical risk:** f32's narrower exponent range makes a literal f64-range substitution unsafe. Keep mantissa/exponent state and checked exceptional/sectoral/polar handling as needed, without prematurely flushing a contribution that can later be represented. Preserve correct adjoints, normalization and reset. Performance may differ significantly from the existing f64 kernel; eight f32 AVX2 lanes do not prove parity. Inspect real generated AVX2/FMA and the scaled/ordinary counts.
 
-**Current starting Git ref:** Fetch latest `origin/dev` before acting (at this plan's creation: `7629d25a5b4df928f9237158ca3cbbb872c42e6d`). Work on `dev` directly. `main` must not be modified or merged until the owner requests it.
+First prototype in an isolated current-source worktree. Measure native-f32 GL T720 scalar synthesis full M720 and reduced M180, q1 and q8, against exact source parent and native-f32 DUCC. Validate analytic/sectoral, adjoints, extremes/subnormal, tails and poisoned/reset workspace. Reject unsafe results. If slow, attribute useful work, scaled prefix, loop structure and instruction cost **before** adding another optimization.
 
-## Historical initial execution priority override — 2026-10-27 12:41 UTC: native-f32 hot path first; fused milestone complete
+## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 
-The initial f32 scalar-synthesis implementation and matched baseline work below are complete history. The checked packet leaf has since been implemented and measured. The current next task is in the [owner direction](#prior-owner-direction--2026-10-27-historical-superseded-above): measure per-packet normal-range transition degrees and useful suffix coverage before considering a synthesis-only recurrence handoff. The older f64 GL T720 spin-1 analysis target remains the subsequent f64 acceptance gate. Overall per-cell DUCC goals are unchanged.
+After the new native generic scalar-synthesis route passes correctness and its measured acceptance gate, make a coherent production replacement and delete the now-unnecessary private implementations:
+- f32-owned nested `ShtPlan<f64>`, `F32InternalScalarSynthesisWorkspace`, conversion buffers, promotion/writeback, and sidecar-specific range guards;
+- superseded f32 scalar-synthesis visitor/dispatch paths and private compatibility wrappers no longer used by any supported operation;
+- redundant tests targeting removed private implementation details, while retaining/strengthening public mathematical and exceptional tests.
 
-### Later M6 update — fallback attribution and task-grain decision
+**No backward compatibility is required for private f32 implementations or their bitwise rounding.** Preserve the public f32 API and mathematical/error contracts. Numeric exceptional-case handling remains mandatory but belongs inside the new shared native algorithm, not a second legacy transform. Do not leave broken intermediate commits on `dev`. If parity is not yet achieved, keep the conversion sidecar identified as removal debt only until a correct replacement is ready; do not continue optimizing or generalizing it.
 
-The shared fused algorithm described below was implemented and validated; its implementation is complete. The exact-parent mixed-block profile, accepted 32-ring task-grain candidate and reduced-mmax worker profile remain the scheduling evidence. The checked scaled-contribution packet leaf is now measured at source `ec5d56ca`; the next bottleneck is repeated per-degree scaled work for millions of contributions that remain outside exponent-safe packets. Measure transition degree and suffix coverage per packet before choosing another implementation. See `reports/DUCC_PARITY_M6.md` for the single current performance ledger and the linked experiment reports for route counts, timings, numerical errors, allocation, assembly and per-worker diagnostics.
+## Milestone 3 — Native generic scalar analysis, then spin-1
 
-### Verified baseline and source
+Apply the same shared native-precision execution strategy to scalar analysis. Reuse reflected-ring traversal, order-major scheduling, fused recurrence/accumulation and typed SIMD, preserving exact S/A/S*/A* distinctions. The previous direct-f32-spectrum/f64-recurrence diagnostic achieved near DUCC parity in places, **but it is not a native-f32 result**. Do not extend that diagnostic as production architecture. Profile the **native f32** instantiation; replace/delete old analysis callback and fallback machinery only when all necessary behavior is reimplemented.
 
-Current-source matched reference: RustSHT `98adf1e6b5334021bfe6ae9abb618c6be167a822` vs pinned DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. GL T720 full `mmax=720`, `ntheta=721`, `nphi=1458`, native-f32 scalar synthesis: **q8 373.030 ms / DUCC 2.660 ms = 139.613×**; **q1 1066.473 ms / 19.079 ms = 55.222×**. GL T720 reduced `mmax=180` f32 synthesis q8 is **123.947×** DUCC, so this is not confined to the full-`mmax` fixture. Three interleaved same-source measurements; numerical max relative-L2 vs DUCC for full synthesis was `1.72342e-4`, but the timing harness itself has **no T720 numerical tolerance gate**. Existing f32 Rust integration tests passed (11/1 ignored). Preserve their numerical behavior, never increase tolerance to accept a speedup.
+Then genericize optimized spin-1 synthesis **and** analysis using shared dual scalar-channel/reflected work (and the required `lmax + 1` scalar degree for spin-1 preparation), with correct E/B↔Q/U signs, normalization, poles, exceptional values and adjoints. Preserve proven f64 wins. Do not reuse rejected f32 V1–V3 reflected-packet or f64 large-register tile designs unchanged. Remove old private f32 general-spin transform fallbacks only after verified replacement. Do not delete a necessary checked numerical fallback.
 
-The new exact-source, unmodified-code Rust-only q8 Callgrind profile at source `98adf1e6` reports **13,863,893,209 Ir** for one warm transform; evidence in `reports/data/ducc-parity-m6-2026-10-27/f32-scalar-synthesis-profile-q8-2026-10-27/{README.md,profile-summary.json}`. Major source-attributed costs include `src/legendre/scalar.rs::multiply_complex_scaled_f32`, `multiply_component_scaled_with_normal_factor_f32`, and the `src/legendre/scalar_paired/synthesis.rs::synthesize_paired_scalar_order_prepared_f32` callback. `fmaf` and `__powisf2` symbols also appear. **Callgrind source/inlining views can overlap; do not sum them into a claimed percentage of whole-call cost.** No matched DUCC Callgrind for this f32 case yet. The f32 timing benchmark used native Pulp V3 but *default* Rust release target CPU, whereas DUCC used x86-64-v3: run an equivalent-ISA Rust control before attributing differences to an algorithm, without pretending that alone explains 140×.
+## Acceptance, CI and reporting
 
-### Completed architecture milestone — one generic algorithm, native typed SIMD leaves (owner 2026-10-27 12:45 UTC)
+Focused matrix: GL T720 spin 0/1 × synthesis/analysis × full/reduced `mmax` × q1/q8 = **16 native-f32 cells**. Report each individually with complete Rust and pinned-DUCC milliseconds, paired ratio/uncertainty, actual executed native precision/route, numerical references, reset and adjoint checks, exact source/compiler/fixture hashes, and PASS/GAP/INCONCLUSIVE/UNMEASURED. Existing production 4/4 conversion-backend passes do **not** count toward native-f32 architectural completion.
 
-The shared normal-range scalar-synthesis recurrence/accumulation kernel and native-f32 SIMD leaf described here are implemented and validated. The design notes below preserve mathematical provenance; they do not reopen that milestone. The scaled-contribution packet leaf is also implemented at `ec5d56ca`; the current bounded task is per-packet transition/suffix attribution as described at the top of this plan.
+Start with three interleaved matched pairs; extend consequential acceptance to 15+. Include adjacent f32 controls and protected **f64 GL T1023 spin-1 synthesis q1/q8**. Confirm compiler settings, CPU affinity, ISA and benchmark boundaries. Keep counters/profilers out of timed binaries. Never mistake Callgrind Ir for cycles or infer speed from kernel-only numbers.
 
-**Do not treat a one-line `exponent == 0` fast branch as the destination.** The critical architectural goal is to **share the *fast* synthesis algorithm between f32 and f64**, instantiated at compile time through Rust generics/traits/monomorphization, while allowing *small and focused* f32/f64 Pulp SIMD/normalization and range-policy leaves. **Never** compute an entire f32 transform using f64 arrays or widen every coefficient to f64 in the hot path just to reuse code. Keep f64 optimized codegen and performance.
+Extend validated native correctness/performance to representative T255/T511/T1023, GL/CC/F1, full/reduced and oversampled, odd/even longitude/Nyquist, adjoints and q2/q4 as warranted. Run formatting, Clippy, feature configurations, Rust integration and Python tests. Record pre-existing build failures separately; do not add new ones or relax tolerances.
 
-**Confirmed in current source:** `scalar_paired::for_each_y_lm_paired_status_dispatched_typed<T,F>` already shares the mathematical recurrence and ring traversal. But `src/legendre/scalar_paired/synthesis.rs::synthesize_paired_scalar_order_prepared_f32` feeds every degree into a callback, then loops through scalar latitude lanes and calls `scalar::multiply_complex_scaled_f32` and separate normal-factor/exception handling per contribution. The f64 `FusedSynthesisBlock` and `FusedPreparedSynthesisPairBlock` compute recurrence and coefficient accumulation **together inside one register-resident SIMD loop** with type-specific Pulp `f64s` operations and a distinct checked/scaled fallback. The huge f32 whole-transform gap and 13.86B source-attributed Ir make **missing f32 fused accumulation and scaling orchestration** a serious mechanism to test; the exact share of time is **not yet causally demonstrated**. Avoid claiming an ordinary generic recurrence fixes SIMD fusion automatically.
-
-**Design direction:**
-1. **Share the owner/control flow**, not just small helper methods: one paired normal-range preparation and safety decision, one fused degree × latitude/block traversal, one transactional fallback contract and scratch/shape policy. Use compile-time generic `T` and a **narrow precision-policy trait** for typed SIMD vector conversion/FMA/complex accumulation, safe sectoral seed and exponent handling. Prefer existing `LegendrePrecision` / `PairedScalarRecurrencePrecision` / `ShtScalar` surfaces; add a new trait only if it eliminates genuine algorithm duplication rather than creating a framework.
-2. Preserve the **existing f64 optimized `FusedSynthesisBlock` / prepared-pair codegen as the performance oracle**. First add the analogous native-f32 fused normal-range path using Pulp `f32s` lanes (8 lanes on AVX2 vs 4 f64 lanes), with no callback or scalar complex scaling per degree/latitude. Then converge mathematically identical **scheduling, degree loop, accumulation equation, dispatch and fallback** into one compile-time generic implementation **if the f64 and f32 end-to-end benchmarks stay sound**. It is acceptable to retain short optimized typed SIMD leaves for each precision; it is **not** acceptable to copy an entire f64 algorithm into a new f32 module and maintain both indefinitely.
-3. The fast path must prove its validity **before mutating outputs**: normal/representable seed and coefficient range, zero or safely bounded scale exponents, finite accumulations, polar/small-sine constraints and trustworthy ring/order masks as applicable. Real f32 has a narrower exponent/dynamic range: do not blindly reuse f64 thresholds or assume every lane is normal. Keep the existing f32 scaled per-degree callback path as the correct **slow exceptional fallback**, and preserve transactional decline/replay, signed zeros, NaNs, infinities, subnormals, adjoints and poisoned workspace behavior. When a batch contains mixed normal and scaled lanes, explore masked/compacted SIMD vs fallback **only after measuring the distribution**; never silently drop exceptional work.
-4. Instrument normal-lane / zero-exponent / fallback frequency, actual productive SIMD lanes and per-degree callback count **without timing instrumentation contamination**. Profile the emitted f32 AVX2/FMA in the new fused inner loop: no per-contribution `__powisf2`, scalar `fmaf` helper chains, repeated exponent splitting, or callback dispatch on ordinary safe lanes. Confirm matched q1/q8 whole-call gains, not just fewer source lines or lower Callgrind Ir. The old f64 fast kernel is a *reference design*, not permission to replace proven f64 optimizations with slower generic code.
-5. **Stage implementation**, not another sweeping refactor: (A) evidence/branch eligibility; (B) one bounded fused f32 safe-lane kernel with fallback + rigorous tests; (C) accurate whole-transform parent/candidate/DUCC measurement and protected f64 controls; (D) consolidate f32/f64 fast algorithm source where it measurably preserves f64 speed and removes duplicative control-flow; (E) extend this pattern to f32 scalar analysis and spin-1 only after the synthesis win is demonstrated. One owner of a mathematical algorithm is the maintainability criterion; a common file containing two whole algorithms is not sufficient.
-6. **Never reintroduce retired `scalar_f32.rs` or `spin_f32.rs`**; keep the test layout `<module>/tests.rs` and avoid destabilizing public Rust/Python APIs. Small precision-specific SIMD leaves are intentional. No extra framework/runtime dependency and no Sol agent or reviewer.
-7. The 2× f32 whole-call speed milestone is a **minimum intermediate diagnostic**, **not** a reason to stop if the f32/DUCC ratio remains tens of times slower. Target a transformative reduction from 139.6× for GL T720 scalar synthesis q8, then work toward `<=1.00×` across required cells. Maintain a clear per-cell gap ledger.
-
-### Historical first experiment — exponent-zero path completed; do not repeat
-
-The exponent-distribution instrumentation and the narrow exponent-zero fast path described in this historical screen are complete. The current scaled-arithmetic task is the separate packet-level measurement described at the top of this plan.
-
-1. Fetch `origin/dev`, inspect uncommitted/parked worktrees and `/tmp` ownership, preserve source/evidence, confirm no CPU-heavy job. Read *only* the f32 profile and its latest source functions, the M6 current-head rebaseline, `reports/PERFORMANCE_CANDIDATES.md` relevant f32 entries, and experiment hygiene. Do not perform a broad plan/history review.
-2. In **isolated instrumentation only**, count calls into `multiply_complex_scaled_f32` within the prepared paired f32 synthesis callback, grouped by exponent **0 vs nonzero**, normal/zero/subnormal/nonfinite coefficient and basis, fast normal-product success vs exceptional fallback, and occurrence by m/latitude block if useful. Check whether `__powisf2`/`fmaf` originates in an actual dominant path; inspect optimized assembly/Callgrind executed PCs for these functions and their caller. Explain the cost **per contribution**, not merely the inclusive Rayon symbol. Do not commit general-purpose profiling counters to production.
-3. **Conditional on evidence:** if exponent 0 is common and the multiply is safe with unchanged numerical semantics, implement a *minimal* `exponent == 0` fast case using the exact native f32 multiplication behavior and preserving signed zeros, NaNs, infinities, subnormals, overflow/underflow, and fallback behavior. **Avoid bypassing an existing guard just because an input is finite**. Preserve the old path whenever proof fails; if using any additional normal-range test, measure whether its branch/scan cost defeats the gain. No `unsafe` without demonstrated need and invariant tests. Do not add dynamically allocated work per coefficient.
-4. If zero-exponent frequency is low, or that candidate gives negligible/mixed results, **do not repeat variations of the same tiny branch**. Profile/prevent repeated per-lane scaled-conversion and `powi`/compiler runtime calls, including whether per-ring exponent normalization can be amortized or deferred *without* changing exact/scaled semantics. Compare to DUCC's actual arithmetic and operation counts; maintain the existing shared typed f32/f64 mathematical owner. A successful redesign may require a batched/vector f32 contribution+accumulation kernel, but only if profile and tests show it is warranted. Do not copy f64 algorithms wholesale or recreate `scalar_f32.rs`.
-5. Match exact production parent/candidate/DUCC **whole transforms** at f32 GL T720 scalar synthesis q1/q8, both full and reduced `mmax`; include f32 scalar analysis and spin-1 synthesis as nearby route controls, and important protected f64 synthesis/analysis cells if common code changes. **Validate matching C++/Rust ISA**, separately retain the project default build as a production-relevant measurement. Three interleaved fresh-process comparisons for triage, then 15+ for acceptance of material wins where time/noise warrants. Record throughput, paired ratios, source/compiler/ISA hashes, CPU wait/frequency, exact output differences from parent, DUCC rel-L2/max abs, and independent f32 reference/adjoint/polar/underflow/nonfinite/workspace tests. Avoid claiming an unchanged baseline if the codegen flags changed.
-6. **Adopt only measured correct whole-transform wins** without repeatable protected-cell regressions. Commit/push one coherent source+test improvement to `dev` when validated, then the compact evidence checkpoint; cleanup exact experiment-owned `CARGO_HOME`, `CARGO_TARGET_DIR`, DUCC builds, worktrees, profile files and venv only *after* durable SHA-verified evidence preservation. If rejected, preserve a recoverable candidate patch and numerical/timing reason and advance. **No Sol of any kind.**
-7. Continue through the highest-cost native-f32 operations: scalar synthesis q1/reduced, scalar analysis, then spin-1 analysis/synthesis, with shared numerical ownership and protected f64 routing. **Target <=1.00× DUCC per supported cell** eventually; prioritize first **at least 2× whole-transform f32 speedup on a meaningful measured cell without numerical regression** as an *intermediate breakthrough*, **not goal completion**. If a sound candidate falls below that milestone, retain it if measurable and continue. Once f32 bottleneck is materially improved or blocked by quantified evidence, resume f64 GL T720 analysis and CC reduced synthesis parity work; do not leave them permanently deferred.
-
-### Quota/time, scope, cleanup, honest completion
-
-A result with no production performance change after many f64 micro-experiments is **research progress**, not goal completion. Do not declare M6 “achieved” until per-cell DUCC parity acceptance is actually substantiated. At resource limits, push verified source/evidence, record the exact next source function/hypothesis and remaining ratios, delete only confirmed-owned inactive transient builds, and stop—**never spawn a Sol reviewer, Sol agent, Sol fallback or any other model**. Main Luna Max is the sole production writer; optional Luna-only read-only benchmark worker remains constrained. Never force push or touch `main`. Repo/doc/code cleanup remains an eventual *separate* M6 phase, not the excuse to avoid f32 improvements.
-
-## Goal and measurable performance target
-
-Make RustSHT **as fast as or faster than pinned native DUCC 0.42.0**, SHA `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, on the supported **equivalent warm whole-transform** representative workload matrix, while preserving correctness, adjoints, exceptional-value safety, tested performance wins and a clean maintainable Rust repo.
-
-- **Immediate M6 target:** At source `ec5d56ca`, the checked scaled-contribution packet leaf improves three T720 f32 scalar-synthesis cells, while reduced q8 is inconclusive and all cells remain 25.11×–45.32× DUCC. Exact-parent route counts show millions of nonzero-exponent contributions outside exponent-only-safe packets. Measure each active packet's first normal-range degree and the remaining useful suffix before screening a bounded f32-synthesis-only handoff. Keep unsafe, polar and tail work on the existing exact fallback. After material f32 synthesis improvement, return to the **f64 GL T720 spin-1 analysis, full mmax, q1/q8** gaps; older figures around 1.23×/1.25× are historical, not latest-source certification. The target remains `Rust/DUCC <= 1.00` separately per cell.
-- **Next measured gaps:** f64 CC T720 reduced-mmax synthesis q1 (~1.47× DUCC, preliminary), GL T320 reduced-mmax oversampled synthesis q8 (~1.25×), GL T511 reduced q8 (~1.016×); then fill scalar and spin-1 GL/CC/F1 analysis, synthesis and true adjoints across representative T255/511/720/1023, full/reduced, exact/oversampled latitude, and q1/q2/q4/q8 as relevant.
-- **Native f32 is NOT exempt:** f32 GL T720 scalar synthesis is remeasured at source `ec5d56ca`, with 36.37×/40.07× full q1/q8 and 25.11×/45.32× reduced q1/q8. The scaled recurrence-to-suffix transition remains the measured priority. Continue to the other f32 analysis/spin-1 families after a material synthesis gain; preserve shared mathematical ownership and all protected f64 paths.
-- A representative cell is **PASS** only with numerical comparability and no supported repeatable slowdown relative to DUCC (`Rust/DUCC <= 1.00` under credible paired uncertainty). **GAP, INCONCLUSIVE, UNMEASURED, UNSUPPORTED/NOT-COMPARABLE** must be distinct. Do not average a slow cell into another cell's fast result or claim “parity” from reduced instruction count alone. A borderline ratio must not be called PASS when uncertainty remains.
-- **Protect established f64 wins**: GL T1023 spin-1 synthesis q1/q8 ~0.73× DUCC; important GL over-resolved spin-1 synthesis and CC full/reduced q8 synthesis fast paths. A new improvement must not materially degrade another important cell. Preserving f64 paths is more important than extra code uniformity.
-- Follow `plans/ducc-performance-parity-continuation-2026-10-27.md` for the larger f64/f32 matrix and `PERFORMANCE_STATUS.md` for dated source-specific results; this M6 plan governs **execution order, profiling depth and repository/documentation cleanup**, superseding completion language from the 2026-10-26 refactor plans.
-
-## Unconditional agent and hygiene constraints
-
-1. **ABSOLUTE NO SOL.** No Sol model, Sol High, Sol reviewer, review agent configured as Sol, tool delegation to Sol, or Sol quota fallback, under any circumstances. Earlier optional/single-use permissions are revoked. Main **Luna Max** alone writes production on `dev`. One previously approved **Luna-only `benchmark`** subagent may do bounded, read-only-to-production measurements without delegation if resources permit; otherwise benchmark sequentially in main Luna. No other subagents. If Luna quota expires, checkpoint/push verified work, save provenance, remove owned transient scratch and stop; never switch to Sol.
-2. **Always cleanup first:** reconcile `git status`, `git worktree list --porcelain`, active jobs, unpushed commits and `origin/dev`; check `df -h /tmp`, `df -i /tmp` and experiment scratch. Only delete **confirmed owned, inactive, evidence-saved** build targets, test venvs, DUCC objects/binaries, Callgrind/perf traces, transient worktrees and caches. Do not delete other workers' files, parked branches, shared package caches/toolchains or unique raw evidence. The last agent reports cleanup and a clean worktree at `b7bb2ac4`; still verify on this host, do not repeat blind cleanup.
-3. Each experiment gets a uniquely identified bounded scratch root (prefer `/tmp` only with space/inode headroom); use isolated `CARGO_TARGET_DIR`, local build/venv/cache/profiler files and comparison source worktrees. **After** verified committed compact reports/CSV/JSON/source SHA, immediately delete **ALL** experiment-owned compiled artifacts and worktrees for that individual run; prove absence and reclaimed size. Don't stockpile compiled baselines across trials. Coordinate CPU exclusivity; host scheduler contention makes apparent 1% wins unreliable.
-4. Fetch/reconcile before every production push. No force push, history rewrites, hard reset, overwrite of concurrent edits, `main` changes, silent removal of tracked experiments, or deleting unverified data. Commit tested meaningful source checkpoints and bounded evidence frequently; avoid docs-only commits per tiny experiment.
-5. Preserve GPL/DUCC adapted-code provenance and correct SPDX/source-revision/license notices through any split/cleanup; do not conceal mathematical API differences, numerical errors or unsupported routes.
-6. **No new runtime dependency or large framework rewrite** without a measured compelling cause. Avoid sweeping FFT reimplementation, f32/f64 re-duplication, new `*_f32.rs` owners, cosmetic file splitting, redoing the `module/tests.rs` migration, or enabling unsupported f32 paired-spin via capability flags alone. Linux/x86 AVX2 is the performance host, but Rust portability and CI on other targets must remain intact.
-
-## Phase A — exact current-head performance triage
-
-**Complete this before tuning source.** Reuse checked `scripts/benchmark_ducc_spin1_native.py`, `scripts/benchmark_ducc_full_transform_parity.py`, and `scripts/benchmark_ducc_f32_native.py`; inspect each script's real CLI options and build boundary first, **do not invent flags**. Use checked scripts/examples for identical operations/shape/precision/normalization/phase/output lengths. Confirm pinned DUCC Git hash, compiler versions, release flags, `target-cpu=x86-64-v3`/AVX2+FMA, Pulp selected backend, thread counts, fixture seed/hashes, warm-call boundary, process startup exclusion, and CPU affinity/threads. The historical f64 scalar-analysis output-length mismatch requires explicit protocol correction if seen; **never time two different mathematical problems and compare them as parity**.
-
-Run limited 3-pair interleaved current `dev` vs DUCC q1 and q8 controls for GL T720 spin-1 analysis, GL T1023 spin-1 synthesis, CC T720 reduced synthesis q1 and one GL reduced oversampled q8. Add current f32 GL T720 scalar/spin-1 analysis/synthesis q1/q8 with same native f32 DUCC reference. For timings report medians, **paired ratios**, min/max or CI, source/binary hashes, host wait/frequency distributions, finite/repeat/poisoned-reset status and accuracy vs DUCC; do not fabricate unsupported checks. Record questionable/high-wait samples without silently discarding them.
-
-Create/update **one compact, current-head per-cell ledger** `reports/data/ducc-parity-m6-2026-10-27.csv` (or JSON with a clear schema) plus `reports/DUCC_PARITY_M6.md`, with a unique cell key (precision, grid, spin, operator, T/mmax, latitude/longitude shape, threads, warm/cold) and status **PASS/GAP/INCONCLUSIVE/UNMEASURED/UNSUPPORTED**. Distinguish historical rows from fresh measured rows. This is the persistent scorecard for M6; don't build five overlapping dashboards or claim all cells have been measured after a small triage.
-
-## Phase B — cause-based profiling, Callgrind, **actual disassembly**
-
-**No speculative optimization before identifying the current bottleneck.** Start with reconfirmed f64 GL T720 spin-1 analysis q1, also examine q8's dominant route.
-
-1. **Trace real dispatch:** Follow `src/transform/spin/analysis.rs` (`analyze_spin_order_group`, `analyze_spin_scalar_reflected_order`, `try_fused_spin_scalar_analysis_pair_block`) into `src/legendre/scalar_paired/analysis.rs` and `src/legendre/spin.rs`, including ring masks, recurrence suffixes, checked scaled/polar prefix, Q/U spectrum preparation, scalar-to-spin conversion, factor prep, scratch and FFT staging. Establish actual hot specialization and event counts; don't optimize a function unused in that cell.
-2. **Normalize equivalent mathematical work in Rust and DUCC:** Count active order/latitude/degree pair-lane updates, component-channel accumulation, skip/checked fallback/replay, factor initialization and FFT work with identical definitions. q8 counters must be **per-worker/thread-safe**, not historical racing global integers. Use temporary low-overhead counters outside production benchmark builds; report both executed updates and useful updates, and map DUCC's `map2alm_kernel`, `calc_map2alm`, `fill_m2a`, `iter_to_ieee` and `spin0to1` to equivalent Rust stages.
-3. **Disjoint profiling:** Run matched **Callgrind** samples of comparable bounded whole-transform workers where available, compiling both optimized Rust and DUCC with suitable debug symbols and identical ISA/fixtures, without extra instrumentation in timed builds. Use `valgrind --tool=callgrind` with `--callgrind-out-file` and, when feasible, `--dump-instr=yes --collect-jumps=yes`; analyze with `callgrind_annotate` or KCachegrind. Check valgrind version/support and bound transform counts so instrumentation does not exhaust memory/time. Report whole-program Ir, **disjoint inclusive/exclusive** stage and function costs, per-equivalent-useful-update Ir, major source lines and actual **executed basic blocks**. Account for nested calls exactly once. The old q1 matched order-stage excess and q8 3.38B-vs-1.79B selected-loop Ir are **leads, not current source proof**.
-4. **Compare actual emitted machine code:** Use optimized binary and available `llvm-objdump -Cd --no-show-raw-insn`, `objdump -drwC -S`, `nm -C`, `addr2line`, and (if available/permissioned) `perf record/report/annotate`. Resolve addresses/symbols back to **executed hot PCs**, then show side-by-side Rust/DUCC SIMD inner-loop assembly for the specific dominant monomorphized `WithSimd`/Pulp specialization vs DUCC's template instantiation. Explicitly count relevant `vfmadd`/`vmulpd`, load/store, vector shuffles, spills/reloads, branch/bounds checks, scalar work, masking/scale-repair, data movement and loop-carried dependencies; map each to normalized update counts and whole-worker impact. Do not claim instruction counts are cycles, infer hotspots from code size alone, or use unexecuted disassembly as performance evidence.
-5. If `perf` is unavailable because of kernel permissions, **do not block**. Use sampled-call boundaries, Callgrind/annotated source and assembly; record what evidence is missing. If Valgrind itself is unavailable or unusable, inspect optimized assembly and use compiler profiling/another installed profiler with limitations explicit; no disabling system security for profiling.
-6. Write a **compact top-three hypothesis ranking**: exact current Rust source/function/address vs pinned DUCC equivalent, matched executed counts, Ir per useful update, stage share of whole call, specific assembly difference, estimated removable fraction and confidence. Choose **one** best-value bounded source experiment; **do not end the task after publishing a diagnostic-only report**. Avoid re-running already rejected unchanged `StepBy` iterators, oversized SIMD accumulators, scratch deferral, indiscriminate input scan fusion, large tile registers, old scalar B33/B34 or f64 pair-scaling changes. If evidence points to no useful gain in those, move on.
-
-## Phase C — implement, benchmark, preserve or revert and repeat
-
-- Each hypothesis is one small **reversible production code change** (e.g. eliminate a measured repeated layout/safety pass, precompute truly reused order geometry, avoid proven redundant lane work, tighten executed SIMD reductions/indexing, fix a confirmed route/schedule cutoff). **Do not pre-decide the mechanism before Phase B attribution.** Measure at whole-transform boundaries, not just helper loops.
-- Before accepting: focused Rust accuracy with DUCC and independent mathematical reference, GL/CC/F1 supported shapes, full/reduced, poles/equator and exact/off-grid, spin-0/1 (higher spins where affected), E/B signs, S/A/S*/A* adjoint identities, under/overflow/nonfinite/subnormal, normal/checked fallback and poisoned/reused workspaces. Do not weaken tolerances or delete tests to pass. Preserve f64 fast paths and f32 native precision; no opaque runtime dispatch allocations in degree/SIMD loops.
-- Match **exact parent → candidate → pinned DUCC** compiled in isolated scratch, with randomized/interleaved process order, stable affinity and diagnostics. First 3 triplets for rejection/triage; 15+ pairs or uncertainty estimates for acceptance of important cells. Test q1 and q8, plus adjacent T/mmax/CC/GL/F1 cells that exercise changed code. Reject/restrict a repeatable slowdown in a protected winning cell even if the headline T720 case improves. A reproducible whole-call Ir reduction with time-inconclusive outcome is a recoverable `PERFORMANCE_CANDIDATES.md` idea, **not a PASS nor grounds for a complicated new production route**.
-- Make accepted code + tests a coherent commit, then compact evidence and cleanup; push to `dev` with latest-remote reconciliation. Keep exact source SHA, parent, DUCC, fixtures, raw per-pair medians, CI/wait/frequency caveats, correctness, source/assembly attribution, and decision. Revert only the experiment candidate on failure; do not force-reset unrelated or concurrent commits. Update M6 ledger and ranking to the next gap and **continue**.
-- After the T720 q1 and q8 parity target is really verified (or progress blocked with a quantified open gap), proceed to the CC/reduced cases, f32 native paths and representative matrix until remaining gaps are closed. No “we ran three benchmarks” completion criterion.
-
-## Phase D — targeted code/repository cleanup (without losing performance)
-
-**Cleanup is required, but is subordinate to demonstrated performance work and must not become an escape hatch.** After a coherent optimization milestone (and at final handoff), make a separate no-algorithm-change maintenance pass:
-
-- **Rust source:** find stale scaffolding/unused bench hooks or cfg/profiling counters, obsolete precision-module references, redundant safe wrappers, dead test adapters and duplicated dispatch paths **using concrete call sites, features and `cargo check`/Clippy evidence**. Remove only confirmed unused production code. Preserve useful test hooks and approved vector specializations. Do not flatten logical modules or recreate f32/f64 sibling algorithms merely to reduce LOC. Small repairs need an explicit reason; no broad automatic refactor.
-- **Build/Cargo/scripts:** inspect `Cargo.toml` features/dependencies and benchmark scripts for clearly obsolete references and target paths; keep stable public APIs and lockfile unless a validated dependency change requires it. Repair broken paths/CLI/tests from earlier moves; do not delete still-used benchmark sources, archived provenances or integration fixtures. No blanket stale-cache deletion without local ownership checks.
-- **Repository/docs:** `AGENTS.md`, `plans/README.md`, `PERFORMANCE_STATUS.md`, `reports/PROGRESS.md`, `README.md` and `reports/README.md` should present **one** authoritative current goal, complete/pending labels, working bench commands, reproducer provenance, clear operator/grid/precision scope, and links to M6 ledger and useful historic reports. Mark stale architectural plans **completed/historical**, and eliminate conflicting “active next step” wording from front pages; do not delete Git history or irreproducible evidence. Move bulky historical discussions to existing archive only when links, checksums and scripts remain intact. Keep the rolling progress to five meaningful entries rather than accumulating new speculative planning documents.
-- **Writing quality:** use an available **technical-writing/documentation skill** for README and durable user-facing reports *if installed and permitted*; otherwise edit carefully without stopping. Concise scientific prose: define `q1/q8`, units, sampling, correctness tolerances, source and DUCC revisions; distinguish measured, inferred, and unmeasured. Avoid claims of parity from source-local or one-case wins, avoid repeated massive progress prose and unsupported publication language. Documentation skill is an **editorial aid**, never a numerical reviewer and **never Sol**.
-- **Validation:** unit-test tree convention remains `<module>/tests.rs`; root `tests/` remains integration tests. Test count, ignored markers, feature gating and assertions must be preserved. Run check/Clippy/fmt and focused tests for cleanup; **no expensive benchmark for a proved non-production no-op**. If the source move affects optimized codegen or runtime dispatch, verify it is truly no-op or do a focused regression screen.
-- **Final release gate** requires Rust workspace all-features and no-default-features checks, target-compatible CI, relevant Python binding tests if numerical APIs changed, accuracy/adjoint/extreme checks, representative f64/f32 current-head performance and documented remaining gaps. `main` stays untouched pending owner approval.
-
-## Scope management, persistence and honest stopping rule
-
-- Do not run extra Sol reviewer, do not exhaust quota re-auditing 170 archived plans, and do not run every Cartesian matrix cell before taking a promising targeted optimization. Use one main Luna implementation session, optional constrained Luna benchmark only, and no ongoing process that relies on unscheduled background work.
-- Work in **measured cycles**: baseline → causal profile/ASM → one controlled patch → correctness → whole-transform q1/q8 A/B → decision → durable evidence → scratch cleanup → next highest gap. Commit/push meaningful verified progress on `dev` so a quota break is recoverable.
-- Do not mark M6 “achieved” until **at least** f64 GL T720 spin-1 analysis q1 AND q8 have current-source validated DUCC PASS, and a representative f32 comparison ledger and subsequent important f64/CC/reduced gaps are addressed; the larger per-cell parity goal remains open until every agreed equivalent supported representative cell is PASS. **A partial target is explicitly “IN PROGRESS”, even after an excellent profiling report or 317 passing tests.** If progress is impossible with available time/tools/quotas, checkpoint verified work and a precise NEXT (hot PC/loop, evidence files, exact current gap, next tested hypothesis), then stop **without changing to Sol or claiming parity**.
+Make bounded verified implementation and documentation commits on `dev`, reconcile remote before each push, **never force-push or merge `main`**, and preserve scratch ownership. Keep a precise NEXT on interruption. Do not claim M6 complete from refactoring, isolated speedups or green CI alone.
