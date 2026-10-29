@@ -3,7 +3,7 @@
 - **2026-10-29 — native-generic M6 direction recorded.** Source baseline is
   `83dd570d`; f32 T720 scalar synthesis still dispatches four cells through a
   guarded f64 child plan. The native shared algorithm and per-cell evidence are
-  not complete. See the [active plan](../plans/m6-native-generic-ducc-parity.md)
+  not complete. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

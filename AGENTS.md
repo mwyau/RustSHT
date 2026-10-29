@@ -1,41 +1,40 @@
-# RustSHT agent instructions
+# RustSHT — stable agent rules
 
-## Authority and active work
+## Authority
 
-- Continue in the authorized primary Luna session. Never switch models or use Sol.
-- Do not spawn or delegate to agents. The primary session owns implementation, tests and benchmarks.
-- Work toward the durable goal: one shared optimized SHT algorithm family with native f32 and f64 execution and verified DUCC parity.
-- The only active execution plan is [M6 native-generic DUCC parity](plans/m6-native-generic-ducc-parity.md).
-- The live per-cell evidence is [DUCC_PARITY_M6.md](reports/DUCC_PARITY_M6.md); recent checkpoints are in [PROGRESS.md](reports/PROGRESS.md).
-- Historical plans and benchmark results are context only. Use [reports/archive/README.md](reports/archive/README.md) to find them; do not follow old NEXT steps.
+- Continue in the authorized **primary Luna session**. “Luna Max” and “GPT-6-Luna” denote this current main session, not a request to select, launch, or switch models.
+- The main session is the sole production-code writer and runs essential reviews, tests and benchmarks itself. **No subagents**, including benchmark or reviewer agents. **No Sol / Sol High** in any role or as quota fallback.
+- At quota/resource limits, preserve and push only verified work if possible, record a precise NEXT, safely clean owned inactive scratch, then stop.
 
-## Numerical and implementation rules
+## Sources of truth
 
-- f32 transforms must keep f32 input, recurrence, accumulation, FFT and output. Do not use f64 transform plans, promoted runtime arrays or conversion sidecars.
-- Share mathematical control flow and recurrence ownership across f32/f64. Use precision-specific policies and typed SIMD leaves where they preserve correctness and measured performance.
-- Remove obsolete f32 fallback algorithms and conversion machinery when their shared native replacement is ready. Do not retain compatibility paths for private implementations.
-- Preserve public transform operations, conventions, grids, S/A/S*/A* adjoints, poles, extremes, tails and transactional workspace behavior.
-- Keep precision-appropriate scaling. Never drop representable contributions, weaken tolerances, remove controls or treat parent equivalence as independent accuracy evidence.
-- Keep unit tests under the natural module `tests.rs` with `#[cfg(test)] mod tests;`; integration tests stay in `tests/`.
-- Do not add runtime dependencies, public APIs, unrelated FFT rewrites or instrumentation to production hot loops.
+1. This file: session policy, correctness, benchmark and Git safety.
+2. [Active native-f32/f64 M6 plan](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md): **only active implementation direction**.
+3. [M6 parity ledger](reports/DUCC_PARITY_M6.md) and [rolling progress](reports/PROGRESS.md): measured source-specific results.
+4. [Archived parity coverage contract](reports/archive/plans/ducc-performance-parity-continuation-2026-10-27.md), [experiment hygiene](docs/EXPERIMENT_HYGIENE.md), [unit-test layout](docs/TEST_LAYOUT.md) as reference only. Old execution overrides and archived NEXT instructions are historical.
 
-## Performance evidence
+**Owner's durable direction:** one shared, optimized SHT mathematical implementation compiled with native f32 and f64 arithmetic, SIMD and FFT. Preserve public f32/f64 transform behavior and correctness while pursuing verified per-cell DUCC parity. The temporary production f32-to-f64 scalar-synthesis sidecar **must be replaced and removed**; do not optimize or expand conversion-based f32 transform backends. Private legacy f32 algorithms, wrappers, fallback transform routes and private bitwise compatibility may be removed as the verified shared-native replacement lands. **Do not remove required numerical exceptional/polar/scaled handling** or degrade the public API.
 
-- Compare against pinned DUCC 0.42.0, commit `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
-- Pin source and patch hashes, compiler/ISA, fixtures, affinity, thread count and warm-call boundary. Measure whole transforms; profile stages only to explain measured results.
-- Start with three interleaved parent/candidate/DUCC pairs. Extend material or ambiguous decisions to at least 15 pairs.
-- First focused gate: all 16 native-f32 GL T720 scalar/spin-1 synthesis/analysis
-  full/reduced q1/q8 cells; broaden shapes and grids afterward.
-- The focused gate is a first milestone, not the full end state; verify the
-  broader supported f32/f64 workload matrix before closing M6.
-- Record each required cell as PASS, GAP, INCONCLUSIVE or UNMEASURED. Include native precision and conversion route.
-- Protect established f64 wins, especially GL T1023 spin-1 synthesis q1/q8. Do not infer parity from one workload or an isolated kernel.
+## Numerical and engineering boundaries
 
-## Git and experiment hygiene
+- Maintain shared generic algorithms with narrow, justified precision-specific SIMD/numeric leaves; no duplicate maintained scalar/spin recurrences, broad unrelated rewrite, new runtime dependency, GPU/MPI feature, or Python API change.
+- Preserve GL/CC/F1, full/reduced mmax, even/odd longitude/Nyquist, spin conventions, coefficients/phase, poles/equator, S/A/S*/A* adjoints, tiny/subnormal/overflow/nonfinite semantics, SIMD tails and poisoned/reused workspace safety.
+- Never weaken tolerances, delete independent reference tests, or claim that bitwise parent equality proves mathematical correctness. Distinguish allowed private rounding differences from public numerical failures.
+- Unit tests use natural `<module>/tests.rs` with only `#[cfg(test)] mod tests;` in production modules; integration tests remain under `tests/`. Earlier test-layout work is complete.
 
-- Work on `dev`. Fetch and reconcile `origin/dev` before pushing. Never force-push, rewrite history, reset shared work or merge into `main`.
-- Inspect status, worktrees and live processes before experiments. Do not overwrite or delete untracked work or another worktree whose ownership is unclear.
-- Give each experiment a fresh bounded scratch root; keep targets, caches, binaries and profiles there. Check disk and inode capacity first.
-- Preserve compact evidence and verify it before removing only experiment-owned inactive scratch. Follow [EXPERIMENT_HYGIENE.md](docs/EXPERIMENT_HYGIENE.md).
-- Commit coherent verified slices. If work must stop, record exact source, validation, risks and the next action; do not claim the goal is complete unless every requirement is verified.
-- Green tests, profiling, a sidecar timing pass or generic source conversion alone do not establish M6 completion.
+## Benchmark and acceptance
+
+- Compare exact parent, candidate and pinned native **DUCC 0.42.0** (`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`) with matched geometry, inputs, compiler/ISA, affinity, threads and warm complete transforms.
+- Screen with 3 interleaved pairs; use 15+ for consequential promotion. Report per-cell q1/q8, full/reduced f32 plus adjacent controls, exact source/fixture/binary hashes and credible uncertainty. Protect f64 GL T1023 spin-1 synthesis q1/q8 and established f64 wins.
+- Inspect executed SIMD code and normalized useful work to explain gaps. Callgrind instructions are not cycles; separate whole-call time from diagnostic stages and never double-count inclusive costs.
+- New native-f32 algorithms must pass independent analytic, adjoint, reference, exceptional and reset checks. Neither the existing f64-internal f32 benchmark passes nor a generic source refactor establishes native-f32 DUCC parity. Maintain one live per-cell PASS/GAP/INCONCLUSIVE/UNMEASURED ledger.
+- The 16-cell GL T720 matrix is a first gate, not the full supported f32/f64 parity scope.
+- Current-source evidence must identify each f32 route; do not blend native production results with conversion-based diagnostics.
+- A sidecar timing PASS, generic source syntax, profiling or green CI alone does not prove completion.
+
+## Git, archives and disk safety
+
+- Work on `dev`; inspect local worktrees/unpushed state and reconcile `origin/dev` before changes/pushes. No force-push, history rewrite, hard reset, automatic merge to `main`, or destruction of another agent's changes.
+- Commit coherent tested implementation slices and separate behavior-preserving cleanup. Do not flood `dev` with trivial prose-only commits.
+- Keep `AGENTS.md` stable and short; keep one concise active M6 plan, a current per-cell ledger and no more than five rolling progress checkpoints. Archive superseded plans and experiments with an index, source SHA, patches/checksums and conclusions. Verify unique evidence before deduplicating or deleting old files.
+- Use bounded experiment-owned scratch after checking disk/inodes; preserve verified patches, compact data and provenance before deleting only confirmed inactive owned work. Never clear shared caches, generic `/tmp`, parked worktrees or unpushed code.

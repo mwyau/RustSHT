@@ -1,7 +1,7 @@
 # Experiment and scratch hygiene
 
 These rules apply to builds, benchmarks, profiles, temporary reference
-environments and isolated worktrees. The [active M6 plan](../plans/m6-native-generic-ducc-parity.md)
+environments and isolated worktrees. The [active M6 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md)
 defines the experiment sequence. The primary session is the only worker; do
 not delegate.
 

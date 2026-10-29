@@ -1,4 +1,8 @@
-> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+# Historical M6 plan snapshot — superseded 2026-10-29
+
+This is the complete former active M6 plan before the native-f32 generic algorithm direction. Original file: `plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md`; captured from dev commit `83dd570d413a9e0c0dd998e1fbfb34f7d8a92650`, blob `608c7afa78ac042bf876c0a50db10f5e080f2536`. Historical instructions and NEXT entries below are **not active**. Historical relative links were adjusted to continue resolving from this archive location.
+
+---
 
 # M6 — DUCC parity engineering and repository consolidation
 

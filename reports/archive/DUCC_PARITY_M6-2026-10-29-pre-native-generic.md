@@ -1,4 +1,4 @@
-> Historical full ledger captured from `83dd570d413a9e0c0dd998e1fbfb34f7d8a92650`. The live per-cell matrix is [reports/DUCC_PARITY_M6.md](../DUCC_PARITY_M6.md); the active plan is [plans/m6-native-generic-ducc-parity.md](../../plans/m6-native-generic-ducc-parity.md).
+> Historical full ledger captured from `83dd570d413a9e0c0dd998e1fbfb34f7d8a92650`. The live per-cell matrix is [reports/DUCC_PARITY_M6.md](../DUCC_PARITY_M6.md); the active plan is [plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md](../../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
 
 ## 2026-10-29 current-source f32 scalar-analysis recurrence profile
 

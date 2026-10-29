@@ -77,4 +77,4 @@ checkpoint](data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-product
 fresh isolated worktree. First prove native-f32 reflected scalar synthesis on
 full/reduced GL T720 q1/q8 against the exact parent and pinned DUCC. Preserve
 the current f64 controls and run independent numerical checks before changing
-production dispatch. See the [active plan](../plans/m6-native-generic-ducc-parity.md).
+production dispatch. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).

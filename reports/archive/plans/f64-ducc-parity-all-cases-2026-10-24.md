@@ -1,4 +1,4 @@
-> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-native-generic-ducc-parity.md). Do not follow its old NEXT instructions.
+> Historical record only. This plan is superseded by [the active native-generic M6 plan](../../../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md). Do not follow its old NEXT instructions.
 
 # Active plan — per-cell f64 DUCC performance parity
 

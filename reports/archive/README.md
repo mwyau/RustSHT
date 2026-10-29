@@ -1,6 +1,6 @@
 # Historical RustSHT evidence
 
-Use the [active plan](../../plans/m6-native-generic-ducc-parity.md),
+Use the [active plan](../../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md),
 [live parity ledger](../DUCC_PARITY_M6.md) and [progress](../PROGRESS.md) for
 current work. Nothing under this directory is an active execution queue.
 

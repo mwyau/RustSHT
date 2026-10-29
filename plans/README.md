@@ -1,7 +1,7 @@
 # Plans and contracts
 
 The only active execution plan is [M6 — native-generic SHT execution and DUCC
-parity](m6-native-generic-ducc-parity.md). `AGENTS.md` points to its current
+parity](m6-ducc-parity-hotpath-cleanup-2026-10-27.md). `AGENTS.md` points to its current
 next action and the live per-cell performance ledger.
 
 The following files are stable reference contracts, not execution queues:
