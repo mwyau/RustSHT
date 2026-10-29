@@ -1,0 +1,13 @@
+{
+  "grid": "GL",
+  "lmax": 1023,
+  "mmax": 1023,
+  "ntheta": 1024,
+  "nphi": 2048,
+  "sha256": {
+    "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+    "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+    "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+    "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+  }
+}

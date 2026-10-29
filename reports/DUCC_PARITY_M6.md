@@ -1,3 +1,48 @@
+## 2026-10-29 shared scalar-analysis tile 512 screen rejected
+
+At exact production source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`,
+an isolated candidate doubled the shared scalar-analysis reflected-pair tile
+from 256 to 512, enough to place the T720 hemisphere in one tile. The
+candidate also widened the reusable analysis vector buffer. Its test-only
+direct-spectrum route performed the native-f32 longitude FFT and widened
+requested spectra on demand into the existing shared f64 scalar-analysis
+recurrence. The route is still diagnostic and does not add production f32
+dispatch.
+
+| GL T720 f32 scalar analysis, direct spectra | Parent / candidate / DUCC ms | Candidate/parent paired median [95% CI] | Candidate/DUCC paired median [95% CI] | Status |
+|---|---:|---:|---:|---|
+| Reduced q1 | 6.008 / 5.955 / 5.754 | 0.988 [0.980, 0.998] | 1.033 [1.030, 1.038] | **GAP** |
+| Reduced q8 | 0.877 / 0.874 / 0.893 | 0.990 [0.975, 1.006] | 0.974 [0.968, 0.992] | **PASS, diagnostic route only** |
+| Full q1 | 14.667 / 14.534 / 14.119 | 0.991 [0.988, 0.996] | 1.029 [1.025, 1.033] | **GAP** |
+| Full q8 | 2.130 / 2.111 / 2.055 | 0.991 [0.950, 1.011] | 1.027 [1.017, 1.048] | **GAP** |
+
+The four direct-route cells used 15 interleaved parent/candidate/DUCC pairs
+with explicit x86-64-v3 builds. Candidate outputs were bitwise equal to parent,
+finite, and passed poisoned-workspace reset checks. Relative-L2 / maximum
+absolute candidate-to-DUCC errors were `1.319e-7 / 1.397e-9` reduced and
+`1.432e-7 / 6.985e-10` full; these are not independent accuracy references.
+Three-pair native-f32 controls had candidate/parent medians `1.003`, `0.988`,
+`0.982`, and `1.001` for reduced q1/q8 and full q1/q8. Protected f64 T1023
+spin-1 synthesis controls were bitwise equal to parent, with three-pair
+candidate/parent ratios `1.005` q1 and `1.010` q8; these short intervals show
+no established regression but do not certify production safety.
+
+The candidate stage profile attributes 78–89% of elapsed work to recurrence
+and gather; widening the tile yielded only about a 1% whole-call change, so
+keep production tile size 256. The 30-call stage profile also records peak
+RSS from 27,268 to 87,616 KiB, and no new allocation count was measured. The
+candidate does not meet parity in three cells and did not receive independent
+analytic, adjoint, exceptional-value, or broader-bandlimit validation. The
+exact patch, 15-pair timings, adjacent controls, f64 controls, stage profile,
+fixtures, binaries, and runners are in the [tile512 evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md).
+
+**Next:** profile the exact current shared f64 scalar-analysis recurrence and
+executed AVX2 body, centering on the checked normal-range bulk in
+`FusedScaledScalarAnalysisPair`. Use that evidence to form one bounded fused
+recurrence/accumulation candidate while retaining scaled exceptional fallback.
+The tile-width screen is rejected; the direct-spectrum route remains
+test-only. M6 remains open.
+
 ## 2026-10-29 direct f32 spectra into shared f64 scalar analysis remain above DUCC
 
 At exact source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, the

@@ -50,15 +50,24 @@ unused full-size f64 spectrum buffer; q8 also makes one small warm-call
 allocation on this route, the promoted route, and the native route. See the [corrected direct-
 spectrum evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
 
-The next bounded Stage C hypothesis widens the shared scalar-analysis tile
-from 256 to 512 in an isolated build. Both T720 truncations currently process
-361 reflected ring pairs in two blocks per order; a 512 tile would put them in
-one block, closer to DUCC's per-order hemisphere traversal. Compare the direct
-f32-spectrum route against its exact parent in all q1/q8 full/reduced cells,
-then measure native-f32 scalar-analysis and protected f64 T1023 spin-1
-synthesis controls. Keep this test-only until whole-call parity, independent
-numerics, exceptional fallback, and reusable-memory costs pass. M6 remains
-open.
+The isolated Stage C scalar-analysis tile-512 screen is complete and rejected.
+At exact source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, the 15-pair
+direct-spectrum screen improved its tile-256 parent by only about 1%; three
+of four q1/q8 full/reduced cells remained slower than native-f32 DUCC. Only
+reduced q8 passed the diagnostic parity comparison. Three-pair native-f32 and
+protected f64 T1023 spin-1 synthesis controls showed no established regression,
+but do not support production promotion. The exact evidence and candidate patch
+are in the [tile-512 package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md).
+
+The next bounded Stage C action is a current-source profile of the shared f64
+scalar-analysis recurrence and its executed AVX2 body, focused on
+`FusedScaledScalarAnalysisPair`'s checked normal-range bulk. The direct-route
+stage profile places recurrence and gather at 78–89% of elapsed work; the
+tile-width change barely moved whole-call time. Use source attribution and
+assembly to select one fused recurrence/accumulation experiment, keeping the
+checked scaled path for exceptional values. Do not repeat the rejected mask
+substitution, block-wide scan, or whole-block replay variants unchanged. M6
+remains open.
 
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 

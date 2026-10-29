@@ -1,0 +1,7 @@
+# SHA-256  artifact
+c71034d205a31241771fab8f62139134af71b43f2c93f88094596d2efb3a53de  rust-tile256-direct-route-test-binary
+e7e1a7087a2e16590a8790dc3f16e125f9aa79afd2b94f16fbb578f03fb907d4  rust-tile512-direct-route-test-binary
+acc82387af2c42aed53b25678e3872157ed3fb6e5d5874322badc472a1d35d5d  ducc-native-f32-analysis-worker
+3e3e934a7081b1b3da6673eb0005c0bc754e76519b14ef79203a521578405a6a  rust-f64-tile256-spin1-synthesis-control
+90375e4ec2b768f7f2ce5b6e1bac4b644df8b9240db9ee872d0b0706178a0b5e  rust-f64-tile512-spin1-synthesis-control
+ee3ea51c2eaeb208c2c52ee9ee3e2c8f999993e8133c22f15a2f082e5a63fc06  ducc-f64-spin1-synthesis-control
