@@ -1,5 +1,39 @@
 # M6 — current-head DUCC parity triage
 
+## 2026-10-28 current-source reflected f32 scalar synthesis — rejected on controls
+
+At exact parent `1b2041491e621fffe94464667619baf788d31835`, the reconciled
+shared reflected-ring candidate reused `FusedSynthesisBlock`, the paired
+recurrence visitor and `F32SynthesisAccumulator`. Fifteen interleaved
+parent/candidate/pinned-DUCC f32 whole-transform pairs per GL T720 cell cut
+candidate synthesis time by 39–64%, but the remaining candidate/DUCC ratios
+are **18.75× / 16.11× full** and **13.92× / 14.55× reduced** q1/q8. All four
+cells remain **GAP**.
+
+| Cell | Parent / candidate / DUCC ms | Candidate/parent paired median (95% CI) | Candidate/DUCC | Faster pairs | Status |
+|---|---:|---:|---:|---:|---|
+| Full q1 | 640.796 / 355.900 / 18.954 | 0.5550 [0.5536, 0.5585] | 18.75× | 15/15 | GAP |
+| Reduced q1 | 190.142 / 116.132 / 8.359 | 0.6106 [0.6091, 0.6164] | 13.92× | 15/15 | GAP |
+| Full q8 | 97.884 / 46.869 / 2.933 | 0.4798 [0.4759, 0.4876] | 16.11× | 15/15 | GAP |
+| Reduced q8 | 51.740 / 19.124 / 1.282 | 0.3615 [0.3498, 0.3693] | 14.55× | 15/15 | GAP |
+
+The candidate was **not promoted**. Fifteen-pair adjacent controls showed
+repeatable f32 scalar-analysis regressions at full q1/q8 (candidate/parent
+1.0124 and 1.0097) and a repeatable full-mmax spin-1 synthesis q8 regression
+(1.0243). A method-order-only variant did not remove the analysis slowdown.
+The f32 T1023 q8 control was inconclusive; f32 spin-1 analysis spot checks and
+protected f64 GL T1023 spin-1 synthesis q1/q8 showed no meaningful regression.
+The protected f64 q1/q8 candidate/DUCC medians were 0.7372 / 0.8360. Focused
+analytic, adjoint, sectoral, exceptional-decline, SIMD-tail and workspace-reset
+tests passed; see the source and correctness limits in the
+[current-source candidate evidence](data/ducc-parity-m6-2026-10-28/f32-reflected-current-source-1b204149/README.md).
+
+This is a quantified Stage A rejection, not a parity result. Keep the complete
+candidate patch and raw pair data with the evidence package. The next action is
+the owner's Stage B: evaluate shared f64 algorithms behind complete f32
+public-call conversion boundaries, starting with scalar synthesis at these
+four cells. No production source changed in this checkpoint.
+
 ## 2026-10-28 current-head native-f32 GL T720 spin-1 synthesis baseline — all cells GAP
 
 At exact current source `375c14f1d841acf2a945a99a0fad8bd1a22b6134` against pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, three interleaved whole-transform pairs measured full/reduced GL T720 f32 spin-1 synthesis q1/q8. Paired Rust/DUCC medians were **36.15×/49.14×** full and **34.65×/51.44×** reduced q1/q8. All cells remain **GAP**. Rust q8 speedup from q1 was 5.41×/4.93×, while DUCC's was 7.35×/7.24×. The reduced-q8 ratio spread was wide (`39.88×–51.52×`), but still far from parity.

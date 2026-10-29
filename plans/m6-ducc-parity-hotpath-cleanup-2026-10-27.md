@@ -1,6 +1,28 @@
 # M6 — DUCC parity engineering and repository consolidation
 
-## ACTIVE OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
+## ACTIVE OWNER OVERRIDE — 2026-10-28: close the native-f32 DUCC gap
+
+The immediate priority is complete public f32 execution-path parity. Stage A
+reconciled the shared reflected scalar-synthesis candidate at exact parent
+`1b2041491e621fffe94464667619baf788d31835`: it cut GL T720 scalar-synthesis
+time 39–64%, but still measured 13.92–18.75× DUCC and had repeatable adjacent
+f32 scalar-analysis and spin-1 synthesis-q8 regressions. It was not promoted;
+its complete patch and raw pairs are in the [current-source evidence
+package](../reports/data/ducc-parity-m6-2026-10-28/f32-reflected-current-source-1b204149/README.md).
+
+Stage B is now the next bounded experiment. Using existing shared f64
+algorithms through reusable f32-to-f64 / f64-to-f32 buffers, measure the full
+f32 scalar-synthesis public contract at GL T720 full/reduced q1/q8 against
+the native DUCC f32 interface. Include conversion, copies, FFT, transform,
+writeback, plan/workspace reuse and allocation costs. Keep the prototype in an
+isolated harness until whole-call performance and independent f32 numerical
+checks justify a production precision-policy decision. If conversion prevents
+parity, profile each whole-call stage and continue to the next bounded
+hypothesis. Do not claim parity from the earlier conversion-excluded
+diagnostic. Preserve native-f32 behavior for exceptional supported cases and
+keep the M6 ledger open.
+
+## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
 The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and
 checked native-f32 packet leaf remain in production. The later corrected
