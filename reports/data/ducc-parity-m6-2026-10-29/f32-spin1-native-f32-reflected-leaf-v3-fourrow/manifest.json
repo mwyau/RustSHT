@@ -1,0 +1,23 @@
+{
+  "source_parent_sha": "def4bbee4071f8e77e0387c7f88424431430d4fc",
+  "parent_adapter_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "candidate_patch_sha256": "e19044a3a932f493e87086ba65848268b17e6ea0a7b7eb167e653150e057f5c6",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+  "compiler": "rustc 1.99.1 LLVM 23.1.1; g++ 15.2.0",
+  "warm_target_ms": 25.0,
+  "pairs_per_cell": 3,
+  "fixture": "scripts/benchmark_ducc_f32_native.py make_fixture; phi0=0.23",
+  "candidate_patch_sha256_actual": "e19044a3a932f493e87086ba65848268b17e6ea0a7b7eb167e653150e057f5c6",
+  "parent_binary_sha256": "8e462e4f574f1614309dd437dbb852630739344589581ee50353fe142ae18e20",
+  "candidate_binary_sha256": "78ceab2e45b5f61222b0e8205d1646611845dd2387325655de41584b7f9dc605",
+  "ducc_f32_binary_sha256": "fcfbdf5915572077c1495e4bd1aa74ba5f8d4a8f2b69b087e80b051e332ead4c",
+  "ducc_version": "0.42.0",
+  "rustc": "1.99.1",
+  "llvm": "23.1.1",
+  "gxx": "15.2.0",
+  "host": "AMD Ryzen 9 5950X x86_64; Pulp V3; 8 f32 lanes",
+  "q1_affinity": "one pinned logical CPU; identifier omitted",
+  "q8_affinity": "eight pinned distinct physical cores; identifiers omitted"
+}

@@ -1,3 +1,40 @@
+## 2026-10-29 native-f32 reflected spin-1 fused four-row packet rejected
+
+At exact source parent `def4bbee4071f8e77e0387c7f88424431430d4fc`, V3 fused
+all four even/odd coefficient rows into one checked scaled f32 packet
+operation. It shared cosine/basis loads and staged all eight output rows before
+commit. Complete candidate patch SHA256 is
+`e19044a3a932f493e87086ba65848268b17e6ea0a7b7eb167e653150e057f5c6`.
+
+| GL T720 spin-1 synthesis | Parent / candidate / DUCC ms | Candidate/parent paired median [range] | Candidate/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---|
+| Full M720 q1 | 1501.926 / 1515.830 / 40.846 | 1.009 [0.994, 1.014] | 37.224 [35.977, 37.415] | GAP; no material gain |
+| Reduced M180 q1 | 607.184 / 580.345 / 17.668 | 0.957 [0.955, 0.958] | 32.898 [32.844, 33.022] | GAP; small gain |
+| Full M720 q8 | 273.307 / 545.595 / 5.905 | 1.996 [1.985, 2.023] | 92.398 [71.762, 92.878] | GAP; rejected |
+| Reduced M180 q8 | 122.073 / 315.508 / 2.935 | 2.585 [2.569, 3.045] | 107.492 [86.268, 114.215] | GAP; rejected |
+
+Three interleaved pairs per cell show repeatable q8 regressions, so the
+candidate was not extended or promoted. Every worker was finite, repeat/reset
+consistent. Candidate relative-L2 error versus DUCC remained worse than parent
+in every cell (`1.949e-4–2.140e-4` versus `1.415e-4–1.426e-4`). The focused
+fused-packet scalar, transactional overflow, and unsafe-decline tests passed.
+Route counters confirm the fused path handled 425,242/524,402 full-mmax q1/q8
+packets and 62,185/146,254 reduced q1/q8 packets; all succeeded without block
+declines.
+
+V3 completed the V1/V2 reflected-leaf hypothesis. Although it fused the
+repeated row-wise packet setup, full q8 remained about 2x slower than parent;
+no V3 Callgrind was run, so the remaining q8 mechanism is unresolved. Exact
+paired results, patch, binary/fixture hashes, and counters are in the [V3
+evidence package](data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v3-fourrow/README.md).
+
+**Next:** stop native-f32 reflected-leaf variants. Evaluate a reusable
+f32-I/O/f64-internal spin-1 synthesis backend using existing f64 plans and
+workspaces, with guarded native-f32 fallback and complete conversion/writeback
+timing. Stage B measured this route near parity but above target at q8 and
+reduced q1; profile transform cost instead of repeating conversion tuning.
+M6 remains open.
+
 ## 2026-10-29 native-f32 reflected spin-1 scaled-packet leaf rejected
 
 At exact source parent `4ede4c7159536dd68e2ee371f8cce5e0760dd738`, a V2

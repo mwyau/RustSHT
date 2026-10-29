@@ -1,0 +1,5 @@
+Focused release test: native_f32_t720_reflected_spin1_leaf_activates_q1_q8_full_and_reduced
+GL T720 M720 q1: leaf 2841 attempts / 2841 successes / 0 declines; scaled packets 425242 attempts / 425242 successes / 0 declines
+GL T720 M720 q8: leaf 8050 / 8050 / 0; scaled packets 524402 / 524402 / 0
+GL T720 M180 q1: leaf 905 / 905 / 0; scaled packets 62185 / 62185 / 0
+GL T720 M180 q8: leaf 2685 / 2685 / 0; scaled packets 146254 / 146254 / 0

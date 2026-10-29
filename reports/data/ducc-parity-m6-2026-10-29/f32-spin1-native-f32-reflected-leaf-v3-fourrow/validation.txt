@@ -1,0 +1,8 @@
+Passed:
+- cargo fmt --check
+- cargo test --release --features parallel f32_reflected_four_row_scaled_packet_matches_scalar_and_declines_transactionally -- --nocapture (1 passed)
+- cargo test --release --features parallel native_f32_t720_reflected_spin1_leaf_activates_q1_q8_full_and_reduced -- --nocapture (1 passed; packet counters below)
+- Complete public GL T720 f32 spin-1 synthesis q1/q8 full/reduced screen: all workers finite, repeat-consistent and poisoned-output-reset consistent.
+- Candidate patch git apply --check against exact source parent.
+
+Not run after performance failure: 15-pair extension, adjacent analysis controls, fresh f64 timing, and independent analytic/adjoint/extreme/tail matrix. The candidate is f32-specific; protected f64 outputs in V1 were bitwise equal, and V3 did not change f64 implementation code.

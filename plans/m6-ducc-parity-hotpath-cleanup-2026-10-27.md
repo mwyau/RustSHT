@@ -4,32 +4,31 @@
 
 The reusable guarded f32-I/O/f64-internal scalar-synthesis backend remains in
 production on the four measured GL T720 spin-0 synthesis cells at
-`0.775–0.961x` native-f32 DUCC; conversions and writeback are included. Twelve
-other spin-0/spin-1 T720 analysis/synthesis cells remain GAP. The Stage B
-16-cell diagnostic and production scalar-synthesis evidence remain in the
-[single M6 ledger](../reports/DUCC_PARITY_M6.md).
+`0.775–0.961x` native-f32 DUCC; conversions and writeback are included. The
+Stage B 16-cell diagnostic and production evidence remain in the [single M6
+ledger](../reports/DUCC_PARITY_M6.md).
 
-Two isolated native-f32 dual-channel reflected spin-1 leaves have now been
-rejected. V1 at exact parent `5d6e5e34` activated on all blocks but made q8
-2.196x/3.145x slower than parent and 74.735x/125.054x DUCC. V2 at exact parent
-`4ede4c7159536dd68e2ee371f8cce5e0760dd738` vectorized scaled coefficient rows;
-its q8 full/reduced calls remained 2.019x/2.545x parent and 91.727x/120.407x
-DUCC. q1 gains were not substantial, and candidate error remained worse than
-parent. Exact patches, routes, timings, hashes, profile, and validation are in
-the [V1](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md)
-and [V2](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v2-packet-scale/README.md)
+Three isolated native-f32 dual-channel reflected spin-1 candidates are now
+rejected. V1 activated on all blocks but made q8 2.196x/3.145x slower than
+parent. V2 checked packet accumulation reduced some q1 latency, but q8 remained
+2.019x/2.545x parent. V3 fused the four coefficient rows and proved the new
+packet path handled 425k–524k full-cell packets without decline, but q8 remained
+1.996x/2.585x parent and q1 showed no substantial gain. Each remains tens of
+multiples slower than DUCC, and candidate random-fixture error remained worse
+than parent. Exact patches, route counts, whole-call timings, and the V1
+Callgrind attribution are in the [V1](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md),
+[V2](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v2-packet-scale/README.md),
+and [V3](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v3-fourrow/README.md)
 evidence packages.
 
-The V1 profile attributed 53.97% of candidate instruction references to
-scalar scaled-product helpers. V2 used the existing checked packet helper but
-called it independently for four coefficient rows, repeating basis/cosine
-loads and exponent decomposition. Next run a bounded fused four-row packet
-leaf that shares those operations across both channels. Require a substantial
-whole-call gain, q8 non-regression, and independent numerical validation
-before promotion. If the fused packet leaf fails that gate, move to the
-measured f64-internal spin routes and optimize the transform stage identified
-by the complete Stage B profile; do not continue marginal variants of the
-same route. M6 remains open.
+Stop native-f32 reflected-leaf variants. The next bounded experiment is a
+reusable f32-I/O/f64-internal spin-1 synthesis route using existing f64 plans
+and workspaces, complete conversions/writeback, and guarded native-f32 fallback.
+Stage B found this route near parity but above target at q8 and reduced q1;
+profile the f64 transform stage where those cells miss. Limit production routing
+to explicitly measured geometries. If that route fails a whole-call and
+numerical gate, preserve it and continue cause-based Stage C work on the
+remaining cells. M6 remains open.
 
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
