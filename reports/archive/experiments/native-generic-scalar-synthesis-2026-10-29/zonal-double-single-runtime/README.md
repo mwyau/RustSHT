@@ -88,6 +88,20 @@ Run [`results/diagnose_order_bands.py`](results/diagnose_order_bands.py) with
 `--subset base`, `intersections`, `ring-target`, or `low-order`; add
 `--ringwise` for the per-ring records.
 
+A separate test-only observer examined the f32 prefix transition at GL T720
+for orders 1–16 with coefficients only in degrees 600–720. It recorded 46
+ring batches per order (736 total). Every batch had zero scaled-prefix pair
+updates, began the ordinary suffix at degree `m`, and was already in the full
+IEEE range. Thus these filtered low-order cases execute the ordinary f32
+recurrence across the full degree range; the counters do not distinguish
+recurrence error from coefficient-accumulation error. The probe uses the same
+T720 latitudes with reduced `M16,nphi=34`, and is not a timing result. Its
+test-only patch and per-order summary are in
+[`patches/prefix-transition-observer.patch.gz`](patches/prefix-transition-observer.patch.gz)
+and [`results/prefix-transition-summary.json`](results/prefix-transition-summary.json).
+The ignored probe passed (1 passed, 356 filtered); strict Clippy, formatting,
+and diff checks passed on the instrumented source.
+
 `cargo test --features parallel --lib` passed on the paired source:
 319 passed, 37 ignored, in 103.80 seconds. `cargo clippy --all-targets
 --features parallel -- -D warnings`, `cargo fmt --check`, and `git diff
@@ -132,10 +146,10 @@ compensated branch.
 
 Keep this leaf isolated. It establishes a precise m=0 accuracy correction but
 does not address the dominant nonzero-order/high-degree error or full-grid
-performance gaps. Next, inspect ringwise errors and scaled-prefix lengths for
-`m=1–16` at `l=600–720`, especially rings 0–5, 360, and 715–720, to determine
-whether the error grows during the scaled prefix or ordinary suffix. Any
-broader compensated state must remain native f32 at runtime,
+performance gaps. Since the target orders use no scaled prefix, next compare
+ordinary f32 recurrence and coefficient-accumulation error for `m=1–16` at
+`l=600–720`, especially rings 0–5, 360, and 715–720. Any broader compensated
+state must remain native f32 at runtime,
 preserve exceptional-range behavior, and avoid adding work to every order
 unless accuracy and whole-transform timing both support it. Production
 dispatch, the temporary f64 child-plan route, and other transform families

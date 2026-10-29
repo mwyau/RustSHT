@@ -1,0 +1,365 @@
+{
+  "by_order": [
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 1,
+      "ordinary_suffix_start_degree_minmax": [
+        1,
+        1
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 2,
+      "ordinary_suffix_start_degree_minmax": [
+        2,
+        2
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 3,
+      "ordinary_suffix_start_degree_minmax": [
+        3,
+        3
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 4,
+      "ordinary_suffix_start_degree_minmax": [
+        4,
+        4
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 5,
+      "ordinary_suffix_start_degree_minmax": [
+        5,
+        5
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 6,
+      "ordinary_suffix_start_degree_minmax": [
+        6,
+        6
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 7,
+      "ordinary_suffix_start_degree_minmax": [
+        7,
+        7
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 8,
+      "ordinary_suffix_start_degree_minmax": [
+        8,
+        8
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 9,
+      "ordinary_suffix_start_degree_minmax": [
+        9,
+        9
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 10,
+      "ordinary_suffix_start_degree_minmax": [
+        10,
+        10
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 11,
+      "ordinary_suffix_start_degree_minmax": [
+        11,
+        11
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 12,
+      "ordinary_suffix_start_degree_minmax": [
+        12,
+        12
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 13,
+      "ordinary_suffix_start_degree_minmax": [
+        13,
+        13
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 14,
+      "ordinary_suffix_start_degree_minmax": [
+        14,
+        14
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 15,
+      "ordinary_suffix_start_degree_minmax": [
+        15,
+        15
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    },
+    {
+      "active_lane_count_distribution": {
+        "1": 1,
+        "8": 45
+      },
+      "full_ieee_batches": 46,
+      "north_ring_batch_start_minmax": [
+        0,
+        360
+      ],
+      "order": 16,
+      "ordinary_suffix_start_degree_minmax": [
+        16,
+        16
+      ],
+      "ring_batches": 46,
+      "scaled_pair_count_minmax": [
+        0,
+        0
+      ]
+    }
+  ],
+  "clippy_command": "cargo clippy --all-targets --features parallel -- -D warnings",
+  "clippy_result": "passed on the instrumented test source",
+  "coefficients": "real f32 coefficients for orders 1..16 and degrees 600..720; value=((degree*37+order*13)%997)/997/721 - 0.5/721; all other coefficients zero",
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "diff_command": "git diff --check",
+  "diff_result": "passed",
+  "format_command": "cargo fmt --check",
+  "format_result": "passed",
+  "geometry": {
+    "grid": "GL",
+    "lmax": 720,
+    "longitude_origin": 0.23,
+    "mmax": 16,
+    "nphi": 34,
+    "ntheta": 721,
+    "threads": 1
+  },
+  "interpretation": "All 736 observed vector batches began the ordinary f32 suffix at the sectoral order, with zero scaled-prefix pair updates and full IEEE range already reached. This probe indicates the filtered low-order high-degree region runs entirely in the ordinary suffix; it does not isolate recurrence rounding from coefficient-accumulation rounding.",
+  "observation_count": 736,
+  "runtime_candidate_patch_sha256": "7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9",
+  "source_parent": "b6a96aa7161a64f678b614d73478496f50f0551e",
+  "test_binary_sha256": "eb667d4c8cc07f9040e3f93f897cbf35a9bdfe7a3edbede64f78952ce6011ff9",
+  "test_command": "cargo test --features parallel --lib native_f32_ordered_prefix_transition_probe -- --ignored --nocapture",
+  "test_only_observer_patch_sha256": "d60911cb105c41cadd2e1f7fe50a404cf0b8822b3abc8f94a8de8e10999baf25",
+  "test_result": "passed; 1 passed, 0 failed, 0 ignored, 356 filtered out; 0.10 seconds"
+}

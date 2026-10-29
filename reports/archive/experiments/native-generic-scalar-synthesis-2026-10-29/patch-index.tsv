@@ -31,3 +31,4 @@ native-generic-scalar-uniform-scale-simd.patch	9d5c7b578aa2298ca774d263c7f1c1593
 native-generic-scalar-double-single-feasibility.patch	00220ca6e07c5b277919b6936f596a145d42315084097b2029fa224e43dbaf14	patches/native-generic-scalar-double-single-feasibility.patch.gz
 zonal-basis-dotproduct.patch	71e4312d772bc4533688aead4ab0a7034c3ddfb681c5013953bebfaf145c2ce3	zonal-basis-dotproduct/source.patch.gz
 native-generic-scalar-zonal-paired-ds.patch	7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9	zonal-double-single-runtime/patches/native-f32-paired-zonal-leaf.patch.gz
+native-generic-scalar-prefix-transition-observer.patch	d60911cb105c41cadd2e1f7fe50a404cf0b8822b3abc8f94a8de8e10999baf25	zonal-double-single-runtime/patches/prefix-transition-observer.patch.gz

@@ -68,9 +68,11 @@ paired-source library tests and reduces the T720 zonal maximum absolute error
 to `3.19e-8`, but its three-pair full q1/q8 timings remain `1.256/1.272x`
 DUCC and random-transform error is unchanged. The order-band screen finds
 m=0 at `5.83e-8`, nonzero orders at `1.32e-4–2.10e-4`, and degree 600–719 at
-`2.55e-4`. The current next action is to localize error within high-degree
-nonzero orders and the scaled-prefix/ordinary-suffix transition before
-extending compensated arithmetic. Keep production dispatch unchanged. Full
+`2.55e-4`. A test-only observer found no scaled prefix in 736 ring batches
+for `m=1–16`; each batch starts the ordinary suffix at degree `m`. The current
+next action is to separate ordinary recurrence error from coefficient
+accumulation error in those high-degree orders. Keep production dispatch
+unchanged. Full
 provenance is in the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
@@ -118,10 +120,12 @@ leaf does not establish parity. An accuracy-only band screen places m=0 at
 channel and has maximum absolute error `3.25e-5`. Ringwise errors peak at
 polar-end rings 5/717 and equator ring 360; order subdivisions put `m=5–8`
 at `4.61e-4` relative L2 and `m=9–16` at `3.42e-4` maximum absolute error.
-Next, record scaled-prefix lengths by order and ring batch for
-`m=1–16,l=600–720` before broadening compensated work. Keep production
-dispatch unchanged; do not promote this leaf or the conversion sidecar. See
-the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+A test-only observer found zero scaled-prefix pair updates in all 736 ring
+batches for `m=1–16`; each batch began the ordinary f32 suffix at degree `m`.
+Next, separate ordinary recurrence error from coefficient-accumulation error
+for `m=1–16,l=600–720`, focusing on rings 0–5, 360, and 715–720. Keep
+production dispatch unchanged; do not promote this leaf or the conversion
+sidecar. See the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 

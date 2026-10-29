@@ -8,7 +8,9 @@
   is unchanged. The intersection screen measures `m=1–32,l=600–719` at
   `3.25e-4` relative L2. Ringwise errors peak at polar-end rings 5/717;
   order bands put `m=5–8` at `4.61e-4` relative L2 and `m=9–16` at
-  `3.42e-4` maximum absolute error. The leaf remains isolated.
+  `3.42e-4` maximum absolute error. A test-only observer found no scaled
+  prefix in 736 batches for `m=1–16`; those cases run the full ordinary f32
+  suffix. The leaf remains isolated.
   See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64

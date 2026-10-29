@@ -143,9 +143,13 @@ ringwise screen for `m=1–32,l=600–719` peaks in absolute error at rings 5 an
 717 (`3.52e-4`, `3.50e-4`); relative error is also elevated at ring 360.
 Subdividing the order band puts `m=5–8` at `4.61e-4` relative L2 and
 `m=9–16` at `3.42e-4` maximum absolute error. The next diagnostic is
-scaled-prefix length by order and ring for `m=1–16` at `l=600–720`. Keep the
-leaf isolated. Source patch, pair data, tests, assembly and filtered-fixture
-hashes are in the [paired zonal leaf archive]
+ordinary-recurrence versus coefficient-accumulation error for `m=1–16` at
+`l=600–720`. A test-only prefix observer found zero scaled-prefix pair updates
+in all 736 ring batches for those orders; every batch entered the ordinary
+f32 suffix at degree `m`. The probe uses the same GL T720 latitudes with
+M16/nphi34 and does not isolate recurrence error from accumulation error.
+Keep the leaf isolated. Source patches, pair data, tests, assembly and
+filtered-fixture hashes are in the [paired zonal leaf archive]
 (archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Decisions and remaining scope
@@ -175,14 +179,14 @@ hashes are in the [paired zonal leaf archive]
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** record scaled-prefix lengths by order and ring batch for
-`m=1–16,l=600–720`, focusing on rings 0–5, 360, and 715–720. The filtered
-errors cluster at those polar-end and equatorial rings, but do not yet show
-whether rounding enters in the scaled prefix or ordinary suffix. The m=0
-paired leaf does not improve aggregate random accuracy or full-grid timing.
-Keep production dispatch unchanged while identifying which nonzero-order
-recurrence contributions dominate. Any next compensated leaf must retain
-native-f32 runtime state and pass independent accuracy, adjoint, reset,
-exceptional-range, and whole-transform timing checks. See the [active
+**NEXT:** separate ordinary f32 recurrence error from coefficient-accumulation
+error for `m=1–16,l=600–720`, focusing on rings 0–5, 360, and 715–720. The
+test-only observer found no scaled prefix in those orders, so do not spend the
+next candidate on prefix scaling. The m=0 paired leaf does not improve
+aggregate random accuracy or full-grid timing. Keep production dispatch
+unchanged while identifying which nonzero-order recurrence contributions
+dominate. Any next compensated leaf must retain native-f32 runtime state and
+pass independent accuracy, adjoint, reset, exceptional-range, and
+whole-transform timing checks. See the [active
 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and the [paired
 zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
