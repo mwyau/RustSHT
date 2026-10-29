@@ -3,8 +3,10 @@
 - **2026-10-29 — native-generic scalar synthesis candidate measured.** The
   isolated 15-pair f32 GL T720 candidate missed DUCC in all four cells
   (`1.054–1.355x`); vector-rescale follow-ups regressed, and suffix inlining
-  showed no repeatable gain. Production dispatch is unchanged, and a
-  high-degree near-pole accuracy discrepancy remains. See the [candidate record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
+  showed no repeatable gain. The per-lane exponent AVX2 follow-up also missed
+  all four cells (`1.112–1.623x`) and spent 36.9% of q1 Callgrind Ir in the
+  scaler. Production dispatch is unchanged, and a high-degree near-pole
+  accuracy discrepancy remains. See the [candidate record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

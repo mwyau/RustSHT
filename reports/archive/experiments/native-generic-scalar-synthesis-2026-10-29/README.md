@@ -47,7 +47,7 @@ unique patch hashes are listed in [`patch-index.tsv`](patch-index.tsv).
 |---|---|---|
 | Scale-count helper | 1.451 / 1.478 / 1.131 / 1.269 | [JSON](results/f32-scale-count-screen-3.json) |
 | Scale-count multi-epoch | 1.456 / 1.413 / 1.110 / 1.085 | [JSON](results/f32-scale-count-multiepoch-screen-3.json) |
-| i32 scale restoration | 1.615 / 1.623 / 1.234 / 1.112 | [JSON](results/f32-scale-i32-screen-3.json) |
+| Per-lane i32 exponent AVX2 restoration | 1.615 / 1.623 / 1.234 / 1.112 | [JSON](results/f32-scale-i32-screen-3.json) |
 | i32 scalar restoration | 1.426 / 1.268 / 1.078 / 1.180 | [JSON](results/f32-scale-i32-scalar-restore-screen-3.json) |
 | Coefficient preparation | 1.341 / 1.177 / 1.035 / 1.244 | [JSON](results/f32-coeff-prep-screen-3.json) |
 | Direct normal-range scaler | 1.554 / 1.068 / 1.205 / 1.256 | [JSON](results/f32-direct-normal-scale-screen-3.json) |
@@ -63,6 +63,21 @@ unique patch hashes are listed in [`patch-index.tsv`](patch-index.tsv).
 
 These screens are diagnostic and do not replace 15-pair acceptance. The
 forced-inline q8 samples were noisy; all four medians remain above 1.0.
+
+The per-lane i32 candidate adjusted normal f32 exponent fields in eight-lane
+vectors and used the exact scalar scaler for zero, subnormal, overflow, and
+underflow cases. Its full-q1 Callgrind profile recorded 548,274,765 Ir; the
+scaler accounted for 202,461,043 Ir (36.93%) and prefix preparation for
+114,781,841 Ir (20.94%). The screen missed DUCC in all four cells, so the
+AVX2 lane operation did not offset its mask, exception, and prefix overhead.
+Ir are instruction references, not cycles. The candidate used parent
+`39dd8a883d21a269654e1b74de862ee2e97d22ee`, patch SHA
+`8dfb9227e674fcd5f6a505de60503f9d016350fbe9d46276f9cade2541a66465`, binary
+SHA `80351b1cc53c0f29465f4551d9c34849c364843d1631dad1f36bc86230b01fd5`,
+and the pinned DUCC binary. The compressed profile is in
+[`profiles/scale-i32-vector-full-q1.callgrind.gz`](profiles/scale-i32-vector-full-q1.callgrind.gz);
+its original scratch profile SHA-256 was
+`332530fa2d813a567d4f9960c9030e624c3f215a0cd8a7ca3e13e0e12a16fdb2`.
 
 ## Ordinary-suffix inlining screen
 
@@ -122,10 +137,10 @@ The initial isolated source passed `cargo fmt --all -- --check`,
 `git diff --check`, and `cargo test --release --features parallel --lib`
 (317 passed, 37 ignored). The separate ordinary-suffix inlining candidate
 passed the same format/diff checks and release lib tests (315 passed, 37
-ignored). No production source or dispatch was promoted. Further work should redesign
-the native-f32 scaled-prefix execution from its work and code-generation
-evidence; the rejected scale and rescale variants above should not be repeated
-unchanged.
+ignored). No production source or dispatch was promoted. Further work should
+redesign native-f32 scaled-prefix execution from its work and code-generation
+evidence. In particular, per-lane exponent SIMD restoration is a measured
+rejection and should not be repeated unchanged.
 
 `SHA256SUMS` covers all archived patches, result JSON, runners, profile files,
 and the disassembly excerpt. No benchmark binaries or duplicate fixture files

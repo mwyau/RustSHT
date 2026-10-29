@@ -44,6 +44,11 @@ reuse. This is a targeted generalization, not a mechanical `f64` replacement.
   zonal probe reports `0.018705474` in f32 versus `0.018541995` from the
   independent f64 recurrence near the pole. This diagnostic has no tolerance
   assertion; add an independent accuracy check before considering promotion.
+- A precision-specific AVX2 leaf that restored each scaled f32 lane by
+  adjusting exponent fields and falling back for exceptional lanes also
+  regressed all four T720 synthesis cells (1.112–1.623x DUCC). Its scaler
+  consumed 36.9% of q1 Callgrind instruction references; this is not a cycle
+  estimate. Do not repeat per-lane exponent restoration as the next candidate.
 - Production GL T720 f32 scalar synthesis currently uses a guarded **f64 child-plan and conversion sidecar**, passing four full/reduced q1/q8 cells at 0.775–0.961x native DUCC. It is **temporary technical debt**, not the desired final architecture. See [production evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
 - Native-f32 scalar analysis and spin-1 transforms remain far from DUCC. Isolated f32-I/O/f64-recurrence analysis and spin diagnostics are near parity in some cases but do **not** prove that a native-f32 instantiation is fast.
 - The latest diagnostic scalar-analysis tile-512 change yielded about 1% improvement and was rejected; its subsequent Callgrind attributed 30.3% of process Ir to a checked scaled f64 analysis path and 16.6% to ordinary fused suffix work. These profiles are clues, **not** license to continue optimizing the f64-internal f32 route. See [tile report](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md) and [profile](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
@@ -77,10 +82,11 @@ First prototype in an isolated current-source worktree. Measure native-f32 GL T7
 
 **Current state:** the generic route is implemented only as an isolated patch.
 The initial candidate spends substantial work in the precision-specific f32
-scaled prefix; scalar scale-count, restoration, and vector-rescale variations
-did not improve whole transforms. An ordinary-suffix inlining screen also
-showed no repeatable gain; its baseline already emits direct FMA. Do not repeat
-these variants unchanged. The next candidate must reduce scaled-prefix work or
+scaled prefix; scale-count, scalar/vector restoration, vector-rescale, and
+ordinary-suffix inlining variations did not improve whole transforms. The
+ordinary suffix already emits direct FMA, and the per-lane AVX2 exponent
+restoration route is now explicitly ruled out. Do not repeat these variants
+unchanged. The next candidate must change the scaled-prefix work structure or
 another quantified hot cost while retaining checked exponent and underflow
 behavior, then pass the independent high-degree accuracy control.
 

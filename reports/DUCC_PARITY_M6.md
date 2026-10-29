@@ -69,6 +69,12 @@ control for an isolated generic source patch was about 3% slower than parent
 at q1/q8, so shared f64 performance still needs protection during the next
 candidate.
 
+A separate per-lane i32 AVX2 exponent-restoration leaf also missed all four
+cells (1.112–1.623x DUCC); its q1 profile spent 36.9% of instruction
+references in the scaler. It did not establish a useful SIMD speedup and
+should not be repeated unchanged. Exact patch, binary and profile provenance
+are in the [isolated synthesis record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
+
 A separate `#[inline(always)]` change on the ordinary suffix was screened
 against the exact non-inlined generic binary. The original suffix already
 emits direct AVX2 FMA and uses a 40-byte stack frame; the attribute change
