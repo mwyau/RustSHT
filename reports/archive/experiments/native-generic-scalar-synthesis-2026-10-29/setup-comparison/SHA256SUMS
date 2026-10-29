@@ -1,0 +1,12 @@
+5d1e24eff3d93d09952f9e2ba05b111de70fefe39ab287e06cab6ac0767a80f2  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/Cargo.toml.template
+2d7e26a39d9faa51e600e87b2e3006e79b3025a9df67fc82c96a31f77430322d  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md
+26c9eb924fd106038f919c10d38a71b8ee4fb0caa19714ddfaeec8ce04a4394b  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/actual-pair-preparation-dump.patch.gz
+c0f0386d5c49ae8c02f5176e828910e93d49ea92a013c9197284d861fd239ebe  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/candidate-native-generic.patch.gz
+de3aa868985c8f7971cfaa967b87f5598363dd426e8bd31de0316f39c25469db  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/command-provenance.txt
+5d1279ec1dba389e1edff69403af1854b1c4c62209d6561239f06df5cd6daa3c  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/compare_setup.py
+b5db9d1a234c43183aeaf99280753e15a15e02083eda354319c9a84fda57bb99  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/data/actual-rust-pair-preparation.csv.gz
+a828cee8491fc5e88e6c983ec876f906d94ca8e14b44073ab99955d0b57a20c5  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/data/ducc-setup.csv.gz
+80063c68cbba990bb3773c94727c0a345251c38b13688a4cba996b74a5bb2deb  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/data/rust-setup.csv.gz
+c198514361f9a02b04a36d39de4cd0319e7a4447b813ecff09f82fad991f226f  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/ducc_setup.cpp
+ec8467f1470726a43fd2cef0291f6cd5b112e5f5365b82baba7f3b673ce72d8d  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/results/setup-comparison-summary.json
+90eb2dc54613df406d252e00b3446140e4d9ab64e5c16702fabc9006de31ed5a  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/rust_setup_probe.rs

@@ -33,3 +33,5 @@ zonal-basis-dotproduct.patch	71e4312d772bc4533688aead4ab0a7034c3ddfb681c5013953b
 native-generic-scalar-zonal-paired-ds.patch	7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9	zonal-double-single-runtime/patches/native-f32-paired-zonal-leaf.patch.gz
 native-generic-scalar-prefix-transition-observer.patch	d60911cb105c41cadd2e1f7fe50a404cf0b8822b3abc8f94a8de8e10999baf25	zonal-double-single-runtime/patches/prefix-transition-observer.patch.gz
 native-generic-scalar-recurrence-accumulation-probe.patch	7ec8e43cc4d0451f978874e57c64915f541474fccb5b5f0f8e1bb321afb441df	zonal-double-single-runtime/patches/recurrence-accumulation-test.patch.gz
+native-generic-scalar-setup-comparison-candidate.patch	cc72cbc20048affbdbd6cdbce619af79edc65896a9a0ed9730006179ea3ce7a8	setup-comparison/candidate-native-generic.patch.gz
+native-generic-scalar-pair-preparation-dump.patch	39aea691deb331e3bef0d69e9a732f6eacf9164414b0930cb0032b8efa4d7f9c	setup-comparison/actual-pair-preparation-dump.patch.gz

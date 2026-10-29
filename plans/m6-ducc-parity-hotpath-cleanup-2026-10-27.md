@@ -63,24 +63,22 @@ reuse. This is a targeted generalization, not a mechanical `f64` replacement.
 - The earlier reflected native-f32 scalar-synthesis patch was rejected on current source due to adjacent and f64 regressions. Native-f32 reflected spin-1 V1–V3 and f64 spin-1 loop tiling also regressed. Do not repeat those exact designs unchanged. Provenance is in the [M6 ledger](../reports/DUCC_PARITY_M6.md).
 
 **Latest scalar-synthesis diagnostic:** an isolated native-f32 paired
-recurrence replaces the shared route's guarded m=0 recurrence. It passes the
-paired-source library tests and reduces the T720 zonal maximum absolute error
-to `3.19e-8`, but its three-pair full q1/q8 timings remain `1.256/1.272x`
-DUCC and random-transform error is unchanged. The order-band screen finds
-m=0 at `5.83e-8`, nonzero orders at `1.32e-4–2.10e-4`, and degree 600–719 at
-`2.55e-4`. A test-only observer found no scaled prefix in 736 ring batches
-for `m=1–16`; each batch starts the ordinary suffix at degree `m`. A second
-test-only replay decomposed 208 order/ring values. The f32 recurrence and
-fused sums replayed the candidate SIMD outputs bitwise. With f32 setup values
-held fixed, ordinary recurrence rounding contributed `1.6448e-4` relative
-RMS versus `1.0311e-6` from accumulation rounding; both were material at the
-equator. Sequential one-at-a-time f64 substitutions measured geometry
-sensitivity at `9.00e-4`, paired-factor sensitivity at `1.51e-4`, sectoral seed
-at `2.18e-5`, and coefficient preparation at `1.95e-6` relative RMS. These
-are ordered sensitivities, not additive errors. Next compare the precise
-geometry and factor-preparation sequence with pinned native-f32 DUCC before
-choosing another correction. Keep production dispatch unchanged. Full
-provenance is in the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+recurrence corrects the zonal probe to `3.19e-8` maximum absolute error, but
+its three-pair full q1/q8 timings remain `1.256/1.272x` DUCC and random
+transform error is unchanged. For `m=1–16,l=600–720`, the f32 recurrence
+replay contributes `1.6448e-4` relative RMS versus `1.0311e-6` from
+accumulation rounding. An observer found no scaled-prefix work in 736 ring
+batches. The setup comparison finds bitwise-identical f64 GL geometry and
+f32-rounded recurrence tables; DUCC's f32 API uses double scalar Legendre
+state. These observations point to native-f32 recurrence-state rounding,
+not a setup formula mismatch. The comparison and its limits are in the
+[setup-comparison record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md).
+
+**NEXT:** prototype a test-only compensated f32 recurrence-state replay for
+`m=1–16,l=600–720` on the selected polar, equatorial and near-south rings.
+Keep the candidate inputs and coefficient pairs fixed first, compare the
+replay with the independent double recurrence, then assess SIMD cost and
+whole-transform timing before any production route changes.
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
 

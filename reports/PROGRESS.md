@@ -14,8 +14,13 @@
   recurrence rounding and `1.0311e-6` to accumulation rounding, with both
   material at the equator. One-at-a-time setup sensitivities measured f64
   geometry at `9.00e-4`, paired factors at `1.51e-4`, and the sectoral seed at
-  `2.18e-5` relative RMS; they are not additive terms. The paired source
-  passed 319 library tests (39 ignored); the leaf remains isolated.
+  `2.18e-5` relative RMS; they are not additive terms. A direct setup
+  comparison found matching f64 GL geometry and f32-rounded recurrence tables
+  against DUCC for all 720
+  rings and 968 high-degree order pairs. DUCC keeps double Legendre state
+  behind its f32 API; the remaining discrepancy is native-f32 recurrence
+  precision. The paired source passed 319 library tests (39 ignored); the
+  leaf remains isolated.
   See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64

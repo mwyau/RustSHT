@@ -1,0 +1,7 @@
+[package]
+name = "rustsht-setup-probe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rustsht = { path = "@CANDIDATE_WORKTREE@", features = ["parallel"] }

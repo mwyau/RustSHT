@@ -1,0 +1,157 @@
+{
+  "candidate": {
+    "base_commit": "b6a96aa7161a64f678b614d73478496f50f0551e",
+    "source_diff_sha256": "cc72cbc20048affbdbd6cdbce619af79edc65896a9a0ed9730006179ea3ce7a8"
+  },
+  "geometry": {
+    "cos_squared_error": {
+      "candidate_f32_vs_ducc_f64_max_absolute": 8.23565959873207e-08,
+      "candidate_f32_vs_ducc_f64_max_relative": 1.4275888324416163e-07,
+      "candidate_f32_vs_ducc_f64_rms_absolute": 2.6176497421285788e-08,
+      "candidate_f32_vs_ducc_f64_rms_relative": 4.815054805076457e-08,
+      "max_relative_ring": 494
+    },
+    "double_setup": {
+      "cos": {
+        "bitwise_equal": 720,
+        "count": 720,
+        "max_absolute_difference": 0.0
+      },
+      "cos_squared": {
+        "bitwise_equal": 720,
+        "count": 720,
+        "max_absolute_difference": 0.0
+      },
+      "sin": {
+        "bitwise_equal": 720,
+        "count": 720,
+        "max_absolute_difference": 0.0
+      },
+      "theta": {
+        "bitwise_equal": 720,
+        "count": 720,
+        "max_absolute_difference": 0.0
+      }
+    },
+    "native_f32_rounding": {
+      "cos": {
+        "max_relative_error_vs_ducc_double": 5.344284275823583e-08,
+        "max_ulp_from_nearest_f32": 0,
+        "not_nearest_f32_count": 0,
+        "rows": 720
+      },
+      "cos_squared": {
+        "max_relative_error_vs_ducc_double": 1.4275888324416163e-07,
+        "max_ulp_from_nearest_f32": 2,
+        "not_nearest_f32_count": 336,
+        "rows": 720
+      },
+      "sin": {
+        "max_relative_error_vs_ducc_double": 5.438864054221973e-08,
+        "max_ulp_from_nearest_f32": 0,
+        "not_nearest_f32_count": 0,
+        "rows": 720
+      }
+    }
+  },
+  "prepared_coefficients": {
+    "even": {
+      "max_absolute_difference": 1.427382107909575e-10,
+      "not_nearest_f32_count": 344,
+      "relative_l2_by_order": {
+        "1": 4.053237140037264e-08,
+        "10": 3.9122473941373624e-08,
+        "11": 3.472142452658055e-08,
+        "12": 4.109424111486144e-08,
+        "13": 3.826776874354156e-08,
+        "14": 3.8432222769813514e-08,
+        "15": 3.371858619003429e-08,
+        "16": 4.125750536020936e-08,
+        "2": 3.81755635987109e-08,
+        "3": 4.419399923125863e-08,
+        "4": 3.436093195142574e-08,
+        "5": 3.8750237494980245e-08,
+        "6": 4.86530391593673e-08,
+        "7": 3.7018540361844105e-08,
+        "8": 4.2775734180013004e-08,
+        "9": 4.101051131972078e-08
+      },
+      "relative_l2_vs_ducc_double": 3.965426399514283e-08,
+      "rms_absolute_difference": 2.8507350071693862e-11,
+      "rows": 968
+    },
+    "odd": {
+      "max_absolute_difference": 1.240212921509859e-10,
+      "not_nearest_f32_count": 261,
+      "relative_l2_by_order": {
+        "1": 3.2683206453001745e-08,
+        "10": 4.0381292936499866e-08,
+        "11": 3.342013126763227e-08,
+        "12": 3.6244790053029706e-08,
+        "13": 3.7864654692964236e-08,
+        "14": 3.1171314285801366e-08,
+        "15": 4.147891422018773e-08,
+        "16": 3.3743209250055015e-08,
+        "2": 3.410358928426794e-08,
+        "3": 3.64430436480343e-08,
+        "4": 4.0090403241078874e-08,
+        "5": 3.585465428088692e-08,
+        "6": 3.047181940418168e-08,
+        "7": 3.679374567210812e-08,
+        "8": 3.371410430565188e-08,
+        "9": 4.0641716982048507e-08
+      },
+      "relative_l2_vs_ducc_double": 3.613190707563085e-08,
+      "rms_absolute_difference": 2.9103115636111135e-11,
+      "rows": 968
+    }
+  },
+  "probe": {
+    "degree_pairs": [
+      600,
+      720
+    ],
+    "geometry_rings": 720,
+    "orders": [
+      1,
+      16
+    ],
+    "pair_rows": 968
+  },
+  "recurrence_factors": {
+    "alpha": {
+      "max_relative_error_vs_ducc_double": 5.5603731966590744e-08,
+      "max_ulp_from_nearest_f32": 0,
+      "not_nearest_f32_count": 0,
+      "rows": 968
+    },
+    "epsilon_l_plus_1": {
+      "max_relative_error_vs_ducc_double": 2.9738609382142676e-08,
+      "max_ulp_from_nearest_f32": 0,
+      "not_nearest_f32_count": 0,
+      "rows": 968
+    },
+    "epsilon_l_plus_2": {
+      "max_relative_error_vs_ducc_double": 2.9794197595422775e-08,
+      "max_ulp_from_nearest_f32": 0,
+      "not_nearest_f32_count": 0,
+      "rows": 968
+    },
+    "recurrence_a": {
+      "max_relative_error_vs_ducc_double": 5.0363723214377615e-08,
+      "max_ulp_from_nearest_f32": 0,
+      "not_nearest_f32_count": 0,
+      "rows": 968
+    },
+    "recurrence_b": {
+      "max_relative_error_vs_ducc_double": 3.984376591777263e-08,
+      "max_ulp_from_nearest_f32": 0,
+      "not_nearest_f32_count": 0,
+      "rows": 968
+    }
+  },
+  "reference": {
+    "commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "name": "DUCC 0.42.0 f32 transform API"
+  }
+}

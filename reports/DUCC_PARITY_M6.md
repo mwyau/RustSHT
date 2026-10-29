@@ -155,9 +155,15 @@ sensitivity at `1.51e-4`, sectoral seed at `2.18e-5`, and coefficient
 preparation at `1.95e-6`; these are not additive error terms. Geometry is
 largest near polar rings. At equator ring 360 geometry was exact in this
 comparison, while accumulation, factors, and coefficient preparation were
-locally material. Keep the leaf isolated. Source patches, paired results,
-tests, assembly and fixture hashes are in the [paired zonal leaf archive]
-(archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+locally material. A direct setup comparison found bitwise-identical f64 GL
+angles and trigonometric inputs in Rust and DUCC for all 720 rings. The
+candidate's actual f32 recurrence tables match the nearest f32 rounding of
+DUCC's double tables for all 968 `m=1–16,l=600–720` pairs. Prepared even/odd
+coefficient pairs differ by `3.97e-8` and `3.61e-8` relative L2. DUCC's f32
+API uses `complex<double>` Legendre work arrays and `native_simd<double>`
+recurrence state. The earlier geometry/factor sensitivities therefore measure
+amplification of precision rounding, not a formula mismatch. Keep the leaf
+isolated. Full data and scripts are in the [setup comparison](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md) and [paired zonal leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Decisions and remaining scope
 
@@ -186,14 +192,10 @@ tests, assembly and fixture hashes are in the [paired zonal leaf archive]
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** compare the current f32 geometry and paired-factor preparation
-against pinned native-f32 DUCC for `m=1–16,l=600–720`, especially polar rings
-0–5 and 715–720. The one-at-a-time f64 sensitivities identify geometry and
-factor representation as candidate causes, but do not establish that Rust
-differs from DUCC in those values. The observer found no scaled pair updates
-in these orders. The m=0 paired leaf does not improve aggregate random
-accuracy or full-grid timing. Keep production dispatch unchanged. Any next
-correction must retain native-f32 runtime state and pass independent accuracy,
-adjoint, reset, exceptional-range, and whole-transform timing checks. See the [active
-plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and the [paired
-zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+**NEXT:** use a test-only compensated f32 recurrence-state replay for
+`m=1–16,l=600–720` to test whether native-f32 state rounding explains the
+remaining high-degree error. Hold the candidate setup and coefficient pairs
+fixed, compare against the independent double recurrence, and assess vector
+cost before changing production dispatch. The setup formulas already match
+DUCC at their expected f32 precision. Preserve exceptional-range, adjoint,
+reset, and whole-transform timing checks. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md), the [setup comparison](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md), and the [paired zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).

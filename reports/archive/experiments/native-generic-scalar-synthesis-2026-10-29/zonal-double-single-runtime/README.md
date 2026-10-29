@@ -171,12 +171,12 @@ Keep this leaf isolated. It establishes a precise m=0 accuracy correction but
 does not address the dominant nonzero-order/high-degree error or full-grid
 performance gaps. The selected ordinary f32 replay attributes most aggregate
 error in its limited screen to recurrence rounding; equator accumulation is
-also material. Setup sensitivity is larger: f64 geometry replacement changes
-the selected values by `9.00e-4` relative RMS, and f64 paired factors by
-`1.51e-4`. Next compare the exact geometry and factor-preparation sequence
-with pinned native-f32 DUCC before choosing a correction. Any broader
-compensated state must remain native f32 at runtime, preserve exceptional-range
-behavior, and avoid adding work across all orders unless accuracy and
-whole-transform timing both support it.
-Production dispatch, the temporary f64 child-plan route, and other transform
-families were not changed by this experiment.
+also material. A direct [setup comparison](../setup-comparison/README.md)
+found that Rust and DUCC use identical f64 GL geometry and that candidate f32
+recurrence tables are the nearest f32 roundings of DUCC's double values. The
+large one-at-a-time geometry/factor sensitivities therefore reflect recurrence
+conditioning under native-f32 rounding, not a formula mismatch. DUCC's f32
+API retains double Legendre state. The next isolated diagnostic should test a
+compensated f32 recurrence state on `m=1–16,l=600–720`, before any SIMD or
+production-dispatch change. Production dispatch, the temporary f64 child-plan
+route, and other transform families were not changed by this experiment.

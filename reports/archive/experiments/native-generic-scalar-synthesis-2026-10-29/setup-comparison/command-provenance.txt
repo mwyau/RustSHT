@@ -1,0 +1,35 @@
+Candidate source base: b6a96aa7161a64f678b614d73478496f50f0551e
+Candidate source diff SHA-256: cc72cbc20048affbdbd6cdbce619af79edc65896a9a0ed9730006179ea3ce7a8
+Candidate observer patch SHA-256: 39aea691deb331e3bef0d69e9a732f6eacf9164414b0930cb0032b8efa4d7f9c
+Pinned DUCC HEAD: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+Host: AMD Ryzen 9 5950X
+Rust: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+C++: g++ 15.2.0
+
+Rust geometry probe:
+  cargo run --quiet --manifest-path Cargo.toml
+  CARGO_TARGET_DIR was the candidate worktree's target directory.
+  The manifest is Cargo.toml.template; substitute the reconstructed candidate
+  worktree for @CANDIDATE_WORKTREE@.
+
+DUCC harness build (DUCC_SOURCE points to the pinned DUCC checkout):
+  g++ -std=c++17 -O3 -ffp-contract=fast -march=x86-64-v3 \
+    -DDUCC0_NAMESPACE=ducc0 -DPKGNAME=ducc0 -DPKGVERSION=0.42.0 \
+    -I"$DUCC_SOURCE/src" ducc_setup.cpp \
+    "$DUCC_SOURCE/src/ducc0/math/gl_integrator.cc" \
+    "$DUCC_SOURCE/src/ducc0/infra/threading.cc" \
+    "$DUCC_SOURCE/src/ducc0/infra/string_utils.cc" -pthread -o ducc_setup
+  ./ducc_setup > data/ducc-setup.csv
+
+Actual Rust paired-preparation dump:
+  Apply actual-pair-preparation-dump.patch to the reconstructed candidate.
+  cargo test --features parallel --lib \
+    native_f32_ordered_recurrence_vs_accumulation_error_probe \
+    -- --ignored --nocapture
+  Filter lines beginning RPAIR, into data/actual-rust-pair-preparation.csv.
+  Probe result: 1 passed, 0 failed, 357 filtered, 0.07 seconds.
+
+Binaries used for this diagnostic (not benchmark binaries):
+  DUCC setup harness: fc0b271862047b1eb9716d4a742fa6ec0c04bde5db83aa7b778f171f84286b26
+  Rust setup probe: fd01c9269b4a62c49a96e53e3ffe3ec74419e8a5c8af2a1e664076a28cbee0f0
+  Rust instrumented test: 5bc2ca566cd526b3e273314e9c0093cabcdfcd602036816c0526b3de19a962ba

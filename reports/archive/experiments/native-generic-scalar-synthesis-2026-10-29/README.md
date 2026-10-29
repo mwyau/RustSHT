@@ -291,6 +291,21 @@ not establish that their accumulated contributions are safe to omit. See the
 [full work-count record](results/f32-suffix-fusion-work-count.txt) and
 [test-only instrumentation patch](patches/native-generic-scalar-suffix-fusion-counters.patch.gz).
 
+## DUCC geometry and recurrence-setup comparison
+
+A direct GL T720 comparison used the pinned DUCC `GL_Integrator` and
+`Ylmgen::prepare` alongside the isolated candidate. All 720 f64 angles,
+sine, cosine and cosine-squared values match bitwise. Candidate f32 sine and
+cosine are the nearest f32 values; its f32 cosine-squared differs from DUCC's
+f64 value by at most two ULP. For 968 `m=1–16,l=600–720` pairs, the actual
+candidate f32 alpha, recurrence A/B and epsilon tables match nearest-f32
+rounding of DUCC's double tables. Prepared even/odd coefficient pairs differ
+by `3.97e-8`/`3.61e-8` relative L2. Source inspection confirms that DUCC's f32
+API keeps scalar Legendre work arrays and recurrence state in double before
+narrowing the result to f32. This explains the reference precision but does
+not justify a Rust f64 backend. The source, test-only dump patch, raw values,
+reproducer and caveats are in [`setup-comparison/`](setup-comparison/).
+
 ## Numerical and f64 controls
 
 The high-degree zonal probe at `sin(theta)=0.003333085` produced f32
