@@ -1,0 +1,21 @@
+{
+  "parent_sha": "f66ff4ed571374c664885f054f31711000075805",
+  "candidate": "isolated source patch",
+  "candidate_patch_sha256": "975523e6ce2616192a3fa8ae934d5a730588e10affc8c54d4a696611b6bd30dc",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_version": "0.42.0",
+  "rust_binary_sha256": "8e462e4f574f1614309dd437dbb852630739344589581ee50353fe142ae18e20",
+  "candidate_rust_binary_sha256": "bc6d5f86744a4970c40febec733459edcf6d41ce64b5b66100e32cfd75619c38",
+  "ducc_f32_binary_sha256": "3c6c73767ef0bc64a0332077f9206053edc3fc826331bb586efaa0939d926ec4",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "rust_flags": "--release --features parallel; RUSTFLAGS=-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_compiler": "g++ 15.2.0",
+  "ducc_flags": "SHT C++: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+  "host": "AMD Ryzen 9 5950X, AVX2/FMA, Pulp V3",
+  "affinity_protocol": "q1 fixed to one CPU; q8 fixed to eight distinct physical cores; exact pin sets in benchmark harness source",
+  "harness": "reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/harness/benchmark.py",
+  "harness_sha256": "6cdc210de9825deb818e7ae1128c7fa3300f306745d8aac06b130201c6f51e56",
+  "ducc_harness_cmake_sha256": "7ee556db4dc304b7c25f356728c4d879a2a7787eadacaac902fe7e346ca471fa",
+  "fixture_source": "scripts/benchmark_ducc_f32_native.py::make_fixture; phi0=0.23; fixture/output hashes per cell and pair in paired-results-sanitized.json",
+  "timing": "public f32 ShtPlan::synthesis_spin_into call; reusable f32 and child-f64 plans/workspaces created before warm batches; input promotion, transform, FFT, and map narrowing/writeback timed"
+}

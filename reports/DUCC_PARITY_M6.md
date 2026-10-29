@@ -1,3 +1,49 @@
+## 2026-10-29 f32-I/O/f64-internal spin-1 synthesis integration not promoted
+
+At exact parent `f66ff4ed571374c664885f054f31711000075805`, an isolated
+reusable f64-plan/workspace sidecar exposed existing f64 spin-1 synthesis
+through the f32 public API. The recoverable source patch SHA-256 is
+`975523e6ce2616192a3fa8ae934d5a730588e10affc8c54d4a696611b6bd30dc`. The
+route converts coefficients, executes the existing f64 plan, and narrows both
+maps inside the timed public call; plan/workspace setup is amortized outside
+the warm-call boundary. Pinned DUCC remained native-f32 I/O at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+
+| GL T720 spin-1 synthesis | Parent / candidate / DUCC ms | Candidate/parent paired median [range] | Candidate/DUCC paired median [range or 95% CI] | Status |
+|---|---:|---:|---:|---|
+| Full M720 q1 (15 pairs) | 1482.970 / 39.387 / 40.484 | 0.02667 [0.02623, 0.02697] | 0.97324 [0.96431, 0.97896] | PASS, cell only |
+| Reduced M180 q1 (3 pairs) | 597.185 / 29.108 / 17.604 | 0.04873 [0.04800, 0.05096] | 1.65355 [1.61391, 1.73898] | GAP |
+| Full M720 q8 (3 pairs) | 269.417 / 8.081 / 6.084 | 0.03027 [0.02866, 0.03033] | 1.32837 [1.15092, 1.38640] | GAP |
+| Reduced M180 q8 (3 pairs) | 121.569 / 3.073 / 2.638 | 0.02519 [0.02499, 0.03159] | 1.16123 [1.15605, 1.28406] | GAP |
+
+All f32 benchmark workers passed finite, repeat-consistency and poisoned-
+workspace reset checks; candidate-to-DUCC relative-L2 error was at most
+`3.91e-8` and maximum
+absolute error `1.20e-7`. The focused guarded-sidecar test passed. The three
+misses reject the family-wide backend even though the full-q1 cell reached
+DUCC parity. The q8 full-mmax Callgrind run recorded 5.420B Rust versus 4.209B
+DUCC instruction references over seven transforms (774.3M versus 601.3M per
+call). Rust's exclusive dispatched recurrence kernel accounted for 2.007B
+references, while DUCC's `alm2map_kernel` accounted for 2.418B; the additional
+Rust references lie outside that single kernel. Both executed YMM AVX2/FMA
+code. Direct-f64 phase probes put recurrence/scheduling/accumulation at
+`5.04/6.98 ms` full q8 and `26.84/27.81 ms` reduced q1. The evidence does not
+support attributing all remaining time to the recurrence kernel.
+
+Protected f64 GL T1023 full-mmax spin-1 synthesis candidate/parent timing was
+`1.0013×` at q1 over three pairs and `1.0009×` at q8 over 15 pairs, with q8
+bootstrap 95% interval `[0.9841,1.0715]`. Both outputs were bitwise equal to
+parent; q8 is inconclusive for small timing changes but shows no repeatable
+regression. Exact source, hashes, pair records, reusable workspace/allocation
+measurements, profiles, Callgrind files and selected AVX2 assembly are in the
+[f64-internal spin-1 evidence package](data/ducc-parity-m6-2026-10-29/f32-spin1-f64-internal-backend-v1/README.md).
+
+**Next:** first replay the archived shared reflected-ring f32 scalar-synthesis
+patch against current `origin/dev` in an isolated worktree as required by the
+active steering. If its controls reject promotion, use the current phase and
+Callgrind attribution to select one bounded Stage C kernel experiment. M6
+remains open.
+
 ## 2026-10-29 native-f32 reflected spin-1 fused four-row packet rejected
 
 At exact source parent `def4bbee4071f8e77e0387c7f88424431430d4fc`, V3 fused

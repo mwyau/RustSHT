@@ -1,0 +1,5 @@
+cell,parent_live_bytes,candidate_live_bytes,candidate_extra_bytes,conversion_buffers_bytes,warmed_allocations,warmed_peak_extra_bytes
+full_q1,8539826,50814186,42274360,25148480,0,0
+reduced_q1,2275634,14897570,12621936,8015360,0,0
+full_q8,9112638,55114758,46002120,25148480,0,185000
+reduced_q8,2784342,17312886,14528544,8015360,0,185000

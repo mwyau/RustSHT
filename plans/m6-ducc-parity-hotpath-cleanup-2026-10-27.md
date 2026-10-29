@@ -21,14 +21,21 @@ Callgrind attribution are in the [V1](../reports/data/ducc-parity-m6-2026-10-29/
 and [V3](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v3-fourrow/README.md)
 evidence packages.
 
-Stop native-f32 reflected-leaf variants. The next bounded experiment is a
-reusable f32-I/O/f64-internal spin-1 synthesis route using existing f64 plans
-and workspaces, complete conversions/writeback, and guarded native-f32 fallback.
-Stage B found this route near parity but above target at q8 and reduced q1;
-profile the f64 transform stage where those cells miss. Limit production routing
-to explicitly measured geometries. If that route fails a whole-call and
-numerical gate, preserve it and continue cause-based Stage C work on the
-remaining cells. M6 remains open.
+Stop native-f32 reflected spin-1 leaf variants. The reusable f32-I/O/f64-
+internal spin-1 production adapter was evaluated on current source parent
+`f66ff4ed`: full T720 q1 passed at `0.973x` DUCC in 15 pairs, but reduced q1,
+full q8, and reduced q8 missed at `1.654x`, `1.328x`, and `1.161x`. Keep its
+patch isolated. A 15-pair protected f64 T1023 spin-1 q8 control showed no
+repeatable regression. Callgrind and phase profiles are in the [single M6
+ledger](../reports/DUCC_PARITY_M6.md) and [candidate package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-f64-internal-backend-v1/README.md).
+
+The immediate next experiment is to reconcile the archived shared reflected-
+ring f32 scalar-synthesis patch against current `origin/dev`, in an isolated
+worktree, then repeat all four T720 cells and adjacent controls. Do not treat
+the older `49295a89` timings as current-source promotion evidence. If Stage A
+fails a family-safe gate, select one bounded Stage C change from the current
+profiles, preserving shared recurrence ownership and guarded fallback. M6
+remains open.
 
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
