@@ -1,0 +1,11 @@
+Rust source parent: 64133b570865712b26a2ed8bf1b1d5ea9061a6d3
+DUCC source revision: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+Rust release test binary SHA-256: 5c78b1037bacc6e392df085983753939a1774564f338fe0c185a6aa47eb98005
+DUCC f32 worker SHA-256: 6a99511b855ee87025f924ead79aae0d2f10dca31e8ab47757b1ae0d71710df7
+Candidate scalar/test patch SHA-256: 4cce560395a8499cda2d2e579ab0cb8f24adc455da33882546fe76a4d08dd692
+Candidate scalar.rs SHA-256: 027d92f66e709ac5d98b0807602e8d35195b8cecae4cbd3485017e1ee0512511
+Candidate transform/tests.rs SHA-256: 23383c7283da2b20800bc2870c380171a2dd5a2ada35d6110aeed8f11255b7d1
+Test-only spin profile source overlay SHA-256: 13001fb5383f4410e12690d869c9a3efc8af845924caa79d40275c488a300b55
+DUCC driver compile flags: -O3 -DNDEBUG -g -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3
+DUCC driver source overrides: -fno-fast-math -ffp-contract=fast
+Rust build: cargo test --release --features parallel --lib

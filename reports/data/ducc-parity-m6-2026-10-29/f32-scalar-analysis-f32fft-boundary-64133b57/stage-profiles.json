@@ -1,0 +1,51 @@
+{
+  "stage_order": [
+    "f32_fft",
+    "spectrum_f32_to_f64_promotion",
+    "shared_f64_recurrence_and_accumulation",
+    "complex64_to_complex32_writeback"
+  ],
+  "timing_note": "Diagnostic per-stage instrumentation; whole-call values are from the same profiled invocation and are reported separately from uninstrumented paired comparisons.",
+  "samples": [
+    {
+      "cell": "reduced_q1",
+      "whole_median_ms": 6.13593,
+      "fft_ms": 0.665268,
+      "spectrum_promote_ms": 0.061686,
+      "f64_recurrence_ms": 5.371594,
+      "output_narrow_ms": 0.033714,
+      "calls": 9,
+      "peak_rss_kib": 26516
+    },
+    {
+      "cell": "reduced_q8",
+      "whole_median_ms": 1.0042,
+      "fft_ms": 0.115639,
+      "spectrum_promote_ms": 0.080632,
+      "f64_recurrence_ms": 0.767653,
+      "output_narrow_ms": 0.03712,
+      "calls": 9,
+      "peak_rss_kib": 31640
+    },
+    {
+      "cell": "full_q1",
+      "whole_median_ms": 15.317211,
+      "fft_ms": 2.740725,
+      "spectrum_promote_ms": 0.291031,
+      "f64_recurrence_ms": 12.152483,
+      "output_narrow_ms": 0.088097,
+      "calls": 9,
+      "peak_rss_kib": 76268
+    },
+    {
+      "cell": "full_q8",
+      "whole_median_ms": 2.538623,
+      "fft_ms": 0.400568,
+      "spectrum_promote_ms": 0.314134,
+      "f64_recurrence_ms": 1.727579,
+      "output_narrow_ms": 0.088898,
+      "calls": 7,
+      "peak_rss_kib": 84180
+    }
+  ]
+}

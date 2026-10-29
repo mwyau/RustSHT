@@ -1,0 +1,29 @@
+--------------------------------------------------------------------------------
+Profile data file '<scratch>/results/rust-full-q1.callgrind' (creator: callgrind-3.26.0)
+--------------------------------------------------------------------------------
+I1 cache:
+D1 cache:
+LL cache:
+Timerange: Basic block 0 - 152654801
+Trigger: Program termination
+Profiled target:  target/release/deps/rustsht-7b2799b2f834d251 transform::tests::m6_profile_scalar_analysis_f32_fft_f64_recurrence --exact --nocapture
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       1
+Include dirs:
+User annotated:
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Ir
+--------------------------------------------------------------------------------
+1,362,138,019 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                    file:function
+--------------------------------------------------------------------------------
+
+493,783,444 (36.25%)  < ???:rustsht::legendre::scalar_paired::analysis::fused_scalar_analysis_pair_block_impl::<true, true> (474x) [<scratch>/source/target/release/deps/rustsht-7b2799b2f834d251]
+220,123,120 (16.16%)  *  ???:<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScaledScalarAnalysisPair<true, true>>> [<scratch>/source/target/release/deps/rustsht-7b2799b2f834d251]
+273,660,324 (20.09%)  >   ???:<pulp::x86::v3::V3 as pulp::Simd>::not_f64s (6,515,722x) [<scratch>/source/target/release/deps/rustsht-7b2799b2f834d251]

@@ -1,3 +1,44 @@
+## 2026-10-29 current-source f32-FFT/f64-recurrence scalar analysis remains above DUCC
+
+At exact parent `64133b570865712b26a2ed8bf1b1d5ea9061a6d3`, a test-only
+route ran the native f32 longitude FFT, promoted requested Fourier modes into
+reusable f64 workspace, and called the existing shared f64 scalar-analysis
+recurrence. Each timed call included FFT, spectrum promotion, recurrence,
+accumulation, and Complex64-to-Complex32 writeback. The native Rust and DUCC
+workers used the same f32 maps; DUCC used its native-f32 `analysis_2d` API.
+Three interleaved comparisons per cell measured:
+
+| GL T720 f32 scalar analysis | Native f32 ms | Candidate ms | DUCC f32 ms | Candidate/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---:|---|
+| Reduced q1 | 143.606 | 6.191 | 5.747 | `1.077x` [`1.057–1.080`] | **GAP** |
+| Reduced q8 | 19.390 | 0.984 | 0.887 | `1.107x` [`1.106–1.122`] | **GAP** |
+| Full q1 | 469.226 | 15.329 | 14.077 | `1.091x` [`1.084–1.096`] | **GAP** |
+| Full q8 | 61.464 | 2.524 | 2.051 | `1.235x` [`1.220–1.248`] | **GAP** |
+
+The route is 21.8–33.5x faster than the current native-f32 implementation,
+but misses DUCC in all four cells. Its coefficient error against DUCC was
+`1.32e-7` relative L2 reduced and `1.43e-7` full on these fixtures; workers
+were finite and passed repeated-call and poisoned-spectrum-reset checks.
+This was a three-pair screen, not acceptance-quality evidence, and the
+test-only hook does not add a guarded native-f32 fallback for exceptional
+inputs/outputs.
+
+A separate four-stage profile puts the shared f64 recurrence/accumulation at
+`5.372/12.152 ms` q1 and `0.768/1.728 ms` q8 for reduced/full. Full-q8
+spectrum promotion and output narrowing together cost `0.403 ms`, below the
+`0.483 ms` whole-call gap to DUCC. Callgrind and executed AVX2 disassembly
+attribute material work to the checked f64 scaled-prefix path; conversion
+alone cannot close the remaining cells. Exact source/candidate patch, fixture
+and binary hashes, three-pair samples, stage timings, memory profile,
+Callgrind, assembly and f32 outputs are in the [current-source profile
+package](data/ducc-parity-m6-2026-10-29/f32-scalar-analysis-f32fft-boundary-64133b57/README.md).
+
+**Next:** do not promote this precision-boundary route. Proceed to the Stage D
+f32 spin-1 synthesis hypothesis: test a dual-channel reflected accumulation
+leaf through the existing hemisphere scheduler, prove q1/q8 activation with
+route counters, preserve the checked native-f32 fallback, and protect f64
+T1023 spin-1 synthesis. M6 remains open.
+
 ## 2026-10-29 two-latitude-vector paired spin tile rejected after AVX2 spills
 
 At exact current parent `b3b93f17fe4d404fe4c033ffc7420eb190dc00b0`, an
