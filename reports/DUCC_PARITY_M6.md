@@ -91,9 +91,51 @@ precision policy and its exceptional-value fallback are documented in
 `docs/F32_INTERNAL_PRECISION.md`.
 
 This completes the scalar-synthesis portion of the current f32 priority, not
-the f32 family. Next, test a bounded high-band spin-1 reflected route through
-the existing hemisphere scheduler, with route counters and separate q1/q8
-whole-call decisions. M6 remains open.
+the f32 family. The first bounded spin-1 reflected-route screen and its next
+experiment are recorded immediately below. M6 remains open.
+
+## 2026-10-29 f32-I/O/f64-internal spin-1 reflected-route screen — not promoted
+
+At exact parent `c63cde440d91e3ca2810226163a191199b4ca29d`, the reusable
+f32-I/O/f64-internal adapter was tested with two scalar transforms and with
+the existing f64 hemisphere dual-channel leaf through a test-only T720 route.
+All four public f32/DUCC cells include spin-to-scalar conversion, transform,
+FFT, output conversion and writeback. Three interleaved pairs were enough to
+reject the two-call route for promotion: only full q1 was near parity, with an
+interval crossing 1; the other three cells were GAP.
+
+| GL T720 spin-1 synthesis cell | f64 adapter / DUCC ms | Rust/DUCC paired median [95% CI] | Status |
+|---|---:|---:|---|
+| Full q1 | 44.959 / 44.548 | 1.009 [0.991, 1.011] | **INCONCLUSIVE** |
+| Reduced q1 | 29.309 / 18.521 | 1.566 [1.563, 1.790] | **GAP** |
+| Full q8 | 10.208 / 7.057 | 1.447 [1.373, 1.483] | **GAP** |
+| Reduced q8 | 3.674 / 3.238 | 1.108 [1.037, 1.177] | **GAP** |
+
+The required scalar child degree is `lmax=721`; removing it yielded 1.37622e-2
+relative Q error. Widening the existing f64 hemisphere route to T720 used the
+dual-channel reflected block, but ring-major q8 was 3.37–6.59x slower than the
+same-source general f64 path. A test-only order-major queue reduced that gap,
+but was still 1.50–2.41x slower than current f64 general synthesis across its
+direct matched comparisons. Its complete f32-I/O q8 adapter screen was
+2.954x DUCC full (wide interval, **INCONCLUSIVE**) and 1.902x reduced (**GAP**).
+Route counters showed substantial checked fallback work: 1,590 full and 181
+reduced order-major fallback blocks, alongside 2,736/905 paired blocks.
+
+The order-major route-equivalence test passed full/reduced output comparisons
+against current f64 general synthesis (relative error at most 8e-13), and all
+timed workers passed finite, repeat and poisoned-output reset checks. Random
+adapter output error versus native DUCC was about 3.9e-8 relative L2. These
+route screens did not run the full independent production-backend numerical
+matrix because neither route passed its performance gate. No production
+source changed. Exact patches, worker hashes, raw three-pair results, flags,
+and test details are in the [spin route evidence package](data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/README.md).
+
+**Next:** test a shared dual-channel scalar-ordered recurrence in an isolated
+f64-internal adapter. Reuse the existing scalar recurrence and accumulate both
+converted spin channels in one pass. Start with q8 full/reduced T720 against
+the current f64 general path and native-f32 DUCC; only extend a credible route
+to q1 and 15 pairs. If it fails to approach both q8 DUCC cells, archive its
+patch and proceed to cause-based Stage C profiling. M6 remains open.
 
 ## 2026-10-28 current-source reflected f32 scalar synthesis — rejected on controls
 

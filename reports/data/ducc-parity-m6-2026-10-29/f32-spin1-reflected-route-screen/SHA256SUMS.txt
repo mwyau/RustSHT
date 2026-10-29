@@ -1,0 +1,6 @@
+d741f351c187afe3046a82feef9b980341dda99752e5309672051d880bddc9c8  reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/README.md
+af1a14eb85d3f8ae4d110e8cf31824564348f85d6a5b1361df7ab2af4eacab09  reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/order-major-reflected.patch.gz
+139bc18cca447555700e7c4d8f43f8ca8c0d2ca9efbdb4824b8468fe563b2b4b  reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/order-major-route.patch.gz
+8ddad14f7b5a5d28dbac1c4581c64f36ba7d18cd6e50c9d0545fbf76a4cdfb25  reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/ring-major-reflected.patch.gz
+de36308cc09ce09560d2da89a867c1a71d73c8acb2d9d3e51a3bd3450c46fbb8  reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/two-scalar-channel-adapter.patch.gz
+b6e740da8f0086a5d521bddc1d8d6700edbc57ee36d4fd5397fb67253b28d5e5  reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/ducc_f32_internal_spin_route.rs

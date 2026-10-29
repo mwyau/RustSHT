@@ -22,15 +22,26 @@ geometries. The other 12 scalar/spin T720 cells remain GAP; see the current
 [M6 ledger](../reports/DUCC_PARITY_M6.md) and the [production evidence
 package](../reports/data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
 
-Next, evaluate a bounded high-band spin-1 route through the existing reflected
-hemisphere scheduler, first on the f64-internal backend because its full-mmax
-q1 measurement is already near DUCC, then decide from complete native-DUCC-f32
-calls whether q8/reduced dispatch can use it. Do not merely widen a selector or
-enable the existing native paired-spin flag. Capture route counters and stage
-costs; preserve native f32 for declined exceptional blocks. Extend independent
-E/B-to-Q/U signs, spin adjoints, extremes, tails, reset, and protected f64
-T1023 controls before promotion. After spin-1, attack the separately measured
-scalar-analysis gap by cause. M6 stays open.
+The first bounded f64-internal spin-1 route screen at exact source
+`c63cde440d91e3ca2810226163a191199b4ca29d` is complete. Two independent
+scalar transforms were within parity only for full-mmax q1 (`1.009x`, interval
+crossing 1); reduced q1 and both q8 cells remained `1.108–1.566x` DUCC. The
+existing hemisphere dual-channel leaf, enabled at T720 and then scheduled
+order-major, was slower than current f64 general-spin execution in every
+direct matched q8 comparison. Neither route is promoted; details and
+recoverable patches are in the [spin route evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/README.md).
+
+Next, prototype one bounded shared dual-channel scalar-ordered recurrence
+behind the reusable f32-I/O/f64-internal adapter. Reuse the existing
+`scalar_ordered` recurrence and accumulate both spin-converted scalar streams
+in one pass; do not retain two separately maintained recurrence algorithms.
+Begin with full/reduced T720 q8 comparisons against the same-source general
+f64 route and native-f32 DUCC, then extend any credible candidate to q1 and 15
+pairs. Keep the complete conversion, FFT and writeback in public-call timing,
+and retain conservative native-f32 declines. If the fused recurrence cannot
+approach both q8 DUCC cells, preserve the patch and continue with Stage C
+cause-based spin analysis/synthesis profiling. Keep f64 T1023 synthesis
+protected and M6 open.
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
 The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and
