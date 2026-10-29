@@ -27,3 +27,5 @@ native-generic-scalar-suffix-fusion-counters.patch	b8286da2811c9b2b90349cb563033
 native-generic-scalar-zero-restore-ungated.patch	be8737d3d1e44fdea5431648e7bb8408082e74cefc120eb3850785e059c4edf8	patches/native-generic-scalar-zero-restore-ungated.patch.gz
 native-generic-scalar-zero-restore-static-gate.patch	57e58a06c46b3af90209c239c2fda419ee8edf7c19b0d7b2a8d3c9742a70bbd3	patches/native-generic-scalar-zero-restore-static-gate.patch.gz
 native-generic-scalar-zero-restore-skip-fma.patch	f3c6da5709baf8f0d16bfde5735089b73cd98c13481f7e3507036c127484ef13	patches/native-generic-scalar-zero-restore-skip-fma.patch.gz
+native-generic-scalar-uniform-scale-simd.patch	9d5c7b578aa2298ca774d263c7f1c15932473d4ba640cf5fad12f80353e9fd4f	patches/native-generic-scalar-uniform-scale-simd.patch.gz
+native-generic-scalar-double-single-feasibility.patch	00220ca6e07c5b277919b6936f596a145d42315084097b2029fa224e43dbaf14	patches/native-generic-scalar-double-single-feasibility.patch.gz

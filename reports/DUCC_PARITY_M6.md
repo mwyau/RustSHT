@@ -1,6 +1,5 @@
 # M6 — live DUCC parity ledger
 
-**Current `dev` HEAD:** `7b9ab61c0e10b235434e5b3ba89cf040b60137f6`.
 Production transforms remain unchanged from
 `c63cde440d91e3ca2810226163a191199b4ca29d`. The isolated generic scalar
 candidate and follow-ups are based on `b6a96aa7161a64f678b614d73478496f50f0551e`.
@@ -20,10 +19,10 @@ baseline evidence, not a paired confidence interval.
 
 | Cell | Current/last measured route | Rust/DUCC | Source | Native-generic status |
 |---|---|---:|---|---|
-| Scalar synthesis, full q1 | Public f64 sidecar `15.836 / 19.131`; native baseline `641.339 / 18.902`; generic `26.061 / 19.233`; zero-restore `24.852 / 19.484` | Sidecar `0.829 [0.823, 0.834]`; native `≈33.93x`; generic `1.355 [1.349, 1.370]`; zero-restore `1.272 [1.254, 1.286]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; gated candidate patch `57e58a06` | **GAP** — latest native candidate remains 27% slower |
-| Scalar synthesis, full q8 | Public f64 sidecar `2.790 / 2.884`; native baseline `98.183 / 2.838`; generic `3.924 / 2.946`; zero-restore `3.658 / 2.932` | Sidecar `0.961 [0.934, 0.974]`; native `≈34.60x`; generic `1.338 [1.223, 1.360]`; zero-restore `1.244 [1.207, 1.255]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; gated candidate patch `57e58a06` | **GAP** — latest native candidate remains 24% slower |
-| Scalar synthesis, reduced q1 | Public f64 sidecar `6.486 / 8.385`; native baseline `190.225 / 8.317`; generic `8.846 / 8.418`; zero-restore `8.491 / 8.681` | Sidecar `0.775 [0.770, 0.779]`; native `≈22.88x`; generic `1.054 [1.045, 1.058]`; zero-restore `0.980 [0.970, 1.009]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; gated candidate patch `57e58a06` | **INCONCLUSIVE** — parity interval crosses 1; independent accuracy remains open |
-| Scalar synthesis, reduced q8 | Public f64 sidecar `1.184 / 1.298`; native baseline `54.588 / 1.314`; generic `1.773 / 1.339`; zero-restore `1.597 / 2.050` | Sidecar `0.885 [0.793, 0.918]`; native `≈41.54x`; generic `1.134 [1.078, 1.344]`; zero-restore `1.015 [0.718, 1.161]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; gated candidate patch `57e58a06` | **INCONCLUSIVE** — q8 timing is too noisy to decide |
+| Scalar synthesis, full q1 | Public f64 sidecar `15.836 / 19.131`; native baseline `641.339 / 18.902`; generic `26.061 / 19.233`; uniform-scale `24.474 / 19.618` | Sidecar `0.829 [0.823, 0.834]`; native `≈33.93x`; generic `1.355 [1.349, 1.370]`; uniform-scale `1.249 [1.233, 1.258]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; candidate diff `9d5c7b57` | **GAP** — native candidate remains 25% slower |
+| Scalar synthesis, full q8 | Public f64 sidecar `2.790 / 2.884`; native baseline `98.183 / 2.838`; generic `3.924 / 2.946`; uniform-scale `3.739 / 2.998` | Sidecar `0.961 [0.934, 0.974]`; native `≈34.60x`; generic `1.338 [1.223, 1.360]`; uniform-scale `1.256 [1.135, 1.320]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; candidate diff `9d5c7b57` | **GAP** — native candidate remains 26% slower |
+| Scalar synthesis, reduced q1 | Public f64 sidecar `6.486 / 8.385`; native baseline `190.225 / 8.317`; generic `8.846 / 8.418`; uniform-scale `8.519 / 8.530` | Sidecar `0.775 [0.770, 0.779]`; native `≈22.88x`; generic `1.054 [1.045, 1.058]`; uniform-scale `0.995 [0.992, 1.009]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; candidate diff `9d5c7b57` | **INCONCLUSIVE** — timing interval crosses 1; accuracy remains open |
+| Scalar synthesis, reduced q8 | Public f64 sidecar `1.184 / 1.298`; native baseline `54.588 / 1.314`; generic `1.773 / 1.339`; uniform-scale `1.671 / 1.504` | Sidecar `0.885 [0.793, 0.918]`; native `≈41.54x`; generic `1.134 [1.078, 1.344]`; uniform-scale `1.082 [1.032, 1.148]` | Production `c63cde44`; native `fdae803a`; generic parent `b6a96aa7` + patch `661a1167`; candidate diff `9d5c7b57` | **GAP** — latest paired interval is above 1 |
 | Scalar analysis, full q1 | Native f32 `453.143 / 14.064` | `≈32.22x` | `fdae803a01273ac7e4e941936f022fa11e770df5` | **GAP** |
 | Scalar analysis, full q8 | Native f32 `60.005 / 2.274` | `≈26.39x` | `fdae803a01273ac7e4e941936f022fa11e770df5` | **GAP** |
 | Scalar analysis, reduced q1 | Native f32 `139.936 / 5.774` | `≈24.24x` | `fdae803a01273ac7e4e941936f022fa11e770df5` | **GAP** |
@@ -63,6 +62,21 @@ in f32 versus `0.018541995` from its independent f64 recurrence reference.
 The FMA-skip follow-up did not establish an added gain. Source patches,
 pair-level data, intervals, fixture hashes and runners are in the
 [archived candidate record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
+
+The subsequent uniform-exponent f32 SIMD scaler improves the generic parent
+in three of four cells, but the 15-pair screen remains a GAP in both full
+cells and reduced q8; reduced q1 is INCONCLUSIVE. It is bitwise
+parent-equivalent, but the high-degree near-pole zonal result still differs by
+0.88% from the independent f64 recurrence reference (`0.018705474` versus
+`0.0185419947`). Pinned native-f32 DUCC returns `0.0185419954` on the same
+zonal input; its source uses double SIMD recurrence state despite f32 I/O.
+The diagnostic does not assert a tolerance, so this candidate remains
+numerically unaccepted. A test-only f32 double-single recurrence with
+high/low geometry and recurrence constants reached `1.0e-9` absolute error,
+but the low parts are not retained by the candidate and runtime coefficients
+are not yet combined through an integrated compensated path. Its protected
+f64 T1023 control was neutral at q1 and within noise at q8. The archive
+contains full measurements, work counts, exact scaler tests and probe source.
 
 The f32 vector-rescale leaf and forced-inline follow-up were rejected after
 three-pair screens. Callgrind and V3 disassembly attribute substantial setup
@@ -117,12 +131,13 @@ Keep the suffix unchanged; see the [codegen and paired delta record](archive/exp
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** investigate the measured common-scale case in the native-f32
-scaled prefix (183,829 of 394,106 full-M720 vector steps; 31,420 of 123,134
-reduced steps) and test whether a uniform-exponent SIMD leaf is faster while
-retaining exact fallback for exceptional/subnormal lanes. Do not repeat the
-rejected per-lane exponent vector scaler or zero-group FMA skip. Add an
-asserted independent high-degree accuracy control, then rerun the 15-pair
-full/reduced q1/q8 matrix and protected f64 controls before production
-dispatch. See the
+**NEXT:** prototype an isolated f32 compensated recurrence leaf for
+high-degree near-polar orders. Preserve plan-time high/low parts for
+`cos(theta)^2` and the wide-prepared recurrence factors; the arithmetic probe
+shows double-single f32 state is accurate, while single-f32 constants are
+not. Combine runtime f32 coefficients with f32 compensated operations and
+keep ordinary orders on the existing f32 path. Add asserted zonal/reference,
+adjoint, reset, and exceptional tests before screening performance. Do not
+promote the uniform-scaler candidate or use f64 for the runtime recurrence.
+See the
 [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).

@@ -98,11 +98,24 @@ of full and 83.8% of reduced ordinary updates through its two-vector path;
 per-lane AVX2 exponent restoration, normal-only scaling and suffix changes
 remain rejected. A work-count probe found a common scale across all lanes on
 183,829 of 394,106 full-M720 scaled-prefix steps and 31,420 of 123,134 reduced
-steps. This supports testing a uniform-exponent SIMD leaf that adjusts normal
-exponent fields and falls back exactly on exceptional lanes; it does not
-justify reusing the rejected per-lane vector scaler. Retain checked exponents,
-underflow contributions and signed/exceptional behavior, then establish
-independent high-degree accuracy before another parity screen.
+steps. An exact f32 SIMD scaler for the common exponent `-80` now handles the
+normal and subnormal result cases with AVX2 integer operations, with checked
+scalar fallback for non-finite lanes and other exponents. The 15-pair screen
+improves three cells against the generic parent but still misses DUCC in both
+full cells and reduced q8; reduced q1 is INCONCLUSIVE. The protected f64 T1023
+control is neutral. The independent near-pole zonal probe differs by 0.88%
+(`0.018705474` candidate versus `0.018541995` f64); pinned DUCC f32 returns
+`0.018541995` because its scalar recurrence state uses double SIMD. A test-only
+double-single f32 recurrence probe with high/low cosine-squared and
+wide-prepared recurrence constants reached `1.0e-9` absolute error. The
+candidate still stores these constants only as f32, so this is a feasibility
+result, not a numerical acceptance. Next, prototype an isolated compensated
+f32 leaf for high-degree near-polar orders. Preserve low parts for geometry
+and recurrence constants at plan time, form coefficient corrections with
+f32 operations, assert independent numerical accuracy and exceptional/reset
+behavior, and only then screen performance. Keep the ordinary f32 path and
+the protected f64 path unchanged. Do not use f64 for runtime recurrence or
+repeat the rejected per-lane scaler/zero-group FMA skip.
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 

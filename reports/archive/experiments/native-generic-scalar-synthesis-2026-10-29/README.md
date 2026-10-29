@@ -170,6 +170,93 @@ so do not repeat the FMA-skip variant unchanged. Its three-pair protected f64
 control was interrupted before completion and produced no result; there is no
 f64 conclusion for that last variant.
 
+## Uniform-exponent f32 SIMD scaler follow-up
+
+The next isolated patch adds an exact eight-lane f32 scaler for the common
+binary exponent `-80`. It adjusts normal exponent fields directly and uses
+integer significand rounding for subnormal outputs; signed zeros and input
+subnormals are preserved, while vectors with non-finite lanes decline to the
+existing checked scalar path. Other exponents and the f64 instantiation also
+use the exact scalar path. The source diff is based on
+`b6a96aa7161a64f678b614d73478496f50f0551e`, SHA-256
+`9d5c7b578aa2298ca774d263c7f1c15932473d4ba640cf5fad12f80353e9fd4f`;
+the candidate f32 binary is
+`d9158760d31937718f43e2ad09542a60ca2ca90e0018164238b2445345d3d932`.
+
+The full matrix used 15 balanced interleaved candidate/parent/DUCC pairs,
+50,000 paired-bootstrap resamples (seed 1729), native f32 coefficients,
+recurrence, FFT, and output. The candidate was bitwise equal to its parent in
+all 60 outputs, finite, reset-consistent and used V3/AVX2 with eight f32
+lanes. Those checks do not establish independent accuracy.
+
+| GL T720 scalar synthesis | Parent ms | Candidate ms | DUCC ms | Candidate/DUCC paired median (95% CI) | Status |
+|---|---:|---:|---:|---:|---|
+| Full q1 | 26.647 | 24.474 | 19.618 | 1.249 (1.233–1.258) | GAP |
+| Full q8 | 4.217 | 3.739 | 2.998 | 1.256 (1.135–1.320) | GAP |
+| Reduced q1 | 8.993 | 8.519 | 8.530 | 0.995 (0.992–1.009) | INCONCLUSIVE |
+| Reduced q8 | 1.603 | 1.671 | 1.504 | 1.082 (1.032–1.148) | GAP |
+
+The candidate improved the generic parent by 5–10% in three cells, but the
+reduced q8 median regressed and three cells remain above DUCC. A matched
+three-pair comparison against the prior precision-gated shortcut did not
+show a stable broad gain. Work counters recorded 107,235 full-grid and
+21,158 reduced-grid scale-`-80` SIMD groups. The archived AVX2 excerpt
+[`uniform-scale-v3-prepare-prefix.asm`](codegen/uniform-scale-v3-prepare-prefix.asm)
+shows YMM integer shifts, adds/subtracts, comparisons and blends in the
+scaled-prefix helper. It does not remove the larger recurrence/loop gap.
+
+A 15-pair protected f64 GL T1023 spin-1 synthesis control remained bitwise
+equal to parent in all 30 outputs. Candidate/parent was `0.999 [0.987, 1.006]`
+q1 and `0.982 [0.944, 1.000]` q8; candidate/DUCC was `0.754` and `0.750`.
+Treat this as a preserved f64 control, not evidence of a meaningful f64 gain.
+
+The high-degree near-pole zonal result remains `0.018705474` in f32 against
+`0.018541995` from the independent f64 recurrence at the same f32 sine
+(0.88% relative difference). The probe is currently diagnostic-only and does
+not assert a tolerance. The candidate is therefore numerically unaccepted,
+remains isolated, and has not changed production dispatch. Library tests
+passed (`317 passed, 37 ignored`), including exact bitwise scaler coverage;
+the probe passing as a test is not an accuracy pass.
+
+The full 15-pair results, the 3-pair gated A/B, protected f64 data, runner and
+candidate diff are retained under `results/`, `runners/` and `patches/`.
+Their hashes are listed in `SHA256SUMS`.
+
+## Near-pole accuracy check and double-single feasibility
+
+A small driver calls pinned DUCC's public f32 `alm2leg` stage at
+`theta=asin(sine_f32)` for the same zonal input used by the Rust probe:
+`lmax=720`, `m=0`, and `alm[720,0]=1`. It returns `0.01854199543595314`
+(`0x3c97e562`); the independent f64 recurrence gives
+`0.01854199474347936`. The isolated Rust candidate returns
+`0.018705474212765694` (`0x3c993c39`), an absolute error of
+`1.6347947e-4` and relative error `0.8817%`. The C++ driver, structured
+values, and test-only arithmetic patch/snippet are in `probes/` and
+`results/near-pole-ducc-double-single-probe.json`.
+
+DUCC 0.42.0's scalar Legendre inner loop uses a double SIMD state
+(`Tv=native_simd<double>` in its pinned `sht_inner_loop.h`) even with f32 I/O.
+This explains the f64-level result; it is reference behavior, not a Rust
+implementation direction.
+
+A test-only f32 double-single prototype then represented each recurrence
+value as `hi + lo`, used f32 `mul_add` residuals, and kept the wide-prepared
+factors and cosine-squared constant as high/low f32 pairs. With the candidate's
+f32 sectoral seed it returned `0.01854199372991772`, `1.014e-9` absolute from
+the f64 reference; the test asserts both DS cases remain within `2e-7`.
+Negative controls show both pieces matter: retaining only rounded f32
+`cos(theta)^2` returns `0.0323911674`, while storing the prepared recurrence
+and output factors only as their f32 high parts returns `0.0070728625` even
+with exact high/low geometry. These are arithmetic feasibility probes, not a
+production fix or a performance result. Any follow-up must retain low parts
+for the plan-invariant recurrence constants and polar `cos(theta)^2`, combine
+runtime f32 coefficients using f32 compensated operations, and keep the
+ordinary recurrence path unchanged unless measurements justify broader use.
+
+The follow-up source remains isolated. Its direct DUCC driver, Rust test
+snippet, incremental test patch and numeric output are checksummed. No
+production dispatch changed.
+
 The three recoverable source diffs are based on parent
 `b6a96aa7161a64f678b614d73478496f50f0551e`: ungated shortcut
 `be8737d3d1e44fdea5431648e7bb8408082e74cefc120eb3850785e059c4edf8`,

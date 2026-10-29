@@ -1,13 +1,16 @@
 # Recent substantive checkpoints
 
-- **2026-10-29 — native-generic scalar synthesis follow-up measured.** A
-  precision-gated exact-zero restore shortcut improves the isolated generic
-  parent by 5–7% in 15 pairs, but full GL T720 remains 1.24–1.27x DUCC;
-  reduced q1 is inconclusive near parity and q8 is too noisy. The protected
-  f64 control is neutral at q1 and inconclusive at q8. Skipping four FMAs after
-  zero restoration did not prove an added gain. Parent-equivalent outputs do
-  not resolve the near-pole accuracy discrepancy. Production dispatch is
-  unchanged. See the [candidate archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
+- **2026-10-29 — native-generic scalar synthesis follow-up measured.** An
+  exact f32 AVX2 scaler for the common binary exponent `-80` improves three
+  cells against the generic parent, but full GL T720 remains 1.25–1.26x DUCC
+  and reduced q8 1.08x; reduced q1 is inconclusive near parity. The protected
+  f64 control is neutral at q1 and within noise at q8. The near-pole zonal
+  result is 0.88% high versus the independent f64 recurrence; pinned DUCC
+  f32 agrees with that reference because its scalar Legendre state uses
+  double SIMD. A test-only native-f32 double-single arithmetic probe with
+  high/low constants reaches about `1e-9` absolute error, but no integrated
+  compensated route exists yet. The candidate remains unaccepted and
+  isolated; production dispatch is unchanged. See the [candidate archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

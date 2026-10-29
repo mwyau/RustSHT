@@ -1,0 +1,40 @@
+{
+  "candidate_source_parent": "b6a96aa7161a64f678b614d73478496f50f0551e",
+  "candidate_source_diff_sha256": "9d5c7b578aa2298ca774d263c7f1c15932473d4ba640cf5fad12f80353e9fd4f",
+  "candidate_binary_sha256": "d9158760d31937718f43e2ad09542a60ca2ca90e0018164238b2445345d3d932",
+  "ducc_source": "DUCC 0.42.0",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_transform_binary_sha256": "be18c89ea434258e4a07c28ccd8fd31d6262ac3503dcaf81d8aa5176415f1484",
+  "input": {
+    "lmax": 720,
+    "m": 0,
+    "alm_l720_m0": [
+      1.0,
+      0.0
+    ],
+    "sine_f32": 0.0033330852165818214,
+    "theta_f64": 0.0033330913880738567
+  },
+  "candidate_f32": {
+    "value": 0.018705474212765694,
+    "bits_hex": "0x3c993c39",
+    "absolute_error_vs_f64": 0.0001634794692863331,
+    "relative_error_vs_f64": 0.008816714250435419
+  },
+  "ducc_f32": {
+    "value": 0.01854199543595314,
+    "bits_hex": "0x3c97e562",
+    "absolute_error_vs_f64": 6.924737797064928e-10,
+    "relative_error_vs_f64": 3.734623967305428e-08
+  },
+  "direct_f64_reference": 0.01854199474347936,
+  "double_single_probe": {
+    "f64_seed_exact_csq_value": 0.01854199462112044,
+    "f32_seed_exact_csq_value": 0.01854199372991772,
+    "absolute_error_f32_seed_ds": 1.0135616408668557e-09,
+    "rounded_f32_csq_ds_value": 0.03239116741640014,
+    "candidate_f32_constants_ds_value": 0.00707286254964187,
+    "assertion": "Both exact-csq double-single variants pass abs(error) < 2e-7; this is an arithmetic feasibility probe, not an integrated algorithm."
+  },
+  "ducc_arithmetic_note": "Pinned DUCC sht_inner_loop.h defines Tv=native_simd<double> for the scalar Legendre inner-loop state, despite f32 Alm/map I/O."
+}
