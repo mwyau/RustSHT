@@ -113,9 +113,11 @@ T720 zonal maximum absolute error to `3.19e-8`, but full q1/q8 remain
 `1.256/1.272x` DUCC, random-transform relative-L2 error is unchanged, and the
 leaf does not establish parity. An accuracy-only band screen places m=0 at
 `5.83e-8`, nonzero order bands at `1.32e-4–2.10e-4`, and degree 600–719 at
-`2.55e-4`. Next, localize error within high-degree nonzero orders and the
-scaled-prefix/ordinary-suffix transition before broadening compensated work.
-Keep production dispatch unchanged; do not promote this leaf or the
+`2.55e-4`. The intersection screen places `m=1–32,l=600–719` at
+`3.25e-4` relative L2; `l=720` is `4.28e-4` for only 32 coefficients per
+channel and has maximum absolute error `3.25e-5`. Next, inspect ringwise error
+and scaled-prefix lengths for `m=1–32,l=600–720` before broadening compensated
+work. Keep production dispatch unchanged; do not promote this leaf or the
 conversion sidecar. See the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths

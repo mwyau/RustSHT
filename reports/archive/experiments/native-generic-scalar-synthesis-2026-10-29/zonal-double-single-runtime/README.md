@@ -54,11 +54,19 @@ An accuracy-only order-band screen then isolated the error source. The m=0
 band was within `5.83e-8` relative L2 of DUCC. Nonzero order bands ranged from
 `1.32e-4` to `2.10e-4`. By degree band, relative L2 grew from `4.14e-5` for
 degrees 0–239 to `2.55e-4` for degrees 600–719; degree 720 alone was
-`2.90e-4`. This indicates that correcting m=0 alone cannot materially
-resolve the aggregate discrepancy. The exact filtered-fixture hashes and
-per-band metrics are in
+`2.90e-4`. An intersection screen found the largest relative errors for
+orders 1–32 at high degree: `3.25e-4` for degrees 600–719 and `4.28e-4` for
+degree 720. The degree-720 intersection contains only 32 complex coefficients
+per channel and has maximum absolute error `3.25e-5`, so its relative value
+should be read with its reference RMS. For degrees 600–719, orders 33–180 and
+181–360 were `2.73e-4` and `2.97e-4`, while orders 361–720 were `1.61e-4`.
+Correcting m=0 alone cannot materially resolve the aggregate discrepancy. The
+exact filtered-fixture hashes and per-band metrics are in
 [`results/order-band-errors.json`](results/order-band-errors.json); the
-reproducer is [`results/diagnose_order_bands.py`](results/diagnose_order_bands.py).
+intersection metrics are in
+[`results/order-band-intersections.json`](results/order-band-intersections.json).
+Run [`results/diagnose_order_bands.py`](results/diagnose_order_bands.py) with
+`--subset base` or `--subset intersections` to reproduce each screen.
 
 `cargo test --features parallel --lib` passed on the paired source:
 319 passed, 37 ignored, in 103.80 seconds. `cargo clippy --all-targets
@@ -104,8 +112,8 @@ compensated branch.
 
 Keep this leaf isolated. It establishes a precise m=0 accuracy correction but
 does not address the dominant nonzero-order/high-degree error or full-grid
-performance gaps. Next, inspect the m=1–32 degree bands and the scaled-prefix
-versus ordinary-suffix boundary to determine where nonzero-order error first
+performance gaps. Next, inspect ringwise errors and scaled-prefix lengths for
+`m=1–32` at `l=600–720` to determine where nonzero-order error first
 accumulates. Any broader compensated state must remain native f32 at runtime,
 preserve exceptional-range behavior, and avoid adding work to every order
 unless accuracy and whole-transform timing both support it. Production

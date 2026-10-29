@@ -5,9 +5,10 @@
   `l=720,m=0` probe to `3.19e-8` maximum absolute error and passes the exact
   paired-source library suite (319 passed, 37 ignored). Its three-pair full
   q1/q8 timings remain 1.256/1.272x DUCC; random-transform relative-L2 error
-  is unchanged. The order-band screen localizes the remaining error to
-  nonzero orders and high degrees: m=0 is `5.83e-8`, while degree 600–719 is
-  `2.55e-4`. The leaf remains isolated. See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
+  is unchanged. The intersection screen measures `m=1–32,l=600–719` at
+  `3.25e-4` relative L2; `l=720` reaches `4.28e-4` over only 32 coefficients
+  per channel, with `3.25e-5` maximum absolute error. The leaf remains isolated.
+  See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

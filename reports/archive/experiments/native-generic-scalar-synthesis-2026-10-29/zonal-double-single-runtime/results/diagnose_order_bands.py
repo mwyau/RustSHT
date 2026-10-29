@@ -27,6 +27,9 @@ def main() -> None:
     parser.add_argument("--ducc-bin", type=pathlib.Path, required=True)
     parser.add_argument("--scratch-root", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
+    parser.add_argument(
+        "--subset", choices=("base", "intersections", "all"), default="base"
+    )
     args = parser.parse_args()
 
     helper_path = args.source_root / "scripts/benchmark_ducc_f32_native.py"
@@ -48,7 +51,7 @@ def main() -> None:
         list(struct.unpack(f"<{path.stat().st_size // 4}f", path.read_bytes()))
         for path in (fixture["alm0"], fixture["alm1"])
     ]
-    groups = {
+    base_groups = {
         "degree_0_239": lambda ell, order: 0 <= ell <= 239,
         "degree_240_479": lambda ell, order: 240 <= ell <= 479,
         "degree_480_599": lambda ell, order: 480 <= ell <= 599,
@@ -60,6 +63,20 @@ def main() -> None:
         "order_181_360": lambda ell, order: 181 <= order <= 360,
         "order_361_720": lambda ell, order: 361 <= order <= 720,
     }
+    intersection_groups = {
+        "order_1_32_degree_480_599": lambda ell, order: 1 <= order <= 32 and 480 <= ell <= 599,
+        "order_1_32_degree_600_719": lambda ell, order: 1 <= order <= 32 and 600 <= ell <= 719,
+        "order_1_32_degree_720": lambda ell, order: 1 <= order <= 32 and ell == 720,
+        "order_33_180_degree_600_719": lambda ell, order: 33 <= order <= 180 and 600 <= ell <= 719,
+        "order_181_360_degree_600_719": lambda ell, order: 181 <= order <= 360 and 600 <= ell <= 719,
+        "order_361_720_degree_600_719": lambda ell, order: 361 <= order <= 720 and 600 <= ell <= 719,
+    }
+    if args.subset == "base":
+        groups = base_groups
+    elif args.subset == "intersections":
+        groups = intersection_groups
+    else:
+        groups = base_groups | intersection_groups
 
     records = []
     args.scratch_root.mkdir(parents=True, exist_ok=True)
@@ -109,7 +126,7 @@ def main() -> None:
         })
 
     result = {
-        "method": "single native-f32 GL T720 full-M720 synthesis fixture filtered to independent degree or order bands; q1; accuracy-only; target batch 2 ms; timings intentionally omitted",
+        "method": f"single native-f32 GL T720 full-M720 synthesis fixture filtered to {args.subset} degree/order bands; q1; accuracy-only; target batch 2 ms; timings intentionally omitted",
         "source_root_commit": "b6a96aa7161a64f678b614d73478496f50f0551e",
         "candidate_patch_sha256": "7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9",
         "candidate_binary_sha256": sha256(args.candidate_bin),

@@ -135,10 +135,13 @@ three-pair screen leaves full q1/q8 at `1.256/1.272x` DUCC. Reduced q1 is
 `1.019x`; q8 is noisy. The random full/reduced relative-L2 errors remain
 `1.864e-4/1.885e-4`. An accuracy-only order-band screen puts the isolated m=0
 error at `5.83e-8`; nonzero order bands range `1.32e-4–2.10e-4`, while degree
-600–719 is `2.55e-4` and degree 720 is `2.90e-4`. This narrows the next
-diagnostic to high-degree nonzero orders and their scaled-prefix/ordinary-
-suffix transition. Keep the leaf isolated. Source patch, pair data, tests,
-assembly and filtered-fixture hashes are in the [paired zonal leaf archive]
+600–719 is `2.55e-4` and degree 720 is `2.90e-4`. Intersecting order and
+degree bands puts `m=1–32,l=600–719` at `3.25e-4`; degree 720 is `4.28e-4`
+relative L2 for 32 coefficients per channel, with maximum absolute error
+`3.25e-5`. Keep the relative error qualified by its small reference RMS. The
+next diagnostic is ringwise error and scaled-prefix length for `m=1–32` at
+`l=600–720`. Keep the leaf isolated. Source patch, pair data, tests, assembly
+and filtered-fixture hashes are in the [paired zonal leaf archive]
 (archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Decisions and remaining scope
@@ -168,12 +171,14 @@ assembly and filtered-fixture hashes are in the [paired zonal leaf archive]
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** characterize error within the `m=1–32`, `l=600–720` region and
-around the scaled-prefix/ordinary-suffix transition. The m=0 paired leaf is
-accurate for its zonal probe but does not improve aggregate random accuracy or
-full-grid timing. Keep production dispatch unchanged while identifying which
-nonzero-order recurrence contributions dominate. Any next compensated leaf
-must retain native-f32 runtime state and pass independent accuracy, adjoint,
-reset, exceptional-range, and whole-transform timing checks. See the [active
+**NEXT:** inspect ringwise error and scaled-prefix lengths for
+`m=1–32,l=600–720`, where the filtered coefficient band had the largest
+relative error. Degree 720 has only 32 coefficients per channel and small
+absolute error; assess its error against reference RMS. The m=0 paired leaf
+does not improve aggregate random accuracy or full-grid timing. Keep
+production dispatch unchanged while identifying which nonzero-order
+recurrence contributions dominate. Any next compensated leaf must retain
+native-f32 runtime state and pass independent accuracy, adjoint, reset,
+exceptional-range, and whole-transform timing checks. See the [active
 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and the [paired
 zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
