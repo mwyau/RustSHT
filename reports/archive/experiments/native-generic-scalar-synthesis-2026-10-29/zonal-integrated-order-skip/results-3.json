@@ -1,0 +1,785 @@
+{
+  "metadata": {
+    "parent_sha": "b6a96aa7161a64f678b614d73478496f50f0551e",
+    "parent_patch_sha256": "57e58a06c46b3af90209c239c2fda419ee8edf7c19b0d7b2a8d3c9742a70bbd3",
+    "candidate_parent_sha": "b6a96aa7161a64f678b614d73478496f50f0551e",
+    "candidate_patch_sha256": "76402d2a71b5beb2a621ed583aab91fa4851bc4a0de1829ad804121270d9eccc",
+    "candidate_binary_sha256": "b1fe67ebb0078155ccc5a3f864ecf75ac013547d994bbf2a826d6f92fe41a215",
+    "parent_binary_sha256": "d9158760d31937718f43e2ad09542a60ca2ca90e0018164238b2445345d3d932",
+    "ducc_binary_sha256": "be18c89ea434258e4a07c28ccd8fd31d6262ac3503dcaf81d8aa5176415f1484",
+    "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "process_pairs_per_cell": 3,
+    "target_ms": 25,
+    "q1_affinity": "0",
+    "q8_affinity": "0,2,4,6,8,10,12,14",
+    "cpu_model": "AMD Ryzen 9 5950X",
+    "fixture_hashes": {
+      "GL-T720-M720-even-s0-synthesis-q1": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "GL-T720-M720-even-s0-synthesis-q8": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "GL-T720-M180-even-s0-synthesis-q1": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "GL-T720-M180-even-s0-synthesis-q8": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    },
+    "method": "same native-f32 fixtures; fresh parent/candidate/DUCC processes interleaved in balanced order; reusable plan/workspace per worker; output files deleted after each matched triple"
+  },
+  "summary": {
+    "GL-T720-M720-even-s0-synthesis-q1": {
+      "parent_median_ms": 23.482870249999998,
+      "candidate_median_ms": 24.1974115,
+      "ducc_median_ms": 18.94205975,
+      "candidate_parent_paired_ratio_median": 1.0298037473488282,
+      "candidate_ducc_paired_ratio_median": 1.2763517998962337
+    },
+    "GL-T720-M720-even-s0-synthesis-q8": {
+      "parent_median_ms": 4.5904643571428565,
+      "candidate_median_ms": 5.778798200000001,
+      "ducc_median_ms": 3.91374,
+      "candidate_parent_paired_ratio_median": 1.0865613700381405,
+      "candidate_ducc_paired_ratio_median": 1.2650735333434375
+    },
+    "GL-T720-M180-even-s0-synthesis-q1": {
+      "parent_median_ms": 8.293729625000001,
+      "candidate_median_ms": 8.940162666666666,
+      "ducc_median_ms": 8.668767166666665,
+      "candidate_parent_paired_ratio_median": 1.078719726993484,
+      "candidate_ducc_paired_ratio_median": 1.0359273501462716
+    },
+    "GL-T720-M180-even-s0-synthesis-q8": {
+      "parent_median_ms": 1.3242875357142858,
+      "candidate_median_ms": 1.6399244666666668,
+      "ducc_median_ms": 1.2794565526315789,
+      "candidate_parent_paired_ratio_median": 1.2383447117337207,
+      "candidate_ducc_paired_ratio_median": 1.2840758214096868
+    }
+  },
+  "pairs": [
+    {
+      "case_id": "GL-T720-M720-even-s0-synthesis-q1",
+      "threads": 1,
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "parent_ms": 23.482870249999998,
+      "candidate_ms": 24.1974115,
+      "ducc_ms": 18.96131325,
+      "candidate_parent_ratio": 1.0304281905232604,
+      "candidate_ducc_ratio": 1.2761463924446268,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 1051218,
+        "relative_l2": 1.0965741311290847e-05,
+        "absolute_l2": 0.0025857960580963953,
+        "max_absolute": 3.9070844650268555e-05,
+        "reference_rms": 0.2299904898979644,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018644255043903028,
+        "absolute_l2": 0.04396429016712438,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        }
+      },
+      "fixture_hashes": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-synthesis-q1",
+      "threads": 1,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "parent_ms": 23.696540249999998,
+      "candidate_ms": 24.38902125,
+      "ducc_ms": 18.94205975,
+      "candidate_parent_ratio": 1.0292228735796147,
+      "candidate_ducc_ratio": 1.2875590918775346,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 1051218,
+        "relative_l2": 1.0965741311290847e-05,
+        "absolute_l2": 0.0025857960580963953,
+        "max_absolute": 3.9070844650268555e-05,
+        "reference_rms": 0.2299904898979644,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018644255043903028,
+        "absolute_l2": 0.04396429016712438,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-synthesis-q1",
+      "threads": 1,
+      "pair": 3,
+      "order": [
+        "ducc",
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 23.469338999999998,
+      "candidate_ms": 24.16881325,
+      "ducc_ms": 18.935855500000002,
+      "candidate_parent_ratio": 1.0298037473488282,
+      "candidate_ducc_ratio": 1.2763517998962337,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 1051218,
+        "relative_l2": 1.0965741311290847e-05,
+        "absolute_l2": 0.0025857960580963953,
+        "max_absolute": 3.9070844650268555e-05,
+        "reference_rms": 0.2299904898979644,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018644255043903028,
+        "absolute_l2": 0.04396429016712438,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-synthesis-q8",
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "parent_ms": 5.9069747,
+      "candidate_ms": 6.346338599999999,
+      "ducc_ms": 5.1905291,
+      "candidate_parent_ratio": 1.0743805284962535,
+      "candidate_ducc_ratio": 1.222676624623875,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 1051218,
+        "relative_l2": 1.0965741311290847e-05,
+        "absolute_l2": 0.0025857960580963953,
+        "max_absolute": 3.9070844650268555e-05,
+        "reference_rms": 0.2299904898979644,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018644255043903028,
+        "absolute_l2": 0.04396429016712438,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        }
+      },
+      "fixture_hashes": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-synthesis-q8",
+      "threads": 8,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "parent_ms": 4.5904643571428565,
+      "candidate_ms": 5.778798200000001,
+      "ducc_ms": 3.91374,
+      "candidate_parent_ratio": 1.258870072917149,
+      "candidate_ducc_ratio": 1.4765411601179435,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 1051218,
+        "relative_l2": 1.0965741311290847e-05,
+        "absolute_l2": 0.0025857960580963953,
+        "max_absolute": 3.9070844650268555e-05,
+        "reference_rms": 0.2299904898979644,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018644255043903028,
+        "absolute_l2": 0.04396429016712438,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-synthesis-q8",
+      "threads": 8,
+      "pair": 3,
+      "order": [
+        "ducc",
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 3.9466012857142854,
+      "candidate_ms": 4.2882245,
+      "ducc_ms": 3.38970375,
+      "candidate_parent_ratio": 1.0865613700381405,
+      "candidate_ducc_ratio": 1.2650735333434375,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 1051218,
+        "relative_l2": 1.0965741311290847e-05,
+        "absolute_l2": 0.0025857960580963953,
+        "max_absolute": 3.9070844650268555e-05,
+        "reference_rms": 0.2299904898979644,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018644255043903028,
+        "absolute_l2": 0.04396429016712438,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.22998983199799372,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-synthesis-q1",
+      "threads": 1,
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "parent_ms": 8.293729625000001,
+      "candidate_ms": 8.891650166666667,
+      "ducc_ms": 8.292700333333332,
+      "candidate_parent_ratio": 1.0720930834138043,
+      "candidate_ducc_ratio": 1.0722261518272638,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 272538,
+        "relative_l2": 1.5507650020321185e-05,
+        "absolute_l2": 0.0013913881922328823,
+        "max_absolute": 5.0902366638183594e-05,
+        "reference_rms": 0.1718655332904358,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 272538,
+        "relative_l2": 0.00018850685496433922,
+        "absolute_l2": 0.016913252498691123,
+        "max_absolute": 0.00047266483306884766,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        }
+      },
+      "fixture_hashes": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-synthesis-q1",
+      "threads": 1,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "parent_ms": 8.324880666666667,
+      "candidate_ms": 8.980213000000001,
+      "ducc_ms": 8.668767166666665,
+      "candidate_parent_ratio": 1.078719726993484,
+      "candidate_ducc_ratio": 1.0359273501462716,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 272538,
+        "relative_l2": 1.5507650020321185e-05,
+        "absolute_l2": 0.0013913881922328823,
+        "max_absolute": 5.0902366638183594e-05,
+        "reference_rms": 0.1718655332904358,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 272538,
+        "relative_l2": 0.00018850685496433922,
+        "absolute_l2": 0.016913252498691123,
+        "max_absolute": 0.00047266483306884766,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-synthesis-q1",
+      "threads": 1,
+      "pair": 3,
+      "order": [
+        "ducc",
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 8.2612965,
+      "candidate_ms": 8.940162666666666,
+      "ducc_ms": 8.711211666666667,
+      "candidate_parent_ratio": 1.0821742890679042,
+      "candidate_ducc_ratio": 1.0262823369194525,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 272538,
+        "relative_l2": 1.5507650020321185e-05,
+        "absolute_l2": 0.0013913881922328823,
+        "max_absolute": 5.0902366638183594e-05,
+        "reference_rms": 0.1718655332904358,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 272538,
+        "relative_l2": 0.00018850685496433922,
+        "absolute_l2": 0.016913252498691123,
+        "max_absolute": 0.00047266483306884766,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-synthesis-q8",
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "parent_ms": 1.35328890625,
+      "candidate_ms": 1.6376487499999999,
+      "ducc_ms": 1.364950916666667,
+      "candidate_parent_ratio": 1.2101250091068645,
+      "candidate_ducc_ratio": 1.1997858164741086,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 272538,
+        "relative_l2": 1.5507650020321185e-05,
+        "absolute_l2": 0.0013913881922328823,
+        "max_absolute": 5.0902366638183594e-05,
+        "reference_rms": 0.1718655332904358,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 272538,
+        "relative_l2": 0.00018850685496433922,
+        "absolute_l2": 0.016913252498691123,
+        "max_absolute": 0.00047266483306884766,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        }
+      },
+      "fixture_hashes": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-synthesis-q8",
+      "threads": 8,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "ducc",
+        "parent"
+      ],
+      "parent_ms": 1.2957525555555556,
+      "candidate_ms": 1.6554198437499998,
+      "ducc_ms": 1.2794565526315789,
+      "candidate_parent_ratio": 1.2775740527405222,
+      "candidate_ducc_ratio": 1.2938460789036892,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 272538,
+        "relative_l2": 1.5507650020321185e-05,
+        "absolute_l2": 0.0013913881922328823,
+        "max_absolute": 5.0902366638183594e-05,
+        "reference_rms": 0.1718655332904358,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 272538,
+        "relative_l2": 0.00018850685496433922,
+        "absolute_l2": 0.016913252498691123,
+        "max_absolute": 0.00047266483306884766,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-synthesis-q8",
+      "threads": 8,
+      "pair": 3,
+      "order": [
+        "ducc",
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 1.3242875357142858,
+      "candidate_ms": 1.6399244666666668,
+      "ducc_ms": 1.277124325,
+      "candidate_parent_ratio": 1.2383447117337207,
+      "candidate_ducc_ratio": 1.2840758214096868,
+      "parent_candidate_exact": false,
+      "candidate_vs_parent": {
+        "output_values": 272538,
+        "relative_l2": 1.5507650020321185e-05,
+        "absolute_l2": 0.0013913881922328823,
+        "max_absolute": 5.0902366638183594e-05,
+        "reference_rms": 0.1718655332904358,
+        "finite": true
+      },
+      "candidate_vs_ducc": {
+        "output_values": 272538,
+        "relative_l2": 0.00018850685496433922,
+        "absolute_l2": 0.016913252498691123,
+        "max_absolute": 0.00047266483306884766,
+        "reference_rms": 0.1718646082623544,
+        "finite": true
+      },
+      "all_outputs_finite": true,
+      "checks": {
+        "ducc": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": null,
+          "f32_lanes": null
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        }
+      },
+      "fixture_hashes": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      }
+    }
+  ]
+}

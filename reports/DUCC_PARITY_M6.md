@@ -116,6 +116,16 @@ the correction does not justify its extra pass. Reject this design. The exact
 patch, binaries, fixtures, tests, work counts, AVX2 disassembly and pair data
 are in the [prepared-basis archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-basis-dotproduct/README.md).
 
+A follow-up skipped generic m=0 recurrence work and restored its column after
+the other orders, but still used the full f64-prepared basis. Its three-pair
+candidate/DUCC medians were `1.276`, `1.265`, `1.036`, and `1.284` for full
+q1/q8 and reduced q1/q8. The zonal error stayed at `1.483e-8`; random-input
+error was unchanged. The full-basis plan-time route is outside the allowed
+design, and this variant missed DUCC in every cell. It passed `cargo check`
+and the focused zonal test; the full library suite was not run on this exact
+variant. Preserve it as rejected evidence only; see the [integrated
+skip-and-restore archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-integrated-order-skip/README.md).
+
 ## Decisions and remaining scope
 
 - The production sidecar is temporary and must be removed after native shared
