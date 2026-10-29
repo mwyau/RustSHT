@@ -1,3 +1,41 @@
+## 2026-10-29 shared scalar-analysis rescale-mask reduction rejected
+
+At exact source parent `e3ae78e75e4d1883db3ae6680d9be2832b725e5e`, a bounded
+Stage C screen replaced the horizontal AVX2 lane-magnitude maximum used by the
+shared f64 scaled scalar-analysis recurrence with its existing lane-mask
+conversion. The recurrence, scale updates, checked decline, and accumulation
+were unchanged. The harness was a test-only f32-FFT/f64-recurrence diagnostic,
+not a production f32 dispatch; its exceptional-value fallback was incomplete.
+The candidate patch and all source, binary, fixture, runner, and output hashes
+are in the [rescale-mask evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-rescale-mask-screen-e3ae78e7/README.md).
+
+| GL T720 f32 scalar analysis | Parent / candidate / DUCC ms | Candidate/parent paired median [range] | Candidate/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---|
+| Reduced q1 | 6.176 / 6.131 / 5.771 | 0.998 [0.992–1.005] | 1.061 [1.060–1.079] | **GAP; neutral** |
+| Reduced q8 | 1.002 / 0.991 / 0.887 | 0.991 [0.901–1.025] | 1.115 [1.033–1.150] | **GAP; 15-pair interval includes parity vs parent** |
+| Full q1 | 15.157 / 15.159 / 13.923 | 1.000 [0.993–1.017] | 1.089 [1.082–1.099] | **GAP; neutral** |
+| Full q8 | 2.538 / 2.552 / 2.049 | 1.005 [1.001–1.007] | 1.243 [1.216–1.245] | **GAP; slight regression** |
+
+The initial screen used three interleaved pairs; reduced q8 was extended to 15
+because it initially looked faster. Its candidate/parent median was `0.9915`
+with a paired bootstrap 95% interval of `0.9716–1.0002`, while candidate/DUCC
+was `1.1146x`. Parent and candidate outputs were bitwise equal in every pair.
+Candidate-vs-DUCC relative L2 / maximum absolute error was
+`1.319e-7 / 1.397e-9` reduced and `1.432e-7 / 6.985e-10` full. Native-f32
+control candidate/parent medians were `0.995–1.006`; no repeatable adjacent
+regression appeared. Focused paired-analysis tests passed 34 tests (8
+ignored), and formatting passed. The candidate AVX2 helper compiles to
+`vmovapd; vmovmskpd; vzeroupper; ret`, but that reduced operation count did not
+produce a stable whole-call gain.
+
+Protected f64 GL T1023 spin-1 synthesis q1/q8 was not re-timed: the candidate is
+test-only and changes the scalar-analysis helper, while the synthesis source
+path is unchanged. The latest relevant timed control remains the accepted
+scalar-synthesis backend report, which records bitwise-equal f64 outputs and
+no repeatable q1/q8 regression. No production change is promoted. The next
+experiment should target the measured scaled-analysis recurrence bulk path;
+do not retry this mask substitution unchanged. M6 remains open.
+
 ## 2026-10-29 current-source f32-FFT/f64-recurrence scalar analysis remains above DUCC
 
 At exact parent `64133b570865712b26a2ed8bf1b1d5ea9061a6d3`, a test-only

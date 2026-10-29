@@ -1,0 +1,14 @@
+{
+  "source": "2026-10-29 scalar-analysis f32-FFT/f64-recurrence fixture set",
+  "sha256": {
+    "fixture-manifest.json": "985c17bdd560987e95ab27b0e8102e36b08ab9af2b983d77f974546ba75f7c35",
+    "full-alm0.f32c": "93bae5b3df6058c15b62990f6f56d39be1aba8fab02a5301502fbfa7a641084a",
+    "full-alm1.f32c": "93bae5b3df6058c15b62990f6f56d39be1aba8fab02a5301502fbfa7a641084a",
+    "full-map0.f32": "de6084aab7ca03a08fc1cbc02586eca6e3ed6041a94b6618755a15089a044d16",
+    "full-map1.f32": "294ae39f03289cfa264f4660280253f95e5991f2a4de4eedab559905315ca84f",
+    "reduced-alm0.f32c": "fa4bfd89935315d389e8318d85723fe5d386ac76c0890bff63e0b09db11d3491",
+    "reduced-alm1.f32c": "fa4bfd89935315d389e8318d85723fe5d386ac76c0890bff63e0b09db11d3491",
+    "reduced-map0.f32": "f6cec5077d4c7287a5f23f1f6ac2a6098568f3f25e6e9173b3413d109efba36a",
+    "reduced-map1.f32": "f20a589857019e045b3cc0cca598e5ad3e73ed9889a91e96efaa106b66d19cc7"
+  }
+}

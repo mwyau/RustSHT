@@ -1,0 +1,5 @@
+00000000006a7540 <rustsht::legendre::scalar_paired::analysis::analysis_mask_lane_bits_avx>:
+  6a7540: c5 fd 28 07           vmovapd (%rdi),%ymm0
+  6a7544: c5 fd 50 c0           vmovmskpd %ymm0,%eax
+  6a7548: c5 f8 77              vzeroupper
+  6a754b: c3                    ret
