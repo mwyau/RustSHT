@@ -27,11 +27,10 @@ impl WithSimd for AccumulatePacket<'_> {
     type Output = (bool, Vec<f32>, Vec<f32>);
 
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-        let lane_count = S::F32_LANES;
         let even = [self.even];
         let odd = [self.odd];
-        let mut real = vec![self.initial_real; lane_count];
-        let mut imag = vec![self.initial_imag; lane_count];
+        let mut real = vec![self.initial_real; self.basis.len()];
+        let mut imag = vec![self.initial_imag; self.basis.len()];
         let mut finite_sums = true;
         F32SynthesisAccumulator {
             m: 0,
@@ -129,12 +128,14 @@ fn scaled_f32_packet_matches_native_scalar_arithmetic() {
 #[test]
 fn f32_scaled_packet_matches_scalar_for_mixed_extreme_exponents() {
     let lane_count = Arch::new().dispatch(F32LaneCount);
-    let cosine = (0..lane_count)
+    let exponent_pattern = [-300, -150, -149, -29, -20, 128, 140, 220];
+    // Exercise the whole pattern on four-lane NEON as well as eight-lane AVX2.
+    let sample_count = lane_count.max(exponent_pattern.len());
+    let cosine = (0..sample_count)
         .map(|lane| -0.4 + 0.1 * lane as f32)
         .collect::<Vec<_>>();
-    let basis = vec![1.0_f32; lane_count];
-    let exponent_pattern = [-300, -150, -149, -29, -20, 128, 140, 220];
-    let exponents = (0..lane_count)
+    let basis = vec![1.0_f32; sample_count];
+    let exponents = (0..sample_count)
         .map(|lane| exponent_pattern[lane % exponent_pattern.len()])
         .collect::<Vec<_>>();
     let even = Complex32::new(1.0e-30, -1.0e-30);
