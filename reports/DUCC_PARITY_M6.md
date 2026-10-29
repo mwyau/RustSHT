@@ -165,6 +165,16 @@ recurrence state. The earlier geometry/factor sensitivities therefore measure
 amplification of precision rounding, not a formula mismatch. Keep the leaf
 isolated. Full data and scripts are in the [setup comparison](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md) and [paired zonal leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
+A test-only twofold f32 replay of 208 high-degree order/ring outputs lowers
+the recurrence-only relative RMS error from `1.6448e-4` to `1.2002e-12` when
+both the `A*cos²+B` contraction and state update are compensated. If the
+leading contraction stays rounded in f32, the full-reference error remains
+`1.6343e-4`. The AVX2 recurrence-plus-real-accumulation microkernel is
+`17.24x` the ordinary f32 loop; the emitted test callback has 116 instructions
+per pair versus 19. This is a cost screen, not whole-transform timing, so the
+double-single path stays isolated. Full results are in the
+[compensated recurrence probe](archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
+
 ## Decisions and remaining scope
 
 - The production sidecar is temporary and must be removed after native shared
@@ -192,10 +202,9 @@ isolated. Full data and scripts are in the [setup comparison](archive/experiment
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** use a test-only compensated f32 recurrence-state replay for
-`m=1–16,l=600–720` to test whether native-f32 state rounding explains the
-remaining high-degree error. Hold the candidate setup and coefficient pairs
-fixed, compare against the independent double recurrence, and assess vector
-cost before changing production dispatch. The setup formulas already match
-DUCC at their expected f32 precision. Preserve exceptional-range, adjoint,
-reset, and whole-transform timing checks. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md), the [setup comparison](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md), and the [paired zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+**NEXT:** test a cheaper f32 residual correction that covers both recurrence
+contractions and state updates. Require the same independent replay and a
+materially lower AVX2 instruction cost before building a test-only
+end-to-end transform route. Keep production dispatch unchanged, then retain
+the exceptional-range, adjoint, reset, and whole-transform checks for any
+route that advances. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and [compensated replay record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).

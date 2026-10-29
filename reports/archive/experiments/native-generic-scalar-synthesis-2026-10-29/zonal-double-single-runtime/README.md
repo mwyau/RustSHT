@@ -176,7 +176,13 @@ found that Rust and DUCC use identical f64 GL geometry and that candidate f32
 recurrence tables are the nearest f32 roundings of DUCC's double values. The
 large one-at-a-time geometry/factor sensitivities therefore reflect recurrence
 conditioning under native-f32 rounding, not a formula mismatch. DUCC's f32
-API retains double Legendre state. The next isolated diagnostic should test a
-compensated f32 recurrence state on `m=1–16,l=600–720`, before any SIMD or
-production-dispatch change. Production dispatch, the temporary f64 child-plan
-route, and other transform families were not changed by this experiment.
+API retains double Legendre state. A later test-only twofold replay of
+`m=1–16,l=600–720` confirms that compensating both the leading contraction
+and recurrence update reduces the selected relative RMS error from
+`1.64e-4` to `1.20e-12`; compensating only the update leaves `1.63e-4`. Its
+AVX2 recurrence-plus-accumulation microkernel is `17.24x` the ordinary f32
+loop, so the double-single approach needs a cheaper residual formulation
+before any whole-transform route is considered. See the
+[recurrence replay and cost record](../compensated-recurrence-probe/README.md).
+Production dispatch, the temporary f64 child-plan route, and other transform
+families were not changed by this experiment.

@@ -18,9 +18,13 @@
   comparison found matching f64 GL geometry and f32-rounded recurrence tables
   against DUCC for all 720
   rings and 968 high-degree order pairs. DUCC keeps double Legendre state
-  behind its f32 API; the remaining discrepancy is native-f32 recurrence
-  precision. The paired source passed 319 library tests (39 ignored); the
-  leaf remains isolated.
+  behind its f32 API. A test-only twofold replay lowers selected recurrence
+  error from `1.6448e-4` to `1.2002e-12` only when both recurrence
+  contractions and state updates are compensated; retaining the f32-rounded
+  contraction leaves `1.6343e-4`. Its AVX2 microkernel costs `17.24x` the
+  ordinary loop, so the candidate remains isolated without whole-transform
+  timing. The paired source passed 319 library tests (39 ignored); the leaf
+  remains isolated.
   See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64

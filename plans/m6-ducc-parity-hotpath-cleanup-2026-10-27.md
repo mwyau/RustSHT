@@ -70,15 +70,22 @@ replay contributes `1.6448e-4` relative RMS versus `1.0311e-6` from
 accumulation rounding. An observer found no scaled-prefix work in 736 ring
 batches. The setup comparison finds bitwise-identical f64 GL geometry and
 f32-rounded recurrence tables; DUCC's f32 API uses double scalar Legendre
-state. These observations point to native-f32 recurrence-state rounding,
-not a setup formula mismatch. The comparison and its limits are in the
-[setup-comparison record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md).
+state. These observations point to native-f32 recurrence arithmetic, not a
+setup formula mismatch. A test-only twofold replay lowers the selected
+high-degree recurrence error from `1.6448e-4` to `1.2002e-12` relative RMS,
+but only when both the `A*cos²+B` contraction and state update are
+compensated. Keeping the leading contraction rounded in f32 leaves
+`1.6343e-4`. The AVX2 recurrence-plus-real-accumulation microkernel costs
+`17.24x` the ordinary f32 loop; its test callback emits 116 instructions per
+pair versus 19. This is not whole-transform timing. Full setup and replay
+provenance are in the [setup comparison](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-comparison/README.md)
+and [compensated recurrence record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
 
-**NEXT:** prototype a test-only compensated f32 recurrence-state replay for
-`m=1–16,l=600–720` on the selected polar, equatorial and near-south rings.
-Keep the candidate inputs and coefficient pairs fixed first, compare the
-replay with the independent double recurrence, then assess SIMD cost and
-whole-transform timing before any production route changes.
+**NEXT:** investigate a lower-cost f32 residual correction that compensates
+both the leading contraction and recurrence update without the current
+double-single helper sequence. First pass the same independent recurrence
+replay and AVX2 instruction screen; only a credible vector cost warrants a
+test-only end-to-end transform timing. Keep production dispatch unchanged.
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
 

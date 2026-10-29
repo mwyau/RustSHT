@@ -1,0 +1,10 @@
+a135469d533bbd4515876cc97d3b97ff0afc2661fc19b05dbc5a38aa37657218  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md
+c0bba9e76c085fe4cf81789f485d29eae9d39f5b7e9f6fa84d4ab1a50bbafcfe  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/codegen/vector-replay-avx2.asm
+3856d0213b0b6cc80255bdd28063134b4365a631fae084041cc3588c951b1c2e  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/patches/compensated-recurrence-probe.patch.gz
+41afe7191b76a9d9db1ff77ccab8412dfabfd94e6512df5ea7e2a40b8c323904  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/accuracy-results.md
+0b71a8d1cedaad6c35fec0c371b5399fa68e4c87e706dff19522b1af8dbf7d55  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/binutils-version.txt
+657d99c7d528f9dc1bc4d174cd3cfeef7630af6e4afc269a4cb15f62af3a9a85  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/command-provenance.txt
+f22d5e4e9ced367e774ce5bc140d9e6b1235c1882fec80d011044851f3ae6369  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/rustc-version.txt
+27df231f809dbc61b59441301f01755a751dc841ec96802d087a37693a51e71e  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/static-checks-summary.md
+262efb10bded2f94e67d7940de1eb166d2ecdf5893edc1def874722896d73a79  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/test-binary-hash.txt
+351f6a33e369cc342dc1158f574c065cd39b9c86d224ad50f742829b346d7d56  reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/results/vector-cost-results.md

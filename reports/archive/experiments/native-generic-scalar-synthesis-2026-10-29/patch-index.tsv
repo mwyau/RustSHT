@@ -35,3 +35,4 @@ native-generic-scalar-prefix-transition-observer.patch	d60911cb105c41cadd2e1f7fe
 native-generic-scalar-recurrence-accumulation-probe.patch	7ec8e43cc4d0451f978874e57c64915f541474fccb5b5f0f8e1bb321afb441df	zonal-double-single-runtime/patches/recurrence-accumulation-test.patch.gz
 native-generic-scalar-setup-comparison-candidate.patch	cc72cbc20048affbdbd6cdbce619af79edc65896a9a0ed9730006179ea3ce7a8	setup-comparison/candidate-native-generic.patch.gz
 native-generic-scalar-pair-preparation-dump.patch	39aea691deb331e3bef0d69e9a732f6eacf9164414b0930cb0032b8efa4d7f9c	setup-comparison/actual-pair-preparation-dump.patch.gz
+native-generic-scalar-compensated-recurrence-probe.patch	7f2ef12fc2e3197dd4bb4862f75d2aa90a31e8f03de9771be0aa22fe0b661ba2	compensated-recurrence-probe/patches/compensated-recurrence-probe.patch.gz

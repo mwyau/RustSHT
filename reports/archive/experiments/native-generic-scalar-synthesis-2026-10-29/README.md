@@ -306,6 +306,21 @@ narrowing the result to f32. This explains the reference precision but does
 not justify a Rust f64 backend. The source, test-only dump patch, raw values,
 reproducer and caveats are in [`setup-comparison/`](setup-comparison/).
 
+## Compensated recurrence replay and vector cost screen
+
+A test-only twofold f32 replay lowers the selected `m=1–16,l=600–720`
+recurrence error from `1.64e-4` to `1.20e-12` relative RMS when both the
+`A*cos²+B` contraction and state update are compensated. Compensating only
+the state while retaining the rounded f32 contraction leaves `1.63e-4`
+relative RMS error against the full widened recurrence. The AVX2 full twofold
+recurrence plus real even/odd accumulation took `17.24x` the ordinary f32
+microkernel median across 15 interleaved pairs. Its emitted vector loop has
+116 instructions per pair in this test callback, versus 19 in the ordinary
+callback. This is not a whole-transform result and does not justify production
+dispatch. Keep the implementation isolated while testing a cheaper residual
+recovery method. Full evidence, exact test patch, logs and assembly are in the
+[`compensated-recurrence-probe/`](compensated-recurrence-probe/).
+
 ## Numerical and f64 controls
 
 The high-degree zonal probe at `sin(theta)=0.003333085` produced f32

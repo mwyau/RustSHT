@@ -1,0 +1,20 @@
+Source base commit: b6a96aa7161a64f678b614d73478496f50f0551e
+Generic candidate patch SHA-256: cc72cbc20048affbdbd6cdbce619af79edc65896a9a0ed9730006179ea3ce7a8
+Incremental probe patch SHA-256: 7f2ef12fc2e3197dd4bb4862f75d2aa90a31e8f03de9771be0aa22fe0b661ba2
+Test source before probe SHA-256: eac89e21fe072cdde702acd203185f5ef7ab71e7cc1368c6083bc535dbf5faf2
+Test source after probe SHA-256: f6ba71ef69c94cf72d7f46f10e3540827b12f43afe5dc888ac4ec6d7c1c943ca
+Test binary SHA-256: 15bbe0974a8109ed6d1fc0a2eaf3d072e42ef782e19dcf27c5bdb4e69168af26
+
+Toolchain: rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1
+Build flags: -C target-cpu=x86-64-v3 -Aunexpected_cfgs
+Build profile/features: release, parallel
+Host: AMD Ryzen 9 5950X 16-Core Processor; AVX2; eight f32 lanes
+Affinity/threading: not CPU-pinned; cost screen was single-threaded
+
+Commands (run from the candidate repository root):
+- cargo fmt --all -- --check
+- RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo clippy --release --features parallel --lib --tests -- -D warnings
+- RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo test --release --features parallel --lib native_f32_compensated_recurrence_state_probe -- --ignored --nocapture
+- RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo test --release --features parallel --lib native_f32_vector_double_single_recurrence_cost_probe -- --ignored --nocapture
+
+Assembly extraction used objdump on the release test binary at addresses 0x72cf60–0x72d434. The fixture definitions and full test source are recoverable from the archived patch.
