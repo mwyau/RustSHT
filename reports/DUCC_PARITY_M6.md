@@ -1,3 +1,41 @@
+## 2026-10-29 native-f32 reflected spin-1 scaled-packet leaf rejected
+
+At exact source parent `4ede4c7159536dd68e2ee371f8cce5e0760dd738`, a V2
+candidate replaced per-coefficient scalar scaling for full scaled packets with
+the checked `try_accumulate_f32_scaled_synthesis_packet` helper. Even and odd
+coefficient rows were kept separate; tails retained exact scalar handling and
+unsafe full packets declined transactionally. Complete patch SHA256 is
+`ef3ba585ec28fb54204cc71ac712baeba78e30671b9be4e953491b3c3e88fa51`.
+
+| GL T720 spin-1 synthesis | Parent / candidate / DUCC ms | Candidate/parent paired median [range] | Candidate/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---|
+| Full M720 q1 | 1456.830 / 1471.130 / 40.349 | 1.008 [1.006, 1.012] | 36.396 [36.052, 36.825] | GAP; small regression |
+| Reduced M180 q1 | 601.828 / 583.885 / 17.618 | 0.970 [0.970, 0.983] | 33.038 [32.630, 33.513] | GAP; small gain |
+| Full M720 q8 | 267.495 / 540.038 / 5.890 | 2.019 [1.899, 2.024] | 91.727 [91.694, 91.878] | GAP; rejected |
+| Reduced M180 q8 | 122.131 / 310.767 / 2.581 | 2.545 [2.541, 3.041] | 120.407 [109.470, 121.157] | GAP; rejected |
+
+Three interleaved pairs per cell were sufficient to reject the repeatable q8
+regressions. All workers passed finite, repeat, and poisoned-reset checks.
+Candidate relative-L2 error versus DUCC remained worse than parent in all four
+cells (`1.949e-4–2.140e-4` versus `1.415e-4–1.426e-4`). The focused scaled-row
+unit test passed exact scalar comparison across even/odd rows and exceptional
+exponents. Reflected leaf block counters reported 2841/2841 full q1, 8050/8050
+full q8, 905/905 reduced q1, and 2685/2685 reduced q8 successes with zero
+declines; packet-helper invocations were not separately counted.
+
+V2 did not reach DUCC parity or avoid the V1 q8 slowdown. The V1 Callgrind
+profile showed the scalar scaling helpers consuming 53.97% of candidate Ir;
+V2 replaces them on full safe packets but still calls the helper once for each
+of four coefficient rows, repeating basis/cosine loads and exponent checks.
+No V2 Callgrind or broad analytic/adjoint/extreme matrix was run after the q8
+gate failed. See the [V2 evidence package](data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v2-packet-scale/README.md)
+and the [V1 profile](data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md).
+
+**Next:** a bounded V3 hypothesis fuses all four scaled coefficient rows into
+one checked packet operation, sharing basis/cosine loads and exponent
+decomposition across both channels. Require material whole-call improvement
+and q8 non-regression before broader correctness validation. M6 remains open.
+
 ## 2026-10-29 native-f32 reflected spin-1 leaf rejected
 
 At exact source parent `5d6e5e34f92ae321d5754d120258e2fa63c79cb3`, an

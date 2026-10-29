@@ -1,0 +1,7 @@
+Focused release test: native_f32_t720_reflected_spin1_leaf_activates_q1_q8_full_and_reduced
+GL T720 M720 q1 attempts=2841 successes=2841 declines=0
+GL T720 M720 q8 attempts=8050 successes=8050 declines=0
+GL T720 M180 q1 attempts=905 successes=905 declines=0
+GL T720 M180 q8 attempts=2685 successes=2685 declines=0
+
+These counters count whole reflected leaf blocks, not scaled packets within each leaf.

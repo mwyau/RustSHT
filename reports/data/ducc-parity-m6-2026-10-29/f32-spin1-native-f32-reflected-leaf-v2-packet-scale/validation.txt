@@ -1,0 +1,8 @@
+Passed:
+- cargo fmt --check
+- cargo test --release --features parallel f32_reflected_scaled_even_and_odd_rows_match_checked_scalar_products -- --nocapture (1 passed)
+- cargo test --release --features parallel native_f32_t720_reflected_spin1_leaf_activates_q1_q8_full_and_reduced -- --nocapture (1 passed; all four cells active with zero block declines)
+- Parent/candidate/DUCC 3-pair complete public f32 spin-1 synthesis screen; all workers finite, repeat-consistent and poisoned-output-reset consistent.
+- Candidate patch git apply --check against exact source parent.
+
+Not run after the whole-call performance failure: 15-pair extension, adjacent analysis controls, protected f64 timing rerun, and independent analytic/adjoint/extreme/tail matrix. The source change is confined to the native-f32 reflected accumulator; V1 protected f64 control remains in its linked report.

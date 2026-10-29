@@ -1,0 +1,7 @@
+Source parent: 4ede4c7159536dd68e2ee371f8cce5e0760dd738
+Candidate source patch: ef3ba585ec28fb54204cc71ac712baeba78e30671b9be4e953491b3c3e88fa51
+Pinned DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+
+Parent Rust f32 worker: 8e462e4f574f1614309dd437dbb852630739344589581ee50353fe142ae18e20
+Candidate Rust f32 worker: 3e587ebbd50fc7ccd23870bba08bda6f5bcf20184734f807899c87b489781b49
+DUCC native-f32 worker: 3f3334d1aa0f7acf15681d26081810cc66058d009e484e81d9d955d1cecff59d
