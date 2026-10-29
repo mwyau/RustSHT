@@ -65,8 +65,28 @@ exact filtered-fixture hashes and per-band metrics are in
 [`results/order-band-errors.json`](results/order-band-errors.json); the
 intersection metrics are in
 [`results/order-band-intersections.json`](results/order-band-intersections.json).
+The ringwise screen for `m=1–32,l=600–719` concentrates the largest absolute
+errors at rings 5 and 717 (`3.52e-4` and `3.50e-4`); the highest relative
+errors also include the first ring and equator ring 360. The matching north
+and south polar-end rings appear in both screens. The `l=720` relative error
+peaks at rings 0 and 720 but has only `3.25e-5` maximum absolute error.
+Splitting the `l=600–719` coefficients further gives:
+
+| Orders | Relative L2 | Maximum absolute error |
+|---|---:|---:|
+| 1 | `3.36e-4` | `6.22e-5` |
+| 2–4 | `4.44e-4` | `1.16e-4` |
+| 5–8 | `4.61e-4` | `2.34e-4` |
+| 9–16 | `3.85e-4` | `3.42e-4` |
+| 17–32 | `1.25e-4` | `7.27e-5` |
+
+These one-fixture filtered results localize error, but do not identify the
+numerical cause. Per-ring and low-order metrics are in
+[`results/order-band-ring-errors.json`](results/order-band-ring-errors.json)
+and [`results/order-low-order-errors.json`](results/order-low-order-errors.json).
 Run [`results/diagnose_order_bands.py`](results/diagnose_order_bands.py) with
-`--subset base` or `--subset intersections` to reproduce each screen.
+`--subset base`, `intersections`, `ring-target`, or `low-order`; add
+`--ringwise` for the per-ring records.
 
 `cargo test --features parallel --lib` passed on the paired source:
 319 passed, 37 ignored, in 103.80 seconds. `cargo clippy --all-targets
@@ -113,8 +133,9 @@ compensated branch.
 Keep this leaf isolated. It establishes a precise m=0 accuracy correction but
 does not address the dominant nonzero-order/high-degree error or full-grid
 performance gaps. Next, inspect ringwise errors and scaled-prefix lengths for
-`m=1–32` at `l=600–720` to determine where nonzero-order error first
-accumulates. Any broader compensated state must remain native f32 at runtime,
+`m=1–16` at `l=600–720`, especially rings 0–5, 360, and 715–720, to determine
+whether the error grows during the scaled prefix or ordinary suffix. Any
+broader compensated state must remain native f32 at runtime,
 preserve exceptional-range behavior, and avoid adding work to every order
 unless accuracy and whole-transform timing both support it. Production
 dispatch, the temporary f64 child-plan route, and other transform families

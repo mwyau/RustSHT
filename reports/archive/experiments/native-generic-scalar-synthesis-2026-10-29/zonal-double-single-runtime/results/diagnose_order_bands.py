@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import pathlib
 import struct
 import tempfile
@@ -28,8 +29,11 @@ def main() -> None:
     parser.add_argument("--scratch-root", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
     parser.add_argument(
-        "--subset", choices=("base", "intersections", "all"), default="base"
+        "--subset",
+        choices=("base", "intersections", "ring-target", "low-order", "all"),
+        default="base",
     )
+    parser.add_argument("--ringwise", action="store_true")
     args = parser.parse_args()
 
     helper_path = args.source_root / "scripts/benchmark_ducc_f32_native.py"
@@ -71,12 +75,31 @@ def main() -> None:
         "order_181_360_degree_600_719": lambda ell, order: 181 <= order <= 360 and 600 <= ell <= 719,
         "order_361_720_degree_600_719": lambda ell, order: 361 <= order <= 720 and 600 <= ell <= 719,
     }
+    ring_target_groups = {
+        "order_1_32_degree_600_719": intersection_groups[
+            "order_1_32_degree_600_719"
+        ],
+        "order_1_32_degree_720": intersection_groups[
+            "order_1_32_degree_720"
+        ],
+    }
+    low_order_groups = {
+        "order_1_degree_600_719": lambda ell, order: order == 1 and 600 <= ell <= 719,
+        "orders_2_4_degree_600_719": lambda ell, order: 2 <= order <= 4 and 600 <= ell <= 719,
+        "orders_5_8_degree_600_719": lambda ell, order: 5 <= order <= 8 and 600 <= ell <= 719,
+        "orders_9_16_degree_600_719": lambda ell, order: 9 <= order <= 16 and 600 <= ell <= 719,
+        "orders_17_32_degree_600_719": lambda ell, order: 17 <= order <= 32 and 600 <= ell <= 719,
+    }
     if args.subset == "base":
         groups = base_groups
     elif args.subset == "intersections":
         groups = intersection_groups
+    elif args.subset == "ring-target":
+        groups = ring_target_groups
+    elif args.subset == "low-order":
+        groups = low_order_groups
     else:
-        groups = base_groups | intersection_groups
+        groups = base_groups | intersection_groups | low_order_groups
 
     records = []
     args.scratch_root.mkdir(parents=True, exist_ok=True)
@@ -113,6 +136,17 @@ def main() -> None:
                 [pathlib.Path(path) for path in ducc["outputs"]],
                 [pathlib.Path(path) for path in rust["outputs"]],
             )
+            ringwise = (
+                ring_error_metrics(
+                    [pathlib.Path(path) for path in ducc["outputs"]],
+                    [pathlib.Path(path) for path in rust["outputs"]],
+                    case["ntheta"],
+                    case["nphi"],
+                    bench.read_f32,
+                )
+                if args.ringwise
+                else None
+            )
         records.append({
             "group": group_name,
             "selected_complex_coefficients_per_channel": selected_coefficients,
@@ -123,6 +157,7 @@ def main() -> None:
             "candidate_reset_consistent": rust.get("reset_consistent"),
             "candidate_all_finite": rust.get("finite_outputs"),
             "error_vs_ducc": error,
+            "ringwise_error_vs_ducc": ringwise,
         })
 
     result = {
@@ -140,6 +175,50 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({"result": str(args.output), "groups": len(records)}, indent=2))
+
+
+def ring_error_metrics(reference_paths, candidate_paths, ntheta, nphi, read_f32):
+    reference_maps = [read_f32(path) for path in reference_paths]
+    candidate_maps = [read_f32(path) for path in candidate_paths]
+    records = []
+    for ring in range(ntheta):
+        start = ring * nphi
+        end = start + nphi
+        differences = [
+            candidate[index] - reference[index]
+            for reference, candidate in zip(reference_maps, candidate_maps)
+            for index in range(start, end)
+        ]
+        reference_values = [
+            reference[index]
+            for reference in reference_maps
+            for index in range(start, end)
+        ]
+        reference_sq = math.fsum(value * value for value in reference_values)
+        difference_sq = math.fsum(value * value for value in differences)
+        records.append({
+            "ring_north_to_south": ring,
+            "relative_l2": (
+                math.sqrt(difference_sq / reference_sq)
+                if reference_sq > 0.0
+                else (0.0 if difference_sq == 0.0 else None)
+            ),
+            "max_absolute": max((abs(value) for value in differences), default=0.0),
+            "reference_rms": math.sqrt(reference_sq / max(1, 2 * nphi)),
+        })
+    return {
+        "ring_order": "north to south",
+        "ring_count": ntheta,
+        "by_ring": records,
+        "largest_relative_l2_rings": sorted(
+            records,
+            key=lambda row: row["relative_l2"] if row["relative_l2"] is not None else -1.0,
+            reverse=True,
+        )[:10],
+        "largest_absolute_error_rings": sorted(
+            records, key=lambda row: row["max_absolute"], reverse=True
+        )[:10],
+    }
 
 
 if __name__ == "__main__":

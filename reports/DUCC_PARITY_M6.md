@@ -139,9 +139,13 @@ error at `5.83e-8`; nonzero order bands range `1.32e-4–2.10e-4`, while degree
 degree bands puts `m=1–32,l=600–719` at `3.25e-4`; degree 720 is `4.28e-4`
 relative L2 for 32 coefficients per channel, with maximum absolute error
 `3.25e-5`. Keep the relative error qualified by its small reference RMS. The
-next diagnostic is ringwise error and scaled-prefix length for `m=1–32` at
-`l=600–720`. Keep the leaf isolated. Source patch, pair data, tests, assembly
-and filtered-fixture hashes are in the [paired zonal leaf archive]
+ringwise screen for `m=1–32,l=600–719` peaks in absolute error at rings 5 and
+717 (`3.52e-4`, `3.50e-4`); relative error is also elevated at ring 360.
+Subdividing the order band puts `m=5–8` at `4.61e-4` relative L2 and
+`m=9–16` at `3.42e-4` maximum absolute error. The next diagnostic is
+scaled-prefix length by order and ring for `m=1–16` at `l=600–720`. Keep the
+leaf isolated. Source patch, pair data, tests, assembly and filtered-fixture
+hashes are in the [paired zonal leaf archive]
 (archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Decisions and remaining scope
@@ -171,12 +175,12 @@ and filtered-fixture hashes are in the [paired zonal leaf archive]
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** inspect ringwise error and scaled-prefix lengths for
-`m=1–32,l=600–720`, where the filtered coefficient band had the largest
-relative error. Degree 720 has only 32 coefficients per channel and small
-absolute error; assess its error against reference RMS. The m=0 paired leaf
-does not improve aggregate random accuracy or full-grid timing. Keep
-production dispatch unchanged while identifying which nonzero-order
+**NEXT:** record scaled-prefix lengths by order and ring batch for
+`m=1–16,l=600–720`, focusing on rings 0–5, 360, and 715–720. The filtered
+errors cluster at those polar-end and equatorial rings, but do not yet show
+whether rounding enters in the scaled prefix or ordinary suffix. The m=0
+paired leaf does not improve aggregate random accuracy or full-grid timing.
+Keep production dispatch unchanged while identifying which nonzero-order
 recurrence contributions dominate. Any next compensated leaf must retain
 native-f32 runtime state and pass independent accuracy, adjoint, reset,
 exceptional-range, and whole-transform timing checks. See the [active
