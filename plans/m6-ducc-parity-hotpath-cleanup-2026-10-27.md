@@ -85,10 +85,12 @@ The initial candidate spends substantial work in the precision-specific f32
 scaled prefix; scale-count, scalar/vector restoration, vector-rescale, and
 ordinary-suffix inlining variations did not improve whole transforms. The
 ordinary suffix already emits direct FMA, and the per-lane AVX2 exponent
-restoration route is now explicitly ruled out. Do not repeat these variants
-unchanged. The next candidate must change the scaled-prefix work structure or
-another quantified hot cost while retaining checked exponent and underflow
-behavior, then pass the independent high-degree accuracy control.
+restoration route is now explicitly ruled out. A work-count probe shows the
+two-vector fused suffix handles 74.6% of full and 83.8% of reduced ordinary
+updates, so suffix pairing has limited remaining headroom. Do not repeat these
+variants unchanged. The next candidate must change the scaled-prefix work
+structure or another quantified hot cost while retaining checked exponent and
+underflow behavior, then pass the independent high-degree accuracy control.
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 

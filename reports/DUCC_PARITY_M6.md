@@ -75,6 +75,11 @@ references in the scaler. It did not establish a useful SIMD speedup and
 should not be repeated unchanged. Exact patch, binary and profile provenance
 are in the [isolated synthesis record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
 
+The native-generic suffix work-count probe found that its two-vector fused
+path already handles 74.6% of full and 83.8% of reduced ordinary lane-pair
+updates. This favors further work on the scaled prefix; the counter does not
+prove that individually tiny contributions can be omitted safely.
+
 A separate `#[inline(always)]` change on the ordinary suffix was screened
 against the exact non-inlined generic binary. The original suffix already
 emits direct AVX2 FMA and uses a 40-byte stack frame; the attribute change

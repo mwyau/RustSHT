@@ -5,8 +5,10 @@
   (`1.054–1.355x`); vector-rescale follow-ups regressed, and suffix inlining
   showed no repeatable gain. The per-lane exponent AVX2 follow-up also missed
   all four cells (`1.112–1.623x`) and spent 36.9% of q1 Callgrind Ir in the
-  scaler. Production dispatch is unchanged, and a high-degree near-pole
-  accuracy discrepancy remains. See the [candidate record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
+  scaler. The ordinary suffix already handles 74.6–83.8% of updates through
+  its two-vector fused path, leaving the scaled prefix as the next focus.
+  Production dispatch is unchanged, and a high-degree near-pole accuracy
+  discrepancy remains. See the [candidate record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

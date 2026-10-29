@@ -1,0 +1,23 @@
+# Isolated native-f32 suffix-fusion work count
+
+- Baseline: `b6a96aa7161a64f678b614d73478496f50f0551e` plus generic source patch `661a116785aa76bc2d8cb160cb1425ce048246b905f405f7b713178f4b21f443`.
+- Test-only counter patch SHA-256: `b8286da2811c9b2b90349cb563033fa97f29c3cb676828a521fdf0f5cc450da7`; archived as [`native-generic-scalar-suffix-fusion-counters.patch.gz`](../patches/native-generic-scalar-suffix-fusion-counters.patch.gz).
+- Build: release, `--features parallel`, `RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'`; Pulp V3, eight f32 AVX2 lanes.
+- Command: `cargo test --release --features parallel --lib native_f32_ordered_work_count_probe -- --ignored --nocapture`.
+- The probe synthesizes deterministic native-f32 GL T720 data at q1 for full M720 and reduced M180. It counts recurrence lane-pair updates, not elapsed time.
+
+| Cell | Ordinary lane-pair updates | Through two-vector fused suffix | Fused share | Scaled-prefix vector steps | All-lane scale <= -3 steps |
+|---|---:|---:|---:|---:|---:|
+| Full M720 q1 | 37,826,696 | 28,201,344 | 74.5541% | 394,106 | 52,166 |
+| Reduced M180 q1 | 19,676,552 | 16,485,168 | 83.7808% | 123,134 | 12,608 |
+
+The two-vector suffix path already handles most ordinary updates, so suffix
+pairing alone has limited remaining headroom. Some scaled-prefix vector steps
+have every lane at scale <= -3, which bounds each restored f32 basis value to
+zero under the current normalization threshold. This count does not justify
+skipping accumulation: multiple individually tiny terms can combine into a
+representable sum. Any optimization must retain or safely bound those
+contributions.
+
+The isolated probe passed (1 passed, 0 failed, 0 ignored in the selected run);
+`cargo fmt --all -- --check` passed. It makes no timing or performance claim.

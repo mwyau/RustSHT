@@ -121,6 +121,15 @@ produced a finite map (SHA-256
 are retained for inspection. The profile fixture is separate from the timed
 fixture; its instruction count is not a timing comparison.
 
+A separate test-only work-count probe measured ordinary-suffix fusion in the
+same generic candidate. The two-vector fused path handled 74.5541% of full
+M720 and 83.7808% of reduced M180 ordinary lane-pair updates. It is already
+used for most ordinary recurrence work, so suffix pairing alone is not the
+next target. The probe also counted all-lane scale `<= -3` groups; this does
+not establish that their accumulated contributions are safe to omit. See the
+[full work-count record](results/f32-suffix-fusion-work-count.txt) and
+[test-only instrumentation patch](patches/native-generic-scalar-suffix-fusion-counters.patch.gz).
+
 ## Numerical and f64 controls
 
 The high-degree zonal probe at `sin(theta)=0.003333085` produced f32

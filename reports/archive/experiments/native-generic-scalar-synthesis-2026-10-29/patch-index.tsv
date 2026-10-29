@@ -23,3 +23,4 @@ native-generic-scalar-vector-scale.patch	6bbd41e47b5e6d3d5757d0102abe210e2949736
 native-generic-scalar-vector-subnormal-scale80.patch	ec6468793f641109f1f136a979d5c7f7ef932df6c59517e4082d99379e1de7ed	patches/native-generic-scalar-vector-subnormal-scale80.patch.gz
 native-generic-scalar-with-profile-tool.patch	1310f21c3335eb121253cab0182f912a66e40ee9e2cce4864a33da18dfc32fef	patches/native-generic-scalar-no-fast.patch.gz
 ordinary-suffix-inline.patch	a3649b9b91994d08b94622c444749b1b7d8f5715d4118e6c46080a01f4064c42	ordinary-suffix-inline/ordinary-suffix-inline.patch.gz
+native-generic-scalar-suffix-fusion-counters.patch	b8286da2811c9b2b90349cb563033fa97f29c3cb676828a521fdf0f5cc450da7	patches/native-generic-scalar-suffix-fusion-counters.patch.gz
