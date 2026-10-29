@@ -1,0 +1,48 @@
+Ordinary-suffix inlining diagnostic
+===================================
+
+Source base: b6a96aa7161a64f678b614d73478496f50f0551e (the latest dev
+commit at experiment time; its change is test-only).
+Generic baseline patch SHA-256:
+  661a116785aa76bc2d8cb160cb1425ce048246b905f405f7b713178f4b21f443
+Generic + inline patch SHA-256:
+  a3649b9b91994d08b94622c444749b1b7d8f5715d4118e6c46080a01f4064c42
+Baseline binary SHA-256:
+  1a77e5788d3ed6ba010e6f59e4a0bbe9c64f0fce2913a974d9bae81d049e81fe
+Inline binary SHA-256:
+  afeb20283fee37e924a95a0bf13998dcd88dbda7e490c59d57de39831fe189e4
+Build flags: -C target-cpu=x86-64-v3 -Aunexpected_cfgs
+Observed backend: Pulp V3 / AVX2, eight f32 lanes.
+
+The baseline binary retains
+`synthesize_ordinary_suffix_vector::<f32, pulp::x86::v3::V3>` as a symbol.
+Its prologue reserves 0x28 bytes, and its hot degree loop contains direct
+YMM `vfmadd213ps` / `vfmadd231ps` instructions. It does not call the
+`_mm256_fmadd_ps` wrapper for each fused operation. Representative loop:
+
+    20bad0: vmovaps       %ymm2,%ymm11
+    20bad4: vbroadcastss  -0x4(%r14,%rdx,1),%ymm13
+    20badb: vbroadcastss  -0x4(%r15,%rdx,1),%ymm14
+    20bae2: vbroadcastss  (%r14,%rdx,1),%ymm12
+    20baef: vfmadd213ps   %ymm10,%ymm2,%ymm3
+    20bafb: vfmadd213ps   %ymm9,%ymm2,%ymm4
+    20bb07: vfmadd213ps   %ymm8,%ymm2,%ymm5
+    20bb13: vfmadd213ps   %ymm7,%ymm2,%ymm6
+    20bb1e: vfmadd231ps   %ymm13,%ymm1,%ymm14
+    20bb2a: vfmadd231ps   %ymm14,%ymm11,%ymm0
+
+The inline binary no longer emits that suffix symbol. Its whole executable
+contains 3,382 `vfmadd*` instructions; this whole-binary count is not a
+hot-loop instruction count. The change is only `#[inline(always)]` on the
+ordinary vector suffix. The exact matched screen found bitwise-identical
+outputs and no repeatable whole-transform improvement. Thus the suffix was
+already emitting direct FMA in the baseline; inlining it is not an accepted
+optimization.
+
+Reproduction command for the baseline symbol excerpt:
+
+    objdump -d -C --no-show-raw-insn \
+      --disassemble='rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector::<f32, pulp::x86::v3::V3>' \
+      ducc_f32_full_transform_parity
+
+Binaries are not archived; their exact hashes and the source patch are above.

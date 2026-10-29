@@ -10,6 +10,8 @@ Match or beat pinned native DUCC 0.42.0 at `42ce8ab5c5d79e0e2fd9af4a09c2ea469352
 
 **Inspected source baseline:** `83dd570d413a9e0c0dd998e1fbfb34f7d8a92650`;
 production code is unchanged from `c63cde440d91e3ca2810226163a191199b4ca29d`.
+The current `dev` head `b6a96aa7` adds a test-only f32 scaling update; the
+isolated implementation work is based on parent `39dd8a88`.
 The source inventory classifies the current implementation as follows:
 
 | Classification | Current owner | Direction |
@@ -27,6 +29,21 @@ The paired synthesis implementation has a typed f32/f64 SIMD abstraction to
 reuse. This is a targeted generalization, not a mechanical `f64` replacement.
 
 **Evidence at decision time (not native-f32 parity):**
+- The first isolated generic scalar-synthesis candidate is now measured. Its
+  15-pair native-f32 GL T720 ratios are `1.355`, `1.338`, `1.054`, and `1.134`
+  versus DUCC for full/reduced q1/q8. It remains a GAP and did not change
+  production dispatch. The vector-rescale leaf and forced-inline follow-up were
+  also rejected after three-pair screens. Exact patches, paired data, work
+  counts, Callgrind, and the high-degree numerical caveat are indexed in the
+  [isolated synthesis record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
+- A suffix-inlining follow-up did not improve the generic candidate: the
+  original f32 suffix already emits direct AVX2 FMA with a small stack frame.
+  The exact three-pair delta screen and assembly excerpt are archived with the
+  candidate record; do not repeat this attribute change unchanged.
+- The generic candidate passed the release lib suite, but the high-degree
+  zonal probe reports `0.018705474` in f32 versus `0.018541995` from the
+  independent f64 recurrence near the pole. This diagnostic has no tolerance
+  assertion; add an independent accuracy check before considering promotion.
 - Production GL T720 f32 scalar synthesis currently uses a guarded **f64 child-plan and conversion sidecar**, passing four full/reduced q1/q8 cells at 0.775–0.961x native DUCC. It is **temporary technical debt**, not the desired final architecture. See [production evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
 - Native-f32 scalar analysis and spin-1 transforms remain far from DUCC. Isolated f32-I/O/f64-recurrence analysis and spin diagnostics are near parity in some cases but do **not** prove that a native-f32 instantiation is fast.
 - The latest diagnostic scalar-analysis tile-512 change yielded about 1% improvement and was rejected; its subsequent Callgrind attributed 30.3% of process Ir to a checked scaled f64 analysis path and 16.6% to ordinary fused suffix work. These profiles are clues, **not** license to continue optimizing the f64-internal f32 route. See [tile report](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md) and [profile](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
@@ -57,6 +74,15 @@ Use native f32 coefficients, f32 FFT and Fourier buffers, f32 recurrence/accumul
 **Critical numerical risk:** f32's narrower exponent range makes a literal f64-range substitution unsafe. Keep mantissa/exponent state and checked exceptional/sectoral/polar handling as needed, without prematurely flushing a contribution that can later be represented. Preserve correct adjoints, normalization and reset. Performance may differ significantly from the existing f64 kernel; eight f32 AVX2 lanes do not prove parity. Inspect real generated AVX2/FMA and the scaled/ordinary counts.
 
 First prototype in an isolated current-source worktree. Measure native-f32 GL T720 scalar synthesis full M720 and reduced M180, q1 and q8, against exact source parent and native-f32 DUCC. Validate analytic/sectoral, adjoints, extremes/subnormal, tails and poisoned/reset workspace. Reject unsafe results. If slow, attribute useful work, scaled prefix, loop structure and instruction cost **before** adding another optimization.
+
+**Current state:** the generic route is implemented only as an isolated patch.
+The initial candidate spends substantial work in the precision-specific f32
+scaled prefix; scalar scale-count, restoration, and vector-rescale variations
+did not improve whole transforms. An ordinary-suffix inlining screen also
+showed no repeatable gain; its baseline already emits direct FMA. Do not repeat
+these variants unchanged. The next candidate must reduce scaled-prefix work or
+another quantified hot cost while retaining checked exponent and underflow
+behavior, then pass the independent high-degree accuracy control.
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 
