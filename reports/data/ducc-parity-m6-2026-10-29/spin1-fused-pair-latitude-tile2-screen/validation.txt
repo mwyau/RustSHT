@@ -1,0 +1,3 @@
+Command: cargo test --locked --release --features parallel --lib spin1 -- --test-threads=1
+Result: 49 passed; 4 ignored; 0 failed.
+The candidate and parent outputs were bitwise equal in every timed cell; all timed workers passed finite-output, repeat, and poisoned-output reset checks.

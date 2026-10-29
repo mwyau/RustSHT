@@ -1,3 +1,94 @@
+## 2026-10-29 two-latitude-vector paired spin tile rejected after AVX2 spills
+
+At exact current parent `b3b93f17fe4d404fe4c033ffc7420eb190dc00b0`, an
+isolated tile-two candidate changed only the shared f64
+`FusedPreparedSynthesisPairBlock` loop in
+`src/legendre/scalar_paired/synthesis.rs`. It retained the existing paired
+recurrence, checked transition, scalar tail and exceptional fallback. Three
+interleaved complete f32-I/O/f64-internal / native-f32-DUCC comparisons ran in
+each full/reduced T720 q1/q8 cell.
+
+| GL T720 spin-1 synthesis | Parent / candidate / DUCC ms | Candidate/parent paired median [range] | Candidate/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---|
+| Full q1 | 38.532 / 38.447 / 40.521 | 0.998 [0.996–1.007] | 0.952 [0.949–0.952] | GAP; neutral vs parent |
+| Reduced q1 | 28.150 / 33.045 / 17.630 | 1.181 [1.169–1.242] | 1.883 [1.863–1.984] | GAP; reject |
+| Full q8 | 8.917 / 8.614 / 5.926 | 0.974 [0.944–0.985] | 1.453 [1.370–1.472] | GAP; small gain |
+| Reduced q8 | 3.391 / 3.626 / 2.597 | 1.050 [0.994–1.111] | 1.305 [1.275–1.396] | GAP; no stable gain |
+
+All workers passed finite-output, repeat and poisoned-output reset checks;
+candidate and parent outputs were bitwise equal. Candidate relative-L2 error
+against DUCC was `3.89–3.91e-8`, with maximum absolute error `1.20e-7`. The
+reduced-q1 regression rejects this candidate before any 15-pair extension.
+Executed AVX2 V3 code spills recurrence and sum vectors inside the candidate
+degree-pair loop: its stack frame is `0x228` bytes versus `0x98` for parent,
+with repeated YMM loads/stores to stack slots in the inner loop. Protected f64
+T1023 spin-1 synthesis was bitwise equal; q1 candidate/parent was `0.997`
+(`[0.995,1.001]`) and noisy q8 was `0.980` (`[0.782,1.003]`) over three
+pairs. Focused candidate spin-1 tests passed (49 passed, 4 ignored). Keep the
+patch isolated; do not retry the same tile interchange. Full raw results,
+patch, checksums, tests and executed assembly are in the [tile-two
+screen](data/ducc-parity-m6-2026-10-29/spin1-fused-pair-latitude-tile2-screen/README.md).
+
+**Next:** profile complete f32-I/O/f64-internal GL T720 spin-1 analysis,
+starting with reduced q1 and full q8, and separate conversion, FFT, recurrence,
+accumulation and writeback. Stage B leaves those spin-1 analysis cells at
+`1.28–1.64x` native-f32 DUCC while native f32 is `27–36x`; use that profile to
+choose one bounded analysis-side hypothesis. M6 remains open.
+
+## 2026-10-29 reduced-q1 spin-1 synthesis profile identifies repeated coefficient broadcasts
+
+At exact source parent `b3b93f17fe4d404fe4c033ffc7420eb190dc00b0`, the complete
+f32-I/O/f64-internal reduced GL T720 spin-1 synthesis call was profiled at q1
+against pinned native-f32 DUCC. The warmed call includes coefficient
+promotion, the reusable f64 public transform, FFT and map narrowing. A separate
+60-call stage profile measured 0.076144 ms promotion, 27.956647 ms f64
+transform, 0.085071 ms writeback, and 28.116359 ms whole-call median, using
+12,375,968 bytes of reusable conversion buffers. Conversion and writeback are
+under 1% of this cell's time.
+
+One Callgrind-collected whole call recorded 609,836,478 Rust instruction
+references and 212,818,229 DUCC references (2.867x). The Rust fused paired
+SIMD body contributes 159,961,530 exclusive references (26.23%); DUCC's
+`alm2map_kernel` contributes 61,518,480 (28.91%). Rust's inclusive spin ring
+group path is 594,254,065 (97.44%), and inverse FFT rows are 14,476,440
+(2.37%); inclusive and exclusive rows must not be added. Executed AVX2
+assembly and source inspection show Rust rebroadcasts per-degree coefficient
+values for each vector latitude block, while DUCC reuses broadcasts across
+several blocks.
+
+The subsequent two-latitude-vector experiment found that the expanded live
+state spills on AVX2 and regresses reduced q1; its quantified rejection is
+recorded above. The reproducible [profile package](data/ducc-parity-m6-2026-10-29/f32-spin1-reduced-q1-profile/README.md)
+contains sanitized compressed Callgrind profiles, selected annotations, executed hot assembly and
+instrumented harnesses.
+
+## 2026-10-29 spin-1 order-major queue tile sizes rejected
+
+On exact current parent `b3b93f17fe4d404fe4c033ffc7420eb190dc00b0`, two
+isolated candidates changed only the q8 order-major tile from 1 to 4 or 2.
+Three interleaved complete f32-I/O/f64-internal / native-f32-DUCC pairs per
+cell confirmed the route, but neither candidate produced a stable four-cell
+gain. These are screening results, not 15-pair acceptance evidence; the
+existing 15-pair source-specific backend measurements remain the official
+spin-1 synthesis baseline.
+
+| GL T720 spin-1 synthesis | Tile 4 C/D median [3-pair range] | Tile 2 C/D median [3-pair range] | Decision |
+|---|---:|---:|---|
+| Full M720 q1 | 0.956 [0.935–0.983] | 0.971 [0.945–0.981] | q1 queue route unchanged; no tile effect |
+| Reduced M180 q1 | 1.653 [1.576–1.664] | 1.588 [1.571–1.591] | GAP |
+| Full M720 q8 | 1.395 [1.272–1.532] | 1.474 [1.437–1.624] | GAP; tile 4 parent lead was not stable |
+| Reduced M180 q8 | 1.324 [1.012–1.631] | 1.005 [0.791–1.166] | tile 4 regression; tile 2 INCONCLUSIVE |
+
+Parent/candidate outputs were bitwise equal, and workers passed finite,
+repeat and workspace-reset checks. Tile 2's q8 reduced route probe confirmed
+eight order-major workers. The three-pair q8 frequency/pressure measurements
+were variable; no candidate was extended to 15 pairs or promoted. Exact
+patches, binary hashes, raw pairs, route probe and runner are in the [tile
+screen package](data/ducc-parity-m6-2026-10-29/spin1-order-major-tile-screen/README.md).
+
+The subsequent cell-specific profile and next bounded experiment are recorded
+above. M6 remains open.
+
 ## 2026-10-29 repeated scalar-analysis ring normalization did not improve whole calls
 
 A typed per-ring cache for `ring_weight / nphi` preserved bitwise output and

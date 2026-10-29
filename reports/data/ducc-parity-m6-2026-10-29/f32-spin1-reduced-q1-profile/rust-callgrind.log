@@ -1,0 +1,14 @@
+==3144493== Callgrind, a call-graph generating cache profiler
+==3144493== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==3144493== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==3144493== Command: <experiment> --worker synthesis 1 GL 1 721 378 720 180 0.23 <experiment> <experiment> <experiment> <experiment> <experiment> <experiment> 25.0
+==3144493==
+==3144493== For interactive control, run 'callgrind_control -h'.
+==3144493== brk segment overflow in thread #1: can't grow to 0x4c9d000
+==3144493== (see section Limitations in user manual)
+==3144493== NOTE: further instances of this message will not be shown
+==3144493==
+==3144493== Events    : Ir
+==3144493== Collected : 609836478
+==3144493==
+==3144493== I   refs:      609,836,478
