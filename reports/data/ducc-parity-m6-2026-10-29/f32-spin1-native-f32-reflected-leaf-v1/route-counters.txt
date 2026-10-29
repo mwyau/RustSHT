@@ -1,0 +1,10 @@
+Focused release route test (all attempts executed the f32 reflected leaf; no leaf declines):
+
+| GL T720 truncation | threads | block attempts | successful f32 reflected leaf blocks | declines |
+|---|---:|---:|---:|---:|
+| full M720 | q1 | 2841 | 2841 | 0 |
+| full M720 | q8 | 8050 | 8050 | 0 |
+| reduced M180 | q1 | 905 | 905 | 0 |
+| reduced M180 | q8 | 2685 | 2685 | 0 |
+
+The test repeated each transform after poisoning the output maps and checked bitwise repeat/reset consistency. All outputs were finite.

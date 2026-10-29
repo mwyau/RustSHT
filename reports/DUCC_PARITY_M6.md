@@ -1,3 +1,46 @@
+## 2026-10-29 native-f32 reflected spin-1 leaf rejected
+
+At exact source parent `5d6e5e34f92ae321d5754d120258e2fa63c79cb3`, an
+isolated f32 dual-channel reflected leaf used the existing hemisphere scheduler
+and shared paired recurrence. The recoverable candidate patch SHA256 is
+`21bacf263d1cb93c5fcc40bb4dfcc425fb19947a3e252740bcc886c4e6a4e953`; it was
+not promoted. Each complete public f32 call includes setup-amortized transform
+work and was compared in three interleaved parent/candidate/pinned native-f32
+DUCC pairs. Three pairs suffice to reject the large, repeatable q8 regressions.
+
+| GL T720 spin-1 synthesis | Parent / candidate / DUCC ms | Candidate/parent paired median [range] | Candidate/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---|
+| Full M720 q1 | 1496.584 / 1577.282 / 40.712 | 1.057 [1.032, 1.059] | 38.743 [37.931, 38.987] | GAP; candidate slower |
+| Reduced M180 q1 | 602.805 / 592.610 / 17.553 | 0.985 [0.967, 0.985] | 33.844 [32.250, 33.844] | GAP; no material gain |
+| Full M720 q8 | 270.681 / 596.808 / 8.051 | 2.196 [2.164, 2.219] | 74.735 [69.852, 88.326] | GAP; rejected |
+| Reduced M180 q8 | 108.633 / 340.934 / 2.715 | 3.145 [2.801, 3.210] | 125.054 [119.888, 131.682] | GAP; rejected |
+
+The focused route-counter test showed every attempted block used the leaf
+(full q1/q8 `2841/2841`, `8050/8050`; reduced `905/905`, `2685/2685`; zero
+declines). Candidate output errors versus DUCC were worse than parent in all
+four cells: relative L2 `1.949e-4–2.140e-4` candidate versus `1.415e-4–1.426e-4`
+parent. Workers were finite and repeat/reset consistent. No broad analytic,
+adjoint or extreme-value matrix was run after the performance and accuracy
+gate failed.
+
+Full q1 Callgrind fell from `22.509B` to `15.097B` instruction references, but
+wall time rose 5.7%; Ir is not cycles. Exclusive candidate cost was dominated
+by scaled accumulation helpers (`multiply_component_scaled_with_normal_factor_f32`
+5.853B Ir, `multiply_complex_scaled_f32` 2.294B), while the reflected leaf
+itself was about 0.069B. This identifies scalar work on scaled packets as the
+next target. The protected f64 GL T1023 spin-1 q1/q8 outputs remained bitwise
+equal; three-pair timing was inconclusive. Exact timings, hashes, profiles,
+assembly, route counters and patch are in the [V1 rejection package](data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md).
+
+**Next:** in a fresh isolated experiment, reuse the checked
+`try_accumulate_f32_scaled_synthesis_packet` operation to accumulate complete
+safe scaled packets on the existing even/odd coefficient rows, retaining exact
+scalar handling for tails and unsafe packets and transactional decline for an
+unsafe full packet. Keep the shared recurrence and f64 routes. First prove the
+packet guard and route with focused tests/counters, then benchmark whole GL
+T720 f32 spin-1 synthesis q1/q8 full/reduced against parent and DUCC. Do not
+retry the rejected leaf unchanged. M6 remains open.
+
 ## 2026-10-29 f32 spin-1 fused scalar-pair route rejected
 
 At exact source parent 07193db72933ea7ecb914986874fa1219a3629d4, an isolated candidate fused two spin-converted scalar channels into the shared f64 scalar-ordered recurrence. It reused the shared fused synthesis block, paired visitor, and typed accumulator. The candidate source-only patch is SHA256 4db18542074bd5b23ee1e5b70b6c17e6ae9862656ff319f2d3977fd5b761e7cd; the recovered two-call adapter parent patch is b78a1ef88e7d829b9980eb7c96da87fe17c7809a215ab985598d0c3ba32a3eac. Nothing was promoted.

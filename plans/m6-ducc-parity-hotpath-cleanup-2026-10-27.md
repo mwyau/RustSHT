@@ -2,51 +2,34 @@
 
 ## ACTIVE OWNER OVERRIDE — 2026-10-29: close the native-f32 DUCC gap
 
-The immediate priority is complete public f32 execution-path parity. Stage A
-reconciled the shared reflected scalar-synthesis candidate at exact parent
-`1b2041491e621fffe94464667619baf788d31835`: it cut GL T720 scalar-synthesis
-time 39–64%, but still measured 13.92–18.75× DUCC and had repeatable adjacent
-f32 scalar-analysis and spin-1 synthesis-q8 regressions. It was not promoted;
-its complete patch and raw pairs are in the [current-source evidence
-package](../reports/data/ducc-parity-m6-2026-10-28/f32-reflected-current-source-1b204149/README.md).
+The reusable guarded f32-I/O/f64-internal scalar-synthesis backend is in
+production on the four measured GL T720 spin-0 synthesis cells at
+`0.775–0.961x` native-f32 DUCC; conversions and writeback are included. Twelve
+other spin-0/spin-1 T720 analysis/synthesis cells remain GAP. The Stage B
+16-cell diagnostic and production scalar-synthesis evidence remain in the
+[single M6 ledger](../reports/DUCC_PARITY_M6.md).
 
-Stage B has now measured complete f32-I/O/f64-internal calls at all 16 GL T720 scalar/spin synthesis/analysis full/reduced q1/q8 cells, against the pinned DUCC native-f32 API. Fifteen interleaved pairs per cell show 5 PASS and 11 GAP. Shared f64 scalar synthesis passes all four cells (candidate/DUCC 0.746–0.927x); full-mmax spin-1 synthesis q1 also passes at 0.964x. Scalar analysis remains 1.052–1.179x DUCC; most f64 spin routes remain 1.189–1.635x. Complete conversions, FFT, writeback and warm workspace are included. Evidence and executable/source hashes are in the [Stage B package](../reports/data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md).
+The isolated native-f32 dual-channel reflected spin-1 leaf at exact parent
+`5d6e5e34f92ae321d5754d120258e2fa63c79cb3` is rejected. Its q8 full/reduced
+whole-call times were 2.196x/3.145x its parent and 74.735x/125.054x DUCC. Its
+q1 result was also not a substantial gain (full was 5.7% slower; reduced was
+neutral). Every attempted block used the intended route, so this is not an
+activation failure. Callgrind found 32.9% fewer Ir at full q1 but no wall-time
+improvement; scalar scaled-packet accumulation dominated the candidate profile.
+The exact patch, complete timings, route counters, f64 control, accuracy delta,
+Callgrind and assembly are in the [V1 evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-native-f32-reflected-leaf-v1/README.md).
 
-The guarded production f64-internal backend is now implemented on exact source
-parent `17a23bd1345fa4c5aad2bc1c67cfada8d2e9c2d4`, reusing the existing f64
-plan and shared recurrence. Fifteen interleaved complete public f32/DUCC calls
-pass all four GL T720 scalar-synthesis cells at `0.775–0.961x` DUCC, with
-conversion and writeback included. The native-f32 path remains for exceptional
-or out-of-range values, and dispatch remains limited to the two measured
-geometries. The other 12 scalar/spin T720 cells remain GAP; see the current
-[M6 ledger](../reports/DUCC_PARITY_M6.md) and the [production evidence
-package](../reports/data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
+Next run a fresh bounded V2 experiment: accumulate complete safe scaled
+packets on the existing even/odd coefficient rows with the checked
+`try_accumulate_f32_scaled_synthesis_packet` helper, retaining exact scalar
+handling for tails/unsafe packets and transactional decline for an unsafe full
+packet. Reuse the shared typed recurrence and do not alter f64 dispatch. Prove
+range handling and route activation first, then compare complete public GL T720
+spin-1 f32 synthesis q1/q8 full/reduced against parent and native-f32 DUCC. If
+this does not deliver a substantial whole-call improvement, preserve the
+negative result and continue with the measured remaining f32 gaps. M6 remains
+open.
 
-The first bounded f64-internal spin-1 route screen at exact source
-`c63cde440d91e3ca2810226163a191199b4ca29d` is complete. Two independent
-scalar transforms were within parity only for full-mmax q1 (`1.009x`, interval
-crossing 1); reduced q1 and both q8 cells remained `1.108–1.566x` DUCC. The
-existing hemisphere dual-channel leaf, enabled at T720 and then scheduled
-order-major, was slower than current f64 general-spin execution in every
-direct matched q8 comparison. Neither route is promoted; details and
-recoverable patches are in the [spin route evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/README.md).
-
-The shared f64 scalar-ordered fused pair was tested from exact parent
-07193db72933ea7ecb914986874fa1219a3629d4. It is rejected: full/reduced q8
-were 2.488x/1.831x native-f32 DUCC and 1.186x/1.097x slower than the two-call
-adapter parent. Full q1 is 1.012x DUCC with an interval crossing parity;
-reduced q1 was below DUCC in three pairs but did not beat its parent
-repeatably. The exact patch and disjoint Callgrind/assembly cause are in the
-[fused-pair screen](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-dual-channel-pair-screen/README.md).
-
-Next implement one bounded **native-f32 dual-channel reflected accumulation
-leaf** through the existing hemisphere scheduler. Reuse the shared typed
-recurrence and keep polar, scaled, exceptional, and declined work on checked
-fallbacks. Verify route counters at full/reduced GL T720 q1/q8 before timing;
-compare complete f32 public calls to native-f32 DUCC and the parent, and protect
-the f64 T1023 synthesis controls. If the intended leaf is inactive or the
-whole-call gain is not substantial, retain the data and continue with
-cause-based profiling of the remaining spin gap. M6 remains open.
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
 The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and

@@ -1,0 +1,747 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index ffb8e65e..fed1d337 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -155,6 +155,12 @@ pub(crate) trait ShtScalar:
+         false
+     }
+ 
++    /// Enables the measured native-f32 GL T720 spin-1 reflected synthesis
++    /// experiment without opting f32 into the other paired-spin routes.
++    fn supports_native_f32_reflected_spin1() -> bool {
++        false
++    }
++
+     #[inline(always)]
+     fn scalar_paired_analysis_lane_width(_arch: Arch) -> usize {
+         1
+@@ -528,6 +534,37 @@ pub(crate) trait ShtScalar:
+     ) -> Result<bool, ShtError> {
+         Ok(false)
+     }
++    #[cfg(feature = "parallel")]
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "The f32 reflected leaf receives both channels and its shared typed recurrence state."
++    )]
++    fn synthesize_f32_hemisphere_pair_block_dispatched(
++        _arch: Arch,
++        _m: usize,
++        _lmax: usize,
++        _sin_theta: &[Self],
++        _cos_theta: &[Self],
++        _sectoral_norm: Self,
++        _coefficient_a: &[Self],
++        _coefficient_b: &[Self],
++        _first_even: &[Complex<Self>],
++        _first_odd: &[Complex<Self>],
++        _second_even: &[Complex<Self>],
++        _second_odd: &[Complex<Self>],
++        _spectrum_len: usize,
++        _north_first: &mut [Complex<Self>],
++        _south_first: &mut [Complex<Self>],
++        _north_second: &mut [Complex<Self>],
++        _south_second: &mut [Complex<Self>],
++        _previous: &mut [Self],
++        _current: &mut [Self],
++        _next: &mut [Self],
++        _exponents: &mut [i64],
++        _sums: &mut [&mut [Self]; 8],
++    ) -> Result<bool, ShtError> {
++        Ok(false)
++    }
+     #[expect(
+         clippy::too_many_arguments,
+         reason = "The transition kernel receives paired coefficients and caller-owned recurrence and sum scratch."
+@@ -2009,6 +2046,10 @@ impl ShtScalar for f32 {
+ 
+     type SpinInitial = spin_factors::SpinInitial<f32>;
+ 
++    fn supports_native_f32_reflected_spin1() -> bool {
++        true
++    }
++
+     fn supports_paired_scalar() -> bool {
+         true
+     }
+@@ -2296,6 +2337,57 @@ impl ShtScalar for f32 {
+         Ok(true)
+     }
+ 
++    #[cfg(feature = "parallel")]
++    fn synthesize_f32_hemisphere_pair_block_dispatched(
++        arch: Arch,
++        m: usize,
++        lmax: usize,
++        sin_theta: &[Self],
++        cos_theta: &[Self],
++        sectoral_norm: Self,
++        coefficient_a: &[Self],
++        coefficient_b: &[Self],
++        first_even: &[Complex<Self>],
++        first_odd: &[Complex<Self>],
++        second_even: &[Complex<Self>],
++        second_odd: &[Complex<Self>],
++        spectrum_len: usize,
++        north_first: &mut [Complex<Self>],
++        south_first: &mut [Complex<Self>],
++        north_second: &mut [Complex<Self>],
++        south_second: &mut [Complex<Self>],
++        previous: &mut [Self],
++        current: &mut [Self],
++        next: &mut [Self],
++        exponents: &mut [i64],
++        sums: &mut [&mut [Self]; 8],
++    ) -> Result<bool, ShtError> {
++        scalar_paired::synthesize_f32_hemisphere_pair_block_dispatched(
++            arch,
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            first_even,
++            first_odd,
++            second_even,
++            second_odd,
++            spectrum_len,
++            north_first,
++            south_first,
++            north_second,
++            south_second,
++            previous,
++            current,
++            next,
++            exponents,
++            sums,
++        )
++    }
++
+     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
+         scalar::multiply_complex_scaled_f32(value, factor, exponent)
+     }
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 27ca7a1d..eb8d889f 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -840,9 +840,9 @@ pub(crate) use synthesis::synthesize_order_block_dispatched;
+ #[cfg(test)]
+ pub(crate) use synthesis::synthesize_paired_scalar_order_prepared_f32;
+ pub(crate) use synthesis::{
+-    synthesize_hemisphere_pair_block_dispatched, synthesize_order_block_partitioned_dispatched,
+-    synthesize_order_block_precomputed_dispatched, synthesize_order_pair_block_dispatched,
+-    synthesize_paired_scalar_block_partitioned_f32,
++    synthesize_f32_hemisphere_pair_block_dispatched, synthesize_hemisphere_pair_block_dispatched,
++    synthesize_order_block_partitioned_dispatched, synthesize_order_block_precomputed_dispatched,
++    synthesize_order_pair_block_dispatched, synthesize_paired_scalar_block_partitioned_f32,
+     synthesize_prepared_order_pair_block_dispatched,
+     try_synthesize_order_pair_transition_dispatched,
+     try_synthesize_prepared_order_pair_transition_dispatched,
+diff --git a/src/legendre/scalar_paired/synthesis.rs b/src/legendre/scalar_paired/synthesis.rs
+index 295e862e..b3867b3c 100644
+--- a/src/legendre/scalar_paired/synthesis.rs
++++ b/src/legendre/scalar_paired/synthesis.rs
+@@ -2432,6 +2432,307 @@ pub(crate) fn synthesize_hemisphere_pair_block_dispatched(
+     Ok(true)
+ }
+ 
++/// Shared native-f32 recurrence leaf for the two scalar channels produced by
++/// spin-1 conversion. Normal-range packets accumulate both channels in one
++/// vector pass; scaled packets use the checked binary scaler and decline the
++/// block before writing spectra if any result is unsafe.
++#[cfg(feature = "parallel")]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The reflected f32 leaf receives two coefficient channels, both hemispheres, and caller-owned recurrence scratch."
++)]
++pub(crate) fn synthesize_f32_hemisphere_pair_block_dispatched(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    sin_theta: &[f32],
++    cos_theta: &[f32],
++    sectoral_norm: f32,
++    coefficient_a: &[f32],
++    coefficient_b: &[f32],
++    first_even: &[Complex32],
++    first_odd: &[Complex32],
++    second_even: &[Complex32],
++    second_odd: &[Complex32],
++    spectrum_len: usize,
++    north_first: &mut [Complex32],
++    south_first: &mut [Complex32],
++    north_second: &mut [Complex32],
++    south_second: &mut [Complex32],
++    previous: &mut [f32],
++    current: &mut [f32],
++    next: &mut [f32],
++    exponents: &mut [i64],
++    sums: &mut [&mut [f32]; 8],
++) -> Result<bool, ShtError> {
++    let lane_count = sin_theta.len();
++    let Some(spectrum_count) = lane_count.checked_mul(spectrum_len) else {
++        return Ok(false);
++    };
++    if m > lmax
++        || lane_count == 0
++        || lane_count > LATITUDE_BLOCK_SIZE
++        || cos_theta.len() != lane_count
++        || spectrum_len <= m
++        || north_first.len() != spectrum_count
++        || south_first.len() != spectrum_count
++        || north_second.len() != spectrum_count
++        || south_second.len() != spectrum_count
++        || previous.len() < lane_count
++        || current.len() < lane_count
++        || next.len() < lane_count
++        || exponents.len() < lane_count
++        || sums.iter().any(|sum| sum.len() < lane_count)
++    {
++        return Ok(false);
++    }
++    if sin_theta
++        .iter()
++        .any(|&sine| !sine.is_finite() || sine < 0.01)
++        || cos_theta
++            .iter()
++            .any(|&cosine| !cosine.is_finite() || cosine.abs() > 1.0)
++    {
++        return Ok(false);
++    }
++
++    let pair_count = (lmax - m + 2) / 2;
++    if coefficient_a.len() < pair_count
++        || coefficient_b.len() < pair_count
++        || [first_even, first_odd, second_even, second_odd]
++            .iter()
++            .any(|coefficients| coefficients.len() < pair_count)
++        || coefficient_a[..pair_count]
++            .iter()
++            .chain(&coefficient_b[..pair_count])
++            .any(|&value| !f32_is_normal_or_zero(value))
++        || [first_even, first_odd, second_even, second_odd]
++            .iter()
++            .any(|coefficients| {
++                coefficients[..pair_count]
++                    .iter()
++                    .flat_map(|coefficient| [coefficient.re, coefficient.im])
++                    .any(|value| !f32_is_normal_or_zero(value))
++            })
++    {
++        return Ok(false);
++    }
++
++    for sum in sums.iter_mut() {
++        sum[..lane_count].fill(0.0);
++    }
++    let mut completed = true;
++    let accumulator = F32HemispherePairAccumulator {
++        m,
++        cos_theta,
++        first_even: &first_even[..pair_count],
++        first_odd: &first_odd[..pair_count],
++        second_even: &second_even[..pair_count],
++        second_odd: &second_odd[..pair_count],
++        sums: &mut *sums,
++        completed: &mut completed,
++    };
++    super::for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
++        arch,
++        m,
++        lmax,
++        sin_theta,
++        cos_theta,
++        sectoral_norm,
++        &coefficient_a[..pair_count],
++        &coefficient_b[..pair_count],
++        previous,
++        current,
++        next,
++        exponents,
++        accumulator,
++    )?;
++    if !completed
++        || sums
++            .iter()
++            .any(|sum| sum[..lane_count].iter().any(|value| !value.is_finite()))
++    {
++        return Ok(false);
++    }
++
++    // Recombine parity only after all degree contributions are accumulated.
++    // The eight scratch rows now hold Q north/south and U north/south values.
++    for lane in 0..lane_count {
++        let inverse_sine = sin_theta[lane].recip();
++        let first_north_re = (sums[0][lane] + sums[2][lane]) * inverse_sine;
++        let first_north_im = (sums[1][lane] + sums[3][lane]) * inverse_sine;
++        let first_south_re = (sums[0][lane] - sums[2][lane]) * inverse_sine;
++        let first_south_im = (sums[1][lane] - sums[3][lane]) * inverse_sine;
++        let second_north_re = (sums[4][lane] + sums[6][lane]) * inverse_sine;
++        let second_north_im = (sums[5][lane] + sums[7][lane]) * inverse_sine;
++        let second_south_re = (sums[4][lane] - sums[6][lane]) * inverse_sine;
++        let second_south_im = (sums[5][lane] - sums[7][lane]) * inverse_sine;
++        let output_values = [
++            first_north_re,
++            first_north_im,
++            first_south_re,
++            first_south_im,
++            second_north_re,
++            second_north_im,
++            second_south_re,
++            second_south_im,
++        ];
++        if output_values.iter().any(|value| !value.is_finite()) {
++            return Ok(false);
++        }
++        for (sum, value) in sums.iter_mut().zip(output_values) {
++            sum[lane] = value;
++        }
++    }
++
++    // Validate every destination addition before committing any lane.
++    for lane in 0..lane_count {
++        let offset = lane * spectrum_len + m;
++        let destinations = [
++            (north_first[offset], sums[0][lane], sums[1][lane]),
++            (
++                south_first[(lane_count - 1 - lane) * spectrum_len + m],
++                sums[2][lane],
++                sums[3][lane],
++            ),
++            (north_second[offset], sums[4][lane], sums[5][lane]),
++            (
++                south_second[(lane_count - 1 - lane) * spectrum_len + m],
++                sums[6][lane],
++                sums[7][lane],
++            ),
++        ];
++        if destinations
++            .iter()
++            .any(|(old, re, im)| !(old.re + re).is_finite() || !(old.im + im).is_finite())
++        {
++            return Ok(false);
++        }
++    }
++    for lane in 0..lane_count {
++        let north_offset = lane * spectrum_len + m;
++        let south_offset = (lane_count - 1 - lane) * spectrum_len + m;
++        north_first[north_offset] += Complex32::new(sums[0][lane], sums[1][lane]);
++        south_first[south_offset] += Complex32::new(sums[2][lane], sums[3][lane]);
++        north_second[north_offset] += Complex32::new(sums[4][lane], sums[5][lane]);
++        south_second[south_offset] += Complex32::new(sums[6][lane], sums[7][lane]);
++    }
++    Ok(true)
++}
++
++struct F32HemispherePairAccumulator<'a, 'b> {
++    m: usize,
++    cos_theta: &'a [f32],
++    first_even: &'a [Complex32],
++    first_odd: &'a [Complex32],
++    second_even: &'a [Complex32],
++    second_odd: &'a [Complex32],
++    sums: &'a mut [&'b mut [f32]; 8],
++    completed: &'a mut bool,
++}
++
++impl super::PairedScalarRecurrenceVisitor<f32> for F32HemispherePairAccumulator<'_, '_> {
++    #[inline(always)]
++    fn visit<S: Simd>(
++        &mut self,
++        degree: usize,
++        ring_start: usize,
++        basis: &[f32],
++        lane_exponents: &[i64],
++        normal_range: bool,
++        simd: S,
++    ) -> Result<(), ShtError> {
++        if !*self.completed {
++            return Ok(());
++        }
++        let pair = (degree - self.m) / 2;
++        let coefficients = [
++            self.first_even[pair],
++            self.first_odd[pair],
++            self.second_even[pair],
++            self.second_odd[pair],
++        ];
++        let lanes = S::F32_LANES;
++        for packet_start in (0..basis.len()).step_by(lanes) {
++            let packet_end = (packet_start + lanes).min(basis.len());
++            let exponents = &lane_exponents[packet_start..packet_end];
++            if normal_range || exponents.iter().all(|&exponent| exponent == 0) {
++                let basis_vector = simd.partial_load_f32s(&basis[packet_start..packet_end]);
++                let cosine_vector = simd.partial_load_f32s(
++                    &self.cos_theta[ring_start + packet_start..ring_start + packet_end],
++                );
++                for (channel, coefficient) in coefficients.iter().enumerate() {
++                    let real_index = channel * 2;
++                    let imag_index = real_index + 1;
++                    let coefficient_re = if channel.is_multiple_of(2) {
++                        simd.splat_f32s(coefficient.re)
++                    } else {
++                        simd.mul_f32s(cosine_vector, simd.splat_f32s(coefficient.re))
++                    };
++                    let coefficient_im = if channel.is_multiple_of(2) {
++                        simd.splat_f32s(coefficient.im)
++                    } else {
++                        simd.mul_f32s(cosine_vector, simd.splat_f32s(coefficient.im))
++                    };
++                    let real = simd.mul_add_f32s(
++                        basis_vector,
++                        coefficient_re,
++                        simd.partial_load_f32s(
++                            &self.sums[real_index]
++                                [ring_start + packet_start..ring_start + packet_end],
++                        ),
++                    );
++                    let imag = simd.mul_add_f32s(
++                        basis_vector,
++                        coefficient_im,
++                        simd.partial_load_f32s(
++                            &self.sums[imag_index]
++                                [ring_start + packet_start..ring_start + packet_end],
++                        ),
++                    );
++                    simd.partial_store_f32s(
++                        &mut self.sums[real_index]
++                            [ring_start + packet_start..ring_start + packet_end],
++                        real,
++                    );
++                    simd.partial_store_f32s(
++                        &mut self.sums[imag_index]
++                            [ring_start + packet_start..ring_start + packet_end],
++                        imag,
++                    );
++                }
++            } else {
++                for lane in packet_start..packet_end {
++                    let ring = ring_start + lane;
++                    for (channel, coefficient) in coefficients.iter().enumerate() {
++                        let coefficient = if channel.is_multiple_of(2) {
++                            *coefficient
++                        } else {
++                            *coefficient * self.cos_theta[ring]
++                        };
++                        let contribution = super::super::scalar::multiply_complex_scaled_f32(
++                            coefficient,
++                            basis[lane],
++                            lane_exponents[lane],
++                        );
++                        let real_index = channel * 2;
++                        let imag_index = real_index + 1;
++                        let real = self.sums[real_index][ring] + contribution.re;
++                        let imag = self.sums[imag_index][ring] + contribution.im;
++                        if !real.is_finite() || !imag.is_finite() {
++                            *self.completed = false;
++                            return Ok(());
++                        }
++                        self.sums[real_index][ring] = real;
++                        self.sums[imag_index][ring] = imag;
++                    }
++                }
++            }
++        }
++        Ok(())
++    }
++}
++
+ #[cfg(feature = "parallel")]
+ struct FusedHemispherePairBlock<'a> {
+     pair_count: usize,
+diff --git a/src/plan.rs b/src/plan.rs
+index a52480c8..4844ef42 100644
+--- a/src/plan.rs
++++ b/src/plan.rs
+@@ -228,12 +228,17 @@ impl<T: ShtScalar> ShtPlan<T> {
+                         quantity: "paired scalar coefficient scratch count",
+                     })?
+             }
+-            1 if T::supports_paired_spin() && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
+-                .lmax()
+-                .checked_add(2)
+-                .ok_or(ShtError::IntegerOverflow {
+-                    quantity: "spin-1 fast scalar coefficient count",
+-                })?,
++            1 if (T::supports_paired_spin()
++                || (T::supports_native_f32_reflected_spin1() && harmonics.lmax() == 720))
++                && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX =>
++            {
++                harmonics
++                    .lmax()
++                    .checked_add(2)
++                    .ok_or(ShtError::IntegerOverflow {
++                        quantity: "spin-1 fast scalar coefficient count",
++                    })?
++            }
+             2 if T::supports_paired_spin() && harmonics.lmax() >= 500 => harmonics
+                 .lmax()
+                 .checked_add(5)
+@@ -550,12 +555,14 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 .ok_or(ShtError::IntegerOverflow {
+                     quantity: "analysis order count",
+                 })?;
+-        let spin_pair_fast_coefficient_count =
+-            if self.harmonics.spin() == 1 && T::supports_paired_spin() {
+-                self.spin_fast_coefficient_count
+-            } else {
+-                0
+-            };
++        let spin_pair_fast_coefficient_count = if self.harmonics.spin() == 1
++            && (T::supports_paired_spin()
++                || (T::supports_native_f32_reflected_spin1() && self.harmonics.lmax() == 720))
++        {
++            self.spin_fast_coefficient_count
++        } else {
++            0
++        };
+         let execution_capacity =
+             current_execution_thread_count().min(ShtWorkspace::<T>::MAX_EXECUTION_CAPACITY);
+         let mut workspace = ShtWorkspace::<T>::new(
+@@ -679,12 +686,14 @@ impl<T: ShtScalar> ShtPlan<T> {
+             ) {
+                 required_worker_count = required_worker_count.max(hemisphere_workers);
+             }
+-            let spin_pair_fast_coefficient_count =
+-                if self.harmonics.spin() == 1 && T::supports_paired_spin() {
+-                    self.spin_fast_coefficient_count
+-                } else {
+-                    0
+-                };
++            let spin_pair_fast_coefficient_count = if self.harmonics.spin() == 1
++                && (T::supports_paired_spin()
++                    || (T::supports_native_f32_reflected_spin1() && self.harmonics.lmax() == 720))
++            {
++                self.spin_fast_coefficient_count
++            } else {
++                0
++            };
+             workspace.ensure_recurrence_worker_count(
+                 required_worker_count,
+                 self.recurrence_factor_count,
+diff --git a/src/transform/spin.rs b/src/transform/spin.rs
+index 77366fc0..a71f8ea8 100644
+--- a/src/transform/spin.rs
++++ b/src/transform/spin.rs
+@@ -72,16 +72,21 @@ pub(crate) fn spin1_hemisphere_worker_count<T: ShtScalar>(
+     let lmax = plan.harmonics.lmax();
+     let thread_count = execution_capacity;
+     if plan.harmonics.spin() != 1
+-        || !T::supports_paired_spin()
+-        || !(319..=511).contains(&lmax)
+-        || (lmax == 511 && thread_count >= 8)
+-        || plan.harmonics.mmax() != lmax
+         || plan.grid.kind() != crate::grid::GridKind::GaussLegendre
+         || plan.grid.ntheta() != lmax + 1
+-        || !(4..=8).contains(&thread_count)
+     {
+         return None;
+     }
++    let native_f32_t720 =
++        T::supports_native_f32_reflected_spin1() && lmax == 720 && matches!(thread_count, 1 | 8);
++    let existing_f64_window = T::supports_paired_spin()
++        && (319..=511).contains(&lmax)
++        && !(lmax == 511 && thread_count >= 8)
++        && plan.harmonics.mmax() == lmax
++        && (4..=8).contains(&thread_count);
++    if !native_f32_t720 && !existing_f64_window {
++        return None;
++    }
+     let hemisphere_ring_count = plan.grid.ntheta() / 2;
+     let rings_per_group = hemisphere_ring_count
+         .div_ceil(thread_count.saturating_mul(2))
+diff --git a/src/transform/spin/hemisphere.rs b/src/transform/spin/hemisphere.rs
+index 8309a9bc..3d5ae820 100644
+--- a/src/transform/spin/hemisphere.rs
++++ b/src/transform/spin/hemisphere.rs
+@@ -12,6 +12,16 @@ use crate::legendre::LATITUDE_BLOCK_SIZE;
+ use crate::plan::current_execution_thread_count;
+ use crate::workspace::RecurrenceWorkspace;
+ 
++#[cfg(all(test, feature = "parallel"))]
++static F32_REFLECTED_PAIR_SUCCESSES: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static F32_REFLECTED_PAIR_ATTEMPTS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static F32_REFLECTED_PAIR_DECLINES: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++
+ /// Selects paired scalar synthesis only in the measured full-band GL window.
+ pub(super) fn is_beneficial<T: ShtScalar>(plan: &ShtPlan<T>, execution_capacity: usize) -> bool {
+     super::spin1_hemisphere_worker_count(plan, execution_capacity).is_some()
+@@ -177,6 +187,8 @@ fn synthesize_group<T: ShtScalar>(
+                 });
+ 
+                 let used_pair = if all_lanes_safe {
++                    #[cfg(all(test, feature = "parallel"))]
++                    F32_REFLECTED_PAIR_ATTEMPTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                     let mut sums = [
+                         &mut recurrence.analysis_same_real[..block_len],
+                         &mut recurrence.analysis_same_imag[..block_len],
+@@ -187,7 +199,7 @@ fn synthesize_group<T: ShtScalar>(
+                         &mut recurrence.spin_next_plus[..block_len],
+                         &mut recurrence.spin_previous_minus[..block_len],
+                     ];
+-                    T::synthesize_hemisphere_pair_block_dispatched(
++                    let used_f32_pair = T::synthesize_f32_hemisphere_pair_block_dispatched(
+                         arch,
+                         m,
+                         scalar_lmax,
+@@ -205,10 +217,43 @@ fn synthesize_group<T: ShtScalar>(
+                         &mut south_q[south_offset..south_end],
+                         &mut north_u[north_offset..north_end],
+                         &mut south_u[south_offset..south_end],
++                        &mut recurrence.previous[..block_len],
+                         &mut recurrence.current[..block_len],
+-                        &mut recurrence.spin_hemisphere_pair_basis,
++                        &mut recurrence.next[..block_len],
++                        &mut recurrence.exponents[..block_len],
+                         &mut sums,
+-                    )?
++                    )?;
++                    #[cfg(all(test, feature = "parallel"))]
++                    if used_f32_pair {
++                        F32_REFLECTED_PAIR_SUCCESSES
++                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++                    } else {
++                        F32_REFLECTED_PAIR_DECLINES
++                            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++                    }
++                    used_f32_pair
++                        || T::synthesize_hemisphere_pair_block_dispatched(
++                            arch,
++                            m,
++                            scalar_lmax,
++                            &theta_sin[north_first_ring..north_end_ring],
++                            &theta_cos[north_first_ring..north_end_ring],
++                            plan.sectoral_norms[m],
++                            &recurrence.spin_coefficient_a,
++                            &recurrence.spin_coefficient_b,
++                            &recurrence.fast_spin_first[..pair_count],
++                            &recurrence.fast_spin_second[..pair_count],
++                            &recurrence.fast_spin_pair_first[..pair_count],
++                            &recurrence.fast_spin_pair_second[..pair_count],
++                            spectrum_len,
++                            &mut north_q[north_offset..north_end],
++                            &mut south_q[south_offset..south_end],
++                            &mut north_u[north_offset..north_end],
++                            &mut south_u[south_offset..south_end],
++                            &mut recurrence.current[..block_len],
++                            &mut recurrence.spin_hemisphere_pair_basis,
++                            &mut sums,
++                        )?
+                 } else {
+                     false
+                 };
+diff --git a/src/transform/spin/hemisphere/tests.rs b/src/transform/spin/hemisphere/tests.rs
+index e578d4ed..8f0d1581 100644
+--- a/src/transform/spin/hemisphere/tests.rs
++++ b/src/transform/spin/hemisphere/tests.rs
+@@ -2,7 +2,102 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ 
+ use super::*;
+-use crate::{Complex64, GridKind, GridSpec, HarmonicSpec};
++use crate::{Complex32, Complex64, GridKind, GridSpec, HarmonicSpec};
++
++#[cfg(feature = "parallel")]
++#[test]
++fn native_f32_t720_reflected_spin1_leaf_activates_q1_q8_full_and_reduced() {
++    use std::sync::atomic::Ordering;
++
++    for (mmax, nphi) in [(720, 1458), (180, 378)] {
++        let plan = ShtPlan::<f32>::new(
++            GridSpec::new(GridKind::GaussLegendre, 721, nphi, 0.23).unwrap(),
++            HarmonicSpec::new(720, mmax, 1).unwrap(),
++        )
++        .unwrap();
++        let mut e = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
++        let mut b = e.clone();
++        for m in 0..=mmax {
++            for degree in m.max(1)..=720 {
++                let index = plan.harmonics.index(degree, m).unwrap();
++                let scale = 1.0 / 721.0;
++                e[index] = Complex32::new(
++                    ((degree * 17 + m * 3) as f32).sin() * scale,
++                    if m == 0 {
++                        0.0
++                    } else {
++                        ((degree * 7 + m * 11) as f32).cos() * scale
++                    },
++                );
++                b[index] = Complex32::new(
++                    ((degree * 5 + m * 13) as f32).cos() * scale,
++                    if m == 0 {
++                        0.0
++                    } else {
++                        ((degree * 19 + m) as f32).sin() * scale
++                    },
++                );
++            }
++        }
++
++        for threads in [1, 8] {
++            let pool = rayon::ThreadPoolBuilder::new()
++                .num_threads(threads)
++                .build()
++                .unwrap();
++            let mut workspace = pool.install(|| plan.workspace()).unwrap();
++            let mut selected_q = vec![f32::NAN; plan.sample_count];
++            let mut selected_u = vec![f32::NAN; plan.sample_count];
++            F32_REFLECTED_PAIR_SUCCESSES.store(0, Ordering::Relaxed);
++            F32_REFLECTED_PAIR_ATTEMPTS.store(0, Ordering::Relaxed);
++            F32_REFLECTED_PAIR_DECLINES.store(0, Ordering::Relaxed);
++            pool.install(|| {
++                plan.synthesis_spin_into(&e, &b, &mut selected_q, &mut selected_u, &mut workspace)
++            })
++            .unwrap();
++            let successes = F32_REFLECTED_PAIR_SUCCESSES.load(Ordering::Relaxed);
++            let attempts = F32_REFLECTED_PAIR_ATTEMPTS.load(Ordering::Relaxed);
++            let declines = F32_REFLECTED_PAIR_DECLINES.load(Ordering::Relaxed);
++            assert!(
++                successes > 0,
++                "GL T720 M{mmax} q{threads} did not execute the f32 reflected leaf"
++            );
++            eprintln!(
++                "GL T720 M{mmax} q{threads} reflected f32 leaf attempts={attempts} successes={successes} declines={declines}"
++            );
++            assert!(
++                selected_q
++                    .iter()
++                    .chain(&selected_u)
++                    .all(|value| value.is_finite())
++            );
++            let first_q = selected_q.clone();
++            let first_u = selected_u.clone();
++            selected_q.fill(f32::NAN);
++            selected_u.fill(f32::NAN);
++            F32_REFLECTED_PAIR_SUCCESSES.store(0, Ordering::Relaxed);
++            F32_REFLECTED_PAIR_ATTEMPTS.store(0, Ordering::Relaxed);
++            F32_REFLECTED_PAIR_DECLINES.store(0, Ordering::Relaxed);
++            pool.install(|| {
++                plan.synthesis_spin_into(&e, &b, &mut selected_q, &mut selected_u, &mut workspace)
++            })
++            .unwrap();
++            assert!(F32_REFLECTED_PAIR_SUCCESSES.load(Ordering::Relaxed) > 0);
++            assert!(
++                selected_q
++                    .iter()
++                    .zip(first_q)
++                    .all(|(a, b)| a.to_bits() == b.to_bits())
++            );
++            assert!(
++                selected_u
++                    .iter()
++                    .zip(first_u)
++                    .all(|(a, b)| a.to_bits() == b.to_bits())
++            );
++        }
++    }
++}
+ 
+ #[test]
+ fn extreme_spin1_hemisphere_restores_original_coefficients() {

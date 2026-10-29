@@ -1,0 +1,8 @@
+Passed in the isolated candidate source tree:
+- cargo fmt --check
+- cargo check --release --features parallel --lib
+- cargo test --release --features parallel native_f32_t720_reflected_spin1_leaf_activates_q1_q8_full_and_reduced -- --nocapture
+- Native-f32 T720 parent/candidate/DUCC whole-call screen: all workers finite, repeat-consistent, and poisoned-output-reset consistent.
+- f64 GL T1023 spin-1 q1/q8 controls: parent/candidate output maps bitwise equal; all workers repeat/reset consistent.
+
+The f32 candidate failed the performance gate and was not run through a broader analytic/adjoint/extreme-value matrix. Its higher DUCC error than parent is included in results-f32.csv.
