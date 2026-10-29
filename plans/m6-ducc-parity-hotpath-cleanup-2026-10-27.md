@@ -38,14 +38,25 @@ isolated. The full-source route census, 15-pair T720 scalar-synthesis matrix,
 adjacent controls, tests, fixture hashes, and binaries are in the [current
 source Stage A evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
 
-The next bounded Stage C experiment is f32 scalar analysis with the existing
-native-f32 longitude FFT followed by the existing shared f64 recurrence and
-accumulation. Pinned DUCC's `map2leg<T>` produces `complex<T>` FFT spectra and
-then its `map2alm_kernel` uses double SIMD accumulation, while the earlier
-near-parity Rust diagnostic promoted the whole map and ran an f64 FFT. Profile
-the hybrid at q1/q8 and full/reduced T720, measure complete public calls, and
-retain the guarded native-f32 fallback. If it does not reach parity, preserve
-the evidence and continue to the measured spin-1 gaps. M6 remains open.
+The current-source direct-spectrum extension of the f32-FFT/f64-recurrence
+analysis route has now completed 15 interleaved comparisons per GL T720 cell.
+It avoids a converted f64 spectrum buffer and improves full/reduced q8 by
+12.6%/9.6% against the promoted-spectrum parent, but candidate/DUCC remains
+`1.032x` full q8, `1.070–1.077x` q1, and `0.990x` reduced q8 with an interval
+crossing parity. It remains a test-only diagnostic; full independent numeric
+validation and a guarded native-f32 fallback are still required before any
+production dispatch. The exact source, binary hashes, whole-call results,
+native-f32 controls and stage profile are in the [direct-spectrum package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
+
+The next bounded Stage C hypothesis widens the shared scalar-analysis tile
+from 256 to 512 in an isolated build. Both T720 truncations currently process
+361 reflected ring pairs in two blocks per order; a 512 tile would put them in
+one block, closer to DUCC's per-order hemisphere traversal. Compare the direct
+f32-spectrum route against its exact parent in all q1/q8 full/reduced cells,
+then measure native-f32 scalar-analysis and protected f64 T1023 spin-1
+synthesis controls. Keep this test-only until whole-call parity, independent
+numerics, exceptional fallback, and reusable-memory costs pass. M6 remains
+open.
 
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 

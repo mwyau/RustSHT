@@ -1,0 +1,39 @@
+{
+  "candidate_direct_f32_spectra": {
+    "full_q1_smoke": {
+      "whole_ms": 14.294,
+      "stages_ms": {
+        "f32_fft": 2.521,
+        "promotion": 0.0,
+        "f64_recurrence_and_gather": 11.677,
+        "f64_to_f32_narrowing": 0.079
+      },
+      "runs": 1
+    },
+    "reduced_q8": {
+      "whole_ms_median_30": 1.10976,
+      "stages_ms_median_30": {
+        "f32_fft": 0.196361,
+        "promotion": 0.0,
+        "f64_recurrence_and_gather": 0.871599,
+        "f64_to_f32_narrowing": 0.038383
+      },
+      "peak_rss_kib": 31684,
+      "finite": true,
+      "poison_reset": true
+    },
+    "full_q8": {
+      "whole_ms_median_30": 2.262531,
+      "stages_ms_median_30": {
+        "f32_fft": 0.408272,
+        "promotion": 0.0,
+        "f64_recurrence_and_gather": 1.764869,
+        "f64_to_f32_narrowing": 0.087085
+      },
+      "peak_rss_kib": 84428,
+      "finite": true,
+      "poison_reset": true
+    }
+  },
+  "timing_note": "Stage timers are diagnostic and are not the whole-call paired measurements. The q8 instrumented whole-call medians include timer overhead and differ from the paired benchmark medians."
+}

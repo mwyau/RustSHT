@@ -1,3 +1,48 @@
+## 2026-10-29 direct f32 spectra into shared f64 scalar analysis remain above DUCC
+
+At exact Rust parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, an isolated
+test-only route ran the native f32 longitude FFT and widened its complex
+spectrum values on demand inside the existing shared f64 reflected scalar
+analysis. It removed the complete f64 spectrum-promotion pass and buffer while
+keeping the f64 recurrence, accumulation and f32 coefficient writeback. Each
+cell used 15 interleaved whole-call comparisons against the promoted-spectrum
+parent and pinned native-f32 DUCC.
+
+| GL T720 f32 scalar analysis | Parent / candidate / DUCC ms | Candidate/parent paired median [95% CI] | Candidate/DUCC paired median [95% CI] | Status |
+|---|---:|---:|---:|---|
+| Reduced q1 | 6.247 / 6.249 / 5.861 | 1.0003 [0.9983, 1.0070] | 1.0696 [1.0608, 1.0787] | **GAP; neutral vs parent** |
+| Reduced q8 | 0.965 / 0.871 / 0.889 | 0.9039 [0.8948, 0.9184] | 0.9897 [0.9769, 1.0020] | **INCONCLUSIVE at parity** |
+| Full q1 | 15.648 / 15.650 / 14.530 | 0.9815 [0.9598, 1.0191] | 1.0771 [1.0568, 1.0915] | **GAP** |
+| Full q8 | 2.429 / 2.117 / 2.052 | 0.8737 [0.8699, 0.8817] | 1.0319 [1.0214, 1.0443] | **GAP** |
+
+The view reduced the promoted-route q8 time by 9.6% reduced and 12.6% full,
+but did not improve q1 reliably. Candidate and parent outputs were bitwise
+equal; candidate-vs-DUCC relative-L2 / maximum absolute error was
+`1.319e-7 / 1.397e-9` reduced and `1.432e-7 / 6.985e-10` full. All workers
+reported finite output, repeat consistency and poisoned-workspace reset.
+Native-f32 adjacent analysis controls found no clear regression: the full-q1
+15-pair candidate/parent median was `1.0010` with 95% interval
+`[0.9974,1.0104]`; other cells had three-pair medians `0.9992–1.0044`.
+
+A 30-call stage profile had no promotion stage and attributed roughly 77–79%
+of instrumented q8 time to f64 recurrence and gather. Its instrumented whole
+medians differed from the paired measurements by 7% full and 27% reduced, so
+the stage timings are diagnostic only. Existing source and Callgrind evidence
+identify the shared f64 recurrence as the dominant remaining cost. The
+test-only route did not receive independent analytic, adjoint, pole, extreme,
+tail or bandlimit validation and is not eligible for production promotion.
+The protected f64 T1023 spin-1 synthesis control was not retimed because no
+production code changed. Exact patches, paired results, fixture and binary
+hashes, stage diagnostics, and runner snapshots are in the [direct-spectrum
+evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
+
+**Next:** screen a shared scalar-analysis tile width of 512 against 256 for
+this direct-spectrum f32-FFT/f64-recurrence route. Current T720 full and
+reduced calls each start two reflected blocks per order; a 512 tile would
+cover all 361 ring pairs in one block. Include all four cells, native-f32
+analysis controls, and protected f64 T1023 spin-1 synthesis q1/q8. M6 remains
+open.
+
 ## 2026-10-29 shared scalar-analysis rescale-mask reduction rejected
 
 At exact source parent `e3ae78e75e4d1883db3ae6680d9be2832b725e5e`, a bounded

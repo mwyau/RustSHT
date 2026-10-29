@@ -1,0 +1,61 @@
+{
+  "generator": "splitmix64 low-24-bit uniform mapped to [-0.5,0.5), f32 little-endian",
+  "ntheta": 721,
+  "phi0": 0.23,
+  "cells": [
+    {
+      "tag": "reduced",
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180
+    },
+    {
+      "tag": "full",
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720
+    }
+  ],
+  "files": [
+    {
+      "file": "reduced-map0.f32",
+      "bytes": 1090152,
+      "sha256": "f6cec5077d4c7287a5f23f1f6ac2a6098568f3f25e6e9173b3413d109efba36a"
+    },
+    {
+      "file": "reduced-map1.f32",
+      "bytes": 1090152,
+      "sha256": "f20a589857019e045b3cc0cca598e5ad3e73ed9889a91e96efaa106b66d19cc7"
+    },
+    {
+      "file": "reduced-alm0.f32c",
+      "bytes": 913688,
+      "sha256": "fa4bfd89935315d389e8318d85723fe5d386ac76c0890bff63e0b09db11d3491"
+    },
+    {
+      "file": "reduced-alm1.f32c",
+      "bytes": 913688,
+      "sha256": "fa4bfd89935315d389e8318d85723fe5d386ac76c0890bff63e0b09db11d3491"
+    },
+    {
+      "file": "full-map0.f32",
+      "bytes": 4204872,
+      "sha256": "de6084aab7ca03a08fc1cbc02586eca6e3ed6041a94b6618755a15089a044d16"
+    },
+    {
+      "file": "full-map1.f32",
+      "bytes": 4204872,
+      "sha256": "294ae39f03289cfa264f4660280253f95e5991f2a4de4eedab559905315ca84f"
+    },
+    {
+      "file": "full-alm0.f32c",
+      "bytes": 2082248,
+      "sha256": "93bae5b3df6058c15b62990f6f56d39be1aba8fab02a5301502fbfa7a641084a"
+    },
+    {
+      "file": "full-alm1.f32c",
+      "bytes": 2082248,
+      "sha256": "93bae5b3df6058c15b62990f6f56d39be1aba8fab02a5301502fbfa7a641084a"
+    }
+  ]
+}\n
