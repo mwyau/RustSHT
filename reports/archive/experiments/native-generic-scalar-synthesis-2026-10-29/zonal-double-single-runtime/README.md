@@ -102,11 +102,34 @@ and [`results/prefix-transition-summary.json`](results/prefix-transition-summary
 The ignored probe passed (1 passed, 356 filtered); strict Clippy, formatting,
 and diff checks passed on the instrumented source.
 
-`cargo test --features parallel --lib` passed on the paired source:
-319 passed, 37 ignored, in 103.80 seconds. `cargo clippy --all-targets
---features parallel -- -D warnings`, `cargo fmt --check`, and `git diff
---check` also passed. The sanitized command/result record is in
-[`results/test-summary.txt`](results/test-summary.txt).
+A second accuracy-only probe decomposed the ordinary f32 recurrence and
+coefficient accumulation for the same orders and high-degree coefficients,
+at 13 selected rings (0–5, 360, and 715–720). It evaluated 208 order/ring
+outputs. A scalar f32 replay of the pair recurrence and fused sums matched
+the candidate SIMD result bitwise. Holding the corrected f32 seed, prepared
+f32 factors, coefficient pairs and cosine-squared input fixed, the f64
+recurrence replay differed by `3.9654e-7` RMS, while widening the f32
+recurrence states only for accumulation differed by `2.4858e-9` RMS. Relative
+to reference RMS `2.4108e-3`, these are `1.6448e-4` and `1.0311e-6`; recurrence
+rounding is about 159.5 times larger in aggregate. At equator ring 360 the
+local relative RMS contributions are `1.6892e-4` from recurrence and
+`1.0913e-4` from accumulation, so summation remains material there. The
+probe then made sequential one-at-a-time f64 substitutions for the setup
+terms. Geometry sensitivity was `9.00e-4` relative RMS, paired-factor
+sensitivity `1.51e-4`, sectoral seed sensitivity `2.18e-5`, and coefficient
+preparation sensitivity `1.95e-6`. Geometry was largest near the polar rings;
+equator geometry was exact in this comparison, while factor and coefficient
+preparation sensitivities were locally material. These ordered substitutions
+are not additive error components. The decomposition does not include Fourier
+phase or FFT differences and is not an independent DUCC accuracy or
+performance result. Per-ring, per-order and setup-sensitivity metrics are in
+[`patches/recurrence-accumulation-test.patch.gz`](patches/recurrence-accumulation-test.patch.gz)
+and [`results/recurrence-accumulation-summary.json`](results/recurrence-accumulation-summary.json).
+
+`cargo test --features parallel --lib` passed on the exact paired source with
+both ignored probes present: 319 passed, 39 ignored, in 109.18 seconds.
+Strict Clippy, formatting and diff checks also passed. The earlier m=0-only
+suite record remains in [`results/test-summary.txt`](results/test-summary.txt).
 
 ## Three-pair timing screen
 
@@ -146,11 +169,14 @@ compensated branch.
 
 Keep this leaf isolated. It establishes a precise m=0 accuracy correction but
 does not address the dominant nonzero-order/high-degree error or full-grid
-performance gaps. Since the target orders use no scaled prefix, next compare
-ordinary f32 recurrence and coefficient-accumulation error for `m=1–16` at
-`l=600–720`, especially rings 0–5, 360, and 715–720. Any broader compensated
-state must remain native f32 at runtime,
-preserve exceptional-range behavior, and avoid adding work to every order
-unless accuracy and whole-transform timing both support it. Production
-dispatch, the temporary f64 child-plan route, and other transform families
-were not changed by this experiment.
+performance gaps. The selected ordinary f32 replay attributes most aggregate
+error in its limited screen to recurrence rounding; equator accumulation is
+also material. Setup sensitivity is larger: f64 geometry replacement changes
+the selected values by `9.00e-4` relative RMS, and f64 paired factors by
+`1.51e-4`. Next compare the exact geometry and factor-preparation sequence
+with pinned native-f32 DUCC before choosing a correction. Any broader
+compensated state must remain native f32 at runtime, preserve exceptional-range
+behavior, and avoid adding work across all orders unless accuracy and
+whole-transform timing both support it.
+Production dispatch, the temporary f64 child-plan route, and other transform
+families were not changed by this experiment.

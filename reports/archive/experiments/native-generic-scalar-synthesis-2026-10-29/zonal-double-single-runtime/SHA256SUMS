@@ -1,7 +1,8 @@
-805350f91eb3c8f58d856f31c50fc9ad869d2577f41f2d01fb80e78317d8a2e5  ./README.md
+38b31802f077d29c87827d07003d9420dbb9f3f9d5bafa149b1b360eaa7ce4c0  ./README.md
 692cf328c95a682c9d1ad00d09f72dce6f7f97a4be068d5d32e833e7e41675e1  ./codegen/ordinary-suffix-v3-avx2.asm
 1122b4671ef263b7de79cfceed75eb9470998384f21fddcdfa44c3fd843f05bb  ./patches/native-f32-paired-zonal-leaf.patch.gz
 0e89890ff72f02a69c784737deb5d95aecde14f4f3ee15a7309176b3b6d2201a  ./patches/prefix-transition-observer.patch.gz
+5f273e2e235d61441b9e7a36881bdf9a5f835282ca7a63de85997631d2b2fec0  ./patches/recurrence-accumulation-test.patch.gz
 dd17b14ca8b32238de675114ecc0c0ad69d33fe66be41917482247558daedc0a  ./results/bench.py
 11b079fd67713954631dd5324189f5f3633a9ad707979357746f61076af8b4b6  ./results/diagnose_order_bands.py
 08182a9c37105dce7b83cdd7be03650d86ebfe8eb17f5ef659848c9c7856d931  ./results/f32-parent-candidate-ducc-3.json
@@ -10,4 +11,5 @@ dd17b14ca8b32238de675114ecc0c0ad69d33fe66be41917482247558daedc0a  ./results/benc
 9af0ab32f8bf808e8f35b53292d7bd109692bc92af7d8c2e14a260be5da2c393  ./results/order-band-ring-errors.json
 8e56a0a6d4ab49c02b78b13b2b21d6b46b1f4eb6d178cf9c23c1470ff5821d8c  ./results/order-low-order-errors.json
 098291401fc5c239d8e1f734c13ce39f8f8b7d98eaef12cdb2581dec85c8daad  ./results/prefix-transition-summary.json
+ca96f87e9810f014b10f992b4eca00aea903204fb24489b35392fef8a1f1ba32  ./results/recurrence-accumulation-summary.json
 057d9cb1141328594b1bf730c4735acce6632a227c3529e957f05e7ee76afc4a  ./results/test-summary.txt

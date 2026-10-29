@@ -96,8 +96,9 @@ are in the [isolated synthesis record](archive/experiments/native-generic-scalar
 
 The native-generic suffix work-count probe found that its two-vector fused
 path already handles 74.6% of full and 83.8% of reduced ordinary lane-pair
-updates. This favors further work on the scaled prefix; the counter does not
-prove that individually tiny contributions can be omitted safely.
+updates. This counter alone does not justify prefix changes, and a focused
+`m=1–16` T720 observer found no scaled-prefix pair updates for the orders
+currently under accuracy investigation.
 
 A separate `#[inline(always)]` change on the ordinary suffix was screened
 against the exact non-inlined generic binary. The original suffix already
@@ -142,14 +143,20 @@ relative L2 for 32 coefficients per channel, with maximum absolute error
 ringwise screen for `m=1–32,l=600–719` peaks in absolute error at rings 5 and
 717 (`3.52e-4`, `3.50e-4`); relative error is also elevated at ring 360.
 Subdividing the order band puts `m=5–8` at `4.61e-4` relative L2 and
-`m=9–16` at `3.42e-4` maximum absolute error. The next diagnostic is
-ordinary-recurrence versus coefficient-accumulation error for `m=1–16` at
-`l=600–720`. A test-only prefix observer found zero scaled-prefix pair updates
-in all 736 ring batches for those orders; every batch entered the ordinary
-f32 suffix at degree `m`. The probe uses the same GL T720 latitudes with
-M16/nphi34 and does not isolate recurrence error from accumulation error.
-Keep the leaf isolated. Source patches, pair data, tests, assembly and
-filtered-fixture hashes are in the [paired zonal leaf archive]
+`m=9–16` at `3.42e-4` maximum absolute error. A test-only prefix observer
+found zero scaled-prefix pair updates in all 736 ring batches for those
+orders; every batch entered the ordinary f32 suffix at degree `m`. A second
+probe replayed 208 high-degree order/ring values and matched the SIMD f32
+output bitwise. With f32 setup values held fixed, recurrence rounding
+contributed `1.6448e-4` relative RMS, about 159.5x the `1.0311e-6`
+accumulation contribution. Sequential one-at-a-time f64 substitutions
+measured geometry sensitivity at `9.00e-4` relative RMS, paired-factor
+sensitivity at `1.51e-4`, sectoral seed at `2.18e-5`, and coefficient
+preparation at `1.95e-6`; these are not additive error terms. Geometry is
+largest near polar rings. At equator ring 360 geometry was exact in this
+comparison, while accumulation, factors, and coefficient preparation were
+locally material. Keep the leaf isolated. Source patches, paired results,
+tests, assembly and fixture hashes are in the [paired zonal leaf archive]
 (archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Decisions and remaining scope
@@ -179,14 +186,14 @@ filtered-fixture hashes are in the [paired zonal leaf archive]
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** separate ordinary f32 recurrence error from coefficient-accumulation
-error for `m=1–16,l=600–720`, focusing on rings 0–5, 360, and 715–720. The
-test-only observer found no scaled prefix in those orders, so do not spend the
-next candidate on prefix scaling. The m=0 paired leaf does not improve
-aggregate random accuracy or full-grid timing. Keep production dispatch
-unchanged while identifying which nonzero-order recurrence contributions
-dominate. Any next compensated leaf must retain native-f32 runtime state and
-pass independent accuracy, adjoint, reset, exceptional-range, and
-whole-transform timing checks. See the [active
+**NEXT:** compare the current f32 geometry and paired-factor preparation
+against pinned native-f32 DUCC for `m=1–16,l=600–720`, especially polar rings
+0–5 and 715–720. The one-at-a-time f64 sensitivities identify geometry and
+factor representation as candidate causes, but do not establish that Rust
+differs from DUCC in those values. The observer found no scaled pair updates
+in these orders. The m=0 paired leaf does not improve aggregate random
+accuracy or full-grid timing. Keep production dispatch unchanged. Any next
+correction must retain native-f32 runtime state and pass independent accuracy,
+adjoint, reset, exceptional-range, and whole-transform timing checks. See the [active
 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and the [paired
 zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).

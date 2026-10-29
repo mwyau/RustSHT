@@ -69,10 +69,17 @@ to `3.19e-8`, but its three-pair full q1/q8 timings remain `1.256/1.272x`
 DUCC and random-transform error is unchanged. The order-band screen finds
 m=0 at `5.83e-8`, nonzero orders at `1.32e-4–2.10e-4`, and degree 600–719 at
 `2.55e-4`. A test-only observer found no scaled prefix in 736 ring batches
-for `m=1–16`; each batch starts the ordinary suffix at degree `m`. The current
-next action is to separate ordinary recurrence error from coefficient
-accumulation error in those high-degree orders. Keep production dispatch
-unchanged. Full
+for `m=1–16`; each batch starts the ordinary suffix at degree `m`. A second
+test-only replay decomposed 208 order/ring values. The f32 recurrence and
+fused sums replayed the candidate SIMD outputs bitwise. With f32 setup values
+held fixed, ordinary recurrence rounding contributed `1.6448e-4` relative
+RMS versus `1.0311e-6` from accumulation rounding; both were material at the
+equator. Sequential one-at-a-time f64 substitutions measured geometry
+sensitivity at `9.00e-4`, paired-factor sensitivity at `1.51e-4`, sectoral seed
+at `2.18e-5`, and coefficient preparation at `1.95e-6` relative RMS. These
+are ordered sensitivities, not additive errors. Next compare the precise
+geometry and factor-preparation sequence with pinned native-f32 DUCC before
+choosing another correction. Keep production dispatch unchanged. Full
 provenance is in the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
@@ -122,10 +129,17 @@ polar-end rings 5/717 and equator ring 360; order subdivisions put `m=5–8`
 at `4.61e-4` relative L2 and `m=9–16` at `3.42e-4` maximum absolute error.
 A test-only observer found zero scaled-prefix pair updates in all 736 ring
 batches for `m=1–16`; each batch began the ordinary f32 suffix at degree `m`.
-Next, separate ordinary recurrence error from coefficient-accumulation error
-for `m=1–16,l=600–720`, focusing on rings 0–5, 360, and 715–720. Keep
+A second replay matched the SIMD output bitwise and measured relative RMS
+contributions of `1.6448e-4` from recurrence rounding and `1.0311e-6` from
+accumulation rounding when f32 setup values were held fixed. Sequential
+one-at-a-time f64 substitutions measured geometry sensitivity at `9.00e-4`,
+paired-factor sensitivity at `1.51e-4`, sectoral seed at `2.18e-5`, and
+coefficient preparation at `1.95e-6` relative RMS. These are not additive
+error terms; equator accumulation is locally material. Next compare the exact
+geometry and factor-preparation sequence with pinned native-f32 DUCC. Keep
 production dispatch unchanged; do not promote this leaf or the conversion
-sidecar. See the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+sidecar. See the [paired zonal-leaf
+record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 

@@ -1,0 +1,346 @@
+{
+  "by_order": [
+    {
+      "accumulation_relative_rms": 8.372703e-07,
+      "order": 1,
+      "recurrence_relative_rms": 0.0004598811,
+      "total_relative_rms": 0.0004599363
+    },
+    {
+      "accumulation_relative_rms": 5.385859e-07,
+      "order": 2,
+      "recurrence_relative_rms": 0.0004499013,
+      "total_relative_rms": 0.0004497323
+    },
+    {
+      "accumulation_relative_rms": 7.278656e-07,
+      "order": 3,
+      "recurrence_relative_rms": 7.296469e-05,
+      "total_relative_rms": 7.291831e-05
+    },
+    {
+      "accumulation_relative_rms": 1.232638e-06,
+      "order": 4,
+      "recurrence_relative_rms": 0.0001040455,
+      "total_relative_rms": 0.000104025
+    },
+    {
+      "accumulation_relative_rms": 1.252104e-06,
+      "order": 5,
+      "recurrence_relative_rms": 8.470193e-05,
+      "total_relative_rms": 8.463088e-05
+    },
+    {
+      "accumulation_relative_rms": 5.782007e-07,
+      "order": 6,
+      "recurrence_relative_rms": 6.980023e-05,
+      "total_relative_rms": 6.955973e-05
+    },
+    {
+      "accumulation_relative_rms": 6.883418e-07,
+      "order": 7,
+      "recurrence_relative_rms": 2.208186e-05,
+      "total_relative_rms": 2.204581e-05
+    },
+    {
+      "accumulation_relative_rms": 1.229451e-06,
+      "order": 8,
+      "recurrence_relative_rms": 2.633111e-05,
+      "total_relative_rms": 2.666089e-05
+    },
+    {
+      "accumulation_relative_rms": 3.021013e-07,
+      "order": 9,
+      "recurrence_relative_rms": 2.236989e-05,
+      "total_relative_rms": 2.23203e-05
+    },
+    {
+      "accumulation_relative_rms": 1.037211e-06,
+      "order": 10,
+      "recurrence_relative_rms": 1.278723e-05,
+      "total_relative_rms": 1.284208e-05
+    },
+    {
+      "accumulation_relative_rms": 6.098607e-06,
+      "order": 11,
+      "recurrence_relative_rms": 1.704617e-05,
+      "total_relative_rms": 1.77202e-05
+    },
+    {
+      "accumulation_relative_rms": 4.728069e-07,
+      "order": 12,
+      "recurrence_relative_rms": 1.41608e-05,
+      "total_relative_rms": 1.431281e-05
+    },
+    {
+      "accumulation_relative_rms": 1.182022e-06,
+      "order": 13,
+      "recurrence_relative_rms": 1.626409e-06,
+      "total_relative_rms": 2.025143e-06
+    },
+    {
+      "accumulation_relative_rms": 1.430879e-07,
+      "order": 14,
+      "recurrence_relative_rms": 2.688749e-06,
+      "total_relative_rms": 2.698583e-06
+    },
+    {
+      "accumulation_relative_rms": 8.37946e-07,
+      "order": 15,
+      "recurrence_relative_rms": 4.000938e-06,
+      "total_relative_rms": 3.820664e-06
+    },
+    {
+      "accumulation_relative_rms": 5.01248e-07,
+      "order": 16,
+      "recurrence_relative_rms": 1.26813e-06,
+      "total_relative_rms": 1.22518e-06
+    }
+  ],
+  "by_ring": [
+    {
+      "accumulation_relative_rms": 1.39915e-07,
+      "recurrence_relative_rms": 0.0005947241,
+      "ring": 0,
+      "total_relative_rms": 0.0005947577
+    },
+    {
+      "accumulation_relative_rms": 1.625214e-07,
+      "recurrence_relative_rms": 9.395051e-05,
+      "ring": 1,
+      "total_relative_rms": 9.388138e-05
+    },
+    {
+      "accumulation_relative_rms": 1.440487e-07,
+      "recurrence_relative_rms": 0.0001215657,
+      "ring": 2,
+      "total_relative_rms": 0.0001215572
+    },
+    {
+      "accumulation_relative_rms": 6.930053e-08,
+      "recurrence_relative_rms": 2.810039e-05,
+      "ring": 3,
+      "total_relative_rms": 2.807106e-05
+    },
+    {
+      "accumulation_relative_rms": 8.895672e-08,
+      "recurrence_relative_rms": 1.974799e-05,
+      "ring": 4,
+      "total_relative_rms": 1.977687e-05
+    },
+    {
+      "accumulation_relative_rms": 1.258539e-07,
+      "recurrence_relative_rms": 1.315342e-05,
+      "ring": 5,
+      "total_relative_rms": 1.316214e-05
+    },
+    {
+      "accumulation_relative_rms": 0.0001091317,
+      "recurrence_relative_rms": 0.0001689226,
+      "ring": 360,
+      "total_relative_rms": 0.0001980969
+    },
+    {
+      "accumulation_relative_rms": 4.224923e-07,
+      "recurrence_relative_rms": 8.765697e-06,
+      "ring": 715,
+      "total_relative_rms": 8.868155e-06
+    },
+    {
+      "accumulation_relative_rms": 3.600503e-07,
+      "recurrence_relative_rms": 2.444678e-05,
+      "ring": 716,
+      "total_relative_rms": 2.438406e-05
+    },
+    {
+      "accumulation_relative_rms": 3.551289e-07,
+      "recurrence_relative_rms": 4.694883e-05,
+      "ring": 717,
+      "total_relative_rms": 4.706072e-05
+    },
+    {
+      "accumulation_relative_rms": 4.460329e-07,
+      "recurrence_relative_rms": 0.0001545465,
+      "ring": 718,
+      "total_relative_rms": 0.0001542934
+    },
+    {
+      "accumulation_relative_rms": 6.306378e-07,
+      "recurrence_relative_rms": 0.0005606436,
+      "ring": 719,
+      "total_relative_rms": 0.0005609108
+    },
+    {
+      "accumulation_relative_rms": 5.187394e-07,
+      "recurrence_relative_rms": 0.0005250534,
+      "ring": 720,
+      "total_relative_rms": 0.0005245901
+    }
+  ],
+  "clippy_command": "cargo clippy --all-targets --features parallel -- -D warnings",
+  "clippy_result": "passed",
+  "coefficients": "For each order m=1..16, real f32 c_l=((l*37+m*13)%997)/997/721-0.5/721 for l=600..720; all other degree coefficients are zero.",
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "diff_check_command": "git diff --check",
+  "diff_check_result": "passed",
+  "format_command": "cargo fmt --check",
+  "format_result": "passed",
+  "full_library_test_command": "cargo test --features parallel --lib",
+  "full_library_test_result": "passed; 319 passed, 0 failed, 39 ignored; 109.18 seconds",
+  "geometry": {
+    "grid": "GL",
+    "lmax": 720,
+    "longitude_origin": 0.23,
+    "mmax": 16,
+    "nphi": 34,
+    "ntheta": 721,
+    "rings": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      360,
+      715,
+      716,
+      717,
+      718,
+      719,
+      720
+    ],
+    "threads": 1
+  },
+  "host": "AMD Ryzen 9 5950X; Pulp AVX2/V3 selected; 8 f32 lanes",
+  "interpretation": "In this deterministic filtered screen ordinary recurrence rounding exceeds same-state accumulation rounding by the recorded aggregate RMS ratio. Among sequential setup substitutions, geometry has the largest aggregate sensitivity (9.00e-4 relative RMS), followed by f32 paired recurrence factors (1.51e-4), sectoral seed (2.18e-5), and coefficient preparation (1.95e-6). Geometry sensitivity peaks near polar rings; at equator ring 360 geometry is exact for this grid, while factor and coefficient-preparation sensitivities are locally material. These are one-at-a-time sensitivities, not additive error components. The probe is not an independent DUCC accuracy or performance result.",
+  "method": {
+    "accumulation_reference": "Accumulate the observed f32 recurrence states times the exact prepared f32 even/odd coefficients in f64, then combine using the same f32 cosine widened to f64.",
+    "candidate_replay": "The exact f32 paired recurrence and fused sums are independently replayed from prepared f32 factors; the replayed north value is bitwise equal to the candidate SIMD batch for all observations.",
+    "prefix": "The f32 initializer is advanced through the observed initial rescale/restore; selected observations remain in the ordinary suffix with no scaled pair recurrence.",
+    "recurrence_reference": "Replay the recurrence in f64 using the same corrected f32 starting value, f32 A/B factors, f32 cosine-squared value, and f32 prepared even/odd coefficients widened to f64.",
+    "setup_sensitivities": "Sequential one-at-a-time f64 substitutions: first f32 recurrence factors to f64 factors; then f32 cosine/cosine-squared to f64 grid geometry; then f32 sectoral seed to f64 sin^m and normalization; then f32 prepared coefficient pairs to f64 prepared pairs. Each sensitivity is the change from the immediately preceding replay and the contributions are not an additive error budget."
+  },
+  "metrics": {
+    "accumulation_rms": 2.485774006e-09,
+    "actual_rms": 0.002410815591,
+    "coefficient_preparation_sensitivity_rms": 4.692113314e-09,
+    "factor_setup_sensitivity_rms": 3.633419929e-07,
+    "geometry_setup_sensitivity_rms": 2.170433055e-06,
+    "max_accumulation_error": 1.73870362e-08,
+    "max_recurrence_error": 3.437994748e-06,
+    "max_replay_difference": 0.0,
+    "max_total_error": 3.438865807e-06,
+    "observations": 208,
+    "recurrence_rms": 3.965399845e-07,
+    "recurrence_to_accumulation_rms_ratio": 159.5237473490581,
+    "reference_rms": 0.002410809028,
+    "relative_accumulation_rms": 1.031095361e-06,
+    "relative_coefficient_preparation_sensitivity": 1.946281625e-06,
+    "relative_factor_setup_sensitivity": 0.0001507137184,
+    "relative_geometry_setup_sensitivity": 0.0009002924037,
+    "relative_recurrence_rms": 0.0001644841959,
+    "relative_sectoral_setup_sensitivity": 2.178564634e-05,
+    "sectoral_setup_sensitivity_rms": 5.252103288e-08,
+    "total_rms": 3.964778767e-07
+  },
+  "prefix_observer_patch_sha256": "d60911cb105c41cadd2e1f7fe50a404cf0b8822b3abc8f94a8de8e10999baf25",
+  "probe_command": "cargo test --features parallel --lib native_f32_ordered_recurrence_vs_accumulation_error_probe -- --ignored --nocapture",
+  "probe_patch_sha256": "7ec8e43cc4d0451f978874e57c64915f541474fccb5b5f0f8e1bb321afb441df",
+  "probe_result": "passed; 1 passed, 0 failed; 0.03 seconds",
+  "runtime_candidate_patch_sha256": "7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9",
+  "setup_sensitivity_by_ring": [
+    {
+      "coefficient_preparation_relative_sensitivity": 1.568956e-07,
+      "factors_relative_sensitivity": 0.0003980867,
+      "geometry_relative_sensitivity": 0.001366776,
+      "ring": 0,
+      "sectoral_relative_sensitivity": 8.624614e-08
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 8.655083e-08,
+      "factors_relative_sensitivity": 0.0002409867,
+      "geometry_relative_sensitivity": 6.778146e-05,
+      "ring": 1,
+      "sectoral_relative_sensitivity": 1.445826e-07
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 1.179121e-07,
+      "factors_relative_sensitivity": 0.0001857476,
+      "geometry_relative_sensitivity": 0.0006592448,
+      "ring": 2,
+      "sectoral_relative_sensitivity": 5.908852e-05
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 8.350144e-08,
+      "factors_relative_sensitivity": 9.19119e-05,
+      "geometry_relative_sensitivity": 0.0008906826,
+      "ring": 3,
+      "sectoral_relative_sensitivity": 3.772849e-06
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 7.110301e-08,
+      "factors_relative_sensitivity": 6.556888e-05,
+      "geometry_relative_sensitivity": 0.0008006592,
+      "ring": 4,
+      "sectoral_relative_sensitivity": 1.864543e-05
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 7.042894e-08,
+      "factors_relative_sensitivity": 4.651621e-05,
+      "geometry_relative_sensitivity": 0.001149268,
+      "ring": 5,
+      "sectoral_relative_sensitivity": 1.653069e-06
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 0.0002087724,
+      "factors_relative_sensitivity": 0.001532085,
+      "geometry_relative_sensitivity": 0.0,
+      "ring": 360,
+      "sectoral_relative_sensitivity": 2.047064e-07
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 1.954637e-07,
+      "factors_relative_sensitivity": 4.098992e-05,
+      "geometry_relative_sensitivity": 0.0008760487,
+      "ring": 715,
+      "sectoral_relative_sensitivity": 2.210793e-05
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 2.043915e-07,
+      "factors_relative_sensitivity": 6.87762e-05,
+      "geometry_relative_sensitivity": 0.0006546585,
+      "ring": 716,
+      "sectoral_relative_sensitivity": 1.000598e-05
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 1.945977e-07,
+      "factors_relative_sensitivity": 0.0001032548,
+      "geometry_relative_sensitivity": 0.0006749472,
+      "ring": 717,
+      "sectoral_relative_sensitivity": 8.322896e-07
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 3.786572e-07,
+      "factors_relative_sensitivity": 0.0001640857,
+      "geometry_relative_sensitivity": 0.0008113729,
+      "ring": 718,
+      "sectoral_relative_sensitivity": 2.098626e-06
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 3.799801e-07,
+      "factors_relative_sensitivity": 0.000717162,
+      "geometry_relative_sensitivity": 0.0002734851,
+      "ring": 719,
+      "sectoral_relative_sensitivity": 1.615677e-07
+    },
+    {
+      "coefficient_preparation_relative_sensitivity": 1.982808e-07,
+      "factors_relative_sensitivity": 0.0002247754,
+      "geometry_relative_sensitivity": 0.0009542273,
+      "ring": 720,
+      "sectoral_relative_sensitivity": 4.577657e-08
+    }
+  ],
+  "source_parent": "b6a96aa7161a64f678b614d73478496f50f0551e",
+  "test_binary_sha256": "7e2630a7806530e9f07e8f2a833ca8cede7affe52e217c402c022f4c14c3c00d"
+}
