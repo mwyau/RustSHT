@@ -1,3 +1,19 @@
+## 2026-10-29 repeated scalar-analysis ring normalization did not improve whole calls
+
+A typed per-ring cache for `ring_weight / nphi` preserved bitwise output and
+reduced q1 full Callgrind instruction references by 1.08%, but its whole-call
+screen was neutral in three of four f32-I/O/f64-analysis cells. Only reduced
+q1 improved, by about 1%, and every cell remained `1.112–1.243x` DUCC in its
+three-pair screen. The repeated normalization is not the main gap. Do not
+promote this candidate. Its source patch, binary/fixture hashes, whole-call
+screen and Callgrind comparison are in the [ring-scale evidence
+package](data/ducc-parity-m6-2026-10-29/f32-analysis-ring-weight-scale-screen/README.md).
+
+**Next:** continue to Stage D and target f32 GL T720 spin-1 synthesis with the
+measured f64-internal or dual-channel reflected path through the existing
+hemisphere scheduler. Verify q1/q8 route counters and whole-call conversions;
+preserve the native-f32 fallback and protected f64 T1023 synthesis controls.
+
 ## 2026-10-29 f32 scalar analysis with a shared f64 recurrence remains above DUCC
 
 An isolated current-source f32-I/O/f64-analysis backend reuses the f32 plan's

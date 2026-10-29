@@ -1,0 +1,12 @@
+d5c84cb7d23c559589da3e1a9392e0d76f0d0eef136b05099713152d96e3cd13  ./README.md
+d58ca7db0eecee9aa0e3f5f39878bf101ed0e8021de4122f75d7b30ffee370ac  ./benchmark-screen.py
+42741ec0cd0829b304cfdc88434fdb787a6a4dedc3d5e2804fafb027d9a272de  ./binary-hashes.txt
+d894119a1aed9fb3c6f65a1affb366866c20071b411eeec33201c982873acfbf  ./callgrind/candidate-full-q1.out.gz
+6fe189f05f50476970ec33efbcb4d1d6d0ac26fb1bad4d7669f49323f548a6d9  ./callgrind/parent-full-q1.out.gz
+1815867cc072419505f8c90f5f0e3cb7f21e8f1effba264c796b9d2002ff7016  ./callgrind/summary.txt
+7df0983c194d3519a6434df7e2beca9407654be1f68ad83955c033693b1c5305  ./candidate.patch.gz
+7ee556db4dc304b7c25f356728c4d879a2a7787eadacaac902fe7e346ca471fa  ./harness/CMakeLists.txt
+6055dd8d6447d03a4144249b4e7dbf73562c067c8d3f490c0d6a5f8059a1befb  ./harness/ducc_f32_full_transform_parity.cpp
+df120aa5bf8fd89dae9ffe90f137e3f7608f1174d40d36a7d8b4159d4f6d5854  ./parent.patch.gz
+f6a6819d903ec4970962808ed158e66c7e71ebe0a5aaee949440ba886c6131fa  ./results-3.json.gz
+f528fd632fb73076e1d6bf91e521b36cb04d8890c47b2facb6a6eab43638cee9  ./results-3.tsv

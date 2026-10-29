@@ -1,0 +1,5 @@
+q1 full GL T720 spin-0 f32 public analysis, collected with Callgrind around analysis_into on eight timed/warm calls.
+Parent: 2,442,717,071 Ir
+Candidate: 2,416,247,615 Ir
+Difference: -26,469,456 Ir (-1.0837%)
+Wall timing under Callgrind was about 776 ms/call for both binaries. Ir are instruction references, not cycles.

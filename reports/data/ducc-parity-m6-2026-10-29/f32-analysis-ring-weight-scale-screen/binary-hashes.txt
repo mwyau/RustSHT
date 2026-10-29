@@ -1,0 +1,3 @@
+19a76a4f7e749edd9414d5a0f25171adb94e6b41e37a8c939d2c7631809aabd0  comparison-parent Rust executable
+a3d151093e376a3c22f4cab34441f95d4355cc07c831a4067121b0a57316b667  ring-scale candidate Rust executable
+4431ed3033704e6cf5a02c8e7217cfb75732676ee61eeb78bd55276f01a75c82  pinned DUCC native-f32 executable
