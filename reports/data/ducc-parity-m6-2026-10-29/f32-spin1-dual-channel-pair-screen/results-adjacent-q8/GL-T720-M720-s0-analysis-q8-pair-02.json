@@ -1,0 +1,184 @@
+{
+  "pair": 2,
+  "order": [
+    "ducc",
+    "parent",
+    "candidate"
+  ],
+  "workers": {
+    "ducc": {
+      "backend": "ducc",
+      "operation": "analysis",
+      "spin": 0,
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 720,
+      "mmax": 720,
+      "first_ms": 5.466931,
+      "warmup_ms": 4.245217,
+      "setup_ms": 5.265685,
+      "fixture_load_ms": 8.52043,
+      "repetitions_per_batch": 11,
+      "batch_ms": [
+        2.617186909090909,
+        2.255240181818182,
+        2.2306296363636364,
+        2.224724909090909,
+        2.2212256363636365,
+        2.579975545454545,
+        3.2473005454545456,
+        2.981352363636364,
+        2.25902,
+        2.268130636363636
+      ],
+      "batch_total_ms": [
+        28.789056,
+        24.807642,
+        24.536926,
+        24.471974,
+        24.433482,
+        28.379731,
+        35.720306,
+        32.794876,
+        24.84922,
+        24.949437
+      ],
+      "output_checksum": -0.03989476812421344,
+      "finite_outputs": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "parent": {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "spin": 0,
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 720,
+      "mmax": 720,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "first_ms": 61.891307,
+      "warmup_ms": 60.712222000000004,
+      "pool_setup_ms": 0.38835600000000003,
+      "setup_ms": 17.635774,
+      "fixture_load_ms": 10.823877000000001,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        68.330877,
+        60.659604,
+        64.577939,
+        60.537275,
+        61.046327,
+        61.028915000000005,
+        68.925218,
+        60.681345,
+        69.850488,
+        60.863243999999995
+      ],
+      "batch_total_ms": [
+        68.330877,
+        60.659604,
+        64.577939,
+        60.537275,
+        61.046327,
+        61.028915000000005,
+        68.925218,
+        60.681345,
+        69.850488,
+        60.863243999999995
+      ],
+      "output_checksum": -0.03989733551861718,
+      "finite_outputs": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "spin": 0,
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 720,
+      "mmax": 720,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "first_ms": 65.106599,
+      "warmup_ms": 60.400059,
+      "pool_setup_ms": 0.333403,
+      "setup_ms": 15.974437000000002,
+      "fixture_load_ms": 9.477911,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        63.541923,
+        61.098304,
+        63.951008,
+        63.878752,
+        59.964875,
+        60.667488,
+        60.709146,
+        68.007813,
+        59.755333,
+        62.074690000000004
+      ],
+      "batch_total_ms": [
+        63.541923,
+        61.098304,
+        63.951008,
+        63.878752,
+        59.964875,
+        60.667488,
+        60.709146,
+        68.007813,
+        59.755333,
+        62.074690000000004
+      ],
+      "output_checksum": -0.03989733551861718,
+      "finite_outputs": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  },
+  "times_ms": {
+    "parent": 61.037621,
+    "candidate": 61.586497,
+    "ducc": 2.263575318181818
+  },
+  "candidate_parent_ratio": 1.0089924212478727,
+  "candidate_ducc_ratio": 27.207619956498025,
+  "errors": {
+    "candidate_vs_parent": {
+      "output_values": 520562,
+      "relative_l2": 0.0,
+      "absolute_l2": 0.0,
+      "max_absolute": 0.0,
+      "reference_rms": 0.0015668230157071374,
+      "finite": true
+    },
+    "candidate_vs_ducc": {
+      "output_values": 520562,
+      "relative_l2": 1.829508395358755e-05,
+      "absolute_l2": 2.0681919085797507e-05,
+      "max_absolute": 4.2765168473124504e-07,
+      "reference_rms": 0.0015668239333598852,
+      "finite": true
+    }
+  },
+  "output_sha256": {
+    "ducc": [
+      "37b0302ac642a8cdace438bd7f10b2be74dfc99ba0fd3c4a00ccc345137016c3"
+    ],
+    "parent": [
+      "2bd3869cea8f2f4fafc815d5014f2b3504584f651f89a9b0d465a83cfb643f5e"
+    ],
+    "candidate": [
+      "2bd3869cea8f2f4fafc815d5014f2b3504584f651f89a9b0d465a83cfb643f5e"
+    ]
+  },
+  "fixture_sha256": {
+    "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+    "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+  }
+}

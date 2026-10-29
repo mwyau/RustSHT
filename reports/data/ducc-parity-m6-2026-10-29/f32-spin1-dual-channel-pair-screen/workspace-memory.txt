@@ -1,0 +1,7 @@
+Workspace construction was measured with an isolated global System allocator counter. Tracking began immediately before GridSpec/plan creation and ended after prepare_workspace; the worker had already loaded fixtures, allocated output vectors, and prepared its Rayon pool. The counter reports retained live plan+workspace heap bytes and maximum live bytes during construction.
+
+Public f32 GL T720 spin-1 synthesis, q8:
+  full mmax 720: parent retained 53,024,918 B; candidate retained 61,573,358 B; delta +8,548,440 B; construction peak equals retained.
+  reduced mmax 180: parent retained 16,879,342 B; candidate retained 19,198,342 B; delta +2,319,000 B; construction peak equals retained.
+
+A separate global allocator window around one warmed public transform recorded zero allocation calls, zero requested bytes, and zero freed bytes for both parent and candidate. The process-wide Massif peaks, which also include fixture/output buffers and process allocations, were 90,849,936 B parent and 99,401,816 B candidate for full q8.

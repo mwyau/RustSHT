@@ -1,0 +1,170 @@
+{
+  "pair": 7,
+  "order": [
+    "parent",
+    "candidate",
+    "ducc"
+  ],
+  "workers": {
+    "parent": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 17.140367,
+      "warmup_ms": 17.444065000000002,
+      "setup_ms": 12.326977,
+      "fixture_load_ms": 42.592924999999994,
+      "pool_ms": 0.36130599999999996,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        26.7053355,
+        23.624585,
+        17.445337000000002,
+        17.184905,
+        16.875622,
+        17.240975,
+        16.431136,
+        16.216805,
+        16.1115235,
+        16.887845
+      ],
+      "batch_total_ms": [
+        53.410671,
+        47.24917,
+        34.890674000000004,
+        34.36981,
+        33.751244,
+        34.48195,
+        32.862272,
+        32.43361,
+        32.223047,
+        33.77569
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "ff1dbce9085d06de777636a14b2771ab43f3d6deb224dcc875eaee607a870df0"
+    },
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 17.433525,
+      "warmup_ms": 19.002359,
+      "setup_ms": 13.003012,
+      "fixture_load_ms": 41.555064,
+      "pool_ms": 0.452206,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        16.304254,
+        18.681864,
+        20.623494,
+        18.308581,
+        16.1899345,
+        15.809293499999999,
+        19.3512405,
+        20.397562,
+        24.90247,
+        21.688275
+      ],
+      "batch_total_ms": [
+        32.608508,
+        37.363728,
+        41.246988,
+        36.617162,
+        32.379869,
+        31.618586999999998,
+        38.702481,
+        40.795124,
+        49.80494,
+        43.37655
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "63dd07ca58ca1142d983f8c066a61888054a88a8d5e79836f4598a3f7143fc6d"
+    },
+    "ducc": {
+      "backend": "ducc",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 19.518203,
+      "warmup_ms": 19.494929,
+      "setup_ms": 41.952347,
+      "fixture_load_ms": 37.447104,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        19.692148,
+        20.85666,
+        21.0172405,
+        22.7386335,
+        19.502839,
+        19.455726,
+        24.478527,
+        25.936403,
+        24.231856,
+        23.143496
+      ],
+      "batch_total_ms": [
+        39.384296,
+        41.71332,
+        42.034481,
+        45.477267,
+        39.005678,
+        38.911452,
+        48.957054,
+        51.872806,
+        48.463712,
+        46.286992
+      ],
+      "output_checksum": 8.088751438581474,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "34fc4ec0916b7891a4fdf741fdc4184e4cf1e8d7873ed9a3470f7b148c2da8a9"
+    }
+  },
+  "times_ms": {
+    "parent": 17.036375,
+    "candidate": 19.01655225,
+    "ducc": 21.877937
+  },
+  "candidate_parent_ratio": 1.1162323117447228,
+  "candidate_ducc_ratio": 0.8692114000511109,
+  "output_sha256": {
+    "parent": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "candidate": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "ducc": [
+      "680d660b045c99fad1763e7c1c898cd06a05b4df1d4f42a51b2716d416ad7de6",
+      "bb213e63a3876811161262621db149bdf8e082406947193ed8218dcb01123a2d"
+    ]
+  },
+  "checks": {
+    "parent": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "candidate": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  }
+}

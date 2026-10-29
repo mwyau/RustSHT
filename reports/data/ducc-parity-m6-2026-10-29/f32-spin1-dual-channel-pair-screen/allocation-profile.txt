@@ -1,0 +1,4 @@
+Full GL T720 spin-1 synthesis q8; one public f32 warm transform after plan/workspace creation and one prior warm transform:
+parent: ALLOC_PROFILE alloc_calls=0 alloc_bytes=0 freed_bytes=0
+candidate: ALLOC_PROFILE alloc_calls=0 alloc_bytes=0 freed_bytes=0
+The counter uses an isolated global System allocator in benchmark-only example copies; it does not alter production code or timed benchmark binaries.

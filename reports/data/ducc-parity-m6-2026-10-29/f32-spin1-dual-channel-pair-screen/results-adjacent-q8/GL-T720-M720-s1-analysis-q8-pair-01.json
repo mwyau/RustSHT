@@ -1,0 +1,167 @@
+{
+  "pair": 1,
+  "order": [
+    "parent",
+    "candidate",
+    "ducc"
+  ],
+  "workers": {
+    "parent": {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "spin": 1,
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 720,
+      "mmax": 720,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "first_ms": 138.452466,
+      "warmup_ms": 136.635624,
+      "pool_setup_ms": 0.440906,
+      "setup_ms": 19.799787,
+      "fixture_load_ms": 9.134696,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        136.16328,
+        135.447149,
+        139.58753199999998,
+        135.996778,
+        137.590372
+      ],
+      "batch_total_ms": [
+        136.16328,
+        135.447149,
+        139.58753199999998,
+        135.996778,
+        137.590372
+      ],
+      "output_checksum": -0.00407801868277602,
+      "finite_outputs": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "spin": 1,
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 720,
+      "mmax": 720,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "first_ms": 136.065787,
+      "warmup_ms": 137.425062,
+      "pool_setup_ms": 0.35318099999999997,
+      "setup_ms": 22.923617,
+      "fixture_load_ms": 8.795862,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        137.645355,
+        135.970339,
+        136.62134700000001,
+        136.082018,
+        149.43203599999998
+      ],
+      "batch_total_ms": [
+        137.645355,
+        135.970339,
+        136.62134700000001,
+        136.082018,
+        149.43203599999998
+      ],
+      "output_checksum": -0.00407801868277602,
+      "finite_outputs": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc": {
+      "backend": "ducc",
+      "operation": "analysis",
+      "spin": 1,
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 720,
+      "mmax": 720,
+      "first_ms": 10.12533,
+      "warmup_ms": 8.294963,
+      "setup_ms": 10.659041,
+      "fixture_load_ms": 8.505086,
+      "repetitions_per_batch": 4,
+      "batch_ms": [
+        4.488137,
+        4.547293,
+        4.39707875,
+        4.458176,
+        4.582882,
+        4.50534175,
+        4.8482965,
+        5.584515,
+        4.9906655,
+        4.37559625
+      ],
+      "batch_total_ms": [
+        17.952548,
+        18.189172,
+        17.588315,
+        17.832704,
+        18.331528,
+        18.021367,
+        19.393186,
+        22.33806,
+        19.962662,
+        17.502385
+      ],
+      "output_checksum": 0.34238206790178083,
+      "finite_outputs": true,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  },
+  "times_ms": {
+    "parent": 136.16328,
+    "candidate": 136.62134700000001,
+    "ducc": 4.526317375
+  },
+  "candidate_parent_ratio": 1.0033641008060326,
+  "candidate_ducc_ratio": 30.183775392020543,
+  "errors": {
+    "candidate_vs_parent": {
+      "output_values": 1041124,
+      "relative_l2": 0.0,
+      "absolute_l2": 0.0,
+      "max_absolute": 0.0,
+      "reference_rms": 0.0015658156982234965,
+      "finite": true
+    },
+    "candidate_vs_ducc": {
+      "output_values": 1041124,
+      "relative_l2": 1.5693451383550116e-05,
+      "absolute_l2": 2.5073233527330562e-05,
+      "max_absolute": 2.230517566204071e-07,
+      "reference_rms": 0.0015658157252705987,
+      "finite": true
+    }
+  },
+  "output_sha256": {
+    "parent": [
+      "4eb0bf8719e760c983c747b32c7c8a9e95427296fc0ff24bad972bc0b2a9e346",
+      "56bd50d2bc10865044f3e0aa358697422e3c976a0219d10c3a69f4a09b3c76de"
+    ],
+    "candidate": [
+      "4eb0bf8719e760c983c747b32c7c8a9e95427296fc0ff24bad972bc0b2a9e346",
+      "56bd50d2bc10865044f3e0aa358697422e3c976a0219d10c3a69f4a09b3c76de"
+    ],
+    "ducc": [
+      "dcc5dd7080eece8fda4dd109106c19a98209189fb5f5ef242edb3e7cf3783e85",
+      "340ea3ba4d0fa166a816e8fe1634e543f4891959e1cd308e0c879720e8fc8806"
+    ]
+  },
+  "fixture_sha256": {
+    "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+    "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+    "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+    "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "pair": 1,
+  "order": [
+    "parent",
+    "candidate",
+    "ducc"
+  ],
+  "workers": {
+    "parent": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 18.196692,
+      "warmup_ms": 16.339039,
+      "setup_ms": 13.346744000000001,
+      "fixture_load_ms": 43.009684,
+      "pool_ms": 0.442677,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        18.710767999999998,
+        19.369034,
+        20.01677,
+        18.98453,
+        17.282202,
+        16.26238,
+        16.215653,
+        16.298057,
+        16.0319045,
+        16.1575395
+      ],
+      "batch_total_ms": [
+        37.421535999999996,
+        38.738068,
+        40.03354,
+        37.96906,
+        34.564404,
+        32.52476,
+        32.431306,
+        32.596114,
+        32.063809,
+        32.315079
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "ff1dbce9085d06de777636a14b2771ab43f3d6deb224dcc875eaee607a870df0"
+    },
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 17.568758,
+      "warmup_ms": 18.827502,
+      "setup_ms": 13.545325,
+      "fixture_load_ms": 45.171106,
+      "pool_ms": 0.381173,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        18.725005,
+        19.6748905,
+        19.281374500000002,
+        16.835051,
+        17.8894925,
+        16.0897525,
+        16.318215000000002,
+        15.9108035,
+        16.3771,
+        16.466005999999997
+      ],
+      "batch_total_ms": [
+        37.45001,
+        39.349781,
+        38.562749000000004,
+        33.670102,
+        35.778985,
+        32.179505,
+        32.636430000000004,
+        31.821607,
+        32.7542,
+        32.93201199999999
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "63dd07ca58ca1142d983f8c066a61888054a88a8d5e79836f4598a3f7143fc6d"
+    },
+    "ducc": {
+      "backend": "ducc",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 23.764622,
+      "warmup_ms": 22.477155,
+      "setup_ms": 42.580111,
+      "fixture_load_ms": 36.074798,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        20.44201,
+        19.6779565,
+        20.150705,
+        19.677691,
+        19.6804055,
+        19.7192335,
+        19.7957015,
+        19.711434,
+        19.860257,
+        19.97957
+      ],
+      "batch_total_ms": [
+        40.88402,
+        39.355913,
+        40.30141,
+        39.355382,
+        39.360811,
+        39.438467,
+        39.591403,
+        39.422868,
+        39.720514,
+        39.95914
+      ],
+      "output_checksum": 8.088751438581474,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "34fc4ec0916b7891a4fdf741fdc4184e4cf1e8d7873ed9a3470f7b148c2da8a9"
+    }
+  },
+  "times_ms": {
+    "parent": 16.7901295,
+    "candidate": 16.6505285,
+    "ducc": 19.7574675
+  },
+  "candidate_parent_ratio": 0.9916855316690679,
+  "candidate_ducc_ratio": 0.8427460908135114,
+  "fixture_sha256": {
+    "map0.f64": "d88e9eaf351be4c883735249f7d3f64c6dce5df24c96c90c2eb81e2c4c000585",
+    "map1.f64": "08739c1082357fe0a6a7562a6975df518186f2847e8072bbe4b0757c06634c8a",
+    "e.f64": "5bf4a0d123607e889676542bd4b43eafb69eb83ebac65f7a4be8998e79530203",
+    "b.f64": "c0964c66709741e63ff4e774da1c88ba1b0a923d677e38911c67a18bc8851c26"
+  },
+  "output_sha256": {
+    "parent": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "candidate": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "ducc": [
+      "680d660b045c99fad1763e7c1c898cd06a05b4df1d4f42a51b2716d416ad7de6",
+      "bb213e63a3876811161262621db149bdf8e082406947193ed8218dcb01123a2d"
+    ]
+  },
+  "checks": {
+    "parent": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "candidate": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  }
+}

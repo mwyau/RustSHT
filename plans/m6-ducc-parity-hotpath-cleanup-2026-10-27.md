@@ -31,17 +31,22 @@ order-major, was slower than current f64 general-spin execution in every
 direct matched q8 comparison. Neither route is promoted; details and
 recoverable patches are in the [spin route evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-reflected-route-screen/README.md).
 
-Next, prototype one bounded shared dual-channel scalar-ordered recurrence
-behind the reusable f32-I/O/f64-internal adapter. Reuse the existing
-`scalar_ordered` recurrence and accumulate both spin-converted scalar streams
-in one pass; do not retain two separately maintained recurrence algorithms.
-Begin with full/reduced T720 q8 comparisons against the same-source general
-f64 route and native-f32 DUCC, then extend any credible candidate to q1 and 15
-pairs. Keep the complete conversion, FFT and writeback in public-call timing,
-and retain conservative native-f32 declines. If the fused recurrence cannot
-approach both q8 DUCC cells, preserve the patch and continue with Stage C
-cause-based spin analysis/synthesis profiling. Keep f64 T1023 synthesis
-protected and M6 open.
+The shared f64 scalar-ordered fused pair was tested from exact parent
+07193db72933ea7ecb914986874fa1219a3629d4. It is rejected: full/reduced q8
+were 2.488x/1.831x native-f32 DUCC and 1.186x/1.097x slower than the two-call
+adapter parent. Full q1 is 1.012x DUCC with an interval crossing parity;
+reduced q1 was below DUCC in three pairs but did not beat its parent
+repeatably. The exact patch and disjoint Callgrind/assembly cause are in the
+[fused-pair screen](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-dual-channel-pair-screen/README.md).
+
+Next implement one bounded **native-f32 dual-channel reflected accumulation
+leaf** through the existing hemisphere scheduler. Reuse the shared typed
+recurrence and keep polar, scaled, exceptional, and declined work on checked
+fallbacks. Verify route counters at full/reduced GL T720 q1/q8 before timing;
+compare complete f32 public calls to native-f32 DUCC and the parent, and protect
+the f64 T1023 synthesis controls. If the intended leaf is inactive or the
+whole-call gain is not substantial, retain the data and continue with
+cause-based profiling of the remaining spin gap. M6 remains open.
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
 The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and

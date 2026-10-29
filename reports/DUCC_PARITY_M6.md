@@ -1,3 +1,24 @@
+## 2026-10-29 f32 spin-1 fused scalar-pair route rejected
+
+At exact source parent 07193db72933ea7ecb914986874fa1219a3629d4, an isolated candidate fused two spin-converted scalar channels into the shared f64 scalar-ordered recurrence. It reused the shared fused synthesis block, paired visitor, and typed accumulator. The candidate source-only patch is SHA256 4db18542074bd5b23ee1e5b70b6c17e6ae9862656ff319f2d3977fd5b761e7cd; the recovered two-call adapter parent patch is b78a1ef88e7d829b9980eb7c96da87fe17c7809a215ab985598d0c3ba32a3eac. Nothing was promoted.
+
+Each T720 full/reduced q1/q8 cell has three interleaved complete public f32-I/O spin-1 synthesis pairs against pinned native-f32 DUCC. q8 rejects the fused route decisively: it is 9.7–18.6% slower than the two-call adapter parent and 1.83–2.49x DUCC. The q1 result remains inconclusive.
+
+| Cell | Parent / fused pair / DUCC ms | Fused/parent paired median [range] | Fused/DUCC paired median [range] | Status |
+|---|---:|---:|---:|---|
+| Full q1 | 44.143 / 43.204 / 44.023 | 1.074 [0.979, 1.094] | 1.012 [0.956, 1.097] | INCONCLUSIVE |
+| Reduced q1 | 17.689 / 17.395 / 18.358 | 1.022 [0.969, 1.112] | 0.948 [0.947, 0.956] | INCONCLUSIVE |
+| Full q8 | 14.104 / 16.725 / 6.529 | 1.186 [1.112, 1.204] | 2.488 [2.444, 2.682] | GAP |
+| Reduced q8 | 6.337 / 6.954 / 3.797 | 1.097 [1.051, 1.171] | 1.831 [1.486, 2.366] | GAP |
+
+An existing general f64 spin adapter, included as a diagnostic reference in the q8 screen, measured 1.413x DUCC full and 1.191x reduced. It also remains above parity and is not installed. The last source-specific production native-f32 spin synthesis baseline at 375c14f1 was 36.15x/49.14x full and 34.65x/51.44x reduced q1/q8; that native route was not rerun at 07193db in this experiment.
+
+Adjacent public f32 q8 scalar and spin-1 analysis outputs were bitwise equal to parent; no repeatable regression was found. Protected f64 GL T1023 spin-1 synthesis outputs were also bitwise equal. Its 15-pair q8 timing was noisy: candidate/parent 1.012x, bootstrap 95% interval [0.956, 1.051], INCONCLUSIVE. Exact reusable plan+workspace heap was 53,024,918/61,573,358 bytes parent/candidate full and 16,879,342/19,198,342 reduced q8. A warmed transform made zero allocations in both builds.
+
+Callgrind full q1 Ir rose 27.7% (575.9M to 735.1M). The candidate suffix's hot AVX2 function grew from 0x50c to 0x808 bytes and added loop bounds checks plus YMM spills/reloads. The q8 slowdown is consistent with these extra instructions and spills. Focused route tests, cargo check, repeat/reset, finite-output, and output-reference screens passed; full independent extreme/analytic/adjoint/tail validation was not run because q8 failed the performance gate.
+
+Exact timing pairs, fixture and executable hashes, route tests, benchmark scripts, source patch, workspace/allocation measurements, Callgrind profiles, disassembly and Massif records are in the [fused-pair rejection package](data/ducc-parity-m6-2026-10-29/f32-spin1-dual-channel-pair-screen/README.md). **Next:** evaluate a native-f32 dual-channel reflected accumulation leaf through the existing hemisphere scheduler, sharing the typed recurrence and checked fallback. Prove the intended route activates at q1/q8 with route counters, then compare both T720 truncations to native-f32 DUCC. M6 remains open.
+
 ## 2026-10-29 complete f32-I/O/f64-internal T720 screen — 5 PASS, 11 GAP
 
 At exact parent `fdae803a01273ac7e4e941936f022fa11e770df5`, an isolated adapter used reusable f64 plans/workspaces and shared Rust f64 algorithms behind complete f32 input/output conversion. Each of the 16 full/reduced GL T720 spin-0/spin-1 synthesis/analysis q1/q8 cells has 15 interleaved native-f32 Rust / adapter / pinned native-f32 DUCC pairs. Timed adapter calls include conversion, transform, FFT and writeback; setup is amortized outside the warm-call boundary. The adapter was not installed in production.

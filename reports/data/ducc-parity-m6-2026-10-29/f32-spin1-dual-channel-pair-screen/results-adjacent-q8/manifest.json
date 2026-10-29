@@ -1,0 +1,12 @@
+{
+  "source_parent_sha": "07193db72933ea7ecb914986874fa1219a3629d4",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+  "q8_affinity": "0,2,4,6,8,10,12,14",
+  "warm_target_ms": 25.0,
+  "pairs_per_cell": 3,
+  "parent_binary_sha256": "5fc2e16719bbc758203bb1ebf952689d345e1f0c600cf26ce4941ebb5106bcba",
+  "candidate_binary_sha256": "532a7cc3b4fb8d80e0201d4169cf0819415ee998c1a005909bd9b8d154272db4",
+  "ducc_binary_sha256": "a22e47aced07c386667925802d2a11ce9f6e83a9a84aeadfbbafecc211da7817"
+}

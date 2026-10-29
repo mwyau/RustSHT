@@ -1,0 +1,170 @@
+{
+  "pair": 8,
+  "order": [
+    "ducc",
+    "parent",
+    "candidate"
+  ],
+  "workers": {
+    "ducc": {
+      "backend": "ducc",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 19.504557,
+      "warmup_ms": 18.958035,
+      "setup_ms": 43.074184,
+      "fixture_load_ms": 36.302224,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        19.980562,
+        20.15058,
+        19.8470275,
+        19.6123335,
+        20.001096,
+        19.5190295,
+        19.6619715,
+        20.2348225,
+        19.7469855,
+        19.6288445
+      ],
+      "batch_total_ms": [
+        39.961124,
+        40.30116,
+        39.694055,
+        39.224667,
+        40.002192,
+        39.038059,
+        39.323943,
+        40.469645,
+        39.493971,
+        39.257689
+      ],
+      "output_checksum": 8.088751438581474,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "34fc4ec0916b7891a4fdf741fdc4184e4cf1e8d7873ed9a3470f7b148c2da8a9"
+    },
+    "parent": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 19.128734,
+      "warmup_ms": 17.591962,
+      "setup_ms": 12.41385,
+      "fixture_load_ms": 43.809619,
+      "pool_ms": 0.420205,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        18.6581495,
+        18.7202555,
+        16.9091345,
+        19.287231,
+        16.1210915,
+        18.338832999999997,
+        17.274087,
+        18.618530500000002,
+        16.7626605,
+        16.396381
+      ],
+      "batch_total_ms": [
+        37.316299,
+        37.440511,
+        33.818269,
+        38.574462,
+        32.242183,
+        36.677665999999995,
+        34.548174,
+        37.237061000000004,
+        33.525321,
+        32.792762
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "ff1dbce9085d06de777636a14b2771ab43f3d6deb224dcc875eaee607a870df0"
+    },
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 15.966383,
+      "warmup_ms": 18.101224,
+      "setup_ms": 12.610928000000001,
+      "fixture_load_ms": 46.250904000000006,
+      "pool_ms": 0.411319,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        18.293042,
+        16.4632005,
+        15.721614500000001,
+        16.118285999999998,
+        17.782427,
+        16.8594715,
+        17.100217,
+        16.963897,
+        15.6324025,
+        15.920636500000002
+      ],
+      "batch_total_ms": [
+        36.586084,
+        32.926401,
+        31.443229000000002,
+        32.236571999999995,
+        35.564854,
+        33.718943,
+        34.200434,
+        33.927794,
+        31.264805,
+        31.841273000000005
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "63dd07ca58ca1142d983f8c066a61888054a88a8d5e79836f4598a3f7143fc6d"
+    }
+  },
+  "times_ms": {
+    "ducc": 19.797006500000002,
+    "parent": 17.80646,
+    "candidate": 16.661336
+  },
+  "candidate_parent_ratio": 0.9356905302906922,
+  "candidate_ducc_ratio": 0.8416088563692696,
+  "output_sha256": {
+    "ducc": [
+      "680d660b045c99fad1763e7c1c898cd06a05b4df1d4f42a51b2716d416ad7de6",
+      "bb213e63a3876811161262621db149bdf8e082406947193ed8218dcb01123a2d"
+    ],
+    "parent": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "candidate": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ]
+  },
+  "checks": {
+    "ducc": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "parent": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "candidate": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  }
+}

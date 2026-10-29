@@ -1,0 +1,6 @@
+00000000002c42f0 0000000000000473 t rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector::<pulp::Scalar>
+00000000002c4770 000000000000050c t rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector::<pulp::x86::v3::V3>
+00000000002c4c80 0000000000001047 t rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector::<pulp::x86::v4::V4>
+00000000002c9f50 000000000000070c t rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector_pair::<pulp::Scalar>
+00000000002ca660 0000000000000808 t rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector_pair::<pulp::x86::v3::V3>
+00000000002cae70 0000000000001b23 t rustsht::legendre::scalar_ordered::kernel::synthesize_ordinary_suffix_vector_pair::<pulp::x86::v4::V4>

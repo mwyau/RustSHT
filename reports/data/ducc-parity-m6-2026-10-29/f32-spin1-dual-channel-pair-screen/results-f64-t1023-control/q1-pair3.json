@@ -1,0 +1,166 @@
+{
+  "pair": 3,
+  "order": [
+    "candidate",
+    "ducc",
+    "parent"
+  ],
+  "workers": {
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 1,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 98.81371999999999,
+      "warmup_ms": 91.51832999999999,
+      "setup_ms": 12.489551,
+      "fixture_load_ms": 43.573538,
+      "pool_ms": 0.153978,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        90.790018,
+        90.433031,
+        90.255108,
+        90.201137,
+        90.82875,
+        90.609681,
+        90.263453,
+        90.55297499999999,
+        90.062037,
+        89.925402
+      ],
+      "batch_total_ms": [
+        90.790018,
+        90.433031,
+        90.255108,
+        90.201137,
+        90.82875,
+        90.609681,
+        90.263453,
+        90.55297499999999,
+        90.062037,
+        89.925402
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "63dd07ca58ca1142d983f8c066a61888054a88a8d5e79836f4598a3f7143fc6d"
+    },
+    "ducc": {
+      "backend": "ducc",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 1,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 122.371344,
+      "warmup_ms": 120.35249,
+      "setup_ms": 41.97533,
+      "fixture_load_ms": 35.902536,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        121.683108,
+        120.844891,
+        121.976877,
+        121.639096,
+        119.225032
+      ],
+      "batch_total_ms": [
+        121.683108,
+        120.844891,
+        121.976877,
+        121.639096,
+        119.225032
+      ],
+      "output_checksum": 4.044375719290737,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "34fc4ec0916b7891a4fdf741fdc4184e4cf1e8d7873ed9a3470f7b148c2da8a9"
+    },
+    "parent": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 1,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 100.99353599999999,
+      "warmup_ms": 92.28902,
+      "setup_ms": 12.582706,
+      "fixture_load_ms": 43.282204,
+      "pool_ms": 0.13357000000000002,
+      "repetitions_per_batch": 1,
+      "batch_ms": [
+        92.061615,
+        90.622003,
+        90.194925,
+        91.061215,
+        92.32954699999999,
+        92.28823899999999,
+        91.511517,
+        92.333433,
+        92.29531200000001,
+        91.295062
+      ],
+      "batch_total_ms": [
+        92.061615,
+        90.622003,
+        90.194925,
+        91.061215,
+        92.32954699999999,
+        92.28823899999999,
+        91.511517,
+        92.333433,
+        92.29531200000001,
+        91.295062
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "ff1dbce9085d06de777636a14b2771ab43f3d6deb224dcc875eaee607a870df0"
+    }
+  },
+  "times_ms": {
+    "candidate": 90.348242,
+    "ducc": 121.639096,
+    "parent": 91.786566
+  },
+  "candidate_parent_ratio": 0.9843296893795984,
+  "candidate_ducc_ratio": 0.7427566051625376,
+  "fixture_sha256": {
+    "map0.f64": "d88e9eaf351be4c883735249f7d3f64c6dce5df24c96c90c2eb81e2c4c000585",
+    "map1.f64": "08739c1082357fe0a6a7562a6975df518186f2847e8072bbe4b0757c06634c8a",
+    "e.f64": "5bf4a0d123607e889676542bd4b43eafb69eb83ebac65f7a4be8998e79530203",
+    "b.f64": "c0964c66709741e63ff4e774da1c88ba1b0a923d677e38911c67a18bc8851c26"
+  },
+  "output_sha256": {
+    "candidate": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "ducc": [
+      "680d660b045c99fad1763e7c1c898cd06a05b4df1d4f42a51b2716d416ad7de6",
+      "bb213e63a3876811161262621db149bdf8e082406947193ed8218dcb01123a2d"
+    ],
+    "parent": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ]
+  },
+  "checks": {
+    "candidate": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "parent": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  }
+}

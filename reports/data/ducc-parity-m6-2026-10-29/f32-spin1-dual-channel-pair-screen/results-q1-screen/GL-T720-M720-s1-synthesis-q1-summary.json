@@ -1,0 +1,575 @@
+{
+  "case_id": "GL-T720-M720-s1-synthesis-q1",
+  "case": {
+    "grid": "GL",
+    "ntheta": 721,
+    "nphi": 1458,
+    "lmax": 720,
+    "mmax": 720,
+    "longitude": "even",
+    "spin": 1,
+    "operation": "synthesis",
+    "threads": 1
+  },
+  "pairs": 3,
+  "parent_median_ms": 44.142775,
+  "candidate_median_ms": 43.204327500000005,
+  "ducc_median_ms": 44.023266500000005,
+  "candidate_parent_paired_median": 1.0739267703835695,
+  "candidate_parent_pair_range": [
+    0.978740631960723,
+    1.0942309099124299
+  ],
+  "candidate_parent_faster_pairs": 1,
+  "candidate_ducc_paired_median": 1.0122833663394577,
+  "candidate_ducc_pair_range": [
+    0.9561820778280588,
+    1.0974592605480558
+  ],
+  "candidate_ducc_faster_pairs": 1,
+  "max_candidate_ducc_relative_l2": 3.906083042715255e-08,
+  "max_candidate_ducc_absolute": 1.1920928955078125e-07,
+  "all_worker_checks": true,
+  "fixture_sha256": {
+    "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+    "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+    "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+    "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+  },
+  "pairs_data": [
+    {
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 44.15315,
+        "candidate": 48.3137415,
+        "ducc": 44.023266500000005
+      },
+      "candidate_parent_ratio": 1.0942309099124299,
+      "candidate_ducc_ratio": 1.0974592605480558,
+      "parent_ducc_ratio": 1.0029503376356679,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "output_sha256": {
+        "parent": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "candidate": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "ducc": [
+          "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+          "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+        ]
+      },
+      "errors": {
+        "candidate_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "candidate_vs_parent": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.23018000445579112,
+          "finite": true
+        },
+        "parent_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        }
+      },
+      "workers": {
+        "parent": {
+          "backend": "rustsht",
+          "first_ms": 41.831357,
+          "warmup_ms": 42.655901,
+          "setup_ms": 19.768259999999998,
+          "pool_setup_ms": 0.26279199999999997,
+          "fixture_load_ms": 10.29051,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            42.897453,
+            43.484713,
+            43.570985,
+            44.415627,
+            42.384823000000004,
+            43.995109,
+            44.412521000000005,
+            44.477072,
+            44.311191,
+            45.103525
+          ],
+          "batch_total_ms": [
+            42.897453,
+            43.484713,
+            43.570985,
+            44.415627,
+            42.384823000000004,
+            43.995109,
+            44.412521000000005,
+            44.477072,
+            44.311191,
+            45.103525
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "backend": "rustsht",
+          "first_ms": 43.496674999999996,
+          "warmup_ms": 46.600268,
+          "setup_ms": 23.079621000000003,
+          "pool_setup_ms": 0.130665,
+          "fixture_load_ms": 10.105644999999999,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            49.124534999999995,
+            48.552884,
+            47.451572,
+            47.451451999999996,
+            49.07387,
+            48.56552799999999,
+            47.056141000000004,
+            48.074599,
+            48.846494,
+            48.060682
+          ],
+          "batch_total_ms": [
+            49.124534999999995,
+            48.552884,
+            47.451572,
+            47.451451999999996,
+            49.07387,
+            48.56552799999999,
+            47.056141000000004,
+            48.074599,
+            48.846494,
+            48.060682
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "backend": "ducc",
+          "first_ms": 48.424173,
+          "warmup_ms": 47.641687,
+          "setup_ms": 11.448319,
+          "fixture_load_ms": 9.533082,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            44.310029,
+            44.080769,
+            44.0332,
+            43.862691,
+            44.013333,
+            44.478133,
+            44.142955,
+            43.897556,
+            43.885073,
+            43.964111
+          ],
+          "batch_total_ms": [
+            44.310029,
+            44.080769,
+            44.0332,
+            43.862691,
+            44.013333,
+            44.478133,
+            44.142955,
+            43.897556,
+            43.885073,
+            43.964111
+          ],
+          "output_checksum": -16.47067680838518,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "pair": 2,
+      "order": [
+        "candidate",
+        "parent",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 44.142775,
+        "candidate": 43.204327500000005,
+        "ducc": 45.184205500000004
+      },
+      "candidate_parent_ratio": 0.978740631960723,
+      "candidate_ducc_ratio": 0.9561820778280588,
+      "parent_ducc_ratio": 0.9769514482223217,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "output_sha256": {
+        "parent": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "candidate": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "ducc": [
+          "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+          "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+        ]
+      },
+      "errors": {
+        "candidate_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "candidate_vs_parent": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.23018000445579112,
+          "finite": true
+        },
+        "parent_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        }
+      },
+      "workers": {
+        "parent": {
+          "backend": "rustsht",
+          "first_ms": 42.774463,
+          "warmup_ms": 41.827078,
+          "setup_ms": 20.880712,
+          "pool_setup_ms": 0.140703,
+          "fixture_load_ms": 9.94824,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            44.268730999999995,
+            44.014465,
+            44.242352,
+            44.442978000000004,
+            44.328674,
+            44.164736000000005,
+            44.046024,
+            44.090317,
+            44.109674,
+            44.120814
+          ],
+          "batch_total_ms": [
+            44.268730999999995,
+            44.014465,
+            44.242352,
+            44.442978000000004,
+            44.328674,
+            44.164736000000005,
+            44.046024,
+            44.090317,
+            44.109674,
+            44.120814
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "backend": "rustsht",
+          "first_ms": 43.367794,
+          "warmup_ms": 43.406296,
+          "setup_ms": 22.818773,
+          "pool_setup_ms": 0.119654,
+          "fixture_load_ms": 10.962309,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            43.089152,
+            43.38185,
+            43.253369,
+            43.769867,
+            43.277986,
+            43.155286000000004,
+            43.108238,
+            42.714290000000005,
+            42.547917999999996,
+            44.080479
+          ],
+          "batch_total_ms": [
+            43.089152,
+            43.38185,
+            43.253369,
+            43.769867,
+            43.277986,
+            43.155286000000004,
+            43.108238,
+            42.714290000000005,
+            42.547917999999996,
+            44.080479
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "backend": "ducc",
+          "first_ms": 48.861011,
+          "warmup_ms": 48.439051,
+          "setup_ms": 11.055193,
+          "fixture_load_ms": 9.722658,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            45.315332,
+            44.956079,
+            44.805195,
+            44.861472,
+            45.131627,
+            45.240321,
+            45.236784,
+            45.406371,
+            45.52303,
+            45.124333
+          ],
+          "batch_total_ms": [
+            45.315332,
+            44.956079,
+            44.805195,
+            44.861472,
+            45.131627,
+            45.240321,
+            45.236784,
+            45.406371,
+            45.52303,
+            45.124333
+          ],
+          "output_checksum": -16.47067680838518,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "pair": 3,
+      "order": [
+        "parent",
+        "ducc",
+        "candidate"
+      ],
+      "times_ms": {
+        "parent": 38.996408,
+        "candidate": 41.8792865,
+        "ducc": 41.37111
+      },
+      "candidate_parent_ratio": 1.0739267703835695,
+      "candidate_ducc_ratio": 1.0122833663394577,
+      "parent_ducc_ratio": 0.9425999930869634,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "output_sha256": {
+        "parent": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "candidate": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "ducc": [
+          "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+          "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+        ]
+      },
+      "errors": {
+        "candidate_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "candidate_vs_parent": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.23018000445579112,
+          "finite": true
+        },
+        "parent_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        }
+      },
+      "workers": {
+        "parent": {
+          "backend": "rustsht",
+          "first_ms": 39.476617,
+          "warmup_ms": 39.393181,
+          "setup_ms": 20.119728,
+          "pool_setup_ms": 0.12460300000000002,
+          "fixture_load_ms": 10.976506,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            39.117504999999994,
+            39.637488,
+            38.989224,
+            38.782387,
+            39.245434,
+            38.974317,
+            39.003592,
+            38.907081000000005,
+            39.055679000000005,
+            38.812633999999996
+          ],
+          "batch_total_ms": [
+            39.117504999999994,
+            39.637488,
+            38.989224,
+            38.782387,
+            39.245434,
+            38.974317,
+            39.003592,
+            38.907081000000005,
+            39.055679000000005,
+            38.812633999999996
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "backend": "rustsht",
+          "first_ms": 43.087158,
+          "warmup_ms": 41.754673,
+          "setup_ms": 21.665092,
+          "pool_setup_ms": 0.10210200000000001,
+          "fixture_load_ms": 9.032956,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            41.787124,
+            42.023376,
+            41.827771,
+            41.957543,
+            41.777066000000005,
+            41.847938,
+            42.266051,
+            41.991146,
+            41.675956,
+            41.910635
+          ],
+          "batch_total_ms": [
+            41.787124,
+            42.023376,
+            41.827771,
+            41.957543,
+            41.777066000000005,
+            41.847938,
+            42.266051,
+            41.991146,
+            41.675956,
+            41.910635
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "backend": "ducc",
+          "first_ms": 44.411679,
+          "warmup_ms": 44.473454,
+          "setup_ms": 10.223635,
+          "fixture_load_ms": 8.335489,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            41.311233,
+            41.875449,
+            41.917147,
+            41.756486,
+            41.131216,
+            40.928016,
+            40.912286,
+            41.663262,
+            41.430987,
+            40.939728
+          ],
+          "batch_total_ms": [
+            41.311233,
+            41.875449,
+            41.917147,
+            41.756486,
+            41.131216,
+            40.928016,
+            40.912286,
+            41.663262,
+            41.430987,
+            40.939728
+          ],
+          "output_checksum": -16.47067680838518,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    }
+  ]
+}

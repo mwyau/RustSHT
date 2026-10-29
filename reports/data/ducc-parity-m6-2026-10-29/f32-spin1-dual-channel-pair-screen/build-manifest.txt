@@ -1,0 +1,22 @@
+Rust source parent: 07193db72933ea7ecb914986874fa1219a3629d4
+Recovered two-call adapter patch SHA256: b78a1ef88e7d829b9980eb7c96da87fe17c7809a215ab985598d0c3ba32a3eac
+Fused pair candidate source-only patch SHA256: 4db18542074bd5b23ee1e5b70b6c17e6ae9862656ff319f2d3977fd5b761e7cd
+DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b (0.42.0)
+Rust: rustc 1.99.1 (58cf8f9c3, 2026-10-13), LLVM 23.1.1
+Rust build: --release --features parallel, RUSTFLAGS="-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+DUCC: g++ 15.2.0, -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3
+DUCC driver: -fno-fast-math
+Host: x86_64 AMD Ryzen 9 5950X; selected Pulp backend V3, eight f32 lanes
+q1 affinity: fixed one logical CPU across all arms
+q8 affinity: fixed eight distinct physical-core threads across all arms
+Warm call target: 25 ms; setup and workspace construction outside transform timing
+Callgrind: Valgrind 3.26.0, one warmed q1 whole-transform worker call
+Massif: one q8 full public f32 worker process
+
+Additional harness source hashes:
+  DUCC f64 spin-1 worker source: 3afa9f30202d84862e232972514a770d25f5789489e1bb6960943fba30b5bc4a
+  DUCC f64 worker CMake: e7bf2fd47cac16faf5e68253f4338d9570a83493ae379edfa118f3971bd9b6e0
+  DUCC f32 worker source: 6055dd8d6447d03a4144249b4e7dbf73562c067c8d3f490c0d6a5f8059a1befb
+  DUCC f32 worker CMake: 7ee556db4dc304b7c25f356728c4d879a2a7787eadacaac902fe7e346ca471fa
+  Existing general-f64 public adapter worker source: b6e740da8f0086a5d521bddc1d8d6700edbc57ee36d4fd5397fb67253b28d5e5
+  Callgrind C shim: 6caa936803f86a346742c49fc205e4cc2c63053e1bd6dda70d478abba8e282ee

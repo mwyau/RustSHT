@@ -1,0 +1,170 @@
+{
+  "pair": 9,
+  "order": [
+    "candidate",
+    "ducc",
+    "parent"
+  ],
+  "workers": {
+    "candidate": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 20.221587,
+      "warmup_ms": 17.602651,
+      "setup_ms": 12.380778,
+      "fixture_load_ms": 45.312079,
+      "pool_ms": 0.45064299999999996,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        18.475363,
+        17.432022500000002,
+        20.230289,
+        19.9239865,
+        18.138293,
+        17.065722500000003,
+        15.9817305,
+        17.74651,
+        16.26205,
+        15.6794855
+      ],
+      "batch_total_ms": [
+        36.950726,
+        34.864045000000004,
+        40.460578,
+        39.847973,
+        36.276586,
+        34.13144500000001,
+        31.963461,
+        35.49302,
+        32.5241,
+        31.358971
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "63dd07ca58ca1142d983f8c066a61888054a88a8d5e79836f4598a3f7143fc6d"
+    },
+    "ducc": {
+      "backend": "ducc",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 23.312677,
+      "warmup_ms": 22.552746,
+      "setup_ms": 41.679737,
+      "fixture_load_ms": 37.34844,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        19.5513195,
+        19.6559,
+        23.4310285,
+        25.4245355,
+        25.3389755,
+        22.83018,
+        23.1228925,
+        23.1770735,
+        23.1709375,
+        21.7354135
+      ],
+      "batch_total_ms": [
+        39.102639,
+        39.3118,
+        46.862057,
+        50.849071,
+        50.677951,
+        45.66036,
+        46.245785,
+        46.354147,
+        46.341875,
+        43.470827
+      ],
+      "output_checksum": 8.088751438581474,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "34fc4ec0916b7891a4fdf741fdc4184e4cf1e8d7873ed9a3470f7b148c2da8a9"
+    },
+    "parent": {
+      "backend": "rustsht",
+      "operation": "synthesis",
+      "grid": "GL",
+      "threads": 8,
+      "lmax": 1023,
+      "mmax": 1023,
+      "first_ms": 16.518033000000003,
+      "warmup_ms": 16.330653,
+      "setup_ms": 12.718881,
+      "fixture_load_ms": 43.384724999999996,
+      "pool_ms": 0.435444,
+      "repetitions_per_batch": 2,
+      "batch_ms": [
+        19.786369,
+        19.916222,
+        18.387844,
+        17.905056499999997,
+        16.416769000000002,
+        16.0185545,
+        16.241411,
+        16.233401,
+        17.8864915,
+        19.5484645
+      ],
+      "batch_total_ms": [
+        39.572738,
+        39.832444,
+        36.775688,
+        35.810112999999994,
+        32.833538000000004,
+        32.037109,
+        32.482822,
+        32.466802,
+        35.772983,
+        39.096929
+      ],
+      "output_checksum": 16.336231563612383,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "binary_sha256": "ff1dbce9085d06de777636a14b2771ab43f3d6deb224dcc875eaee607a870df0"
+    }
+  },
+  "times_ms": {
+    "candidate": 17.58926625,
+    "ducc": 23.146915,
+    "parent": 17.895774
+  },
+  "candidate_parent_ratio": 0.9828726184181809,
+  "candidate_ducc_ratio": 0.7598967832214358,
+  "output_sha256": {
+    "candidate": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ],
+    "ducc": [
+      "680d660b045c99fad1763e7c1c898cd06a05b4df1d4f42a51b2716d416ad7de6",
+      "bb213e63a3876811161262621db149bdf8e082406947193ed8218dcb01123a2d"
+    ],
+    "parent": [
+      "79597df72bf1175c5cb0b4514f1bc28e906970a27e5f812aa178880352a0af7c",
+      "a551ed4aaac017a3ea8d856505360b9a10c3f04b39ca919884549a4b3e898413"
+    ]
+  },
+  "checks": {
+    "candidate": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "parent": {
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  }
+}

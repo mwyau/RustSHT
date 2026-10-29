@@ -1,0 +1,744 @@
+{
+  "case_id": "GL-T720-M720-s1-synthesis-q8",
+  "case": {
+    "grid": "GL",
+    "ntheta": 721,
+    "nphi": 1458,
+    "lmax": 720,
+    "mmax": 720,
+    "longitude": "even",
+    "spin": 1,
+    "operation": "synthesis",
+    "threads": 8
+  },
+  "pairs": 3,
+  "parent_median_ms": 16.294573,
+  "candidate_median_ms": 17.5085785,
+  "ducc_median_ms": 7.452764333333334,
+  "candidate_parent_paired_median": 1.0635214865710196,
+  "candidate_parent_pair_range": [
+    1.0357917281440627,
+    1.1680534471439443
+  ],
+  "candidate_parent_faster_pairs": 0,
+  "general_f64_median_ms": 10.5292905,
+  "candidate_general_paired_median": 1.7235304135283018,
+  "candidate_general_pair_range": [
+    1.592111285421618,
+    1.7772304553663894
+  ],
+  "candidate_ducc_paired_median": 2.3492730639141364,
+  "candidate_ducc_pair_range": [
+    2.329832199697244,
+    2.655813518559395
+  ],
+  "candidate_ducc_faster_pairs": 0,
+  "max_candidate_ducc_relative_l2": 3.906083042715255e-08,
+  "max_candidate_ducc_absolute": 1.1920928955078125e-07,
+  "max_candidate_general_relative_l2": 5.5053842174465815e-11,
+  "all_worker_checks": true,
+  "fixture_sha256": {
+    "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+    "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+    "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+    "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+  },
+  "pairs_data": [
+    {
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate",
+        "general_f64",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 16.020650250000003,
+        "candidate": 18.71297575,
+        "general_f64": 10.5292905,
+        "ducc": 8.0318985
+      },
+      "candidate_parent_ratio": 1.1680534471439443,
+      "candidate_general_ratio": 1.7772304553663894,
+      "candidate_ducc_ratio": 2.329832199697244,
+      "parent_ducc_ratio": 1.9946280757905497,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "output_sha256": {
+        "parent": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "candidate": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "general_f64": [
+          "8f7a2b45291450d528f011a5eda9d834a7861d1b0974a79da88d6ac24e98abef",
+          "8479ebcee9b04ccd31f57b5219db4cf52c35a6cf6218653c49b5571762961d53"
+        ],
+        "ducc": [
+          "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+          "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+        ]
+      },
+      "errors": {
+        "candidate_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "candidate_vs_parent": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.23018000445579112,
+          "finite": true
+        },
+        "candidate_vs_general_f64": {
+          "output_values": 2102436,
+          "relative_l2": 5.5053842174465815e-11,
+          "absolute_l2": 1.8374546107149835e-08,
+          "max_absolute": 1.4901161193847656e-08,
+          "reference_rms": 0.23018000445579503,
+          "finite": true
+        },
+        "parent_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        }
+      },
+      "workers": {
+        "parent": {
+          "backend": "rustsht",
+          "first_ms": 16.910729,
+          "warmup_ms": 16.443284,
+          "setup_ms": 20.70353,
+          "pool_setup_ms": 0.418003,
+          "fixture_load_ms": 9.968743,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            15.403732999999999,
+            15.879864000000001,
+            16.469508,
+            17.1132935,
+            17.898303000000002,
+            15.1321845,
+            15.6270105,
+            16.1614365,
+            18.0392965,
+            14.207714
+          ],
+          "batch_total_ms": [
+            30.807465999999998,
+            31.759728000000003,
+            32.939016,
+            34.226587,
+            35.796606000000004,
+            30.264369,
+            31.254021,
+            32.322873,
+            36.078593,
+            28.415428
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "backend": "rustsht",
+          "first_ms": 18.635127,
+          "warmup_ms": 18.833839,
+          "setup_ms": 23.198130000000003,
+          "pool_setup_ms": 0.35812,
+          "fixture_load_ms": 10.06914,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            19.463994,
+            18.242928499999998,
+            20.181748,
+            18.839565,
+            18.663776,
+            18.202758,
+            18.762175499999998,
+            20.095591499999998,
+            17.1666785,
+            18.158901
+          ],
+          "batch_total_ms": [
+            38.927988,
+            36.485856999999996,
+            40.363496,
+            37.67913,
+            37.327552,
+            36.405516,
+            37.524350999999996,
+            40.191182999999995,
+            34.333357,
+            36.317802
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "general_f64": {
+          "backend": "rustsht_internal_f64",
+          "first_ms": 15.24978,
+          "warmup_ms": 11.524495,
+          "setup_ms": 12.50424,
+          "pool_setup_ms": 0.470391,
+          "fixture_load_ms": 10.886109999999999,
+          "repetitions_per_batch": 3,
+          "batch_ms": [
+            9.245465666666666,
+            10.621401333333333,
+            13.225546666666666,
+            10.847190666666664,
+            9.67342,
+            9.949697,
+            10.096438666666666,
+            10.437179666666667,
+            11.683169,
+            11.172062333333335
+          ],
+          "batch_total_ms": [
+            27.736397,
+            31.864204,
+            39.67664,
+            32.541571999999995,
+            29.02026,
+            29.849091,
+            30.289316,
+            31.311539,
+            35.049507,
+            33.516187
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "backend": "ducc",
+          "first_ms": 13.963912,
+          "warmup_ms": 11.458742,
+          "setup_ms": 12.193047,
+          "fixture_load_ms": 10.297187,
+          "repetitions_per_batch": 3,
+          "batch_ms": [
+            9.874817,
+            8.233043333333333,
+            7.080999666666667,
+            6.432385333333333,
+            7.830753666666666,
+            7.442951,
+            9.352803,
+            8.335618666666667,
+            7.681567333333334,
+            8.589914666666667
+          ],
+          "batch_total_ms": [
+            29.624451,
+            24.69913,
+            21.242999,
+            19.297156,
+            23.492261,
+            22.328853,
+            28.058409,
+            25.006856,
+            23.044702,
+            25.769744
+          ],
+          "output_checksum": -16.47067680838518,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "pair": 2,
+      "order": [
+        "candidate",
+        "parent",
+        "general_f64",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 16.9035705,
+        "candidate": 17.5085785,
+        "general_f64": 10.158555,
+        "ducc": 7.452764333333334
+      },
+      "candidate_parent_ratio": 1.0357917281440627,
+      "candidate_general_ratio": 1.7235304135283018,
+      "candidate_ducc_ratio": 2.3492730639141364,
+      "parent_ducc_ratio": 2.2680940579855533,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "output_sha256": {
+        "parent": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "candidate": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "general_f64": [
+          "8f7a2b45291450d528f011a5eda9d834a7861d1b0974a79da88d6ac24e98abef",
+          "8479ebcee9b04ccd31f57b5219db4cf52c35a6cf6218653c49b5571762961d53"
+        ],
+        "ducc": [
+          "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+          "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+        ]
+      },
+      "errors": {
+        "candidate_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "candidate_vs_parent": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.23018000445579112,
+          "finite": true
+        },
+        "candidate_vs_general_f64": {
+          "output_values": 2102436,
+          "relative_l2": 5.5053842174465815e-11,
+          "absolute_l2": 1.8374546107149835e-08,
+          "max_absolute": 1.4901161193847656e-08,
+          "reference_rms": 0.23018000445579503,
+          "finite": true
+        },
+        "parent_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        }
+      },
+      "workers": {
+        "parent": {
+          "backend": "rustsht",
+          "first_ms": 16.886163,
+          "warmup_ms": 18.862403,
+          "setup_ms": 20.848501,
+          "pool_setup_ms": 0.43825,
+          "fixture_load_ms": 10.908562,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            22.007631,
+            18.482301,
+            16.648753499999998,
+            16.7856145,
+            17.590311500000002,
+            17.021526499999997,
+            16.417741,
+            18.884724499999997,
+            15.856981499999998,
+            15.621515500000001
+          ],
+          "batch_total_ms": [
+            44.015262,
+            36.964602,
+            33.297506999999996,
+            33.571229,
+            35.180623000000004,
+            34.04305299999999,
+            32.835482,
+            37.769448999999994,
+            31.713962999999996,
+            31.243031000000002
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "backend": "rustsht",
+          "first_ms": 17.299347,
+          "warmup_ms": 17.308093,
+          "setup_ms": 26.151699,
+          "pool_setup_ms": 0.399287,
+          "fixture_load_ms": 10.707997,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            18.266923000000002,
+            17.500924,
+            17.3100315,
+            18.037263000000003,
+            16.9871575,
+            16.8868045,
+            18.158124,
+            17.516233,
+            17.0183605,
+            18.0833395
+          ],
+          "batch_total_ms": [
+            36.533846000000004,
+            35.001848,
+            34.620063,
+            36.074526000000006,
+            33.974315,
+            33.773609,
+            36.316248,
+            35.032466,
+            34.036721,
+            36.166679
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "general_f64": {
+          "backend": "rustsht_internal_f64",
+          "first_ms": 11.336032,
+          "warmup_ms": 12.598837,
+          "setup_ms": 12.379696000000001,
+          "pool_setup_ms": 0.399719,
+          "fixture_load_ms": 10.978142,
+          "repetitions_per_batch": 3,
+          "batch_ms": [
+            9.008414666666667,
+            10.009365333333333,
+            12.379923333333336,
+            11.224680666666666,
+            11.652314666666667,
+            10.119745666666667,
+            10.700910333333335,
+            10.197364333333335,
+            8.982082333333333,
+            9.372122333333333
+          ],
+          "batch_total_ms": [
+            27.025244,
+            30.028096,
+            37.139770000000006,
+            33.674042,
+            34.956944,
+            30.359237,
+            32.102731000000006,
+            30.592093000000002,
+            26.946247,
+            28.116367
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "backend": "ducc",
+          "first_ms": 11.902763,
+          "warmup_ms": 10.52812,
+          "setup_ms": 11.563809,
+          "fixture_load_ms": 9.052317,
+          "repetitions_per_batch": 3,
+          "batch_ms": [
+            7.382110333333333,
+            6.4374883333333335,
+            9.221924666666666,
+            7.261825000000001,
+            7.473170666666667,
+            8.297420666666666,
+            6.788014666666666,
+            9.171126333333333,
+            7.4659406666666674,
+            7.4395880000000005
+          ],
+          "batch_total_ms": [
+            22.146331,
+            19.312465,
+            27.665774,
+            21.785475,
+            22.419512,
+            24.892262,
+            20.364044,
+            27.513379,
+            22.397822,
+            22.318764
+          ],
+          "output_checksum": -16.47067680838518,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "pair": 3,
+      "order": [
+        "general_f64",
+        "parent",
+        "ducc",
+        "candidate"
+      ],
+      "times_ms": {
+        "parent": 16.294573,
+        "candidate": 17.3296285,
+        "general_f64": 10.884684166666666,
+        "ducc": 6.5251676666666665
+      },
+      "candidate_parent_ratio": 1.0635214865710196,
+      "candidate_general_ratio": 1.592111285421618,
+      "candidate_ducc_ratio": 2.655813518559395,
+      "parent_ducc_ratio": 2.4971883991946466,
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "output_sha256": {
+        "parent": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "candidate": [
+          "27213495fed3ad34f7cb8caf787c0c0a1be2cf6e34a22df737a534823c315ebd",
+          "650e8b57ac156e304e612bcb72229dae65bf01213a2969a3913275c3ea4638df"
+        ],
+        "general_f64": [
+          "8f7a2b45291450d528f011a5eda9d834a7861d1b0974a79da88d6ac24e98abef",
+          "8479ebcee9b04ccd31f57b5219db4cf52c35a6cf6218653c49b5571762961d53"
+        ],
+        "ducc": [
+          "ec2070d6da2b7de63ea90377e255dd09b9f3f687a5ae86256e2f0fcd4771ca60",
+          "489cb47d75a2dafec973b9cb84e5afe6dc4078dcfd8a998d2826378d4ddbbd1d"
+        ]
+      },
+      "errors": {
+        "candidate_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        },
+        "candidate_vs_parent": {
+          "output_values": 2102436,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.23018000445579112,
+          "finite": true
+        },
+        "candidate_vs_general_f64": {
+          "output_values": 2102436,
+          "relative_l2": 5.5053842174465815e-11,
+          "absolute_l2": 1.8374546107149835e-08,
+          "max_absolute": 1.4901161193847656e-08,
+          "reference_rms": 0.23018000445579503,
+          "finite": true
+        },
+        "parent_vs_ducc": {
+          "output_values": 2102436,
+          "relative_l2": 3.906083042715255e-08,
+          "absolute_l2": 1.3036783651180795e-05,
+          "max_absolute": 1.1920928955078125e-07,
+          "reference_rms": 0.23018000443253994,
+          "finite": true
+        }
+      },
+      "workers": {
+        "parent": {
+          "backend": "rustsht",
+          "first_ms": 14.755614,
+          "warmup_ms": 17.582607,
+          "setup_ms": 20.677920999999998,
+          "pool_setup_ms": 0.417431,
+          "fixture_load_ms": 11.710062,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            14.888548,
+            15.628353500000001,
+            14.3491435,
+            15.406457999999999,
+            16.162493,
+            16.647757,
+            16.458668,
+            16.426652999999998,
+            17.232366499999998,
+            18.3120175
+          ],
+          "batch_total_ms": [
+            29.777096,
+            31.256707000000002,
+            28.698287,
+            30.812915999999998,
+            32.324986,
+            33.295514,
+            32.917336,
+            32.853305999999996,
+            34.464732999999995,
+            36.624035
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "candidate": {
+          "backend": "rustsht",
+          "first_ms": 19.080381,
+          "warmup_ms": 18.3051,
+          "setup_ms": 24.209063,
+          "pool_setup_ms": 0.377898,
+          "fixture_load_ms": 10.6564,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            17.734732,
+            17.480050000000002,
+            17.487058,
+            17.289949,
+            16.39313,
+            16.228151,
+            17.369308,
+            18.244951999999998,
+            17.117406000000003,
+            15.6503695
+          ],
+          "batch_total_ms": [
+            35.469464,
+            34.960100000000004,
+            34.974116,
+            34.579898,
+            32.78626,
+            32.456302,
+            34.738616,
+            36.489903999999996,
+            34.234812000000005,
+            31.300739
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "general_f64": {
+          "backend": "rustsht_internal_f64",
+          "first_ms": 20.108595,
+          "warmup_ms": 11.602922,
+          "setup_ms": 12.425412,
+          "pool_setup_ms": 0.365825,
+          "fixture_load_ms": 11.08398,
+          "repetitions_per_batch": 3,
+          "batch_ms": [
+            10.878606,
+            10.928329,
+            11.315133333333334,
+            9.544305,
+            10.480016666666666,
+            11.296699000000002,
+            11.561368,
+            10.783080666666669,
+            10.890762333333335,
+            10.405617333333334
+          ],
+          "batch_total_ms": [
+            32.635818,
+            32.784987,
+            33.9454,
+            28.632914999999997,
+            31.440049999999996,
+            33.890097000000004,
+            34.684104,
+            32.349242000000004,
+            32.672287000000004,
+            31.216852
+          ],
+          "output_checksum": -35.429683576803654,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true,
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8
+        },
+        "ducc": {
+          "backend": "ducc",
+          "first_ms": 14.703828,
+          "warmup_ms": 13.502699,
+          "setup_ms": 10.904825,
+          "fixture_load_ms": 9.662249,
+          "repetitions_per_batch": 3,
+          "batch_ms": [
+            7.367676333333333,
+            6.415931666666666,
+            6.4998320000000005,
+            6.461814,
+            6.417584333333333,
+            7.473087333333333,
+            7.287095666666667,
+            6.632176,
+            6.5364070000000005,
+            6.513928333333333
+          ],
+          "batch_total_ms": [
+            22.103029,
+            19.247795,
+            19.499496,
+            19.385442,
+            19.252753,
+            22.419262,
+            21.861287,
+            19.896528,
+            19.609221,
+            19.541785
+          ],
+          "output_checksum": -16.47067680838518,
+          "finite_outputs": true,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    }
+  ]
+}
