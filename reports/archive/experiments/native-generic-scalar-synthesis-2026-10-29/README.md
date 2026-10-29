@@ -121,6 +121,66 @@ produced a finite map (SHA-256
 are retained for inspection. The profile fixture is separate from the timed
 fixture; its instruction count is not a timing comparison.
 
+## Exact-zero scaled-basis restore screen
+
+The native-f32 scaled prefix can avoid calling the exact scalar scaler when
+every lane is proven to restore to signed zero. With f32 exponent step 80,
+scale at most -2 and mantissa magnitude at most 2^-60 bound the restored
+magnitude by 2^-220, below half the least subnormal. The shortcut checks every
+lane, finite input and checked exponent multiplication, preserves signed zero,
+and leaves the recurrence update intact. It is guarded by the f32 precision
+policy; the f64 instantiation does not select shared-basis prefix execution.
+No production dispatch was changed.
+
+The precision-gated candidate was measured against the generic parent and
+pinned native-f32 DUCC with 15 balanced interleaved pairs per cell. Ratios are
+paired medians; intervals are 50,000-resample percentile bootstrap intervals
+over paired ratios (seed 1729).
+
+| GL T720 scalar synthesis | Parent ms | Candidate ms | DUCC ms | Candidate/parent | Candidate/DUCC | Status |
+|---|---:|---:|---:|---:|---:|---|
+| Full q1 | 26.653 | 24.852 | 19.484 | 0.926 [0.922, 0.940] | 1.272 [1.254, 1.286] | GAP |
+| Full q8 | 3.927 | 3.658 | 2.932 | 0.931 [0.920, 0.948] | 1.244 [1.207, 1.255] | GAP |
+| Reduced q1 | 9.013 | 8.491 | 8.681 | 0.940 [0.935, 0.956] | 0.980 [0.970, 1.009] | INCONCLUSIVE |
+| Reduced q8 | 1.745 | 1.597 | 2.050 | 0.932 [0.796, 0.979] | 1.015 [0.718, 1.161] | INCONCLUSIVE |
+
+Pulp used the V3 AVX2 route with eight native f32 lanes. Candidate output was
+bitwise equal to the generic parent in all 15 pairs per cell; all outputs were
+finite and repeat/reset checks passed. This parent equivalence does not settle
+independent accuracy. The existing near-pole zonal diagnostic remains
+`0.018705474` in f32 versus `0.018541995` from the independent f64 recurrence.
+The candidate is not numerically accepted and remains isolated.
+
+The first, ungated shortcut had a repeatable protected f64 T1023 spin-1
+synthesis q1 slowdown (candidate/parent 1.013, 95% interval 1.007–1.021).
+Adding a compile-time precision gate changed the f32 code generation, so the
+full f32 matrix was rerun. On the gated source, f64 output stayed bitwise equal
+to parent: q1 candidate/parent was 0.996 [0.991, 1.002], while q8 was
+1.016 [0.999, 1.055] and remains INCONCLUSIVE under host noise. Candidate/DUCC
+medians were 0.733 q1 and 0.764 q8. The full paired data contains fixture and
+binary hashes.
+
+A subsequent variant skipped the four accumulation FMAs for an all-zero
+restored vector while retaining recurrence updates. It remained bitwise equal
+to the parent and passed the release library tests (316 passed, 37 ignored),
+but the 15-pair f32 matrix still missed full-grid DUCC at 1.282 q1 and 1.276
+q8; reduced q1 was 1.012 and reduced q8 was too noisy to decide. This does not
+demonstrate an added whole-transform gain over the precision-gated shortcut,
+so do not repeat the FMA-skip variant unchanged. Its three-pair protected f64
+control was interrupted before completion and produced no result; there is no
+f64 conclusion for that last variant.
+
+The three recoverable source diffs are based on parent
+`b6a96aa7161a64f678b614d73478496f50f0551e`: ungated shortcut
+`be8737d3d1e44fdea5431648e7bb8408082e74cefc120eb3850785e059c4edf8`,
+precision-gated shortcut
+`57e58a06c46b3af90209c239c2fda419ee8edf7c19b0d7b2a8d3c9742a70bbd3`, and
+FMA-skip follow-up
+`f3c6da5709baf8f0d16bfde5735089b73cd98c13481f7e3507036c127484ef13`.
+See `patch-index.tsv`, the compressed result files and the environment-driven
+runners for exact binary hashes, fixtures and pair records. No build artifacts
+or duplicate fixtures are retained.
+
 A separate test-only work-count probe measured ordinary-suffix fusion in the
 same generic candidate. The two-vector fused path handled 74.5541% of full
 M720 and 83.7808% of reduced M180 ordinary lane-pair updates. It is already

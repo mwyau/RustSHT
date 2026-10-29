@@ -24,3 +24,6 @@ native-generic-scalar-vector-subnormal-scale80.patch	ec6468793f641109f1f136a979d
 native-generic-scalar-with-profile-tool.patch	1310f21c3335eb121253cab0182f912a66e40ee9e2cce4864a33da18dfc32fef	patches/native-generic-scalar-no-fast.patch.gz
 ordinary-suffix-inline.patch	a3649b9b91994d08b94622c444749b1b7d8f5715d4118e6c46080a01f4064c42	ordinary-suffix-inline/ordinary-suffix-inline.patch.gz
 native-generic-scalar-suffix-fusion-counters.patch	b8286da2811c9b2b90349cb563033fa97f29c3cb676828a521fdf0f5cc450da7	patches/native-generic-scalar-suffix-fusion-counters.patch.gz
+native-generic-scalar-zero-restore-ungated.patch	be8737d3d1e44fdea5431648e7bb8408082e74cefc120eb3850785e059c4edf8	patches/native-generic-scalar-zero-restore-ungated.patch.gz
+native-generic-scalar-zero-restore-static-gate.patch	57e58a06c46b3af90209c239c2fda419ee8edf7c19b0d7b2a8d3c9742a70bbd3	patches/native-generic-scalar-zero-restore-static-gate.patch.gz
+native-generic-scalar-zero-restore-skip-fma.patch	f3c6da5709baf8f0d16bfde5735089b73cd98c13481f7e3507036c127484ef13	patches/native-generic-scalar-zero-restore-skip-fma.patch.gz

@@ -1,14 +1,13 @@
 # Recent substantive checkpoints
 
-- **2026-10-29 — native-generic scalar synthesis candidate measured.** The
-  isolated 15-pair f32 GL T720 candidate missed DUCC in all four cells
-  (`1.054–1.355x`); vector-rescale follow-ups regressed, and suffix inlining
-  showed no repeatable gain. The per-lane exponent AVX2 follow-up also missed
-  all four cells (`1.112–1.623x`) and spent 36.9% of q1 Callgrind Ir in the
-  scaler. The ordinary suffix already handles 74.6–83.8% of updates through
-  its two-vector fused path, leaving the scaled prefix as the next focus.
-  Production dispatch is unchanged, and a high-degree near-pole accuracy
-  discrepancy remains. See the [candidate record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
+- **2026-10-29 — native-generic scalar synthesis follow-up measured.** A
+  precision-gated exact-zero restore shortcut improves the isolated generic
+  parent by 5–7% in 15 pairs, but full GL T720 remains 1.24–1.27x DUCC;
+  reduced q1 is inconclusive near parity and q8 is too noisy. The protected
+  f64 control is neutral at q1 and inconclusive at q8. Skipping four FMAs after
+  zero restoration did not prove an added gain. Parent-equivalent outputs do
+  not resolve the near-pole accuracy discrepancy. Production dispatch is
+  unchanged. See the [candidate archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

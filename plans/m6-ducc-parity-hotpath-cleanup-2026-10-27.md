@@ -10,8 +10,9 @@ Match or beat pinned native DUCC 0.42.0 at `42ce8ab5c5d79e0e2fd9af4a09c2ea469352
 
 **Inspected source baseline:** `83dd570d413a9e0c0dd998e1fbfb34f7d8a92650`;
 production code is unchanged from `c63cde440d91e3ca2810226163a191199b4ca29d`.
-The current `dev` head `b6a96aa7` adds a test-only f32 scaling update; the
-isolated implementation work is based on parent `39dd8a88`.
+The current `dev` head is `7b9ab61c`; production code remains unchanged from
+`c63cde44`. The isolated generic implementation and follow-ups are based on
+parent `b6a96aa7`.
 The source inventory classifies the current implementation as follows:
 
 | Classification | Current owner | Direction |
@@ -36,6 +37,14 @@ reuse. This is a targeted generalization, not a mechanical `f64` replacement.
   also rejected after three-pair screens. Exact patches, paired data, work
   counts, Callgrind, and the high-degree numerical caveat are indexed in the
   [isolated synthesis record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
+- An exact-zero shared-basis restore shortcut improved the generic parent by
+  about 6–7% across the 15-pair native-f32 screen. Full T720 remains 1.24–1.27x
+  DUCC; reduced q1 is INCONCLUSIVE near parity and reduced q8 is too noisy.
+  A precision gate removed the earlier q1 f64 slowdown; its protected f64 q8
+  result remains INCONCLUSIVE. Skipping the four FMAs after zero restoration
+  did not establish a further gain. The near-pole independent-accuracy issue
+  remains open; none of these patches is promoted. Full matrices and hashes
+  are in the [isolated synthesis archive](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
 - A suffix-inlining follow-up did not improve the generic candidate: the
   original f32 suffix already emits direct AVX2 FMA with a small stack frame.
   The exact three-pair delta screen and assembly excerpt are archived with the
@@ -81,16 +90,19 @@ Use native f32 coefficients, f32 FFT and Fourier buffers, f32 recurrence/accumul
 First prototype in an isolated current-source worktree. Measure native-f32 GL T720 scalar synthesis full M720 and reduced M180, q1 and q8, against exact source parent and native-f32 DUCC. Validate analytic/sectoral, adjoints, extremes/subnormal, tails and poisoned/reset workspace. Reject unsafe results. If slow, attribute useful work, scaled prefix, loop structure and instruction cost **before** adding another optimization.
 
 **Current state:** the generic route is implemented only as an isolated patch.
-The initial candidate spends substantial work in the precision-specific f32
-scaled prefix; scale-count, scalar/vector restoration, vector-rescale, and
-ordinary-suffix inlining variations did not improve whole transforms. The
-ordinary suffix already emits direct FMA, and the per-lane AVX2 exponent
-restoration route is now explicitly ruled out. A work-count probe shows the
-two-vector fused suffix handles 74.6% of full and 83.8% of reduced ordinary
-updates, so suffix pairing has limited remaining headroom. Do not repeat these
-variants unchanged. The next candidate must change the scaled-prefix work
-structure or another quantified hot cost while retaining checked exponent and
-underflow behavior, then pass the independent high-degree accuracy control.
+The precision-gated exact-zero restore shortcut lowers the initial candidate's
+runtime, but full T720 remains 24–27% slower than DUCC and independent
+high-degree accuracy is still unverified. The FMA-skip follow-up did not show
+an added gain. The ordinary suffix already emits direct FMA and handles 74.6%
+of full and 83.8% of reduced ordinary updates through its two-vector path;
+per-lane AVX2 exponent restoration, normal-only scaling and suffix changes
+remain rejected. A work-count probe found a common scale across all lanes on
+183,829 of 394,106 full-M720 scaled-prefix steps and 31,420 of 123,134 reduced
+steps. This supports testing a uniform-exponent SIMD leaf that adjusts normal
+exponent fields and falls back exactly on exceptional lanes; it does not
+justify reusing the rejected per-lane vector scaler. Retain checked exponents,
+underflow contributions and signed/exceptional behavior, then establish
+independent high-degree accuracy before another parity screen.
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 
