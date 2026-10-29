@@ -1,11 +1,11 @@
-c9034359e26bc0e608bf889e388ac9fd92ee27c50339e1c43cda87b54bb2e041  ./README.md
+508fa118adb75f28f79e0d8b67179383d850426d07e8990d14dae7bb6a822567  ./README.md
 b8722e23c6faba6fba2158e3f1a8f0d0533556fc45ac5dac202f4a1c92b18ea6  ./codegen/uniform-scale-v3-prepare-prefix.asm
 6f6af91867e4a0407d411e207f48771b0014ae45d1fcf518609f8d03ebdab26e  ./codegen/vector-rescale-v3-symbol.asm
 1dbe496bab16c9f784bb9d473c4ca75b53659155927f8a4192989c13a6fd9895  ./ordinary-suffix-inline/codegen/ordinary-suffix-v3.txt
 793bd2816971c13549a85e39ef2a03e40ebe9edb397e6d5547de95179287056a  ./ordinary-suffix-inline/ordinary-suffix-inline.patch.gz
 3865c6690deb317d9bddc1dfd269b02e9f0142bc559acdac9df5d2d929906ff6  ./ordinary-suffix-inline/results-3.json
 afb5780f66bb4e56169853b9d9a1144768617ad7964dbd51cb859113b23ea9b8  ./ordinary-suffix-inline/runner.py
-20b6a3043b623f889c900d10d364a09f01fe7f599fec6b3c6c265e859ae238a3  ./patch-index.tsv
+1abd5d65230f7a553145429c7f288bbd3efa3f9aa71009fc152ba831c936af7e  ./patch-index.tsv
 e1b243c7bedaf52e128d43f2f80217d4448c51d7832b155eece5c73035b6fefe  ./patches/native-generic-scalar-coeff-prep.patch.gz
 95255c429f3dda8e76c8ea828eefc8164b8bcc28ea389d5e960a3995d342eec8  ./patches/native-generic-scalar-current-vector-scale.patch.gz
 9a0ebb284c7cfe9bdcffc0f9286b3db551f23e9b4a4127d06009acc9d18cda68  ./patches/native-generic-scalar-direct-normal-scale.patch.gz
@@ -93,3 +93,11 @@ c947bbea561e4e3d4d4562362f5c03abf06d066d6a3912f34767e6d808db9997  ./runners/benc
 60d93d3c379007587c802fa25800c390c41c7154ac904db4af8dc90eb890ef90  ./runners/bench_f32_vector_scale_small_stack_screen_3.py
 0948c970346923e8df43b9bee622db2ec00928b23d87b748f299f52b328f78ac  ./runners/bench_f32_vector_subnormal_scale80_screen_3.py
 5df720dfae9759997a812f324dbea042f393cd3eef28fcbaa2effce971547e3b  ./runners/bench_f64_t1023_spin1_zero_restore_15.py
+1561aee947b73245b5699c0c0abaeff7706b406618d031c282be89546097b42a  ./zonal-basis-dotproduct/README.md
+dd9ace352c96add388ebac5d8f20619d9683bf7287e2e46d897d5bd695311da0  ./zonal-basis-dotproduct/full-lib-test.log.gz
+6d5297120fe513320f41a6386d4a76767f76aff9a2d9018f3e02f05fadded5cb  ./zonal-basis-dotproduct/ordinary-f32-v3.asm
+e9069d9596ddad5b872712b18b0efa99da88e4bc4d6c7a57d64cd1cc8be9f394  ./zonal-basis-dotproduct/results-3.json
+fd67154027fb490cbc4c8baa426aba9de0d0df8c6f9da00b7a2dab881847341d  ./zonal-basis-dotproduct/source.patch.gz
+1c16e86f8f14cd78aa41418bd820ed010e75688709f561aa24dd456be4d429ae  ./zonal-basis-dotproduct/work-count-test.log.gz
+0fb639aa1c2a5d729122b6464cc737bf768a7896562fe3e51a72c38f265882a4  ./zonal-basis-dotproduct/zonal-accuracy-test.log.gz
+cb00f667266d6b6648f558b495a59d22c865de30a2e7ade002e5c12a48bf589a  ./zonal-basis-dotproduct/zonal-dot-v3.asm

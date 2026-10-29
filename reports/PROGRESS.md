@@ -8,9 +8,12 @@
   result is 0.88% high versus the independent f64 recurrence; pinned DUCC
   f32 agrees with that reference because its scalar Legendre state uses
   double SIMD. A test-only native-f32 double-single arithmetic probe with
-  high/low constants reaches about `1e-9` absolute error, but no integrated
-  compensated route exists yet. The candidate remains unaccepted and
-  isolated; production dispatch is unchanged. See the [candidate archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md)
+  high/low constants reaches about `1e-9` absolute error. A full m=0 basis
+  correction reached `1.48e-8` zonal error, but added up to 45% runtime, left
+  random-transform error unchanged and used an out-of-scope plan-time f64
+  recurrence. Both remain isolated; production dispatch is unchanged. See
+  the [candidate archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md),
+  [basis-dot diagnostic](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-basis-dotproduct/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

@@ -104,6 +104,18 @@ emits direct AVX2 FMA and uses a 40-byte stack frame; the attribute change
 produced no repeatable whole-transform gain. The reduced q8 screen was noisy.
 Keep the suffix unchanged; see the [codegen and paired delta record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/ordinary-suffix-inline/).
 
+A subsequent m=0 basis-dot diagnostic corrected the isolated GL T720
+`l=720,m=0` zonal probe: maximum absolute error across 721 rings fell from
+`2.759e-3` to `1.483e-8`, with `7.414e-10` error at the first north ring.
+The variant computes the full m=0 basis with an f64 plan-time recurrence,
+which exceeds the allowed small constant preparation, then adds a compensated
+f32 dot pass after synthesis. Its three-pair candidate/DUCC medians were
+`1.249`, `1.325`, `1.029`, and `1.343` for full q1/q8 and reduced q1/q8.
+Random-input error versus DUCC stayed at `1.864e-4` / `1.885e-4` relative L2;
+the correction does not justify its extra pass. Reject this design. The exact
+patch, binaries, fixtures, tests, work counts, AVX2 disassembly and pair data
+are in the [prepared-basis archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-basis-dotproduct/README.md).
+
 ## Decisions and remaining scope
 
 - The production sidecar is temporary and must be removed after native shared
@@ -131,13 +143,13 @@ Keep the suffix unchanged; see the [codegen and paired delta record](archive/exp
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** prototype an isolated f32 compensated recurrence leaf for
-high-degree near-polar orders. Preserve plan-time high/low parts for
-`cos(theta)^2` and the wide-prepared recurrence factors; the arithmetic probe
-shows double-single f32 state is accurate, while single-f32 constants are
-not. Combine runtime f32 coefficients with f32 compensated operations and
-keep ordinary orders on the existing f32 path. Add asserted zonal/reference,
-adjoint, reset, and exceptional tests before screening performance. Do not
-promote the uniform-scaler candidate or use f64 for the runtime recurrence.
-See the
+**NEXT:** continue the isolated native-f32 compensated recurrence leaf for
+high-degree orders. Preserve plan-time high/low parts for `cos(theta)^2` and
+the wide-prepared recurrence factors; the arithmetic probe shows double-
+single f32 state is accurate, while single-f32 constants are not. Integrate
+the leaf into the order-major route so it replaces recurrence work. Do not
+build a complete f64 m=0 basis or add a second transform pass. Add asserted
+zonal/reference, adjoint, reset, and exceptional tests before screening
+performance. Do not promote the uniform-scaler candidate or use f64 for the
+runtime recurrence. See the
 [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).

@@ -218,6 +218,20 @@ remains isolated, and has not changed production dispatch. Library tests
 passed (`317 passed, 37 ignored`), including exact bitwise scaler coverage;
 the probe passing as a test is not an accuracy pass.
 
+## Prepared m=0 basis dot-product diagnostic
+
+A later isolated variant stores a degree-major high/low m=0 basis for GL T720
+and replaces the output m=0 Fourier column with a compensated native-f32 dot
+product. Against an independent recurrence, it reduces the isolated T720
+`l=720,m=0` maximum error from `2.759e-3` to `1.483e-8`. It does not improve
+random whole-transform error against DUCC (`1.864e-4` full and `1.885e-4`
+reduced relative L2) and adds `1–45%` over its uncorrected parent in the
+three-pair screen. Its plan construction also computes the full m=0 basis
+with an f64 recurrence, beyond the allowed small plan-time constant
+preparation. Reject it for implementation; do not retain a second
+post-transform correction pass. Exact source, hashes, tests, work counts,
+assembly and timings are in [`zonal-basis-dotproduct/`](zonal-basis-dotproduct/).
+
 The full 15-pair results, the 3-pair gated A/B, protected f64 data, runner and
 candidate diff are retained under `results/`, `runners/` and `patches/`.
 Their hashes are listed in `SHA256SUMS`.
