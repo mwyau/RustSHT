@@ -40,3 +40,7 @@ Three interleaved GL T1023 M1023 f64 spin-1 synthesis pairs produced q1 parent/c
 ## Decision and next experiment
 
 Reject this reflected f32 spin-1 leaf. Do not broaden its route or rerun it unchanged. Callgrind identifies the next bounded hypothesis: preserve exact scaled recurrence state, but use the existing checked `try_accumulate_f32_scaled_synthesis_packet` helper to accumulate complete safe packets across the even/odd coefficient rows; retain scalar exact handling for tails or unsafe packets and use transactional decline if a full packet cannot be proven safe. This targets the measured dominant scaled-helper work while keeping the shared recurrence and protected f64 routes intact. First require unit/range checks and then repeat the whole T720 parent/candidate/DUCC screen with route counters.
+
+## Reproduction inputs
+
+`harness/` preserves the matched benchmark runner, both DUCC C++ worker sources and CMake files, the temporary Callgrind instrumentation patch, and the deterministic f64 T1023 fixture generator. SHA256 values are recorded in `harness/SHA256SUMS`. The runner uses CPU `0` for q1 and CPUs `0,2,4,6,8,10,12,14` for q8 on this host; q8 CPUs are distinct physical cores. Rust worker compilation uses the exact source parent plus `candidate.patch`; DUCC is built from the pinned revision. Fixture hashes and final binary hashes remain in the files above.

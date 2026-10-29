@@ -1,0 +1,161 @@
+diff --git a/examples/ducc_f32_full_transform_parity.rs b/examples/ducc_f32_full_transform_parity.rs
+index 8f54f4be..6d3bf968 100644
+--- a/examples/ducc_f32_full_transform_parity.rs
++++ b/examples/ducc_f32_full_transform_parity.rs
+@@ -3,11 +3,69 @@
+ 
+ //! Native RustSHT f32 worker for matched DUCC full-transform measurements.
+ 
++use std::alloc::{GlobalAlloc, Layout, System};
+ use std::error::Error;
+ use std::fs;
+ use std::hint::black_box;
+ use std::io::Write;
+ use std::time::Instant;
++use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
++
++static ALLOC_ACTIVE: AtomicBool = AtomicBool::new(false);
++static ALLOC_CALLS: AtomicU64 = AtomicU64::new(0);
++static ALLOC_BYTES: AtomicU64 = AtomicU64::new(0);
++static FREED_BYTES: AtomicU64 = AtomicU64::new(0);
++static LIVE_BYTES: AtomicU64 = AtomicU64::new(0);
++static PEAK_LIVE_BYTES: AtomicU64 = AtomicU64::new(0);
++
++struct CountingAllocator;
++
++#[global_allocator]
++static GLOBAL_ALLOCATOR: CountingAllocator = CountingAllocator;
++
++unsafe impl GlobalAlloc for CountingAllocator {
++    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
++        let ptr = unsafe { System.alloc(layout) };
++        if !ptr.is_null() && ALLOC_ACTIVE.load(Ordering::Relaxed) {
++            ALLOC_CALLS.fetch_add(1, Ordering::Relaxed);
++            ALLOC_BYTES.fetch_add(layout.size() as u64, Ordering::Relaxed);
++            let live = LIVE_BYTES.fetch_add(layout.size() as u64, Ordering::Relaxed) + layout.size() as u64;
++            PEAK_LIVE_BYTES.fetch_max(live, Ordering::Relaxed);
++        }
++        ptr
++    }
++
++    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
++        if ALLOC_ACTIVE.load(Ordering::Relaxed) {
++            FREED_BYTES.fetch_add(layout.size() as u64, Ordering::Relaxed);
++            LIVE_BYTES.fetch_sub(layout.size() as u64, Ordering::Relaxed);
++        }
++        unsafe { System.dealloc(ptr, layout) };
++    }
++
++    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
++        let result = unsafe { System.realloc(ptr, layout, new_size) };
++        if !result.is_null() && ALLOC_ACTIVE.load(Ordering::Relaxed) {
++            ALLOC_CALLS.fetch_add(1, Ordering::Relaxed);
++            ALLOC_BYTES.fetch_add(new_size as u64, Ordering::Relaxed);
++            FREED_BYTES.fetch_add(layout.size() as u64, Ordering::Relaxed);
++            if new_size >= layout.size() {
++                let added = (new_size - layout.size()) as u64;
++                let live = LIVE_BYTES.fetch_add(added, Ordering::Relaxed) + added;
++                PEAK_LIVE_BYTES.fetch_max(live, Ordering::Relaxed);
++            } else {
++                LIVE_BYTES.fetch_sub((layout.size() - new_size) as u64, Ordering::Relaxed);
++            }
++        }
++        result
++    }
++}
++
++unsafe extern "C" {
++    fn m6_callgrind_zero();
++    fn m6_callgrind_start();
++    fn m6_callgrind_stop();
++}
+ 
+ use pulp::{Simd, WithSimd};
+ use rustsht::{Complex32, GridKind, GridSpec, HarmonicSpec, ShtPlan, ShtWorkspace};
+@@ -196,14 +254,67 @@ fn main() -> Result<(), Box<dyn Error>> {
+     }
+     let pool_setup_ms = pool_started.elapsed().as_secs_f64() * 1e3;
+ 
++    let workspace_profile = std::env::var_os("M6_WORKSPACE_PROFILE").is_some();
++    if workspace_profile {
++        LIVE_BYTES.store(0, Ordering::Relaxed);
++        PEAK_LIVE_BYTES.store(0, Ordering::Relaxed);
++        ALLOC_ACTIVE.store(true, Ordering::SeqCst);
++    }
+     let setup_started = Instant::now();
+     let grid = GridSpec::new(grid_kind, ntheta, nphi, phi0)?;
+     let harmonics = HarmonicSpec::new(lmax, mmax, spin)?;
+     let plan = ShtPlan::<f32>::new(grid, harmonics)?;
+     let mut workspace = plan.workspace()?;
+     plan.prepare_workspace(&mut workspace, threads)?;
++    if workspace_profile {
++        ALLOC_ACTIVE.store(false, Ordering::SeqCst);
++        eprintln!("WORKSPACE_PROFILE retained_plan_workspace_bytes={} peak_construction_bytes={}",
++            LIVE_BYTES.load(Ordering::Relaxed), PEAK_LIVE_BYTES.load(Ordering::Relaxed));
++    }
+     let setup_ms = setup_started.elapsed().as_secs_f64() * 1e3;
+ 
++    let profile_call = std::env::var_os("RUSTSHT_CALLGRIND_PROFILE").is_some();
++    if profile_call {
++        run_once(
++            operation,
++            spin,
++            &plan,
++            &map0,
++            &map1,
++            &alm0,
++            &alm1,
++            &mut map_out0,
++            &mut map_out1,
++            &mut alm_out0,
++            &mut alm_out1,
++            &mut workspace,
++        )?;
++        unsafe {
++            m6_callgrind_zero();
++            m6_callgrind_start();
++        }
++    }
++    let alloc_profile = std::env::var_os("M6_ALLOC_PROFILE").is_some();
++    if alloc_profile {
++        run_once(
++            operation,
++            spin,
++            &plan,
++            &map0,
++            &map1,
++            &alm0,
++            &alm1,
++            &mut map_out0,
++            &mut map_out1,
++            &mut alm_out0,
++            &mut alm_out1,
++            &mut workspace,
++        )?;
++        ALLOC_CALLS.store(0, Ordering::Relaxed);
++        ALLOC_BYTES.store(0, Ordering::Relaxed);
++        FREED_BYTES.store(0, Ordering::Relaxed);
++        ALLOC_ACTIVE.store(true, Ordering::SeqCst);
++    }
+     let first_started = Instant::now();
+     run_once(
+         operation,
+@@ -219,6 +330,18 @@ fn main() -> Result<(), Box<dyn Error>> {
+         &mut alm_out1,
+         &mut workspace,
+     )?;
++    if profile_call {
++        unsafe { m6_callgrind_stop() };
++    }
++    if alloc_profile {
++        ALLOC_ACTIVE.store(false, Ordering::SeqCst);
++        eprintln!(
++            "ALLOC_PROFILE alloc_calls={} alloc_bytes={} freed_bytes={}",
++            ALLOC_CALLS.load(Ordering::Relaxed),
++            ALLOC_BYTES.load(Ordering::Relaxed),
++            FREED_BYTES.load(Ordering::Relaxed),
++        );
++    }
+     let first_ms = first_started.elapsed().as_secs_f64() * 1e3;
+     let first_maps = (map_out0.clone(), map_out1.clone());
+     let first_alms = (alm_out0.clone(), alm_out1.clone());
