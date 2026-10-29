@@ -1,47 +1,52 @@
 ## 2026-10-29 direct f32 spectra into shared f64 scalar analysis remain above DUCC
 
-At exact Rust parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, an isolated
-test-only route ran the native f32 longitude FFT and widened its complex
-spectrum values on demand inside the existing shared f64 reflected scalar
-analysis. It removed the complete f64 spectrum-promotion pass and buffer while
-keeping the f64 recurrence, accumulation and f32 coefficient writeback. Each
-cell used 15 interleaved whole-call comparisons against the promoted-spectrum
-parent and pinned native-f32 DUCC.
+At exact source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`, the
+isolated test-only route runs the f32 longitude FFT and widens f32 spectra on
+demand inside the existing shared f64 reflected scalar analysis. It avoids
+the converted f64 spectrum buffer while retaining the shared f64 recurrence,
+accumulation and f32 coefficient writeback. Every timed call includes the
+complete public f32 input/output contract after plan/workspace warmup.
+
+The prior pushed report had q1 rows from a generic Rust build mixed with
+x86-64-v3 measurements. Those measurements were discarded; all four cells
+were rerun with explicit `-C target-cpu=x86-64-v3 -Aunexpected_cfgs` and 15
+interleaved comparisons per cell. Corrected results are:
 
 | GL T720 f32 scalar analysis | Parent / candidate / DUCC ms | Candidate/parent paired median [95% CI] | Candidate/DUCC paired median [95% CI] | Status |
 |---|---:|---:|---:|---|
-| Reduced q1 | 6.247 / 6.249 / 5.861 | 1.0003 [0.9983, 1.0070] | 1.0696 [1.0608, 1.0787] | **GAP; neutral vs parent** |
-| Reduced q8 | 0.965 / 0.871 / 0.889 | 0.9039 [0.8948, 0.9184] | 0.9897 [0.9769, 1.0020] | **INCONCLUSIVE at parity** |
-| Full q1 | 15.648 / 15.650 / 14.530 | 0.9815 [0.9598, 1.0191] | 1.0771 [1.0568, 1.0915] | **GAP** |
-| Full q8 | 2.429 / 2.117 / 2.052 | 0.8737 [0.8699, 0.8817] | 1.0319 [1.0214, 1.0443] | **GAP** |
+| Reduced q1 | 6.048 / 6.024 / 5.746 | 0.9925 [0.9193, 1.0048] | 1.0490 [1.0355, 1.0613] | **GAP** |
+| Reduced q8 | 0.966 / 0.872 / 0.897 | 0.9060 [0.8860, 0.9511] | 0.9727 [0.9643, 1.0248] | **INCONCLUSIVE at parity** |
+| Full q1 | 14.618 / 14.617 / 14.139 | 0.9943 [0.9921, 1.0009] | 1.0346 [1.0306, 1.0385] | **GAP** |
+| Full q8 | 2.473 / 2.142 / 2.053 | 0.8844 [0.8360, 0.9401] | 1.0414 [1.0298, 1.1263] | **GAP** |
 
-The view reduced the promoted-route q8 time by 9.6% reduced and 12.6% full,
-but did not improve q1 reliably. Candidate and parent outputs were bitwise
-equal; candidate-vs-DUCC relative-L2 / maximum absolute error was
-`1.319e-7 / 1.397e-9` reduced and `1.432e-7 / 6.985e-10` full. All workers
-reported finite output, repeat consistency and poisoned-workspace reset.
-Native-f32 adjacent analysis controls found no clear regression: the full-q1
-15-pair candidate/parent median was `1.0010` with 95% interval
-`[0.9974,1.0104]`; other cells had three-pair medians `0.9992–1.0044`.
+The direct route improves its promoted-spectrum parent by 9.4% reduced q8
+and 11.6% full q8; q1 is effectively neutral. Reduced q1 contains timing
+outliers, producing a wide parent-relative interval. Candidate and parent
+outputs were bitwise equal. Candidate-vs-DUCC relative-L2 / maximum absolute
+error was `1.319e-7 / 1.397e-9` reduced and `1.432e-7 / 6.985e-10` full; this
+cross-implementation check does not replace independent accuracy validation.
+All outputs were finite and repeated/poisoned workspace reset checks passed.
 
-A 30-call stage profile had no promotion stage and attributed roughly 77–79%
-of instrumented q8 time to f64 recurrence and gather. Its instrumented whole
-medians differed from the paired measurements by 7% full and 27% reduced, so
-the stage timings are diagnostic only. Existing source and Callgrind evidence
-identify the shared f64 recurrence as the dominant remaining cost. The
-test-only route did not receive independent analytic, adjoint, pole, extreme,
-tail or bandlimit validation and is not eligible for production promotion.
-The protected f64 T1023 spin-1 synthesis control was not retimed because no
-production code changed. Exact patches, paired results, fixture and binary
-hashes, stage diagnostics, and runner snapshots are in the [direct-spectrum
-evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
+The corrected 15-pair native-f32 analysis controls were bitwise equal to
+parent in all four cells and showed effectively neutral ratios: `1.0033`
+reduced q1, `0.9969` reduced q8, `1.0051` full q1, and `0.9994` full q8;
+each 95% interval includes 1. The protected f64 T1023 spin-1 synthesis
+control was not retimed because no production source changed.
 
-**Next:** screen a shared scalar-analysis tile width of 512 against 256 for
-this direct-spectrum f32-FFT/f64-recurrence route. Current T720 full and
-reduced calls each start two reflected blocks per order; a 512 tile would
-cover all 361 ring pairs in one block. Include all four cells, native-f32
-analysis controls, and protected f64 T1023 spin-1 synthesis q1/q8. M6 remains
-open.
+The corrected 30-call v3 stage profile attributes about 79–89% of work to the
+f64 recurrence and gather. Direct route workspace capacity ranges from 10.7
+MB f32 plus 4.4 MB f64 in reduced q1 to 38.8 MB f32 plus 17.5 MB f64 in full
+q8; the f64 spectrum buffer is reserved but unused. Peak process RSS ranges
+from 27,020 to 84,504 KiB. A test-only allocator probe found zero q1 call
+allocations and one small q8 allocation per warm call, also present in the
+promoted and native routes; the call site remains unattributed. Exact timing
+pairs, corrected profiles, capacities, allocations, hashes, patches and
+runner snapshots are in the [direct-spectrum evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
+
+**Next:** screen shared scalar-analysis tile width 512 versus 256 against this
+direct route, all four T720 q1/q8 cells, native-f32 scalar-analysis controls,
+and protected f64 T1023 spin-1 synthesis. The route remains test-only pending
+parity and independent numerical validation. M6 remains open.
 
 ## 2026-10-29 shared scalar-analysis rescale-mask reduction rejected
 

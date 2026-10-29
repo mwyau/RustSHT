@@ -1,39 +1,188 @@
 {
-  "candidate_direct_f32_spectra": {
-    "full_q1_smoke": {
-      "whole_ms": 14.294,
-      "stages_ms": {
-        "f32_fft": 2.521,
-        "promotion": 0.0,
-        "f64_recurrence_and_gather": 11.677,
-        "f64_to_f32_narrowing": 0.079
+  "compiler_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "runs_per_case": 30,
+  "binary_sha256": "c71034d205a31241771fab8f62139134af71b43f2c93f88094596d2efb3a53de",
+  "stage_timer_note": "Independent instrumented stage profile; these samples are diagnostic and not paired acceptance timings.",
+  "cases": [
+    {
+      "case": "reduced_q1",
+      "median_whole_ms": 5.981699,
+      "stage_medians_ms": {
+        "f32_fft_ms": 0.63386,
+        "spectrum_promotion_ms": 0.0,
+        "f64_recurrence_and_gather_ms": 5.310929,
+        "complex64_to_complex32_writeback_ms": 0.034014
       },
-      "runs": 1
-    },
-    "reduced_q8": {
-      "whole_ms_median_30": 1.10976,
-      "stages_ms_median_30": {
-        "f32_fft": 0.196361,
-        "promotion": 0.0,
-        "f64_recurrence_and_gather": 0.871599,
-        "f64_to_f32_narrowing": 0.038383
-      },
-      "peak_rss_kib": 31684,
+      "peak_rss_kib": 27020,
       "finite": true,
-      "poison_reset": true
+      "poison_reset": true,
+      "samples_ms": [
+        5.911466,
+        5.919901,
+        5.925402,
+        5.925701999999999,
+        5.926023,
+        5.93461,
+        5.934829,
+        5.938035,
+        5.939858999999999,
+        5.943917,
+        5.961661,
+        5.967621,
+        5.970978,
+        5.974745,
+        5.976007999999999,
+        5.981699,
+        5.990054,
+        5.992718999999999,
+        6.147181,
+        6.161289,
+        6.691001,
+        8.090358,
+        8.112390000000001,
+        8.291219,
+        8.334871000000001,
+        8.351353000000001,
+        8.373675,
+        8.383072,
+        8.38737,
+        8.388362
+      ]
     },
-    "full_q8": {
-      "whole_ms_median_30": 2.262531,
-      "stages_ms_median_30": {
-        "f32_fft": 0.408272,
-        "promotion": 0.0,
-        "f64_recurrence_and_gather": 1.764869,
-        "f64_to_f32_narrowing": 0.087085
+    {
+      "case": "reduced_q8",
+      "median_whole_ms": 0.894312,
+      "stage_medians_ms": {
+        "f32_fft_ms": 0.103746,
+        "spectrum_promotion_ms": 0.0,
+        "f64_recurrence_and_gather_ms": 0.747153,
+        "complex64_to_complex32_writeback_ms": 0.038313
       },
-      "peak_rss_kib": 84428,
+      "peak_rss_kib": 31760,
       "finite": true,
-      "poison_reset": true
+      "poison_reset": true,
+      "samples_ms": [
+        0.870016,
+        0.8708980000000001,
+        0.87202,
+        0.8742949999999999,
+        0.877811,
+        0.878031,
+        0.88276,
+        0.884013,
+        0.884714,
+        0.886437,
+        0.887499,
+        0.8882410000000001,
+        0.888741,
+        0.891096,
+        0.892379,
+        0.894312,
+        0.894663,
+        0.894713,
+        0.895274,
+        0.8974989999999999,
+        0.897569,
+        0.89845,
+        0.900514,
+        0.9026280000000001,
+        0.9027580000000001,
+        0.90332,
+        0.904471,
+        0.906675,
+        0.929529,
+        1.0382639999999999
+      ]
+    },
+    {
+      "case": "full_q1",
+      "median_whole_ms": 14.59653,
+      "stage_medians_ms": {
+        "f32_fft_ms": 2.586183,
+        "spectrum_promotion_ms": 0.0,
+        "f64_recurrence_and_gather_ms": 11.926927000000001,
+        "complex64_to_complex32_writeback_ms": 0.083118
+      },
+      "peak_rss_kib": 76660,
+      "finite": true,
+      "poison_reset": true,
+      "samples_ms": [
+        14.445603,
+        14.448849,
+        14.489427,
+        14.494356,
+        14.513702,
+        14.515206,
+        14.519092,
+        14.5227,
+        14.542036,
+        14.543308,
+        14.563797,
+        14.565349999999999,
+        14.569518,
+        14.576281,
+        14.58105,
+        14.59653,
+        14.618972,
+        14.624102,
+        14.625444,
+        14.639991,
+        14.659388,
+        14.666882,
+        14.678435,
+        14.753376000000001,
+        14.764467,
+        14.852183,
+        15.043185000000001,
+        15.094963,
+        15.45856,
+        15.786601000000001
+      ]
+    },
+    {
+      "case": "full_q8",
+      "median_whole_ms": 2.139378,
+      "stage_medians_ms": {
+        "f32_fft_ms": 0.376853,
+        "spectrum_promotion_ms": 0.0,
+        "f64_recurrence_and_gather_ms": 1.6796179999999998,
+        "complex64_to_complex32_writeback_ms": 0.086033
+      },
+      "peak_rss_kib": 84504,
+      "finite": true,
+      "poison_reset": true,
+      "samples_ms": [
+        2.0821099999999997,
+        2.09293,
+        2.1167949999999998,
+        2.1174470000000003,
+        2.118058,
+        2.118579,
+        2.11925,
+        2.119761,
+        2.1198710000000003,
+        2.1216939999999997,
+        2.129409,
+        2.13004,
+        2.131433,
+        2.134949,
+        2.1356309999999996,
+        2.139378,
+        2.1418719999999998,
+        2.1438260000000002,
+        2.147985,
+        2.150159,
+        2.156781,
+        2.16183,
+        2.162522,
+        2.1638349999999997,
+        2.186848,
+        2.19863,
+        2.221504,
+        2.274384,
+        2.40469,
+        2.460265
+      ]
     }
-  },
-  "timing_note": "Stage timers are diagnostic and are not the whole-call paired measurements. The q8 instrumented whole-call medians include timer overhead and differ from the paired benchmark medians."
+  ]
 }

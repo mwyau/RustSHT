@@ -1,0 +1,1 @@
+4ca719df381bcaaef5035f56745f346849d722e0e549fa979895c8d6c3c6f5d4  Rust unit-test binary with test-only allocator and workspace-capacity instrumentation; warmed allocation comparison for promoted and native routes

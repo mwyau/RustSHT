@@ -1,0 +1,1 @@
+4de9178b71c8ea8958b8a236d91c7e76a265f06b11eb89a90c0c7c808a8f3c45  Rust unit-test binary with test-only allocator and workspace-capacity instrumentation

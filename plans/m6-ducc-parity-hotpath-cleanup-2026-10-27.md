@@ -38,15 +38,17 @@ isolated. The full-source route census, 15-pair T720 scalar-synthesis matrix,
 adjacent controls, tests, fixture hashes, and binaries are in the [current
 source Stage A evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
 
-The current-source direct-spectrum extension of the f32-FFT/f64-recurrence
-analysis route has now completed 15 interleaved comparisons per GL T720 cell.
-It avoids a converted f64 spectrum buffer and improves full/reduced q8 by
-12.6%/9.6% against the promoted-spectrum parent, but candidate/DUCC remains
-`1.032x` full q8, `1.070–1.077x` q1, and `0.990x` reduced q8 with an interval
-crossing parity. It remains a test-only diagnostic; full independent numeric
-validation and a guarded native-f32 fallback are still required before any
-production dispatch. The exact source, binary hashes, whole-call results,
-native-f32 controls and stage profile are in the [direct-spectrum package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
+The corrected current-source direct-spectrum analysis screen used explicit
+x86-64-v3 flags for all four q1/q8 full/reduced cells and 15 interleaved
+parent/candidate/DUCC comparisons per cell. Candidate/DUCC is `1.049x` reduced
+q1, `1.035x` full q1, `1.041x` full q8, and `0.973x` reduced q8 with its
+interval crossing parity. The direct view improves promoted-spectrum q8 by
+9.4%/11.6%, but q1 remains neutral and the route is test-only. The direct
+route's f64 recurrence/gather accounts for about 79–89% of the profiled
+work. Reusable workspace capacity ranges from 15.1 MB to 56.2 MB, including an
+unused full-size f64 spectrum buffer; q8 also makes one small warm-call
+allocation on this route, the promoted route, and the native route. See the [corrected direct-
+spectrum evidence](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-direct-spectrum-1bd4bd27/README.md).
 
 The next bounded Stage C hypothesis widens the shared scalar-analysis tile
 from 256 to 512 in an isolated build. Both T720 truncations currently process
