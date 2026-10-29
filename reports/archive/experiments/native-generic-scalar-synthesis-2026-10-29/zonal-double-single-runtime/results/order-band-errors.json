@@ -1,0 +1,228 @@
+{
+  "method": "single native-f32 GL T720 full-M720 synthesis fixture filtered to independent degree or order bands; q1; accuracy-only; target batch 2 ms; timings intentionally omitted",
+  "source_root_commit": "b6a96aa7161a64f678b614d73478496f50f0551e",
+  "candidate_patch_sha256": "7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9",
+  "candidate_binary_sha256": "03044d2686bae76bd9119f9d5f26dadbce8fd11d708e81459b3274299da0dea5",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "be18c89ea434258e4a07c28ccd8fd31d6262ac3503dcaf81d8aa5176415f1484",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu": "AMD Ryzen 9 5950X",
+  "original_fixture_sha256": {
+    "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+    "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+  },
+  "groups": [
+    {
+      "group": "degree_0_239",
+      "selected_complex_coefficients_per_channel": 28920,
+      "filtered_alm_sha256": {
+        "alm0": "cc8542db76955250bae85878c8389ec94be289c154cb2e732a4f81ea2c9eb2ed",
+        "alm1": "2299ab4f00763a22f3af0da50861558b19cdd970bffc82fa9d62bf336a9df239"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 4.137301954980192e-05,
+        "absolute_l2": 0.003254960485276676,
+        "max_absolute": 3.775209188461304e-05,
+        "reference_rms": 0.07673298762120391,
+        "finite": true
+      }
+    },
+    {
+      "group": "degree_240_479",
+      "selected_complex_coefficients_per_channel": 86520,
+      "filtered_alm_sha256": {
+        "alm0": "c9bef5490c23f76e129652ebedf3b98e3dae7be84f67cdca8f115f42e0a092a3",
+        "alm1": "5c3ddb8bc48fdb3fd25237eec1a53ce09fb479cfa4d9aaab3d9c9512955b2174"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.0001174423443553242,
+        "absolute_l2": 0.01591939893582463,
+        "max_absolute": 0.00020381808280944824,
+        "reference_rms": 0.13220733772870674,
+        "finite": true
+      }
+    },
+    {
+      "group": "degree_480_599",
+      "selected_complex_coefficients_per_channel": 64860,
+      "filtered_alm_sha256": {
+        "alm0": "1fbe1cb4cd16ec988f60a5ba02ef473a240ca4a905a01f87cf26beb782f0b878",
+        "alm1": "e9a205722909627b77baf7d8726f7f515d2ccbac534cd40392168087de174c03"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00020101844338864908,
+        "absolute_l2": 0.023782046486792073,
+        "max_absolute": 0.00034332275390625,
+        "reference_rms": 0.11538966797120685,
+        "finite": true
+      }
+    },
+    {
+      "group": "degree_600_719",
+      "selected_complex_coefficients_per_channel": 79260,
+      "filtered_alm_sha256": {
+        "alm0": "2d0cf3607a1d7ba1d1330577229dd2ba5d9410ac380c3b69e78df85763254515",
+        "alm1": "14df7ed91a0288a4a36922d207f3c0cc8b38465105fae3be63c8316e9ad76fe2"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00025520941176461595,
+        "absolute_l2": 0.033185449226486544,
+        "max_absolute": 0.0003521442413330078,
+        "reference_rms": 0.1268249267432923,
+        "finite": true
+      }
+    },
+    {
+      "group": "degree_720",
+      "selected_complex_coefficients_per_channel": 721,
+      "filtered_alm_sha256": {
+        "alm0": "1e001153a373f2e46086c6c92ab6f1903bc49574032cbdb09ac1440adce7d2b4",
+        "alm1": "7927898fa82cb6b7852e699c89d67d4097704e0a979cde58f97913d879c6ea2f"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.0002896796378180027,
+        "absolute_l2": 0.0036029667329844344,
+        "max_absolute": 3.2491981983184814e-05,
+        "reference_rms": 0.012130980064599794,
+        "finite": true
+      }
+    },
+    {
+      "group": "order_0",
+      "selected_complex_coefficients_per_channel": 721,
+      "filtered_alm_sha256": {
+        "alm0": "731366c12be8284c9175e6d3269a1cd4743b311d3eb419a84f55a59868db901c",
+        "alm1": "4f08adf3b6cc649da472263b2c07491bae8b1d94e4693234b6d5581069793fae"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 5.825146065235691e-08,
+        "absolute_l2": 6.099504421994331e-07,
+        "max_absolute": 3.725290298461914e-09,
+        "reference_rms": 0.010212717913911765,
+        "finite": true
+      }
+    },
+    {
+      "group": "order_1_32",
+      "selected_complex_coefficients_per_channel": 22544,
+      "filtered_alm_sha256": {
+        "alm0": "68d290ace5c41044bf989315c304d53188070d40e6b024760259a97da1332fa2",
+        "alm1": "4d9e487948812ef44eb68cb35eb95764e9f6a6779913f20f9b55b9b334ef4ba9"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00020076485043557708,
+        "absolute_l2": 0.01899644652843751,
+        "max_absolute": 0.0005497932434082031,
+        "reference_rms": 0.09228652550866052,
+        "finite": true
+      }
+    },
+    {
+      "group": "order_33_180",
+      "selected_complex_coefficients_per_channel": 90946,
+      "filtered_alm_sha256": {
+        "alm0": "0fb9c709aff1c8614c7a8bc5d069431266bc5cf12f87a77348178f1c53f829ad",
+        "alm1": "c4c7816d58068eef05a3814d6f20eeb8b668c62512d9ddfbaed893514619cc28"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00018518431172703914,
+        "absolute_l2": 0.027448218630282732,
+        "max_absolute": 0.000295981764793396,
+        "reference_rms": 0.14456513902656803,
+        "finite": true
+      }
+    },
+    {
+      "group": "order_181_360",
+      "selected_complex_coefficients_per_channel": 81090,
+      "filtered_alm_sha256": {
+        "alm0": "7a02fc41b82d0dedcfa94704a31462d569fd05765227e536e16108b73695553a",
+        "alm1": "6a9352a2d8f0d3234c9ef126d5024dce83b3647e7550c527f982c0e4bfb4c7b8"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00020994039961603827,
+        "absolute_l2": 0.025400869855230362,
+        "max_absolute": 0.00022557377815246582,
+        "reference_rms": 0.11800656678780198,
+        "finite": true
+      }
+    },
+    {
+      "group": "order_361_720",
+      "selected_complex_coefficients_per_channel": 64980,
+      "filtered_alm_sha256": {
+        "alm0": "8395d010b3e51fdf278d67cb8c056706baa8aa9ee98cb6de44c0b14aed8dcf7f",
+        "alm1": "2d52e0f4fb86bb13276c68ccaee2736b951b88521a75b10ec3645818c7d3b2c3"
+      },
+      "candidate_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "candidate_f32_lanes": 8,
+      "candidate_repeat_consistent": true,
+      "candidate_reset_consistent": true,
+      "candidate_all_finite": true,
+      "error_vs_ducc": {
+        "output_values": 1051218,
+        "relative_l2": 0.00013211303020906997,
+        "absolute_l2": 0.013167355427193203,
+        "max_absolute": 0.0001342296600341797,
+        "reference_rms": 0.09720900781749493,
+        "finite": true
+      }
+    }
+  ]
+}

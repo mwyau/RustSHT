@@ -10,9 +10,8 @@ Match or beat pinned native DUCC 0.42.0 at `42ce8ab5c5d79e0e2fd9af4a09c2ea469352
 
 **Inspected source baseline:** `83dd570d413a9e0c0dd998e1fbfb34f7d8a92650`;
 production code is unchanged from `c63cde440d91e3ca2810226163a191199b4ca29d`.
-The current `dev` head is `7b9ab61c`; production code remains unchanged from
-`c63cde44`. The isolated generic implementation and follow-ups are based on
-parent `b6a96aa7`.
+The isolated generic implementation and follow-ups are based on parent
+`b6a96aa7`.
 The source inventory classifies the current implementation as follows:
 
 | Classification | Current owner | Direction |
@@ -52,7 +51,7 @@ reuse. This is a targeted generalization, not a mechanical `f64` replacement.
 - The generic candidate passed the release lib suite, but the high-degree
   zonal probe reports `0.018705474` in f32 versus `0.018541995` from the
   independent f64 recurrence near the pole. This diagnostic has no tolerance
-  assertion; add an independent accuracy check before considering promotion.
+  assertion; the paired m=0 leaf below now carries the independent zonal check.
 - A precision-specific AVX2 leaf that restored each scaled f32 lane by
   adjusting exponent fields and falling back for exceptional lanes also
   regressed all four T720 synthesis cells (1.112–1.623x DUCC). Its scaler
@@ -62,6 +61,17 @@ reuse. This is a targeted generalization, not a mechanical `f64` replacement.
 - Native-f32 scalar analysis and spin-1 transforms remain far from DUCC. Isolated f32-I/O/f64-recurrence analysis and spin diagnostics are near parity in some cases but do **not** prove that a native-f32 instantiation is fast.
 - The latest diagnostic scalar-analysis tile-512 change yielded about 1% improvement and was rejected; its subsequent Callgrind attributed 30.3% of process Ir to a checked scaled f64 analysis path and 16.6% to ordinary fused suffix work. These profiles are clues, **not** license to continue optimizing the f64-internal f32 route. See [tile report](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md) and [profile](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
 - The earlier reflected native-f32 scalar-synthesis patch was rejected on current source due to adjacent and f64 regressions. Native-f32 reflected spin-1 V1–V3 and f64 spin-1 loop tiling also regressed. Do not repeat those exact designs unchanged. Provenance is in the [M6 ledger](../reports/DUCC_PARITY_M6.md).
+
+**Latest scalar-synthesis diagnostic:** an isolated native-f32 paired
+recurrence replaces the shared route's guarded m=0 recurrence. It passes the
+paired-source library tests and reduces the T720 zonal maximum absolute error
+to `3.19e-8`, but its three-pair full q1/q8 timings remain `1.256/1.272x`
+DUCC and random-transform error is unchanged. The order-band screen finds
+m=0 at `5.83e-8`, nonzero orders at `1.32e-4–2.10e-4`, and degree 600–719 at
+`2.55e-4`. The current next action is to localize error within high-degree
+nonzero orders and the scaled-prefix/ordinary-suffix transition before
+extending compensated arithmetic. Keep production dispatch unchanged. Full
+provenance is in the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
 
@@ -89,33 +99,24 @@ Use native f32 coefficients, f32 FFT and Fourier buffers, f32 recurrence/accumul
 
 First prototype in an isolated current-source worktree. Measure native-f32 GL T720 scalar synthesis full M720 and reduced M180, q1 and q8, against exact source parent and native-f32 DUCC. Validate analytic/sectoral, adjoints, extremes/subnormal, tails and poisoned/reset workspace. Reject unsafe results. If slow, attribute useful work, scaled prefix, loop structure and instruction cost **before** adding another optimization.
 
-**Current state:** the generic route is implemented only as an isolated patch.
-The precision-gated exact-zero restore shortcut lowers the initial candidate's
-runtime, but full T720 remains 24–27% slower than DUCC and independent
-high-degree accuracy is still unverified. The FMA-skip follow-up did not show
-an added gain. The ordinary suffix already emits direct FMA and handles 74.6%
-of full and 83.8% of reduced ordinary updates through its two-vector path;
-per-lane AVX2 exponent restoration, normal-only scaling and suffix changes
-remain rejected. A work-count probe found a common scale across all lanes on
-183,829 of 394,106 full-M720 scaled-prefix steps and 31,420 of 123,134 reduced
-steps. An exact f32 SIMD scaler for the common exponent `-80` now handles the
-normal and subnormal result cases with AVX2 integer operations, with checked
-scalar fallback for non-finite lanes and other exponents. The 15-pair screen
-improves three cells against the generic parent but still misses DUCC in both
-full cells and reduced q8; reduced q1 is INCONCLUSIVE. The protected f64 T1023
-control is neutral. The independent near-pole zonal probe differs by 0.88%
-(`0.018705474` candidate versus `0.018541995` f64); pinned DUCC f32 returns
-`0.018541995` because its scalar recurrence state uses double SIMD. A test-only
-double-single f32 recurrence probe with high/low cosine-squared and
-wide-prepared recurrence constants reached `1.0e-9` absolute error. The
-candidate still stores these constants only as f32, so this is a feasibility
-result, not a numerical acceptance. Next, prototype an isolated compensated
-f32 leaf for high-degree near-polar orders. Preserve low parts for geometry
-and recurrence constants at plan time, form coefficient corrections with
-f32 operations, assert independent numerical accuracy and exceptional/reset
-behavior, and only then screen performance. Keep the ordinary f32 path and
-the protected f64 path unchanged. Do not use f64 for runtime recurrence or
-repeat the rejected per-lane scaler/zero-group FMA skip.
+**Current state:** the generic route and its follow-ups remain isolated.
+Fifteen-pair screening established a GAP in both full T720 cells; reduced q1
+is near parity and q8 remains inconclusive. The precision-gated exact-zero
+restore helps the generic parent but does not close full-grid gaps. The
+per-lane AVX2 scaler and suffix-inlining changes were rejected. The ordinary
+suffix emits direct AVX2 FMA; its inspected f32 V3 specialization uses eight
+YMM lanes and has no vector-state spills.
+
+The latest paired f32 recurrence leaf integrates high/low plan constants and
+compensated runtime state into the guarded `m=0` recurrence. It reduces the
+T720 zonal maximum absolute error to `3.19e-8`, but full q1/q8 remain
+`1.256/1.272x` DUCC, random-transform relative-L2 error is unchanged, and the
+leaf does not establish parity. An accuracy-only band screen places m=0 at
+`5.83e-8`, nonzero order bands at `1.32e-4–2.10e-4`, and degree 600–719 at
+`2.55e-4`. Next, localize error within high-degree nonzero orders and the
+scaled-prefix/ordinary-suffix transition before broadening compensated work.
+Keep production dispatch unchanged; do not promote this leaf or the
+conversion sidecar. See the [paired zonal-leaf record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
 
 ## Milestone 2 — Replace and REMOVE obsolete scalar synthesis paths
 

@@ -1,19 +1,13 @@
 # Recent substantive checkpoints
 
-- **2026-10-29 — native-generic scalar synthesis follow-up measured.** An
-  exact f32 AVX2 scaler for the common binary exponent `-80` improves three
-  cells against the generic parent, but full GL T720 remains 1.25–1.26x DUCC
-  and reduced q8 1.08x; reduced q1 is inconclusive near parity. The protected
-  f64 control is neutral at q1 and within noise at q8. The near-pole zonal
-  result is 0.88% high versus the independent f64 recurrence; pinned DUCC
-  f32 agrees with that reference because its scalar Legendre state uses
-  double SIMD. A test-only native-f32 double-single arithmetic probe with
-  high/low constants reaches about `1e-9` absolute error. A full m=0 basis
-  correction reached `1.48e-8` zonal error, but added up to 45% runtime, left
-  random-transform error unchanged and used an out-of-scope plan-time f64
-  recurrence. Both remain isolated; production dispatch is unchanged. See
-  the [candidate archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md),
-  [basis-dot diagnostic](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-basis-dotproduct/README.md)
+- **2026-10-29 — native-f32 paired zonal leaf and order-band screen.** The
+  integrated f32 double-single recurrence corrects the isolated T720
+  `l=720,m=0` probe to `3.19e-8` maximum absolute error and passes the exact
+  paired-source library suite (319 passed, 37 ignored). Its three-pair full
+  q1/q8 timings remain 1.256/1.272x DUCC; random-transform relative-L2 error
+  is unchanged. The order-band screen localizes the remaining error to
+  nonzero orders and high degrees: m=0 is `5.83e-8`, while degree 600–719 is
+  `2.55e-4`. The leaf remains isolated. See the [paired-leaf archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

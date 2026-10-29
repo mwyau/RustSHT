@@ -1,0 +1,17 @@
+Source base: b6a96aa7161a64f678b614d73478496f50f0551e
+Candidate patch SHA-256: 7af69b3fe0af09754d09eac67ed10006eea1a14fc468483ed24d50ce771fc1b9
+
+Command: cargo test --features parallel --lib
+Result: passed; 319 passed, 0 failed, 37 ignored; 103.80 seconds.
+
+Command: cargo clippy --all-targets --features parallel -- -D warnings
+Result: passed.
+
+Command: cargo fmt --check
+Result: passed.
+
+Command: git diff --check
+Result: passed.
+
+Compiler: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Worktree: isolated generic source at the candidate patch above.

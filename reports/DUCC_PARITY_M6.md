@@ -72,11 +72,12 @@ parent-equivalent, but the high-degree near-pole zonal result still differs by
 zonal input; its source uses double SIMD recurrence state despite f32 I/O.
 The diagnostic does not assert a tolerance, so this candidate remains
 numerically unaccepted. A test-only f32 double-single recurrence with
-high/low geometry and recurrence constants reached `1.0e-9` absolute error,
-but the low parts are not retained by the candidate and runtime coefficients
-are not yet combined through an integrated compensated path. Its protected
-f64 T1023 control was neutral at q1 and within noise at q8. The archive
-contains full measurements, work counts, exact scaler tests and probe source.
+high/low geometry and recurrence constants reached `1.0e-9` absolute error.
+An integrated compensated f32 recurrence now replaces the shared route's
+`m=0` recurrence for its guarded zonal case; it corrects the zonal probe but
+does not change random-transform error. Its timing and accuracy evidence is
+recorded separately below. The archive contains the prior full measurements,
+work counts, exact scaler tests and probe source.
 
 The f32 vector-rescale leaf and forced-inline follow-up were rejected after
 three-pair screens. Callgrind and V3 disassembly attribute substantial setup
@@ -126,6 +127,20 @@ and the focused zonal test; the full library suite was not run on this exact
 variant. Preserve it as rejected evidence only; see the [integrated
 skip-and-restore archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-integrated-order-skip/README.md).
 
+The subsequent native-f32 paired-recurrence leaf replaces the `m=0` recurrence
+inside the order-major loop and uses high/low plan constants with f32 runtime
+state. It reduces the `l=720,m=0` maximum absolute error to `3.19e-8` and
+passes the exact paired-source library suite (319 passed, 37 ignored), but a
+three-pair screen leaves full q1/q8 at `1.256/1.272x` DUCC. Reduced q1 is
+`1.019x`; q8 is noisy. The random full/reduced relative-L2 errors remain
+`1.864e-4/1.885e-4`. An accuracy-only order-band screen puts the isolated m=0
+error at `5.83e-8`; nonzero order bands range `1.32e-4–2.10e-4`, while degree
+600–719 is `2.55e-4` and degree 720 is `2.90e-4`. This narrows the next
+diagnostic to high-degree nonzero orders and their scaled-prefix/ordinary-
+suffix transition. Keep the leaf isolated. Source patch, pair data, tests,
+assembly and filtered-fixture hashes are in the [paired zonal leaf archive]
+(archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
+
 ## Decisions and remaining scope
 
 - The production sidecar is temporary and must be removed after native shared
@@ -153,13 +168,12 @@ skip-and-restore archive](archive/experiments/native-generic-scalar-synthesis-20
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** continue the isolated native-f32 compensated recurrence leaf for
-high-degree orders. Preserve plan-time high/low parts for `cos(theta)^2` and
-the wide-prepared recurrence factors; the arithmetic probe shows double-
-single f32 state is accurate, while single-f32 constants are not. Integrate
-the leaf into the order-major route so it replaces recurrence work. Do not
-build a complete f64 m=0 basis or add a second transform pass. Add asserted
-zonal/reference, adjoint, reset, and exceptional tests before screening
-performance. Do not promote the uniform-scaler candidate or use f64 for the
-runtime recurrence. See the
-[active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
+**NEXT:** characterize error within the `m=1–32`, `l=600–720` region and
+around the scaled-prefix/ordinary-suffix transition. The m=0 paired leaf is
+accurate for its zonal probe but does not improve aggregate random accuracy or
+full-grid timing. Keep production dispatch unchanged while identifying which
+nonzero-order recurrence contributions dominate. Any next compensated leaf
+must retain native-f32 runtime state and pass independent accuracy, adjoint,
+reset, exceptional-range, and whole-transform timing checks. See the [active
+plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and the [paired
+zonal leaf record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/zonal-double-single-runtime/README.md).
