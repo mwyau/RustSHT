@@ -29,13 +29,23 @@ patch isolated. A 15-pair protected f64 T1023 spin-1 q8 control showed no
 repeatable regression. Callgrind and phase profiles are in the [single M6
 ledger](../reports/DUCC_PARITY_M6.md) and [candidate package](../reports/data/ducc-parity-m6-2026-10-29/f32-spin1-f64-internal-backend-v1/README.md).
 
-The immediate next experiment is to reconcile the archived shared reflected-
-ring f32 scalar-synthesis patch against current `origin/dev`, in an isolated
-worktree, then repeat all four T720 cells and adjacent controls. Do not treat
-the older `49295a89` timings as current-source promotion evidence. If Stage A
-fails a family-safe gate, select one bounded Stage C change from the current
-profiles, preserving shared recurrence ownership and guarded fallback. M6
-remains open.
+Stage A is complete on exact parent `3d46caaf89a8fcd3796fe43c49aa8ef82e481cad`.
+The archived `49295a89` reflected-ring patch is rejected: its normal f32 T720
+public route is preempted by the accepted f64 sidecar, q1 scalar-analysis
+controls repeat 1.1% regressions, q1 spin-1 synthesis regresses 1.7%, and the
+protected f64 T1023 spin-1 q8 path regresses 6.3% over 30 pairs. Keep the patch
+isolated. The full-source route census, 15-pair T720 scalar-synthesis matrix,
+adjacent controls, tests, fixture hashes, and binaries are in the [current
+source Stage A evidence package](../reports/data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
+
+The next bounded Stage C experiment is f32 scalar analysis with the existing
+native-f32 longitude FFT followed by the existing shared f64 recurrence and
+accumulation. Pinned DUCC's `map2leg<T>` produces `complex<T>` FFT spectra and
+then its `map2alm_kernel` uses double SIMD accumulation, while the earlier
+near-parity Rust diagnostic promoted the whole map and ran an f64 FFT. Profile
+the hybrid at q1/q8 and full/reduced T720, measure complete public calls, and
+retain the guarded native-f32 fallback. If it does not reach parity, preserve
+the evidence and continue to the measured spin-1 gaps. M6 remains open.
 
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 

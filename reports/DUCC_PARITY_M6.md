@@ -217,6 +217,50 @@ Independent analytic modes, scalar and spin analysis/synthesis adjoints, sectora
 The complete per-cell table, fixture hashes, 15-pair data, candidate source/binary hashes, conversions, allocation snapshots and numerical evidence are in the [Stage B evidence package](data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md). **Next:** implement the reusable guarded f64-internal backend for the four passing scalar-synthesis T720 cells, preserve native-f32 fallback for exceptional inputs/outputs, then extend shapes and attack the 11 analysis/spin gaps from measured transform cost. M6 remains open.
 # M6 — current-head DUCC parity triage
 
+## 2026-10-29 current-source reflected f32 scalar-synthesis candidate rejected
+
+At exact parent `3d46caaf89a8fcd3796fe43c49aa8ef82e481cad`, the archived
+`49295a89` shared reflected-ring patch was reconciled with `git apply --3way`
+and screened in isolated parent/candidate worktrees. Candidate patch SHA-256
+is `f62628d42c21db6bada73ee6b0d0ad5001b67e319ed5370c7b77fc2e01b3af31`.
+It reuses the existing `FusedSynthesisBlock`, paired recurrence visitor, and
+`F32SynthesisAccumulator`; no recurrence was copied. A public-path route test
+observed `[0,1,0,0]` for all full/reduced q1/q8 T720 cells: the current f64
+sidecar handled the call before the candidate's native-f32 reflected route.
+
+| GL T720 spin-0 synthesis | Parent / candidate / DUCC ms | Candidate/parent paired median [95% CI] | Candidate/DUCC | Decision |
+|---|---:|---:|---:|---|
+| Full q1 | 15.665 / 15.762 / 18.997 | 1.0074 [1.0035, 1.0119] | 0.8305 | No candidate gain; existing f64 route PASS |
+| Reduced q1 | 6.458 / 6.508 / 8.323 | 1.0068 [1.0040, 1.0097] | 0.7810 | No candidate gain; existing f64 route PASS |
+| Full q8 | 2.871 / 2.810 / 2.953 | 1.0002 [0.8555, 1.0328] | 0.9278 | Candidate delta INCONCLUSIVE; existing f64 route PASS |
+| Reduced q8 | 1.114 / 1.123 / 1.279 | 1.0056 [0.9831, 1.0432] | 0.8727 | Candidate delta INCONCLUSIVE; existing f64 route PASS |
+
+The four public cells are already below native-f32 DUCC because of the
+previously accepted f64 sidecar; these measurements are not a gain from the
+candidate. It was rejected after adjacent scalar-analysis q1/q8 regressions
+repeated across both truncations and protected f64 T1023 spin-1 synthesis
+regressed. Scalar-analysis candidate/parent was `1.0107–1.0120x` q1 and
+`1.0117–1.0120x` q8, with paired 95% intervals above 1. Full-mmax f32
+spin-1 synthesis was `1.0174x` q1 over 18 pairs and `1.0108x` q8 over 18
+pairs. Protected f64 T1023 spin-1 synthesis was `1.0109x` q1 over 15 pairs
+and `1.0630x` q8 over 30 pairs (q8 95% interval `[1.0288,1.1011]`); outputs
+were bitwise equal to parent. The candidate was slower than native-f32 DUCC by
+`24.39–45.66x` in the adjacent f32 analysis/spin controls.
+
+Focused candidate tests passed: route census, four `f32_t720_` integration
+tests, five paired scalar-synthesis tests covering scaled/subnormal/overflow
+packets and SIMD tails, and `cargo fmt --check --all`. Whole-call workers
+passed finite/repeat/reset checks. Candidate-parent scalar-synthesis outputs
+were bitwise equal; maximum candidate-versus-DUCC relative-L2 error was below
+`3.90e-8`. No production code changed. Exact pairs, binary/fixture hashes,
+control runners, and recoverable patches are in the [current-source Stage A
+package](data/ducc-parity-m6-2026-10-29/f32-reflected-shared-kernel-current-3d46caaf/README.md).
+
+**Next:** test the measured DUCC precision split for scalar analysis: native
+f32 FFT spectra feeding the existing shared f64 recurrence. Pin full/reduced
+T720 q1/q8 and continue toward the spin-1 gaps if this route does not reach
+parity. M6 remains open.
+
 ## 2026-10-29 production f32-I/O / f64-internal scalar-synthesis checkpoint
 
 On exact parent `17a23bd1345fa4c5aad2bc1c67cfada8d2e9c2d4`, a reusable
