@@ -1,3 +1,17 @@
+## 2026-10-29 current-source f32 scalar-analysis recurrence profile
+
+At exact source parent `d507297c2c7cdc777557e0b1dcc08813aae92de5`, a test-only
+profile ran the direct f32-FFT/f64-recurrence scalar-analysis route on GL T720
+full mmax q1. The production source modules match `1bd4bd274cacda38f87cc741c2d4f20342107b8f`; no production code changed. The profile used Rust 1.99.1/LLVM 23.1.1, x86-64-v3, AMD Ryzen 9 5950X CPU 0, and pinned DUCC revision `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` (DUCC was not profiled). One prepared plan/workspace was reused; after a warm and poisoned-reset call, seven timed calls were profiled. Callgrind's `Ir` covers setup and all nine calls and is instruction references, not cycles.
+
+Exclusive self-Ir attribution was led by `FusedScaledScalarAnalysisPair<true,false>` at 752.6M (30.29% process Ir), `FusedScalarAnalysisPair<true,false>` at 411.4M (16.56%), f32 FFT `forward_modes` at 279.6M (11.25%), `analyze_symmetric_order_group` at 214.7M (8.64%), and `prepare_analysis_products_and_opposite` at 187.0M (7.53%). Executed AVX2 inspection confirms the ordinary fused suffix uses four-double FMA recurrence/accumulation vectors without YMM stack spills. The scaled symbol includes scalar range/correction checks and more control flow before the suffix. The attribution does not isolate cycles or prove that this difference causes the remaining whole-call gap.
+
+Test-only route counters over the seven instrumented calls recorded 3,318 prefix-enabled scaled blocks, zero counted two-pair scaled-prefix advances, 723,324 ordinary suffix pair steps, zero mixed-suffix pair steps, and zero initialization/recurrence declines. The prefix counter increments after a two-pair advance, so single-pair early returns are not counted; zero counted advances does not mean every scaled block promoted to the ordinary route. The counter-instrumented 14.611339 ms median is excluded from acceptance. Outputs were finite and poisoned-workspace reset passed. No independent accuracy matrix, parent/candidate timing, DUCC timing, broader shape, or adjacent control was run in this profile.
+
+The exact test-only patch, source/binary/profile/fixture hashes, compact self-Ir table, and assembly findings are in the [profile evidence package](data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md). **Status: profile only; no optimization accepted or rejected.**
+
+**NEXT:** distinguish scaled one-pair early returns from ordinary promotions around `fused_scalar_analysis_pair_block_impl` and `FusedScaledScalarAnalysisPair::with_simd` in `src/legendre/scalar_paired/analysis.rs`. Only test a bounded fast-promotion variant if the census identifies a substantial common path; reuse `prepare_analysis_scale_corrections` and `promote_analysis_pair_to_ordinary`, retaining the checked scaled fallback. Begin with all four direct-spectrum GL T720 q1/q8 cells against exact parent and native-f32 DUCC. M6 remains open.
+
 ## 2026-10-29 shared scalar-analysis tile 512 screen rejected
 
 At exact production source parent `1bd4bd274cacda38f87cc741c2d4f20342107b8f`,

@@ -1,0 +1,178 @@
+{
+  "source_parent": "d507297c2c7cdc777557e0b1dcc08813aae92de5",
+  "production_source_note": "The source modules are unchanged from 1bd4bd274cacda38f87cc741c2d4f20342107b8f; this descendant adds evidence only.",
+  "ducc_reference_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_profiled": false,
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "callgrind": "3.26.0",
+  "route": "test-only f32 FFT with on-demand f32 spectrum widening into the shared f64 scalar-analysis recurrence",
+  "cell": {
+    "grid": "GL",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "threads": 1,
+    "affinity": "single logical CPU pinned; host-specific index omitted"
+  },
+  "call_boundary": "One prepared f32/f64 plan+workspace; one warm call and one poisoned/reset call before seven timed route calls. Profile includes process setup and all nine transform calls.",
+  "callgrind_event": "Ir only; instruction references are not cycles.",
+  "program_total_ir": 2484790033,
+  "raw_callgrind_sha256": "2d5b139ee1b3866a9a3da3aa66b6baee600b824a2702e705d83b21bb4c154d51",
+  "binary_sha256": "67baf38a6803ba3c803087718ea274ee37a1fc55dd2ee7958b254dc5f2b20042",
+  "exclusive_self_ir_top": [
+    {
+      "function": "<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScaledScalarAnalysisPair<true, false>>>",
+      "self_ir": 752613952,
+      "share_of_program": 0.30288834952035565
+    },
+    {
+      "function": "<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPair<true, false>>>",
+      "self_ir": 411406168,
+      "share_of_program": 0.16556979162673582
+    },
+    {
+      "function": "<rustsht::fft::RealFftPlan<f32>>::forward_modes",
+      "self_ir": 279623988,
+      "share_of_program": 0.11253425210435074
+    },
+    {
+      "function": "<rustsht::plan::ShtPlan>::analyze_symmetric_order_group",
+      "self_ir": 214702743,
+      "share_of_program": 0.08640679500021159
+    },
+    {
+      "function": "rustsht::legendre::scalar_paired::analysis::prepare_analysis_products_and_opposite",
+      "self_ir": 187030962,
+      "share_of_program": 0.07527032848493401
+    },
+    {
+      "function": "<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScaledScalarAnalysisPair<true, true>>>",
+      "self_ir": 136190136,
+      "share_of_program": 0.05480951476434066
+    },
+    {
+      "function": "rustsht::legendre::scalar_paired::fill_factors",
+      "self_ir": 84333420,
+      "share_of_program": 0.033939857645911606
+    },
+    {
+      "function": "<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPair<true, true>>>",
+      "self_ir": 75908654,
+      "share_of_program": 0.03054932327958191
+    },
+    {
+      "function": "<rustsht::transform::ScalarAnalysisOrderSpectra<f64>>::value",
+      "self_ir": 64359576,
+      "share_of_program": 0.025901414262474224
+    },
+    {
+      "function": "rustsht::legendre::scalar_paired::analysis::initialize_scaled_analysis_sectoral_lanes",
+      "self_ir": 47469564,
+      "share_of_program": 0.01910405441488665
+    },
+    {
+      "function": "<rustfft::avx::avx32_butterflies::Butterfly27Avx<f32>>::perform_fft_f32::<&mut [num_complex::Complex<f32>]>",
+      "self_ir": 34865397,
+      "share_of_program": 0.014031526421532456
+    },
+    {
+      "function": "<std::fs::File as core::io::write::Write>::write_all",
+      "self_ir": 21863604,
+      "share_of_program": 0.008798974444373104
+    },
+    {
+      "function": "<rustfft::avx::avx_mixed_radix::MixedRadix9xnAvx<f32, f32>>::perform_column_butterflies::<&mut [num_complex::Complex<f32>]>",
+      "self_ir": 21627837,
+      "share_of_program": 0.008704090370922702
+    },
+    {
+      "function": "__syscall_cancel",
+      "self_ir": 17700791,
+      "share_of_program": 0.007123656632922432
+    },
+    {
+      "function": "rustsht::legendre::scalar_paired::analysis::initialize_normal_analysis_sectoral_dispatched",
+      "self_ir": 14752026,
+      "share_of_program": 0.005936930607448231
+    },
+    {
+      "function": "<rustfft::avx::avx_mixed_radix::MixedRadix3xnAvx<f32, f32>>::perform_column_butterflies::<&mut [num_complex::Complex<f32>]>",
+      "self_ir": 13815081,
+      "share_of_program": 0.005559858505758905
+    },
+    {
+      "function": "rustsht::transform::tests::m6_profile_scalar_analysis_f32_fft_f64_recurrence",
+      "self_ir": 11054760,
+      "share_of_program": 0.004448971483780899
+    },
+    {
+      "function": "<std::fs::File as core::io::write::Write>::write",
+      "self_ir": 8849554,
+      "share_of_program": 0.0035614896560557797
+    },
+    {
+      "function": "<rustsht::plan::ShtPlan>::m6_scalar_analysis_f32_fft_f64_recurrence_impl",
+      "self_ir": 7907553,
+      "share_of_program": 0.0031823827747943963
+    },
+    {
+      "function": "__syscall_cancel_arch",
+      "self_ir": 7808835,
+      "share_of_program": 0.003142653864629374
+    },
+    {
+      "function": "<rustfft::avx::avx_mixed_radix::MixedRadix9xnAvx<f32, f32>>::transpose",
+      "self_ir": 6657714,
+      "share_of_program": 0.0026793869548654937
+    },
+    {
+      "function": "write",
+      "self_ir": 6246876,
+      "share_of_program": 0.002514045821593168
+    },
+    {
+      "function": "<rustfft::avx::avx_mixed_radix::MixedRadix3xnAvx<f32, f32>>::perform_fft_inplace",
+      "self_ir": 6203484,
+      "share_of_program": 0.0024965827766582965
+    },
+    {
+      "function": "__memset_avx2_unaligned_erms",
+      "self_ir": 4338711,
+      "share_of_program": 0.0017461076961749066
+    }
+  ],
+  "route_counts_over_seven_timed_calls": {
+    "normal_seed_blocks": 4655,
+    "prefix_enabled_scaled_blocks": 3318,
+    "checked_scaled_blocks": 0,
+    "scaled_prefix_pair_steps": 0,
+    "ordinary_suffix_pair_steps": 723324,
+    "mixed_suffix_pair_steps": 0,
+    "prefix_initialization_declines": 0,
+    "prefix_recurrence_declines": 0,
+    "checked_scaled_recurrence_declines": 0
+  },
+  "counter_instrumented_timing_ms": {
+    "samples": [
+      14.508655,
+      14.565923,
+      14.608163,
+      14.611339,
+      14.6643,
+      14.746044,
+      14.770962
+    ],
+    "median": 14.611339,
+    "used_for_acceptance": false
+  },
+  "worker_checks": {
+    "finite": true,
+    "poisoned_workspace_reset": true
+  },
+  "fixture_sha256": {
+    "full-map0.f32": "de6084aab7ca03a08fc1cbc02586eca6e3ed6041a94b6618755a15089a044d16",
+    "full-map1.f32": "294ae39f03289cfa264f4660280253f95e5991f2a4de4eedab559905315ca84f"
+  }
+}

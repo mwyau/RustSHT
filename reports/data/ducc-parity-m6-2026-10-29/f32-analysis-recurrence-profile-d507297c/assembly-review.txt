@@ -1,0 +1,21 @@
+Executed binary SHA-256: 67baf38a6803ba3c803087718ea274ee37a1fc55dd2ee7958b254dc5f2b20042
+Target: x86-64-v3 / AVX2 / FMA; Callgrind attribution confirms both symbols ran.
+
+Ordinary fused symbol:
+  FusedScalarAnalysisPair<true, false>
+  - four-double YMM vectors for recurrence and accumulation
+  - vector fused multiply-add instructions in the hot suffix
+  - no YMM stack spill loads/stores observed in this symbol
+  - 0x168-byte scalar/pointer stack frame
+
+Scaled symbol:
+  FusedScaledScalarAnalysisPair<true, false>
+  - 0x453f10..0x459030 in the profiled executable
+  - scalar vmovsd/vucomisd range and correction checks around its prefix/promotion logic
+  - the complete disassembly contains about 180 FMA instructions, including the fused suffix
+  - indirect calls appear in decline/slow blocks; this profile did not establish that those calls were hot
+
+Interpretation: the normal suffix already has a fused AVX2 implementation.
+The measured difference to investigate is the extra checked scaled entry and
+promotion path on blocks that can use that suffix. The instruction findings
+are not cycle counts and do not by themselves demonstrate an optimization.

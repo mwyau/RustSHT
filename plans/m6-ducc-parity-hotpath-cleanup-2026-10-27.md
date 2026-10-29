@@ -59,15 +59,26 @@ protected f64 T1023 spin-1 synthesis controls showed no established regression,
 but do not support production promotion. The exact evidence and candidate patch
 are in the [tile-512 package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-tile512-screen-1bd4bd27/README.md).
 
-The next bounded Stage C action is a current-source profile of the shared f64
-scalar-analysis recurrence and its executed AVX2 body, focused on
-`FusedScaledScalarAnalysisPair`'s checked normal-range bulk. The direct-route
-stage profile places recurrence and gather at 78–89% of elapsed work; the
-tile-width change barely moved whole-call time. Use source attribution and
-assembly to select one fused recurrence/accumulation experiment, keeping the
-checked scaled path for exceptional values. Do not repeat the rejected mask
-substitution, block-wide scan, or whole-block replay variants unchanged. M6
-remains open.
+The current-source Stage C profile is complete at exact parent
+`d507297c2c7cdc777557e0b1dcc08813aae92de5`. Callgrind attributes 30.3% of
+process Ir to `FusedScaledScalarAnalysisPair<true,false>` and 16.6% to the
+ordinary fused suffix; executed AVX2 inspection confirms the ordinary suffix
+already uses fused four-double vectors without YMM spills. Test-only counters
+recorded 723,324 ordinary suffix pair steps, no counted two-pair scaled-prefix
+advances, and no mixed-suffix steps; one-pair early returns are not counted.
+This is instruction attribution, not a timing comparison or an optimization.
+See the [profile package](../reports/data/ducc-parity-m6-2026-10-29/f32-analysis-recurrence-profile-d507297c/README.md).
+
+**NEXT:** in a fresh isolated worktree, distinguish scaled one-pair early
+returns from ordinary promotions in `fused_scalar_analysis_pair_block_impl`
+and `FusedScaledScalarAnalysisPair::with_simd` in
+`src/legendre/scalar_paired/analysis.rs`. Only test a fast-promotion variant
+if this route census identifies a substantial common path; reuse
+`prepare_analysis_scale_corrections` and `promote_analysis_pair_to_ordinary`
+with the checked scaled fallback intact. Begin with all four GL T720 direct
+f32-spectrum/f64-recurrence cells against parent and native-f32 DUCC. Do not
+repeat the rejected mask substitution, block-wide scan, or whole-block replay
+variants unchanged. M6 remains open.
 
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
