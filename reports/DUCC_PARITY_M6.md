@@ -1,3 +1,35 @@
+## 2026-10-29 complete f32-I/O/f64-internal T720 screen — 5 PASS, 11 GAP
+
+At exact parent `fdae803a01273ac7e4e941936f022fa11e770df5`, an isolated adapter used reusable f64 plans/workspaces and shared Rust f64 algorithms behind complete f32 input/output conversion. Each of the 16 full/reduced GL T720 spin-0/spin-1 synthesis/analysis q1/q8 cells has 15 interleaved native-f32 Rust / adapter / pinned native-f32 DUCC pairs. Timed adapter calls include conversion, transform, FFT and writeback; setup is amortized outside the warm-call boundary. The adapter was not installed in production.
+
+All four scalar-synthesis cells meet the DUCC target (candidate/DUCC `0.746–0.927×`); full-mmax spin-1 synthesis q1 also passes at `0.964×`. Eleven cells remain GAP. This is a useful scalar-synthesis backend candidate, not f32-family parity.
+
+| Cell | Native f32 / f64 internals / DUCC ms | Rust/DUCC paired median [95% CI] | Max rel-L2 vs DUCC | Status |
+|---|---:|---:|---:|---|
+| full s0 synthesis q1 | 641.339 / 15.040 / 18.902 | 0.797 [0.791, 0.801] | 3.89e-08 | **PASS** |
+| full s0 synthesis q8 | 98.183 / 2.629 / 2.838 | 0.927 [0.920, 0.951] | 3.89e-08 | **PASS** |
+| reduced s0 synthesis q1 | 190.225 / 6.205 / 8.317 | 0.746 [0.742, 0.748] | 3.88e-08 | **PASS** |
+| reduced s0 synthesis q8 | 54.588 / 1.163 / 1.314 | 0.849 [0.819, 0.915] | 3.88e-08 | **PASS** |
+| full s0 analysis q1 | 453.143 / 15.334 / 14.064 | 1.094 [1.087, 1.097] | 3.90e-08 | **GAP** |
+| full s0 analysis q8 | 60.005 / 2.678 / 2.274 | 1.179 [1.165, 1.211] | 3.90e-08 | **GAP** |
+| reduced s0 analysis q1 | 139.936 / 6.081 / 5.774 | 1.052 [1.048, 1.060] | 3.87e-08 | **GAP** |
+| reduced s0 analysis q8 | 20.132 / 1.140 / 1.001 | 1.130 [1.102, 1.155] | 3.87e-08 | **GAP** |
+| full s1 synthesis q1 | 1487.599 / 39.294 / 41.068 | 0.964 [0.945, 0.970] | 3.91e-08 | **PASS** |
+| full s1 synthesis q8 | 273.640 / 8.219 / 5.962 | 1.370 [1.354, 1.416] | 3.91e-08 | **GAP** |
+| reduced s1 synthesis q1 | 625.249 / 28.298 / 18.059 | 1.575 [1.564, 1.667] | 3.89e-08 | **GAP** |
+| reduced s1 synthesis q8 | 125.539 / 3.231 / 2.673 | 1.189 [1.028, 1.224] | 3.89e-08 | **GAP** |
+| full s1 analysis q1 | 1040.405 / 37.908 / 28.807 | 1.315 [1.302, 1.323] | 3.89e-08 | **GAP** |
+| full s1 analysis q8 | 138.878 / 7.473 / 4.879 | 1.635 [1.554, 1.682] | 3.89e-08 | **GAP** |
+| reduced s1 analysis q1 | 375.930 / 15.049 / 11.759 | 1.287 [1.271, 1.293] | 3.91e-08 | **GAP** |
+| reduced s1 analysis q8 | 58.159 / 3.240 / 2.258 | 1.369 [1.281, 1.475] | 3.91e-08 | **GAP** |
+
+All workers passed finite, repeat-consistency and poisoned-output reset checks. Adapter errors versus DUCC were at most `3.91e-8` relative L2 and `1.20e-7` absolute. The q8 matrix includes host pressure up to about 11% `some avg10`; its widest interval (reduced spin-synthesis q8) still has a lower endpoint above parity. Full pair records retain affinity/frequency/pressure telemetry.
+
+Reusable f64 conversion buffers ranged from 4.01 MB to 25.15 MB; total live plan/workspace plus adapter storage ranged from about 8.6 MB to 46.0 MB. Synthesis had zero steady-state allocations. Analysis incurred one temporary per-call allocation at q8 (4.3–28.8 KB). A representative full scalar-synthesis q8 profile put 0.47 ms into conversions/writeback and 2.77 ms in the f64 transform; analysis and spin profiles likewise show the transform stage remains the blocker. The current f64 spin-synthesis route has zero paired-hemisphere successes at T720.
+
+Independent analytic modes, scalar and spin analysis/synthesis adjoints, sectoral synthesis and E/B signs passed. Native f32 and f64-internal outputs diverge for subnormal and extreme finite values: a min-subnormal coefficient yielded 1,051,218 nonzero native samples versus zero adapter samples; max-finite analysis changed 260,281 finite/nonfinite coefficient classifications. Infinity/NaN synthesis returns the same `NonRealFftEdge` error. A production route therefore needs conservative native fallback and output-range decline/reset checks. No precision policy changed in this isolated result.
+
+The complete per-cell table, fixture hashes, 15-pair data, candidate source/binary hashes, conversions, allocation snapshots and numerical evidence are in the [Stage B evidence package](data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md). **Next:** implement the reusable guarded f64-internal backend for the four passing scalar-synthesis T720 cells, preserve native-f32 fallback for exceptional inputs/outputs, then extend shapes and attack the 11 analysis/spin gaps from measured transform cost. M6 remains open.
 # M6 — current-head DUCC parity triage
 
 ## 2026-10-28 current-source reflected f32 scalar synthesis — rejected on controls

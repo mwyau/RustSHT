@@ -1,6 +1,6 @@
 # M6 — DUCC parity engineering and repository consolidation
 
-## ACTIVE OWNER OVERRIDE — 2026-10-28: close the native-f32 DUCC gap
+## ACTIVE OWNER OVERRIDE — 2026-10-29: close the native-f32 DUCC gap
 
 The immediate priority is complete public f32 execution-path parity. Stage A
 reconciled the shared reflected scalar-synthesis candidate at exact parent
@@ -10,18 +10,9 @@ f32 scalar-analysis and spin-1 synthesis-q8 regressions. It was not promoted;
 its complete patch and raw pairs are in the [current-source evidence
 package](../reports/data/ducc-parity-m6-2026-10-28/f32-reflected-current-source-1b204149/README.md).
 
-Stage B is now the next bounded experiment. Using existing shared f64
-algorithms through reusable f32-to-f64 / f64-to-f32 buffers, measure the full
-f32 scalar-synthesis public contract at GL T720 full/reduced q1/q8 against
-the native DUCC f32 interface. Include conversion, copies, FFT, transform,
-writeback, plan/workspace reuse and allocation costs. Keep the prototype in an
-isolated harness until whole-call performance and independent f32 numerical
-checks justify a production precision-policy decision. If conversion prevents
-parity, profile each whole-call stage and continue to the next bounded
-hypothesis. Do not claim parity from the earlier conversion-excluded
-diagnostic. Preserve native-f32 behavior for exceptional supported cases and
-keep the M6 ledger open.
+Stage B has now measured complete f32-I/O/f64-internal calls at all 16 GL T720 scalar/spin synthesis/analysis full/reduced q1/q8 cells, against the pinned DUCC native-f32 API. Fifteen interleaved pairs per cell show 5 PASS and 11 GAP. Shared f64 scalar synthesis passes all four cells (candidate/DUCC 0.746–0.927x); full-mmax spin-1 synthesis q1 also passes at 0.964x. Scalar analysis remains 1.052–1.179x DUCC; most f64 spin routes remain 1.189–1.635x. Complete conversions, FFT, writeback and warm workspace are included. Evidence and executable/source hashes are in the [Stage B package](../reports/data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md).
 
+Next, implement a reusable, explicitly guarded f64-internal backend for the passing scalar-synthesis T720 family using only the existing shared f64 plan/recurrence. Preserve the native-f32 path for subnormal/extreme/nonfinite inputs and for output-range declines. Keep the candidate scoped to measured geometry until T255/T511/T1023, longitude parity and other grid-family validation justifies wider dispatch. Verify full public calls, reset and adjoints, then remeasure all four cells plus scalar-analysis, spin-1 and protected f64 controls. Do not route the remaining 11 cells through f64 merely because scalar synthesis passes: their measured transform costs still miss DUCC. Continue with a cause-based shared-kernel/dispatch experiment on the remaining gaps after this reusable path is checkpointed. M6 stays open.
 ## SUPERSEDED OWNER OVERRIDE — 2026-10-28: native-f32 family follow-through after synthesis blocker
 
 The accepted shared f32/f64 scalar-synthesis kernel, 32-ring scheduler and

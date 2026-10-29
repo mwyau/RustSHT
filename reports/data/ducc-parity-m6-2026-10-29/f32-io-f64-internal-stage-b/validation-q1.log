@@ -1,0 +1,15 @@
+SCALAR T720 q=1 m=180 synth_analytic_rel_l2=2.559e-8 synth_max=2.980e-8 analysis_analytic_rel_l2=2.190e-8 analysis_max=2.818e-10 synth_adjoint=PASS analysis_adjoint=PASS sectoral=N/A
+SCALAR T720 q=1 m=720 synth_analytic_rel_l2=2.553e-8 synth_max=2.980e-8 analysis_analytic_rel_l2=1.830e-8 analysis_max=1.699e-10 synth_adjoint=PASS analysis_adjoint=PASS sectoral=PASS
+SPIN1 GL 2x3 DUCC E/B-to-Q/U signs=PASS synthesis_adjoint=PASS analysis_adjoint=PASS
+EDGE zero q=1: synthesis class_mismatch=0 finite_bit_diff=0 nonzero_native_adapter=0/0
+EDGE zero q=1: analysis class_mismatch=0 finite_complex_bit_diff=0
+EDGE min_subnormal q=1: synthesis class_mismatch=0 finite_bit_diff=1051218 nonzero_native_adapter=1051218/0
+EDGE min_subnormal q=1: analysis class_mismatch=0 finite_complex_bit_diff=193689
+EDGE min_normal q=1: synthesis class_mismatch=0 finite_bit_diff=1051218 nonzero_native_adapter=1051218/1051218
+EDGE min_normal q=1: analysis class_mismatch=0 finite_complex_bit_diff=193856
+EDGE max_finite q=1: synthesis class_mismatch=0 finite_bit_diff=1051218 nonzero_native_adapter=1051218/1051218
+EDGE max_finite q=1: analysis class_mismatch=260281 finite_complex_bit_diff=0
+EDGE infinity q=1: synthesis native=Some(NonRealFftEdge { index: 0 }) adapter=Some(NonRealFftEdge { index: 0 })
+EDGE infinity q=1: analysis class_mismatch=0 finite_complex_bit_diff=0
+EDGE nan q=1: synthesis native=Some(NonRealFftEdge { index: 0 }) adapter=Some(NonRealFftEdge { index: 0 })
+EDGE nan q=1: analysis class_mismatch=0 finite_complex_bit_diff=0

@@ -1,0 +1,5 @@
+F64_ADAPTER_PHASE name=f32_to_f64_alm p10_ms=0.174570 median_ms=0.194408 p90_ms=0.211841
+F64_ADAPTER_PHASE name=f64_transform p10_ms=2.527954 median_ms=2.767367 p90_ms=3.067074
+F64_ADAPTER_PHASE name=f64_to_f32_map_writeback p10_ms=0.250124 median_ms=0.279649 p90_ms=0.296281
+F64_ADAPTER_PHASE name=complete_adapter_call p10_ms=3.023312 median_ms=3.246193 p90_ms=3.507016
+F64_ADAPTER_PROFILE_META q=8 T720 m720 grid=721x1458 calls=40 reusable_conversion_buffer_bytes=12574240

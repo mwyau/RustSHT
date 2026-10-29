@@ -1,0 +1,36 @@
+{
+  "rust_source_parent": "fdae803a01273ac7e4e941936f022fa11e770df5",
+  "candidate_kind": "isolated example, no production patch",
+  "candidate_source": "sources/ducc_f32_io_f64_internal_v2.rs",
+  "candidate_source_sha256": "b6e740da8f0086a5d521bddc1d8d6700edbc57ee36d4fd5397fb67253b28d5e5",
+  "candidate_binary_sha256": "256008217615f89c314b82b2d60f001329fc08bc7d6e0e4f60e65b6546050f90",
+  "native_f32_binary_sha256": "7552d0705709309a15988c78627a6e0d6a54edce4161085b13ba2dc3dfa41bb4",
+  "ducc_f32_binary_sha256": "acc82387af2c42aed53b25678e3872157ed3fb6e5d5874322badc472a1d35d5d",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "compiler": {
+    "rustc": "1.99.1",
+    "llvm": "23.1.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_gcc": "15.2",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math"
+  },
+  "host": "AMD Ryzen 9 5950X, x86_64-v3 AVX2/FMA",
+  "cells": 16,
+  "pairs_per_cell": 15,
+  "fixture_generator": "sources/benchmark_ducc_f32_native.py::make_fixture, seed 0xF32D00D + lmax*31 + spin*7 + nphi",
+  "warm_target_ms": 25.0,
+  "result": "5 PASS, 11 GAP; no production precision-policy change in Stage B",
+  "worker_cpu_set_q1": [
+    0
+  ],
+  "worker_cpu_set_q8": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14
+  ]
+}
