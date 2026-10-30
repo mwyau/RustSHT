@@ -1,0 +1,9 @@
+[package]
+name = "m6_b2_f64_worker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rustsht = { path = "..", default-features = false, features = ["parallel"] }
+rayon = "1"
+pulp = "0.22.3"
