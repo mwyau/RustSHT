@@ -27,6 +27,18 @@ T720 output cells. Random-map comparison to DUCC gives relative L2 about
 `1.85e-5` full and `2.17e-5` reduced. Neither check is independent complete-array
 high-degree accuracy acceptance. Keep this candidate isolated.
 
+An independent binary128 high-band check on the exact candidate measures spin
+analysis E/B relative L2 `4.8310531e-5` / `5.3311975e-5` for 11 selected orders
+and `l=600..720`; the f64 controls are about `1.02e-13`. Compared with the exact
+parent, candidate E/B aggregate error changes by `+0.00296%` / `-0.00107%`,
+with selected coefficient differences no larger than `9.61e-10` absolute.
+Candidate q1/q8 analysis outputs are byte-identical. This confirms the
+preweighting leaves measured high-band accuracy effectively unchanged on this
+fixture, but does not establish a science tolerance, full-array accuracy,
+exceptional/adjoint acceptance, or a separate FFT error budget. See the
+[machine-readable result](accuracy-independent-fullorder.json); its harness is
+the [full-order binary128 probe](../native-f32-cross-family-accuracy-2026-10-30/phasec_fullorder_accuracy_reference.cpp).
+
 ## Source and artifacts
 
 - Parent source: `db88a867643d9772e1be71daf7edf3be581137b2`.
@@ -44,6 +56,8 @@ high-degree accuracy acceptance. Keep this candidate isolated.
   helper; their SHA-256 values are embedded in the measurement JSON.
 - `AVX2_HOT_LOOP.txt` records the exact AVX2/FMA loop from the native-f32
   benchmark worker (SHA-256 is in the JSON).
+- `accuracy-independent-fullorder.json` records the exact-source binary128
+  high-band comparison, candidate/parent output hashes, and numerical limits.
 - `SHA256SUMS` covers the package files other than itself.
 
 The measurement uses GL T720, `phi0=0.23`, native-f32 fixtures and workers,
@@ -80,6 +94,13 @@ benchmark recipe. Set `RUSTSHT_B3_SCREEN_DIR`, `RUSTSHT_B3_RUST_F32`,
 and those three binaries, then run this package's `benchmark.py`. It regenerates
 the fixtures, runs the interleaved screen, and writes `t720-3pair.json` to the
 selected screen directory.
+
+To reproduce the independent high-band result, also copy
+`phasec_fullorder_accuracy_dump.rs` from the linked accuracy package into
+`examples/`, build/run it with `RAYON_NUM_THREADS=1` and `8`, and run the linked
+`phasec_fullorder_accuracy_reference.cpp` against each generated directory.
+The Rust fixture is GL T720, full `mmax=720`, with 11 analysis orders selected
+from 0 through 720 and degrees `l=600..720`.
 
 The archived candidate does not promote production dispatch. Its recoverable
 source patch and isolated branch are diagnostic evidence only.

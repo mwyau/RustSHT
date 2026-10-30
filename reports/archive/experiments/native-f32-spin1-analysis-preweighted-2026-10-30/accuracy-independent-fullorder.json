@@ -1,0 +1,90 @@
+{
+  "purpose": "independent binary128 high-band accuracy check of the isolated native-f32 spin-1 analysis preweighted-channel candidate",
+  "candidate": {
+    "source_commit": "6633c6dba6ee9bf9be583e4870979efc37086715",
+    "implementation_commit": "6ef0ee11d545bd55e021e899f5b5fb0fac8c1483",
+    "parent_commit": "db88a867643d9772e1be71daf7edf3be581137b2",
+    "candidate_patch_uncompressed_sha256": "c64e9bd462ae23313023bbfa00efdbce0eb552770f2d0afd545d885f7f311709"
+  },
+  "reference": {
+    "method": "independent direct Fourier sums, normalized scalar-harmonic recurrence and spin transpose in GCC __float128 using libquadmath",
+    "source_sha256": "3a26d8fd8089aaafc591568943f8a1d26a7a277c937fe14aa5cd3fe7693a8fd3",
+    "rust_harness_sha256": "c2e5a92072e2929d4e03ef09a64be8ca661b352b730d2f52ee0557cfbae921ea",
+    "cpp_compiler": "g++ 15.2.0",
+    "cpp_flags": "-std=c++20 -O2 -march=x86-64-v3 -lquadmath"
+  },
+  "build": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "candidate_rust_binary_sha256": "d9d704e02b566983b6f1f28eb17fd36858e6023fc2cb3cebd0eb4cd6a9619dbe",
+    "parent_rust_binary_sha256": "dd30c51474060f6f0dfbb0d05ac083faa5a2ba74347843b9382245eee35361a1",
+    "reference_binary_sha256": "abaaa049c17c3fefbc17d99f83675f2690ac3952392b5c9f8b6005c79fb93bfd"
+  },
+  "fixture": {
+    "grid": "Gauss-Legendre GL T720",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.0,
+    "selected_orders_m": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      16,
+      64,
+      180,
+      360,
+      719,
+      720
+    ],
+    "selected_degrees_l": "600..720",
+    "selected_coefficients_per_channel": 1092,
+    "q1_q8_analysis_outputs_byte_identical": true,
+    "sha256": {
+      "geometry.csv": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+      "scalar-map.f32": "ce871c8fd381a44ccfe41d6525caffd19b45d4d83dcd2bc9390a7208f9e76c51",
+      "q-map.f32": "bb517521306e5cc0b45c1ceb1535d3ab60e48928be05bc1b247ba1bb99465eb3",
+      "u-map.f32": "8d9f479983c5b972a45291b49a61525d9f352d95e7010bcf5b32b701d1c5d26a",
+      "candidate_spin_analysis_e_f32": "9edc20fa26851f06c3bcb7ab011760e7fe0411b9b02e1a1a7a700e304e915cd4",
+      "candidate_spin_analysis_b_f32": "d074a2e8727cfbfaf065ded796c7dfbb6b8d25f76ac2bfa53b1604dcdc652381",
+      "parent_spin_analysis_e_f32": "951c868cfd363384e2ce4a2e64daca935c1a1d3e42bb97fd946e9b6ac474b9ef",
+      "parent_spin_analysis_b_f32": "0145ee6ad765bfe85476270452124734190aea82e3a1bae7b182c1461485761d"
+    }
+  },
+  "measurements": {
+    "scalar_analysis": {
+      "candidate_f32_relative_l2": "4.90832168436231005801848672338654089e-5",
+      "parent_f32_relative_l2": "4.90832168436231005801848672338654089e-5",
+      "f64_control_relative_l2": "8.75672049187379869047453039394592593e-14",
+      "max_absolute_f32_error": "3.82984661491500471744451496336560805e-7"
+    },
+    "spin_analysis_e": {
+      "candidate_f32_relative_l2": "4.83105305499829250844546295467042719e-5",
+      "parent_f32_relative_l2": "4.83091015026356562433474383862678123e-5",
+      "candidate_minus_parent_relative_l2_percent": "0.002958132738591453407552964394965821694443901258758937701633417269",
+      "f64_control_relative_l2": "1.01920695181718726709822690710171e-13",
+      "max_absolute_f32_error": "3.55060461420637228471327599688445609e-7",
+      "max_envelope_scaled_f32_error": "4.23357526291164186776511465988752298e-6",
+      "selected_complex_coefficients_changed_from_parent": 412,
+      "max_absolute_candidate_parent_difference": "9.6042640507221221923828125e-10"
+    },
+    "spin_analysis_b": {
+      "candidate_f32_relative_l2": "5.33119748399988544217060596466916494e-5",
+      "parent_f32_relative_l2": "5.331254350383213396886499049040171e-5",
+      "candidate_minus_parent_relative_l2_percent": "-0.001066660481578169873443188173255899185328544",
+      "f64_control_relative_l2": "1.01242638600513505020805119727153633e-13",
+      "max_absolute_f32_error": "4.48232500957883173692354582684693545e-7",
+      "max_envelope_scaled_f32_error": "5.82029549972123066974486654373943684e-6",
+      "selected_complex_coefficients_changed_from_parent": 403,
+      "max_absolute_candidate_parent_difference": "9.385703304198744767772282043359907263813536038632240830846820479798916e-10"
+    }
+  },
+  "interpretation": {
+    "result": "Preweighting changes selected E/B coefficients by at most 9.61e-10 absolute. Aggregate high-band relative L2 changes by +0.00296% for E and -0.00107% for B compared with the exact parent; measured f32 accuracy is effectively unchanged on this fixture.",
+    "acceptance": "No scientific tolerance was supplied. This is selected high-band evidence, not full-array, all-order, adjoint, exceptional-value, or science-accuracy acceptance.",
+    "stage_limit": "The direct reference compares end-to-end analysis coefficients and does not isolate the Rust Fourier stage from Legendre recurrence and accumulation."
+  }
+}
