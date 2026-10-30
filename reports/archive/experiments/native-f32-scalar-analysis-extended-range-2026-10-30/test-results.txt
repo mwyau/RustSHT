@@ -1,0 +1,13 @@
+Source: f122428c24709c53233d0922deeffd6b46dce048 plus candidate.patch.gz
+Candidate branch: candidate/m6-b1-extended-normal-range-20261030
+
+Passed:
+- cargo fmt --check
+- Scalar-analysis kernel suite: 39 passed, 8 ignored
+- f32 scalar tests: 11 passed
+- f32_paired_scalar_transforms_match_f64_and_reset_workspace: 1 passed
+- report_f32_scalar_analysis_typed_routes_t720: 1 passed; all four cells had attempts equal to successes and zero seed/recurrence declines
+- Legendre tests: 3 passed
+- ducc_f32_full_transform_parity example build
+
+One pre-existing warning remains for unused WorkCounters fields. No strict Clippy, feature-matrix, Python API, full integration, exceptional-magnitude or complete independent-accuracy run is claimed for this isolated screen.
