@@ -1,0 +1,123 @@
+{
+  "purpose": "independent binary128 accuracy and pre-FFT spectrum check for the integrated native-f32 spin-1 synthesis source",
+  "source": {
+    "tested_source_commit": "db88a867643d9772e1be71daf7edf3be581137b2",
+    "b2_integration_commit": "db93f14268e0320cc10d5e0e800f0143f41d657a",
+    "b2_commit_is_ancestor": true,
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b"
+  },
+  "reference": {
+    "method": "independent __float128 direct Fourier sums, normalized scalar harmonics, spin-1 channel conversion, and inverse-transform comparison using libquadmath",
+    "rust_harness_sha256": "102a521dadf76bbcec56d15b60a347d522ecf64d3e2edf50ec77ab9b62df4373",
+    "cpp_reference_sha256": "62a162c07baf1ccbee15f0db7d21f84fc77381b8a7284f25a2203a892f20053d",
+    "test_only_spectrum_capture_patch_sha256": "600121286f23ad59d152034f8423daaa32264f0a65efb56b05204cf7a7de58c8",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "cpp_compiler": "g++ 15.2.0",
+    "cpp_flags": "-std=c++20 -O2 -march=x86-64-v3 -lquadmath",
+    "rust_candidate_binary_sha256": "0683016fc9a0b7e27ffdedb5f5aae61e20d0e6a89af2718463e7759509798a3c",
+    "rust_spectrum_capture_test_binary_sha256": "e0c094606b643ff8e29e9c61423d170a3f3f79e1e10603b1e170e746adfdc841",
+    "cpp_reference_binary_sha256": "5e21741eab8a32bcfbafe1850a1362626f4c324a9f17d3ba5e7d50bb0b6607a2"
+  },
+  "fixture": {
+    "grid": "Gauss-Legendre GL T720",
+    "lmax": 720,
+    "mmax": 16,
+    "ntheta": 721,
+    "nphi": 34,
+    "phi0": 0.0,
+    "spin_synthesis_nonzero_band": "m=0..16,l=600..720",
+    "input_map_seeds": {
+      "scalar": 11,
+      "q": 23,
+      "u": 47
+    },
+    "threads": [
+      1,
+      8
+    ],
+    "geometry_sha256": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+    "spin_synthesis_input_sha256": {
+      "e_f32": "2cb90868e654fef2c8dbcd47ab268d42ef9c6881e2d52bca7387e920ce3007e9",
+      "b_f32": "efd22903405d2327a94585c4ccf28105239d0f797ecce3720d4e99c03d5e3b37"
+    }
+  },
+  "dispatch": {
+    "q1": "capacity=1, ring_group_size=768, no cached scalar coefficients",
+    "q8": "capacity=8, ring_group_size=64, 24548 cached scalar coefficients across 17 orders",
+    "prepared_channels_and_pairs_bitwise_identical_q1_q8": true,
+    "prepared_array_sha256": {
+      "converted_first_m16": "0558f3f32cc18b9d2d0da90e8da96a9430138487710885a8f8009e3543862bf3",
+      "converted_second_m16": "db60885970372e4d851d59716a0422460cd0ff88ee5aa041dac13cd105d575cf",
+      "pair_first_m16": "66d314d72823d389b407e19cd0005c6d3be44a33c7465abc7d546a1ba4f13cf2",
+      "pair_first2_m16": "937be45907e6aaf220dc1a12936fed6a15ccf72d7cb841014e8897f20693f562",
+      "pair_second_m16": "1dce7f5a2e54af0b27a7e1c4f1283c5a4931dc70ec888c29d04519152116fe8d",
+      "pair_second2_m16": "644abc59a3fd2cbc384dbff241e96242c6e8b6668feba68762f13c206f2e1917"
+    }
+  },
+  "measurements": {
+    "q1": {
+      "map_relative_l2_f32": {
+        "Q": "0.0003461759920525367513323718368013912894910662031327557752406973853667245",
+        "U": "0.0003579517129092938263313117809630938722732194282502442786831619361362633"
+      },
+      "spectrum_relative_l2_f32": {
+        "Q": "0.0003470281203594406292708680518658008997120116077785181483473258654425108",
+        "U": "0.0003619900987019414783835572119741899987178984880220252282466818247322760"
+      },
+      "inverse_fft_residual_relative_l2": {
+        "Q": "1.151714203807369605886086518185724566629355253683003398309058912871576E-7",
+        "U": "1.176857287725241124272021570207557499094946303006818524026112741352870E-7"
+      },
+      "f64_control_map_relative_l2": {
+        "Q": "6.691935176736545083966476994322759012121135652165271759911389857946032E-13",
+        "U": "6.766258265490948710594461288435958017946498191253518030895355704588856E-13"
+      },
+      "max_absolute_f32_error": {
+        "Q": "0.104123635746118035317470832489506103",
+        "U": "0.085729104595497608309017623269994065"
+      }
+    },
+    "q8": {
+      "map_relative_l2_f32": {
+        "Q": "0.0003030359159976333134075027225229440369170674047354179194140143355990635",
+        "U": "0.0003078473868301801535187441111819686575702606227329003358663185462565595"
+      },
+      "spectrum_relative_l2_f32": {
+        "Q": "0.0003042871280074380853789217322156734794917122422860886213694817157211503",
+        "U": "0.0003122807744008139632478783192549669450204865928296128874667808251816569"
+      },
+      "inverse_fft_residual_relative_l2": {
+        "Q": "1.176976240222272785228895952129949514493811012261203618035195308436381E-7",
+        "U": "1.176576745875265023712130898219581349706918511414637915225157179682089E-7"
+      },
+      "f64_control_map_relative_l2": {
+        "Q": "6.680058134478740986648873753748955656102339487099374357505304115333398E-13",
+        "U": "6.750159493043143248293923159530811264744891101761550956125589380099099E-13"
+      },
+      "max_absolute_f32_error": {
+        "Q": "0.104123635746118035317470832489506103",
+        "U": "0.085729104595497608309017623269994065"
+      }
+    },
+    "q1_q8_difference": {
+      "q_spectrum_components_different": 21612,
+      "q_spectrum_components_total": 25956,
+      "q_spectrum_max_absolute_difference": "9.134769439697266e-3",
+      "u_spectrum_components_different": 21677,
+      "u_spectrum_components_total": 25956,
+      "u_spectrum_max_absolute_difference": "1.0007381439208984e-2",
+      "q_map_components_different": 22644,
+      "q_map_components_total": 24514,
+      "q_map_rms_absolute_difference": "1.9812622017828306e-3",
+      "u_map_components_different": 22592,
+      "u_map_components_total": 24514,
+      "u_map_rms_absolute_difference": "2.1104187911867005e-3"
+    }
+  },
+  "interpretation": {
+    "stage": "The f32 spectrum already differs from the independent reference by about 3.0e-4 to 3.6e-4 relative L2; inverse FFT residual is about 1.2e-7. The high-band map error is therefore already present before inverse FFT.",
+    "dispatch": "q1 and q8 prepare byte-identical converted scalar channels and coefficient pairs, then enter distinct reflected/order-major and grouped/cached recurrence routes. Their first arithmetic divergence is not isolated by this probe.",
+    "acceptance": "No scientific tolerance was supplied. The fixture covers 17 of 721 orders and selected high-band coefficients only; no full-order, full-array, adjoint, exceptional-value, or science-accuracy PASS is claimed."
+  }
+}

@@ -1,8 +1,8 @@
 # Native-f32 breadth-port candidate checkpoint (2026-10-30)
 
-This archive preserves the initial three-family screens, later candidate routes on `dev`, and exact-source follow-up evidence. `matrix.csv`, `matrix.json`, `followup-matrix.csv`, and `followup-screen.json` are historical three-pair screens. The source-correct B1 route and preceding 15-pair B2 synthesis screen are summarized in [`current-dev-followup.json`](current-dev-followup.json); the B1 patch is [`scalar-analysis-current-dev.patch.gz`](patches/scalar-analysis-current-dev.patch.gz). B1, B2 and B3 candidate code is now on `dev`, but independent high-degree accuracy remains open and these screens do not close numerical acceptance or final DUCC parity.
+This archive preserves the initial three-family screens, later candidate routes on `dev`, and exact-source follow-up evidence. `matrix.csv`, `matrix.json`, `followup-matrix.csv`, and `followup-screen.json` are historical three-pair screens. The source-correct B1 route and preceding 15-pair B2 synthesis screen are summarized in [`current-dev-followup.json`](current-dev-followup.json); the B1 patch is [`scalar-analysis-current-dev.patch.gz`](patches/scalar-analysis-current-dev.patch.gz). A selected high-band binary128 result is now recorded for exact-source B2 synthesis, but independent full-array accuracy and acceptance across the candidate families remain open; these screens do not close final DUCC parity.
 
-The current-dev follow-up records B1 and the preceding B2 candidate; the later B3 screen is indexed in [`b3-spin1-analysis-current.md`](b3-spin1-analysis-current.md). B1 remains a 7.00–10.55x f64 timing GAP. The integrated B2 source is commit `db93f14268e0320cc10d5e0e800f0143f41d657a`: its exact final source passes the interim f32/f64 <=2x gate in all four T720 cells in a three-pair screen (1.55–1.73x medians); the preceding kernel source passed in 15 pairs. Current-source f64 T1023 output is bitwise equal to parent. The final-source timing matrix, per-pair values, binaries, fixtures, DUCC distances and patch are recorded in [`b2-spin1-synthesis-integrated-final-t720-3pair.json`](b2-spin1-synthesis-integrated-final-t720-3pair.json); the f64 T1023 check is in [`b2-spin1-synthesis-integrated-t1023-f64-control.json`](b2-spin1-synthesis-integrated-t1023-f64-control.json). B3 now uses the shared scaled SIMD accumulator and improves about 2.5–3x, but remains 3.97–5.13x matched f64 in the four-cell three-pair screen. Its T511 DUCC reference passes; independent T720 spin-1 accuracy remains open.
+The current-dev follow-up records B1 and the preceding B2 candidate; the later B3 screen is indexed in [`b3-spin1-analysis-current.md`](b3-spin1-analysis-current.md). B1 remains a timing GAP. The integrated B2 source is commit `db93f14268e0320cc10d5e0e800f0143f41d657a`: its exact final source passes the interim f32/f64 <=2x gate in all four T720 cells in a three-pair screen (1.55–1.73x medians); the preceding kernel source passed in 15 pairs. Current-source f64 T1023 output is bitwise equal to parent. A new exact-source binary128 probe localizes most sampled high-band error before inverse FFT: the f32 spectrum is 3.04–3.62e-4 relative L2 from reference, while inverse-FFT residual is about 1.2e-7. q1/q8 routes have identical prepared channels and coefficient pairs but different recurrence/summation paths and spectra; no full accuracy acceptance is claimed. See [`b2-spin1-synthesis-binary128-accuracy.json`](b2-spin1-synthesis-binary128-accuracy.json), the final-source timing matrix [`b2-spin1-synthesis-integrated-final-t720-3pair.json`](b2-spin1-synthesis-integrated-final-t720-3pair.json), and the f64 T1023 check [`b2-spin1-synthesis-integrated-t1023-f64-control.json`](b2-spin1-synthesis-integrated-t1023-f64-control.json). B3 now uses the shared scaled SIMD accumulator and remains above the interim f64 target; its T511 DUCC reference passes.
 
 ## Historical 3-pair follow-up status (superseded)
 
@@ -45,9 +45,28 @@ Each table cell is **matched f32/f64 ratio; separately measured f32/DUCC ratio**
 
 Whole-call times are ms. The f32/f64 numerator and denominator use the source-matched paired screen; the f32/DUCC value comes from its separate matched-input screen. Both use three fresh-process pairs, CPU 0 for q1 and CPUs 0–7 for q8. f64 controls consume the same f32 fixture values widened component-wise to f64. Rust candidates use Pulp V3 AVX2/FMA; f32 recurrence, accumulation, Fourier storage and FFT remain f32. Source, patch, binary and fixture hashes are in `matrix.json`; raw pair results are in `raw/`. DUCC is pinned to `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
 
+## Exact-source B2 independent accuracy and spectrum probe
+
+On source `db88a867` (including B2 integration `db93f142`), a test-only
+observer captured the native-f32 spectrum and dispatch for the deterministic
+GL T720 `mmax=16`, `nphi=34`, `l=600..720`, `m=0..16` spin-synthesis fixture.
+The independent reference uses direct Fourier sums and binary128 normalized
+scalar harmonics. q1 Q/U output relative L2 is `3.46176e-4` / `3.57952e-4`; q8
+is `3.03036e-4` / `3.07847e-4`. Spectrum error is `3.47028e-4` / `3.61990e-4`
+for q1 and `3.04287e-4` / `3.12281e-4` for q8. Inverse-FFT residual is about
+`1.2e-7`, so this fixture's dominant error is already present in the spectrum.
+The q1 and q8 prepared channels and coefficient pairs are bitwise identical,
+but q1 executes reflected/order-major work and q8 executes grouped/cached work;
+21,612/25,956 Q and 21,677/25,956 U spectrum components differ between them.
+The first arithmetic divergence between those recurrence paths remains
+unidentified. f64 control relative L2 is about `6.7e-13`. This is a 17-order
+selected high-band check, not a full-order accuracy pass or a declared science
+tolerance. Exact hashes and per-stage values are in
+[`b2-spin1-synthesis-binary128-accuracy.json`](b2-spin1-synthesis-binary128-accuracy.json).
+
 ## Numerical status
 
-All candidate outputs were finite and repeat/reset checks passed in the recorded workers. The f32/DUCC maximum relative-L2 values are approximately 1.83e-5 / 2.21e-5 (scalar analysis full/reduced), 2.14e-4 / 1.95e-4 (spin-1 synthesis), and 1.85e-5 / 2.17e-5 (spin-1 analysis). These are random-fixture cross-implementation measurements; independent high-degree, analytic and adjoint acceptance for the exact candidate source remains **UNMEASURED**. No accuracy PASS is claimed.
+All candidate outputs were finite and repeat/reset checks passed in the recorded workers. The f32/DUCC maximum relative-L2 values are approximately 1.83e-5 / 2.21e-5 (scalar analysis full/reduced), 2.14e-4 / 1.95e-4 (spin-1 synthesis), and 1.85e-5 / 2.17e-5 (spin-1 analysis). These are random-fixture cross-implementation measurements. The exact-source B2 high-band binary128 result is summarized above, while full-array, all-order, adjoint and exceptional accuracy acceptance across the current candidates remains open. No accuracy PASS is claimed.
 
 ## Initial-screen blockers (superseded by measured follow-up above)
 
