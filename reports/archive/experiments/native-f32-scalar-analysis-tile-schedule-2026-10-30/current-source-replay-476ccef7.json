@@ -1,0 +1,464 @@
+{
+  "objective": "Current-dev matched baseline and isolated native-f32 scalar-analysis tile32 screen",
+  "source_head": "476ccef734963420d018a7b81d838c9293e7dd71",
+  "source_relationship": "No src/ changes from the earlier exact candidate parent 797d2720; this replay pins the current dev documentation head.",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu": "AMD Ryzen 9 5950X; q1 affinity 0; q8 affinity 0-7",
+  "target_ms": 30.0,
+  "process_pairs": 3,
+  "input_precision": "fixture generated as f32; exact f32 values widened component-wise for f64 worker",
+  "simd_expected": "Pulp runtime dispatch; x86-64-v3 target, AVX2/FMA expected",
+  "simd_observed": {
+    "simd_arch": "V3 with AVX2 and FMA",
+    "f32_lanes": 8,
+    "method": "Rust f32 worker metadata for GL T720 M720 q1"
+  },
+  "binary_sha256": {
+    "baseline_rust_f32": "92262258bc39f87ad37495d4d85ec2b6cb98a4ec039d428715c5de9ce0b4f2d8",
+    "baseline_rust_f64": "4ed6b9e1e1bc8ea8be4f66411cd551982b15ba8e51ed1bfa7cdf66f7f45e0361",
+    "tile32_rust_f32": "b7e668b51d2aef4d564a6626e88975a94bcfae70701188a15b2e32378400077f",
+    "tile32_rust_f64": "700a733871e44ce77bd6382686e81206f1bc986fcc0a67f373fbbbbc191c678c",
+    "ducc_f32": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d"
+  },
+  "candidate_patch": {
+    "path": "tile32.patch.gz",
+    "compressed_sha256": "4c23e204f02cb7216b95f9450fbc87bf17d006d6d63aab5ff59a3a325ae09704",
+    "uncompressed_sha256": "471f15a6f57a5d47ff9569dcc554def7a6b5886ccc6d157374e4b58df8b240ef"
+  },
+  "cases": [
+    {
+      "case_id": "GL-T720-M720-s0-analysis-q1",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "baseline": {
+        "median_f32_ms": 130.420692,
+        "median_f64_ms": 20.21646425,
+        "median_ducc_f32_ms": 14.580376000000001,
+        "f32_over_f64": 6.496246790533611,
+        "f32_over_ducc": 9.007390550147678,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 129.300821,
+            "f64_ms": 19.881498,
+            "ducc_f32_ms": 14.6437955,
+            "f32_over_f64": 6.503575384510765,
+            "f32_over_ducc": 8.82973413552518
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 130.420692,
+            "f64_ms": 20.284422,
+            "ducc_f32_ms": 14.453538,
+            "f32_over_f64": 6.42959863485388,
+            "f32_over_ducc": 9.023444086838808
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 131.331141,
+            "f64_ms": 20.21646425,
+            "ducc_f32_ms": 14.580376000000001,
+            "f32_over_f64": 6.496246790533611,
+            "f32_over_ducc": 9.007390550147678
+          }
+        ]
+      },
+      "tile32_candidate": {
+        "median_f32_ms": 52.159257,
+        "median_f64_ms": 20.077150250000003,
+        "median_ducc_f32_ms": 14.5437675,
+        "f32_over_f64": 2.6065649817823324,
+        "f32_over_ducc": 3.54042121573163,
+        "relative_l2_to_ducc": 1.8390751126253984e-05,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 51.312042500000004,
+            "f64_ms": 20.077150250000003,
+            "ducc_f32_ms": 14.49320275,
+            "f32_over_f64": 2.555743313222453,
+            "f32_over_ducc": 3.54042121573163,
+            "relative_l2_to_ducc": 1.8390751126253984e-05
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 52.159257,
+            "f64_ms": 20.01072575,
+            "ducc_f32_ms": 15.104993,
+            "f32_over_f64": 2.6065649817823324,
+            "f32_over_ducc": 3.4531136161400404,
+            "relative_l2_to_ducc": 1.8390751126253984e-05
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 53.0131935,
+            "f64_ms": 20.18838675,
+            "ducc_f32_ms": 14.5437675,
+            "f32_over_f64": 2.625925199298057,
+            "f32_over_ducc": 3.645079825430378,
+            "relative_l2_to_ducc": 1.8390751126253984e-05
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-s0-analysis-q8",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "baseline": {
+        "median_f32_ms": 18.61771925,
+        "median_f64_ms": 3.173518222,
+        "median_ducc_f32_ms": 2.2734194285714286,
+        "f32_over_f64": 5.929109409096689,
+        "f32_over_ducc": 8.117905611557442,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 18.81613675,
+            "f64_ms": 3.173518222,
+            "ducc_f32_ms": 2.2146090714285713,
+            "f32_over_f64": 5.929109409096689,
+            "f32_over_ducc": 8.49636940115229
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 18.38243775,
+            "f64_ms": 3.0839752999999996,
+            "ducc_f32_ms": 2.2734194285714286,
+            "f32_over_f64": 5.960630667178172,
+            "f32_over_ducc": 8.08581008808883
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 18.61771925,
+            "f64_ms": 3.2631018999999997,
+            "ducc_f32_ms": 2.293414107142857,
+            "f32_over_f64": 5.705527997761885,
+            "f32_over_ducc": 8.117905611557442
+          }
+        ]
+      },
+      "tile32_candidate": {
+        "median_f32_ms": 7.6164956,
+        "median_f64_ms": 3.19475115,
+        "median_ducc_f32_ms": 2.2692426785714286,
+        "f32_over_f64": 2.3764568859492905,
+        "f32_over_ducc": 3.3387723864466534,
+        "relative_l2_to_ducc": 1.8390751126253984e-05,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 7.6164956,
+            "f64_ms": 3.19475115,
+            "ducc_f32_ms": 2.2622985714285715,
+            "f32_over_f64": 2.384065375483158,
+            "f32_over_ducc": 3.366706630235115,
+            "relative_l2_to_ducc": 1.8390751126253984e-05
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 7.4113904999999995,
+            "f64_ms": 3.1186724,
+            "ducc_f32_ms": 2.2692426785714286,
+            "f32_over_f64": 2.3764568859492905,
+            "f32_over_ducc": 3.2660193508548594,
+            "relative_l2_to_ducc": 1.8390751126253984e-05
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 7.6345154,
+            "f64_ms": 3.25952415,
+            "ducc_f32_ms": 2.2866235,
+            "f32_over_f64": 2.342217774333717,
+            "f32_over_ducc": 3.3387723864466534,
+            "relative_l2_to_ducc": 1.8390751126253984e-05
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-s0-analysis-q1",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "baseline": {
+        "median_f32_ms": 41.188226,
+        "median_f64_ms": 8.4029135,
+        "median_ducc_f32_ms": 5.9244367,
+        "f32_over_f64": 4.914932417216024,
+        "f32_over_ducc": 6.979703084639706,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 41.188226,
+            "f64_ms": 8.38022225,
+            "ducc_f32_ms": 5.901142999999999,
+            "f32_over_f64": 4.914932417216024,
+            "f32_over_ducc": 6.979703084639706
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 41.625647,
+            "f64_ms": 8.404050625,
+            "ducc_f32_ms": 5.9244367,
+            "f32_over_f64": 4.9530457225202635,
+            "f32_over_ducc": 7.026093636885343
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 41.001881,
+            "f64_ms": 8.4029135,
+            "ducc_f32_ms": 5.9361797,
+            "f32_over_f64": 4.879483883774359,
+            "f32_over_ducc": 6.9071158678029905
+          }
+        ]
+      },
+      "tile32_candidate": {
+        "median_f32_ms": 20.2536065,
+        "median_f64_ms": 8.384685625,
+        "median_ducc_f32_ms": 5.9822071,
+        "f32_over_f64": 2.4202497847518885,
+        "f32_over_ducc": 3.4024763201528074,
+        "relative_l2_to_ducc": 2.220446789070277e-05,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 20.21881875,
+            "f64_ms": 8.388810875,
+            "ducc_f32_ms": 5.9095187,
+            "f32_over_f64": 2.41021272874983,
+            "f32_over_ducc": 3.4213985565355776,
+            "relative_l2_to_ducc": 2.220446789070277e-05
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 20.2536065,
+            "f64_ms": 8.368395125,
+            "ducc_f32_ms": 5.9829995,
+            "f32_over_f64": 2.4202497847518885,
+            "f32_over_ducc": 3.3851927448765458,
+            "relative_l2_to_ducc": 2.220446789070277e-05
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 20.354318,
+            "f64_ms": 8.384685625,
+            "ducc_f32_ms": 5.9822071,
+            "f32_over_f64": 2.4275588746358037,
+            "f32_over_ducc": 3.4024763201528074,
+            "relative_l2_to_ducc": 2.220446789070277e-05
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-s0-analysis-q8",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "baseline": {
+        "median_f32_ms": 6.2364441,
+        "median_f64_ms": 1.391792972,
+        "median_ducc_f32_ms": 0.9852233548387097,
+        "f32_over_f64": 4.51239579583228,
+        "f32_over_ducc": 6.32997996786319,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 6.2364441,
+            "f64_ms": 1.391792972,
+            "ducc_f32_ms": 0.9852233548387097,
+            "f32_over_f64": 4.480870521309114,
+            "f32_over_ducc": 6.32997996786319
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 6.232086000000001,
+            "f64_ms": 1.3344047645,
+            "ducc_f32_ms": 0.9782350806451613,
+            "f32_over_f64": 4.670311561975843,
+            "f32_over_ducc": 6.370744745618653
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 6.3864275,
+            "f64_ms": 1.415307475,
+            "ducc_f32_ms": 1.0258462931034482,
+            "f32_over_f64": 4.51239579583228,
+            "f32_over_ducc": 6.225520863051928
+          }
+        ]
+      },
+      "tile32_candidate": {
+        "median_f32_ms": 3.037018111111111,
+        "median_f64_ms": 1.3520456135,
+        "median_ducc_f32_ms": 0.9799921379310346,
+        "f32_over_f64": 2.2060647934901905,
+        "f32_over_ducc": 3.0051292323475427,
+        "relative_l2_to_ducc": 2.220446789070277e-05,
+        "pairs": [
+          {
+            "order": [
+              "f32",
+              "ducc",
+              "f64"
+            ],
+            "f32_ms": 2.8597065,
+            "f64_ms": 1.3520456135,
+            "ducc_f32_ms": 0.9799921379310346,
+            "f32_over_f64": 2.115096170902965,
+            "f32_over_ducc": 2.9180912675865236,
+            "relative_l2_to_ducc": 2.220446789070277e-05
+          },
+          {
+            "order": [
+              "f64",
+              "f32",
+              "ducc"
+            ],
+            "f32_ms": 3.0425167777777773,
+            "f64_ms": 1.2721383685,
+            "ducc_f32_ms": 0.9611403421052631,
+            "f32_over_f64": 2.3916555408711244,
+            "f32_over_ducc": 3.165528117479189,
+            "relative_l2_to_ducc": 2.220446789070277e-05
+          },
+          {
+            "order": [
+              "ducc",
+              "f64",
+              "f32"
+            ],
+            "f32_ms": 3.037018111111111,
+            "f64_ms": 1.3766676845,
+            "ducc_f32_ms": 1.0106114833333333,
+            "f32_over_f64": 2.2060647934901905,
+            "f32_over_ducc": 3.0051292323475427,
+            "relative_l2_to_ducc": 2.220446789070277e-05
+          }
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "command": "cargo fmt --all -- --check",
+      "result": "PASS"
+    },
+    {
+      "command": "cargo test --release --features parallel --lib scalar_paired::analysis",
+      "result": "36 passed; 8 manual diagnostics ignored"
+    },
+    {
+      "command": "cargo test --release --features parallel --lib scalar_analysis_pair_tiles_are_precision_specific_and_simd_aligned",
+      "result": "1 passed"
+    },
+    {
+      "command": "cargo test --release --features parallel --test f32 scalar_analysis",
+      "result": "1 passed (T720 analytic modes, adjoint and workspace reset)"
+    }
+  ],
+  "decision": "Tile32 remains isolated. It improves all four baseline cells but misses the interim <=2x matched-f64 gate (2.206x to 2.607x) and remains 3.005x to 3.540x DUCC. Random-fixture error versus DUCC is a diagnostic comparison, not independent accuracy acceptance."
+}

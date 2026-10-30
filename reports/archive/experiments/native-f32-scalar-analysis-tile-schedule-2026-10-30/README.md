@@ -61,3 +61,7 @@ Keep tile32 isolated as the best bounded scalar-analysis schedule result and mar
   - `tile32.patch.gz`: `471f15a6f57a5d47ff9569dcc554def7a6b5886ccc6d157374e4b58df8b240ef`
   - `tile64.patch.gz`: `64e069980221de4c5b0ee32854bb6d6a81c78751862f0402b56e969786e82f12`
   - `hard-lanes.patch.gz`: `47b4a5cc3da45b6efe2b2b2a3584d1cd072445d013de20e833610554013c64ad`
+
+## Current-dev replay at `476ccef7`
+
+The source-matched baseline and tile32 candidate were rerun on the current `dev` head `476ccef734963420d018a7b81d838c9293e7dd71`. There are no `src/` changes between that head and the original source `797d2720`, so this is a fresh timing replay of the same implementation source. The 3-pair screen measures baseline f32/f64 ratios of 4.512–6.496x and tile32 ratios of 2.206–2.607x; tile32 remains a GAP in every cell and measures 3.005–3.540x DUCC. The current run used the exact pinned DUCC worker hash and captured Rust and DUCC binary hashes, fixture hashes, per-pair timings, AVX2/FMA lane metadata, and test results in [current-source-replay-476ccef7.json](current-source-replay-476ccef7.json). The isolated tile32 patch remains unpromoted.
