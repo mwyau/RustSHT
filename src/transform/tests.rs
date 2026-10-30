@@ -100,19 +100,16 @@ fn scalar_plans_cache_exact_grid_and_prepared_latitude_geometry() {
 }
 
 #[test]
-fn f32_t720_internal_scalar_synthesis_uses_shared_f64_plan_and_resets() {
+fn f32_t720_scalar_synthesis_uses_native_path_and_resets() {
     for (mmax, nphi) in [(720, 1458), (180, 378)] {
         let grid = GridSpec::new(GridKind::GaussLegendre, 721, nphi, 0.23).unwrap();
         let harmonics = HarmonicSpec::scalar(720, mmax).unwrap();
         let plan32 = ShtPlan::<f32>::new(grid.clone(), harmonics.clone()).unwrap();
         let plan64 = ShtPlan::<f64>::new(grid, harmonics.clone()).unwrap();
-        assert!(plan32.f32_internal_scalar_synthesis_plan.is_some());
-        assert!(plan64.f32_internal_scalar_synthesis_plan.is_none());
+        assert!(plan32.f32_internal_scalar_synthesis_plan.is_none());
 
         let mut workspace32 = plan32.workspace().unwrap();
         plan32.prepare_workspace(&mut workspace32, 1).unwrap();
-        let mut workspace64 = plan64.workspace().unwrap();
-        plan64.prepare_workspace(&mut workspace64, 1).unwrap();
         let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
         alm[harmonics.index(0, 0).unwrap()] = Complex32::new(0.7, 0.0);
         alm[harmonics.index(1, 0).unwrap()] = Complex32::new(-0.2, 0.0);
@@ -124,20 +121,19 @@ fn f32_t720_internal_scalar_synthesis_uses_shared_f64_plan_and_resets() {
 
         let sample_count = 721 * nphi;
         let mut actual = vec![f32::NAN; sample_count];
-        assert!(plan32.try_f32_internal_scalar_synthesis(&alm, &mut actual, &mut workspace32));
+        plan32
+            .synthesis_into(&alm, &mut actual, &mut workspace32)
+            .unwrap();
         let first = actual.clone();
 
-        let mut expected64 = vec![f64::NAN; sample_count];
-        plan64
-            .synthesis_into(&alm64, &mut expected64, &mut workspace64)
-            .unwrap();
-        assert!(
-            actual
-                .iter()
-                .zip(&expected64)
-                .all(|(&actual, &expected)| actual.to_bits() == (expected as f32).to_bits()),
-            "internal f64 route differs from existing f64 plan for mmax={mmax}"
-        );
+        let expected = analytic_map(&plan64, &alm64);
+        for (index, (&actual, &expected)) in actual.iter().zip(&expected).enumerate() {
+            let error = (f64::from(actual) - expected).abs();
+            assert!(
+                error <= 3.0e-6 * (1.0 + expected.abs()),
+                "native f32 analytic synthesis mismatch for mmax={mmax}, sample={index}: actual={actual}, expected={expected}, error={error}"
+            );
+        }
 
         for _ in 0..2 {
             actual.fill(f32::NAN);
@@ -156,10 +152,11 @@ fn f32_t720_internal_scalar_synthesis_uses_shared_f64_plan_and_resets() {
 }
 
 #[test]
-fn f32_t720_internal_scalar_synthesis_declines_range_edges() {
+fn f32_t720_scalar_synthesis_handles_range_edges_on_native_path() {
     let grid = GridSpec::new(GridKind::GaussLegendre, 721, 1458, 0.23).unwrap();
     let harmonics = HarmonicSpec::scalar(720, 720).unwrap();
     let plan = ShtPlan::<f32>::new(grid, harmonics.clone()).unwrap();
+    assert!(plan.f32_internal_scalar_synthesis_plan.is_none());
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_workspace(&mut workspace, 1).unwrap();
     let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
@@ -167,27 +164,23 @@ fn f32_t720_internal_scalar_synthesis_declines_range_edges() {
     let dc = harmonics.index(0, 0).unwrap();
 
     alm[dc].re = f32::from_bits(1);
-    assert!(!plan.try_f32_internal_scalar_synthesis(&alm, &mut map, &mut workspace));
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     assert!(map.iter().all(|value| value.is_finite()));
     assert!(map.iter().any(|&value| value != 0.0));
 
     // Normal input can still narrow to subnormal output; that block must be
-    // replayed through the established native-f32 path.
+    // preserved by the native-f32 path.
     alm[dc].re = f32::MIN_POSITIVE;
-    assert!(!plan.try_f32_internal_scalar_synthesis(&alm, &mut map, &mut workspace));
     map.fill(f32::NAN);
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     assert!(map.iter().all(|value| value.is_finite()));
 
     alm[dc].re = f32::MAX;
-    assert!(!plan.try_f32_internal_scalar_synthesis(&alm, &mut map, &mut workspace));
     map.fill(f32::NAN);
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     assert!(map.iter().all(|value| value.is_finite()));
 
     alm[dc].re = f32::INFINITY;
-    assert!(!plan.try_f32_internal_scalar_synthesis(&alm, &mut map, &mut workspace));
     assert!(matches!(
         plan.synthesis_into(&alm, &mut map, &mut workspace),
         Err(ShtError::NonRealFftEdge { index: 0 })
@@ -195,7 +188,7 @@ fn f32_t720_internal_scalar_synthesis_declines_range_edges() {
 }
 
 #[test]
-fn f32_internal_scalar_synthesis_stays_scoped_to_measured_t720_shapes() {
+fn f32_native_scalar_synthesis_monopole_is_correct_across_bandlimits() {
     for lmax in [255, 511, 1023] {
         let ntheta = lmax + 1;
         let harmonics = HarmonicSpec::scalar(lmax, 1).unwrap();
