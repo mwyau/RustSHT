@@ -1,6 +1,8 @@
 Production source: dc1aa4f65109fc93fef8a0595998df464a70a639
-Current dev tip at publication: 91535b9bb5ab0d74dcf439fef0e90792626e8b52
-The intervening dev commit changes reports only; src/ is identical to the tested source.
+GL-only capture publication tip: 91535b9bb5ab0d74dcf439fef0e90792626e8b52
+Cross-grid extension source tree: dc1aa4f65109fc93fef8a0595998df464a70a639
+Current dev at cross-grid extension capture: 9a117693b38ded0ce89bc75b30b34bdb3afa0b54
+The intervening dev commits change reports only; src/ is identical to the tested source.
 Pinned DUCC was not used as the accuracy oracle; it remains in the separate timing matrix.
 
 Fixture: GL T720, lmax=mmax=720, ntheta=721, nphi=1458, phi0=0
@@ -22,14 +24,24 @@ match the deterministic dump maps exactly before writing pre-inverse-FFT spectra
 
 Deterministic dump example SHA-256:
 da3b48d5d1bc1c40a1281732f6137de230639963104404afd8f34b7b7c0b5c22
-Binary128 map-spectrum source SHA-256:
+Original GL binary128 map-spectrum source SHA-256:
 8bf1719a02ddbb6d91cd53db4c79ff3aefc9dc193c5ee805bab2167cf1eb4bb9
+Cross-grid geometry/pole-aware map-spectrum source SHA-256:
+b6408932b4780da32d31e800258658a55fa8cfa2a609c8991958e75819ab55fc
 Included binary128 channel/reference source SHA-256:
 e4ab95cb223d8fdc6c021883d950f027e3c2991afb4c8cd04e2e800bf8e8e716
+Cross-grid channel/reference source SHA-256:
+9ccef590ce9a2488333d6810df4b47ac51d5648dc46bca39d82b17d6b0234277
 NumPy comparison script SHA-256:
 bc8d749b13efcc2665787d5ad0dfbc07e8604839f7f41f9ec6ac07fdc8b99d35
+Cross-grid comparison script SHA-256:
+2157c5a455caeb58354f82fdca74cf1e9fb6b81d1355e6f2e00eafd343f2b24c
 Diagnostic executable SHA-256 (not retained):
 63c7fc56e4d64a64404c7aa6d0075cd5b41d7f6b204038027aea53e2a14477fd
+Cross-grid map-reference executable SHA-256 (not retained):
+1268a99ede759c9f603d58fe12460abb0f2d0c94ff4aba27b3884bd89a18c7c4
+Cross-grid channel-reference executable SHA-256 (not retained):
+74c43e43b986a32981ea5d782c615c4c8de83e6c98422b969eaa5afacfaa65ca
 
 The expected Q/U spectra were cross-checked at selected ring-0, longitude-0
 pixels against the earlier direct binary128 Fourier evaluation; differences

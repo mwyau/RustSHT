@@ -76,11 +76,61 @@ f32 inverse-FFT residual is about three orders smaller. This isolates the main
 error before inverse FFT for this high-band fixture; it does not yet divide
 that spectrum error across coefficient-channel preparation, recurrence and
 accumulation for every order. The f64 spectra/maps independently agree with the
-same reference near `1.3e-13`. No scientific tolerance is assigned, and B2
-remains numerically unaccepted. The full summary, per-order spectra tables,
+same reference near `1.3e-13`. This GL-only result was not an accuracy PASS.
+The cross-grid, selected-mode, exceptional-range and adjoint extensions below
+add coverage but still do not assign a scientific tolerance or accept B2. The
+full summary, per-order spectra tables,
 observer patch, reference source, exact hashes and reproduction commands are
 in `generated/full-array-map-summary.json`, `generated/*-spectrum-by-order.csv`,
 and `fullarray-map-provenance.txt`.
+
+## Cross-grid, selected-mode and range extension (2026-10-30)
+
+The same all-order, `l=600..720` binary128 channel/harmonic reference was run
+on Fejer-1 T720 (`ntheta=721`) and Clenshaw-Curtis T720 (`ntheta=722`), with
+`nphi=1458`, `phi0=0`, and all valid `m=0..720`. F1 q1 Q/U map relative-L2
+errors are `6.5049e-5` / `7.4006e-5`; CC q1 errors are `6.1782e-5` /
+`6.7531e-5`. Matched f64 controls are `1.8–2.2e-13` on F1 and
+`7.5–7.7e-14` on CC. The inverse-FFT residual remains `1.42e-7` on both
+grids, so the dominant discrepancy is in the pre-FFT spectrum. The full
+per-grid results and q1/q8 file hashes are in the cross-family package's
+`results.json`.
+
+This cross-grid extension uses the geometry-aware reference revisions whose
+source and executable hashes are recorded in that package's provenance. The
+original GL-only source and executable hashes above remain the provenance for
+the original GL capture; the extension did not replace those historical
+measurements.
+
+On F1, isolated high-degree modes include `(l=600,m=1,E.re)`,
+`(720,1,E.im)`, `(650,5,B.re)`, `(720,16,B.im)`, `(720,719,E.re)`, and
+`(720,720,E.re)`. Their map relative-L2 errors range from `1.13e-5` to
+`1.94e-3`; the largest is Q for `(720,1,E.im)`. The CC `(720,1,E.re)` case
+is `1.127e-3` Q and `1.685e-3` U at q1. q1/q8 F1 mode outputs are
+bitwise-equal; the CC selected-mode q1/q8 outputs are not, and each is
+compared independently with the same binary128 reference. These low-order,
+near-pole-sensitive cases exceed the provisional `5.16e-4` operation-count
+screen described in the cross-family report. This is a numerical GAP, not a
+tolerance change.
+
+For `(l=720,m=720,E.re)` on F1, the coefficient was scaled through the
+minimum positive subnormal (`0x00000001`), `2^-140` (`0x00000200`), minimum
+normal (`0x00800000`) and `2^120` (`0x7b800000`). The first two cases have
+relative errors from `0.035` to `1` because expected map values are zero or
+subnormal; their maximum absolute errors are at most `8.01e-44`. At minimum
+normal and `2^120`, relative-L2 errors are `1.16e-5–1.63e-5`; the large case
+has no nonfinite output. q1/q8 f32 outputs match for all four cases. Detailed
+component and FFT-stage values are in the cross-family `results.json`.
+
+High-band adjoint identities were also checked on GL, CC and F1 at q1/q8.
+The largest condition-scaled f32 residual is `2.64e-7` for synthesis,
+`1.79e-7` for spin analysis, and `5.02e-9` for scalar analysis. These establish
+adjoint self-consistency for these probes, not closeness to an independent
+mathematical reference. B2 F1 synthesis maps are byte-identical q1/q8; the
+CC q1/q8 maps differ by `1.395e-4` (Q) and `1.318e-4` (U) relative L2, and
+each thread route is compared separately with binary128. The reduced-order
+q1/q8 arithmetic cause remains the existing trace at `dc1aa4f`; it was not
+repeated here.
 
 ## Reproduction
 

@@ -852,9 +852,10 @@ static void compare_spin_synthesis_fullorder_spectra(const std::string &director
 int main(int argc, char **argv) {
   if (argc != 2) throw std::runtime_error("usage: phasec_fullorder_accuracy_reference DIR");
   const std::string dir = argv[1];
-  const unsigned lmax = 720, mmax = 720, ntheta = 721, nphi = 1458;
+  const unsigned lmax = 720, mmax = 720, nphi = 1458;
   const Geometry g = read_geometry(dir + "/geometry.csv");
-  if (g.theta.size() != ntheta) throw std::runtime_error("unexpected ntheta");
+  const unsigned ntheta = g.theta.size();
+  if (ntheta < lmax + 1) throw std::runtime_error("undersampled latitude geometry");
   if (std::getenv("B2_SYNTHESIS_ONLY")) {
     compare_spin_synthesis_fullorder_spectra(dir, g, lmax, mmax, nphi);
     return 0;

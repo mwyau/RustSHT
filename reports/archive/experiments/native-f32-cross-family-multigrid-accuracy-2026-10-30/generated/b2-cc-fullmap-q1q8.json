@@ -1,0 +1,234 @@
+{
+  "source_sha": "dc1aa4f65109fc93fef8a0595998df464a70a639",
+  "grid": {
+    "kind": "ClenshawCurtis",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 722,
+    "nphi": 1458
+  },
+  "reference": "GCC __float128 spin-1-to-scalar channel conversion and normalized scalar-harmonic recurrence; expected spectra rounded once to binary64, then NumPy 2.x pocketfft inverse real FFT",
+  "q1_q8_hashes": {
+    "geometry.csv": {
+      "q1": "f4833cb15fa99e70dd3f74ddfa3a43ba2a6de67be8545a6d2b667c8c915babb7",
+      "q8": "f4833cb15fa99e70dd3f74ddfa3a43ba2a6de67be8545a6d2b667c8c915babb7"
+    },
+    "spin-synthesis-e-input.f32": {
+      "q1": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0",
+      "q8": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0"
+    },
+    "spin-synthesis-b-input.f32": {
+      "q1": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1",
+      "q8": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1"
+    },
+    "spin-synthesis-e-input.f64": {
+      "q1": "3807be1568cbb0561384e2be937b5c16af25491520362b97b5343ae7f7163d6c",
+      "q8": "3807be1568cbb0561384e2be937b5c16af25491520362b97b5343ae7f7163d6c"
+    },
+    "spin-synthesis-b-input.f64": {
+      "q1": "9d909dc80a40d197255cc0c8588f9e9faa6f007f10c4d658da6c0ae124559240",
+      "q8": "9d909dc80a40d197255cc0c8588f9e9faa6f007f10c4d658da6c0ae124559240"
+    },
+    "spin-synthesis-q.f32": {
+      "q1": "1279af98c3ba20fa9a93ac11bc6d8f52ac3a70d06b5567ec158978d817105f68",
+      "q8": "07f9682a93bffa64c6a05cb2e37afefa85df21077c90af5f6272457c3d61942b"
+    },
+    "spin-synthesis-u.f32": {
+      "q1": "4098dfdd5c844aeb3168cae30b334d21ed67ebd411b1064a18a9816c5080e63e",
+      "q8": "eef92787c1abcd138b4c8e8ef74adb90fc0db5a730ed95cea842efd6009bb924"
+    },
+    "spin-synthesis-q.f64": {
+      "q1": "7c8acc1e784e3ab701bba648a0579f70f0a86c6eba0fea84fd974faf3cd123d0",
+      "q8": "ab3e9244f3671a5bbe53e0ae65819c4b14e55e236287273f854147343c678951"
+    },
+    "spin-synthesis-u.f64": {
+      "q1": "64747b438f728388530ecb43cae65e2735d177538334892458b8b9bceb9f48b6",
+      "q8": "b3e7ddfd75bc5fdfe039c504bf64a24953335c173cbefc91c11f2bbdffa13946"
+    },
+    "spin-synthesis-q-spectrum.f32": {
+      "q1": "00d491313173430e1b9f217d76cd7a9cb1d4f2c280ea353b2668d482c8e6d468",
+      "q8": "729f118cbfac293b4ecab9e77b55c92fc107b515bde803e520d29acb7b42d2f9"
+    },
+    "spin-synthesis-u-spectrum.f32": {
+      "q1": "5515bc3b3a8caab1316d15e674cd938eb72cf1998eccb9aa8626447bb11f145f",
+      "q8": "8693c6fcc6276752a79413fcfe036a05d155b5ce8565d0ab25a13739a821860c"
+    },
+    "spin-synthesis-q-spectrum.f64": {
+      "q1": "c3f9e929750bae43829cbba301a2707132a13376001e61c73a1b6e7619d18493",
+      "q8": "ea18797a4ab96aa527f05d80937242c91c259364cfc82e28079a5a3b29290a91"
+    },
+    "spin-synthesis-u-spectrum.f64": {
+      "q1": "d1b95d467197878a10ce9d97c6d31270994378b9139c17ce7d3490596b422981",
+      "q8": "e66d720b4046b6be936c762ab27b96757aea9920ab155b1d2e76a1dc071e2da5"
+    }
+  },
+  "q1_q8_bitwise_equal_by_precision": {
+    "f32": false,
+    "f64": false
+  },
+  "q1_q8_bitwise_equal": false,
+  "components": {
+    "q": {
+      "reference_spectrum_sha256": "0da563e40590c28560d8609d5276888fbbf82ca5f9b8636fde1d1aca26b1f0ef",
+      "f32_spectrum_vs_binary128": {
+        "relative_l2": 6.267927151912384e-05,
+        "max_absolute": 0.020852685106757356,
+        "valid_count": 520562,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_spectrum_vs_binary128": {
+        "relative_l2": 7.543835449443765e-14,
+        "max_absolute": 1.427745048342497e-11,
+        "valid_count": 520562,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_vs_f64_spectrum": {
+        "relative_l2": 6.26792715338487e-05,
+        "max_absolute": 0.02085268512103473,
+        "valid_count": 520562,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_inverse_fft_residual": {
+        "relative_l2": 1.4189285515328998e-07,
+        "max_absolute": 0.0001408333099561787,
+        "max_absolute_ring_longitude": [
+          200,
+          195
+        ],
+        "max_envelope_scaled": 2.951765964775041e-07,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1414
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_inverse_fft_residual": {
+        "relative_l2": 6.258880273109593e-16,
+        "max_absolute": 6.821210263296962e-13,
+        "max_absolute_ring_longitude": [
+          199,
+          196
+        ],
+        "max_envelope_scaled": 1.719405685318874e-15,
+        "max_envelope_scaled_ring_longitude": [
+          721,
+          1452
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_map_vs_binary128_reference": {
+        "relative_l2": 6.178208504131431e-05,
+        "max_absolute": 0.10308111781548135,
+        "max_absolute_ring_longitude": [
+          1,
+          1363
+        ],
+        "max_envelope_scaled": 0.002873062390277511,
+        "max_envelope_scaled_ring_longitude": [
+          1,
+          1363
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_map_vs_binary128_reference": {
+        "relative_l2": 7.520580637988901e-14,
+        "max_absolute": 9.988809779315488e-11,
+        "max_absolute_ring_longitude": [
+          713,
+          652
+        ],
+        "max_envelope_scaled": 1.934469079580797e-12,
+        "max_envelope_scaled_ring_longitude": [
+          1,
+          1358
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      }
+    },
+    "u": {
+      "reference_spectrum_sha256": "3270bad913856a0c9d761682d9fc1279b1e831fc3a4671fc3da788e341c9a95b",
+      "f32_spectrum_vs_binary128": {
+        "relative_l2": 7.45296207455834e-05,
+        "max_absolute": 0.030095873743292145,
+        "valid_count": 520562,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_spectrum_vs_binary128": {
+        "relative_l2": 7.814909783351581e-14,
+        "max_absolute": 1.45345957491827e-11,
+        "valid_count": 520562,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_vs_f64_spectrum": {
+        "relative_l2": 7.452962076792304e-05,
+        "max_absolute": 0.03009587375782674,
+        "valid_count": 520562,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_inverse_fft_residual": {
+        "relative_l2": 1.4210717222376737e-07,
+        "max_absolute": 0.00015456566563898377,
+        "max_absolute_ring_longitude": [
+          395,
+          650
+        ],
+        "max_envelope_scaled": 2.902564568437349e-07,
+        "max_envelope_scaled_ring_longitude": [
+          721,
+          782
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_inverse_fft_residual": {
+        "relative_l2": 6.2740197126290955e-16,
+        "max_absolute": 9.094947017729282e-13,
+        "max_absolute_ring_longitude": [
+          382,
+          644
+        ],
+        "max_envelope_scaled": 1.842220377127365e-15,
+        "max_envelope_scaled_ring_longitude": [
+          721,
+          1128
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_map_vs_binary128_reference": {
+        "relative_l2": 6.753145564707827e-05,
+        "max_absolute": 0.10036701008120552,
+        "max_absolute_ring_longitude": [
+          1,
+          53
+        ],
+        "max_envelope_scaled": 0.002895730290981761,
+        "max_envelope_scaled_ring_longitude": [
+          1,
+          53
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_map_vs_binary128_reference": {
+        "relative_l2": 7.663259084092935e-14,
+        "max_absolute": 1.056577048075269e-10,
+        "max_absolute_ring_longitude": [
+          391,
+          656
+        ],
+        "max_envelope_scaled": 1.9601743894695173e-12,
+        "max_envelope_scaled_ring_longitude": [
+          1,
+          43
+        ],
+        "valid_count": 1052676,
+        "excluded_nonfinite_count": 0
+      }
+    }
+  }
+}

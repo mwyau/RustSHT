@@ -1,0 +1,234 @@
+{
+  "source_sha": "dc1aa4f65109fc93fef8a0595998df464a70a639",
+  "grid": {
+    "kind": "Fejer1",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458
+  },
+  "reference": "GCC __float128 spin-1-to-scalar channel conversion and normalized scalar-harmonic recurrence; expected spectra rounded once to binary64, then NumPy 2.x pocketfft inverse real FFT",
+  "q1_q8_hashes": {
+    "geometry.csv": {
+      "q1": "4d8b6220808d35261f889544b2a4a760952f3171dcb0412f2f3cbeaeb00cad3d",
+      "q8": "4d8b6220808d35261f889544b2a4a760952f3171dcb0412f2f3cbeaeb00cad3d"
+    },
+    "spin-synthesis-e-input.f32": {
+      "q1": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0",
+      "q8": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0"
+    },
+    "spin-synthesis-b-input.f32": {
+      "q1": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1",
+      "q8": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1"
+    },
+    "spin-synthesis-e-input.f64": {
+      "q1": "3807be1568cbb0561384e2be937b5c16af25491520362b97b5343ae7f7163d6c",
+      "q8": "3807be1568cbb0561384e2be937b5c16af25491520362b97b5343ae7f7163d6c"
+    },
+    "spin-synthesis-b-input.f64": {
+      "q1": "9d909dc80a40d197255cc0c8588f9e9faa6f007f10c4d658da6c0ae124559240",
+      "q8": "9d909dc80a40d197255cc0c8588f9e9faa6f007f10c4d658da6c0ae124559240"
+    },
+    "spin-synthesis-q.f32": {
+      "q1": "cd046fdda9c1d591f9511534a636daa9d03db8099de0179c90e476423782787a",
+      "q8": "cd046fdda9c1d591f9511534a636daa9d03db8099de0179c90e476423782787a"
+    },
+    "spin-synthesis-u.f32": {
+      "q1": "a9fb03bae97da1b400b9b17cb314285c031f3d36bf50697388c98ea745731ffd",
+      "q8": "a9fb03bae97da1b400b9b17cb314285c031f3d36bf50697388c98ea745731ffd"
+    },
+    "spin-synthesis-q.f64": {
+      "q1": "154228dc12da18fb9c0df09b18ddd7d317cac993974b8942b3980423f731934a",
+      "q8": "c58e9b2b69acb074ac6b1858cd5923f2fe000e2b33e38209f45e553ce52005e0"
+    },
+    "spin-synthesis-u.f64": {
+      "q1": "fdb08a2114cf744ea3437b44ffa1b92958f2e7b05d834fd146315c996c53e914",
+      "q8": "67a6eb4eb682b19a6427528f78031eb901bd0a671bf862f46ca1e5f1b864f3a9"
+    },
+    "spin-synthesis-q-spectrum.f32": {
+      "q1": "c015a4eebf8becb0796b057b8b6682215de645c9123c24d536588d9bcd20026f",
+      "q8": "c015a4eebf8becb0796b057b8b6682215de645c9123c24d536588d9bcd20026f"
+    },
+    "spin-synthesis-u-spectrum.f32": {
+      "q1": "ebdeaeae0625b475e0aa69bb9af17f69c019ba75c2bd9be9750259634183bf59",
+      "q8": "ebdeaeae0625b475e0aa69bb9af17f69c019ba75c2bd9be9750259634183bf59"
+    },
+    "spin-synthesis-q-spectrum.f64": {
+      "q1": "3b63bd3f6d46562e5e636a6d0c73c375dceaa547740fd405d6c1af1b66f62a23",
+      "q8": "a033808a215910c6819c6fb86fea7ecfcacd9b816813e0a9f26e03eccc5a2c93"
+    },
+    "spin-synthesis-u-spectrum.f64": {
+      "q1": "fd9c955b87d7c26264f181aa454815c5e247649ea7b84493ccd60df2bd1df97f",
+      "q8": "8d64c1a9b7943377ad97910b0aacfdb47413acb1e70d4cb2ad5f2947d0ebb791"
+    }
+  },
+  "q1_q8_bitwise_equal_by_precision": {
+    "f32": true,
+    "f64": false
+  },
+  "q1_q8_bitwise_equal": false,
+  "components": {
+    "q": {
+      "reference_spectrum_sha256": "c0f397a881841fda7db9b2f2982f9b6a3022ad7b407ebd377c33ad162f3aa901",
+      "f32_spectrum_vs_binary128": {
+        "relative_l2": 6.76571360930129e-05,
+        "max_absolute": 0.015028815370373039,
+        "valid_count": 519841,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_spectrum_vs_binary128": {
+        "relative_l2": 1.8727349418495785e-13,
+        "max_absolute": 8.233398491318915e-11,
+        "valid_count": 519841,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_vs_f64_spectrum": {
+        "relative_l2": 6.765713611042877e-05,
+        "max_absolute": 0.015028815403546503,
+        "valid_count": 519841,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_inverse_fft_residual": {
+        "relative_l2": 1.4218984370611096e-07,
+        "max_absolute": 0.00016885488628304302,
+        "max_absolute_ring_longitude": [
+          198,
+          206
+        ],
+        "max_envelope_scaled": 1.9933515571231816e-07,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1372
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_inverse_fft_residual": {
+        "relative_l2": 6.267825354764417e-16,
+        "max_absolute": 7.958078640513122e-13,
+        "max_absolute_ring_longitude": [
+          204,
+          154
+        ],
+        "max_envelope_scaled": 1.22573496013377e-15,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1453
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_map_vs_binary128_reference": {
+        "relative_l2": 6.504910527518356e-05,
+        "max_absolute": 0.09749651837533335,
+        "max_absolute_ring_longitude": [
+          718,
+          660
+        ],
+        "max_envelope_scaled": 0.0021605981052277576,
+        "max_envelope_scaled_ring_longitude": [
+          720,
+          835
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_map_vs_binary128_reference": {
+        "relative_l2": 1.8039728524177223e-13,
+        "max_absolute": 2.8124347295488406e-10,
+        "max_absolute_ring_longitude": [
+          0,
+          1405
+        ],
+        "max_envelope_scaled": 1.364563206674165e-11,
+        "max_envelope_scaled_ring_longitude": [
+          720,
+          863
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      }
+    },
+    "u": {
+      "reference_spectrum_sha256": "f6bcafc6aed3b4315cd31304c3608eaaf27ab9178f83e457bdfd31e8c2379e07",
+      "f32_spectrum_vs_binary128": {
+        "relative_l2": 8.382312911778649e-05,
+        "max_absolute": 0.025151587815624765,
+        "valid_count": 519841,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_spectrum_vs_binary128": {
+        "relative_l2": 2.624223249810877e-13,
+        "max_absolute": 1.148876549450506e-10,
+        "valid_count": 519841,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_vs_f64_spectrum": {
+        "relative_l2": 8.38231292156119e-05,
+        "max_absolute": 0.025151587924020724,
+        "valid_count": 519841,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_inverse_fft_residual": {
+        "relative_l2": 1.4187385414837203e-07,
+        "max_absolute": 0.00018183655993198045,
+        "max_absolute_ring_longitude": [
+          391,
+          663
+        ],
+        "max_envelope_scaled": 1.9140779567796153e-07,
+        "max_envelope_scaled_ring_longitude": [
+          720,
+          778
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_inverse_fft_residual": {
+        "relative_l2": 6.251217600702923e-16,
+        "max_absolute": 9.094947017729282e-13,
+        "max_absolute_ring_longitude": [
+          385,
+          644
+        ],
+        "max_envelope_scaled": 9.315417564931759e-16,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1452
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      },
+      "f32_map_vs_binary128_reference": {
+        "relative_l2": 7.400586847570043e-05,
+        "max_absolute": 0.11031431783408985,
+        "max_absolute_ring_longitude": [
+          719,
+          704
+        ],
+        "max_envelope_scaled": 0.004015703361100854,
+        "max_envelope_scaled_ring_longitude": [
+          719,
+          704
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      },
+      "f64_map_vs_binary128_reference": {
+        "relative_l2": 2.2133555514201972e-13,
+        "max_absolute": 3.1039881775996037e-10,
+        "max_absolute_ring_longitude": [
+          0,
+          1125
+        ],
+        "max_envelope_scaled": 1.0173542186741317e-11,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1125
+        ],
+        "valid_count": 1051218,
+        "excluded_nonfinite_count": 0
+      }
+    }
+  }
+}
