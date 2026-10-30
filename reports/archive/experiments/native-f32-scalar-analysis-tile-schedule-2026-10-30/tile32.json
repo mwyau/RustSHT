@@ -1,0 +1,1160 @@
+{
+  "purpose": "native-f32 scalar-analysis 32-ring tile candidate",
+  "source_head": "797d2720cfb17cd443c1ccdf835063b2433006be",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu": "AMD Ryzen 9 5950X; q1 CPU 0; q8 CPUs 0-7",
+  "target_ms": 30.0,
+  "process_pairs": 3,
+  "input_precision": "fixture generated as f32; exact f32 values widened component-wise for f64 worker",
+  "simd": "Pulp runtime dispatch; x86-64-v3 target, AVX2/FMA expected",
+  "f32_analysis_pair_tile": 32,
+  "cases": [
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1,
+      "case_id": "GL-T720-M720-s0-analysis-q1",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "pair_details": [
+        {
+          "pair": 1,
+          "execution_order": [
+            "f32",
+            "ducc",
+            "f64"
+          ],
+          "f32_ms": 50.728023500000006,
+          "f64_ms": 19.8669615,
+          "ducc_f32_ms": 14.365761249999998,
+          "f32_over_f64": 2.553386107885698,
+          "f32_over_ducc": 3.5311754537198654,
+          "f32_vs_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 50.728023500000006,
+            "samples_ms": [
+              53.584796,
+              51.721718,
+              51.542773,
+              50.725043,
+              51.606733,
+              50.731004000000006,
+              50.449957,
+              50.325725,
+              50.528985,
+              50.598766000000005
+            ],
+            "first_ms": 56.449047,
+            "warmup_ms": 50.940796000000006,
+            "repetitions": 1,
+            "checksum": -0.03989595337770879,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 19.8669615,
+            "samples_ms": [
+              19.8390365,
+              19.964983,
+              20.889899,
+              21.977605,
+              19.826433,
+              19.901083,
+              19.823022,
+              19.8948865,
+              19.7810085,
+              19.835245
+            ],
+            "first_ms": 26.535381,
+            "warmup_ms": 19.773213,
+            "repetitions": 2,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "cff66788abd44bd014732e738fe8b49637aebca2073f7d8ed536f0fd9ba3368c"
+          },
+          "ducc": {
+            "median_ms": 14.365761249999998,
+            "samples_ms": [
+              14.2561915,
+              14.481864,
+              14.2888925,
+              14.5773775,
+              14.6862565,
+              14.8001545,
+              14.275758,
+              14.355858,
+              14.351615,
+              14.3756645
+            ],
+            "first_ms": 17.099699,
+            "warmup_ms": 15.749381,
+            "repetitions": 2,
+            "checksum": -0.03989476812421344,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 2,
+          "execution_order": [
+            "f64",
+            "f32",
+            "ducc"
+          ],
+          "f32_ms": 50.90808,
+          "f64_ms": 19.960369,
+          "ducc_f32_ms": 14.560699,
+          "f32_over_f64": 2.550457859772031,
+          "f32_over_ducc": 3.4962662163403007,
+          "f32_vs_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 50.90808,
+            "samples_ms": [
+              50.922512000000005,
+              50.925047,
+              50.893648,
+              51.098971999999996,
+              50.995208,
+              51.440893,
+              50.553481999999995,
+              50.847382,
+              50.633281000000004,
+              50.492587
+            ],
+            "first_ms": 56.563752,
+            "warmup_ms": 51.295791,
+            "repetitions": 1,
+            "checksum": -0.03989595337770879,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 19.960369,
+            "samples_ms": [
+              19.8889855,
+              19.9599935,
+              20.1070435,
+              20.262154,
+              19.9549135,
+              20.034067,
+              19.9399005,
+              19.9351465,
+              19.9607445,
+              20.0102625
+            ],
+            "first_ms": 26.476932,
+            "warmup_ms": 19.99589,
+            "repetitions": 2,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "cff66788abd44bd014732e738fe8b49637aebca2073f7d8ed536f0fd9ba3368c"
+          },
+          "ducc": {
+            "median_ms": 14.560699,
+            "samples_ms": [
+              14.494863,
+              14.542297,
+              14.549365,
+              15.803758,
+              14.4143775,
+              14.621009,
+              14.461095,
+              16.549795,
+              14.572033,
+              14.58145
+            ],
+            "first_ms": 17.341372,
+            "warmup_ms": 16.313167,
+            "repetitions": 2,
+            "checksum": -0.03989476812421344,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 3,
+          "execution_order": [
+            "ducc",
+            "f64",
+            "f32"
+          ],
+          "f32_ms": 51.3046175,
+          "f64_ms": 20.2057585,
+          "ducc_f32_ms": 14.35179025,
+          "f32_over_f64": 2.539108714973506,
+          "f32_over_ducc": 3.57478869230269,
+          "f32_vs_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 51.3046175,
+            "samples_ms": [
+              52.041186,
+              51.566759,
+              51.306340999999996,
+              51.302894,
+              51.449809,
+              51.131053,
+              51.091539,
+              51.197217,
+              51.714084,
+              50.956306
+            ],
+            "first_ms": 56.715796999999995,
+            "warmup_ms": 53.167635,
+            "repetitions": 1,
+            "checksum": -0.03989595337770879,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 20.2057585,
+            "samples_ms": [
+              21.3564825,
+              19.889366,
+              19.9412685,
+              20.1950935,
+              20.232328,
+              20.2164235,
+              20.242492,
+              20.191311,
+              19.8870915,
+              20.3833855
+            ],
+            "first_ms": 26.789237,
+            "warmup_ms": 20.293819,
+            "repetitions": 2,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "cff66788abd44bd014732e738fe8b49637aebca2073f7d8ed536f0fd9ba3368c"
+          },
+          "ducc": {
+            "median_ms": 14.35179025,
+            "samples_ms": [
+              14.193494,
+              14.556278,
+              14.3813155,
+              14.322265,
+              14.2710695,
+              14.3093455,
+              14.408376,
+              14.797114,
+              14.2855365,
+              14.433879
+            ],
+            "first_ms": 16.022633,
+            "warmup_ms": 16.07443,
+            "repetitions": 2,
+            "checksum": -0.03989476812421344,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        }
+      ],
+      "median_f32_over_f64": 2.550457859772031,
+      "median_f32_over_ducc": 3.5311754537198654,
+      "median_f32_ms": 50.90808,
+      "median_f64_ms": 19.960369,
+      "median_ducc_f32_ms": 14.365761249999998
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8,
+      "case_id": "GL-T720-M720-s0-analysis-q8",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "pair_details": [
+        {
+          "pair": 1,
+          "execution_order": [
+            "f32",
+            "ducc",
+            "f64"
+          ],
+          "f32_ms": 8.495933749999999,
+          "f64_ms": 3.630243625,
+          "ducc_f32_ms": 2.367452,
+          "f32_over_f64": 2.3403205480458626,
+          "f32_over_ducc": 3.588640339909742,
+          "f32_vs_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 8.495933749999999,
+            "samples_ms": [
+              8.04083675,
+              8.6241435,
+              8.495137249999999,
+              8.514135000000001,
+              8.304049500000001,
+              8.85155425,
+              8.062494749999999,
+              8.3898875,
+              8.538167750000001,
+              8.49673025
+            ],
+            "first_ms": 9.367805,
+            "warmup_ms": 8.234104,
+            "repetitions": 4,
+            "checksum": -0.03989595337770879,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 3.630243625,
+            "samples_ms": [
+              3.55721375,
+              3.884238375,
+              3.63253975,
+              3.6279475,
+              3.51669425,
+              3.708326625,
+              3.572972,
+              3.702914,
+              3.532320875,
+              3.781657625
+            ],
+            "first_ms": 5.414155,
+            "warmup_ms": 3.910711,
+            "repetitions": 8,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "cff66788abd44bd014732e738fe8b49637aebca2073f7d8ed536f0fd9ba3368c"
+          },
+          "ducc": {
+            "median_ms": 2.367452,
+            "samples_ms": [
+              2.605647571428572,
+              2.413756142857143,
+              2.412946785714286,
+              2.4190110000000002,
+              2.336683357142857,
+              2.3309117857142856,
+              2.354654857142857,
+              2.3484425,
+              2.321447642857143,
+              2.3802491428571426
+            ],
+            "first_ms": 5.101009,
+            "warmup_ms": 4.098983,
+            "repetitions": 14,
+            "checksum": -0.03989476812421344,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 2,
+          "execution_order": [
+            "f64",
+            "f32",
+            "ducc"
+          ],
+          "f32_ms": 7.0380935000000004,
+          "f64_ms": 3.1945126115,
+          "ducc_f32_ms": 2.3184742307692305,
+          "f32_over_f64": 2.2031822553034863,
+          "f32_over_ducc": 3.0356574192609767,
+          "f32_vs_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 7.0380935000000004,
+            "samples_ms": [
+              8.222434250000001,
+              8.19762525,
+              8.4568605,
+              7.08514525,
+              6.991041750000001,
+              6.9014665,
+              6.930949,
+              7.18213925,
+              6.88880525,
+              6.969628999999999
+            ],
+            "first_ms": 9.11384,
+            "warmup_ms": 8.279068,
+            "repetitions": 4,
+            "checksum": -0.03989595337770879,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 3.1945126115,
+            "samples_ms": [
+              2.851406444,
+              3.406980889,
+              3.568214889,
+              3.032080222,
+              3.255243444,
+              3.203191667,
+              3.045127889,
+              3.470578889,
+              2.922567444,
+              3.185833556
+            ],
+            "first_ms": 5.674442,
+            "warmup_ms": 3.648861,
+            "repetitions": 9,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "cff66788abd44bd014732e738fe8b49637aebca2073f7d8ed536f0fd9ba3368c"
+          },
+          "ducc": {
+            "median_ms": 2.3184742307692305,
+            "samples_ms": [
+              2.306509076923077,
+              2.314753,
+              2.3055288461538463,
+              2.368798,
+              2.3573326923076925,
+              2.343146230769231,
+              2.319861846153846,
+              2.3170866153846155,
+              2.2989388461538462,
+              2.334890692307692
+            ],
+            "first_ms": 5.514052,
+            "warmup_ms": 4.313916,
+            "repetitions": 13,
+            "checksum": -0.03989476812421344,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 3,
+          "execution_order": [
+            "ducc",
+            "f64",
+            "f32"
+          ],
+          "f32_ms": 8.2530815,
+          "f64_ms": 3.5583853750000003,
+          "ducc_f32_ms": 2.3347219230769234,
+          "f32_over_f64": 2.3193332453486715,
+          "f32_over_ducc": 3.534931256020112,
+          "f32_vs_ducc": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 8.2530815,
+            "samples_ms": [
+              8.4312725,
+              8.2095675,
+              8.50810875,
+              8.0557145,
+              8.661563750000001,
+              8.528815250000001,
+              8.2965955,
+              8.180721,
+              8.13915075,
+              8.119990000000001
+            ],
+            "first_ms": 8.832863999999999,
+            "warmup_ms": 8.248861,
+            "repetitions": 4,
+            "checksum": -0.03989595337770879,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 3.5583853750000003,
+            "samples_ms": [
+              3.575389,
+              3.56534775,
+              3.526272125,
+              3.551423,
+              3.58044225,
+              3.4796185,
+              3.57751425,
+              3.682333,
+              3.467651125,
+              3.53356825
+            ],
+            "first_ms": 4.875076,
+            "warmup_ms": 3.769446,
+            "repetitions": 8,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "cff66788abd44bd014732e738fe8b49637aebca2073f7d8ed536f0fd9ba3368c"
+          },
+          "ducc": {
+            "median_ms": 2.3347219230769234,
+            "samples_ms": [
+              2.349874923076923,
+              2.3351996923076923,
+              2.334244153846154,
+              2.3565127692307692,
+              2.3295244615384614,
+              2.5659286153846157,
+              2.3201862307692305,
+              2.333672230769231,
+              2.3786934615384614,
+              2.313510692307692
+            ],
+            "first_ms": 6.120096,
+            "warmup_ms": 4.516545,
+            "repetitions": 13,
+            "checksum": -0.03989476812421344,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        }
+      ],
+      "median_f32_over_f64": 2.3193332453486715,
+      "median_f32_over_ducc": 3.534931256020112,
+      "median_f32_ms": 8.2530815,
+      "median_f64_ms": 3.5583853750000003,
+      "median_ducc_f32_ms": 2.3347219230769234
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1,
+      "case_id": "GL-T720-M180-s0-analysis-q1",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "pair_details": [
+        {
+          "pair": 1,
+          "execution_order": [
+            "f32",
+            "ducc",
+            "f64"
+          ],
+          "f32_ms": 20.45919025,
+          "f64_ms": 8.570833875,
+          "ducc_f32_ms": 5.8837108,
+          "f32_over_f64": 2.3870711471466945,
+          "f32_over_ducc": 3.4772596657877877,
+          "f32_vs_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 20.45919025,
+            "samples_ms": [
+              20.381853,
+              20.5365275,
+              20.3141265,
+              20.615395000000003,
+              21.039364000000003,
+              20.960927,
+              20.724775,
+              20.270469499999997,
+              20.0781645,
+              20.104067999999998
+            ],
+            "first_ms": 23.842641,
+            "warmup_ms": 20.259553999999998,
+            "repetitions": 2,
+            "checksum": -0.0862149870954454,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 8.570833875,
+            "samples_ms": [
+              8.59729075,
+              8.4347115,
+              8.537494,
+              8.57266975,
+              8.45162075,
+              8.84563575,
+              8.50587725,
+              9.267826,
+              9.4988935,
+              8.568998
+            ],
+            "first_ms": 12.807805,
+            "warmup_ms": 8.487037,
+            "repetitions": 4,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "016b28dcf00b3f5142cff5e324558da5a4a41b1fa6cb57f2627396552fcdd68d"
+          },
+          "ducc": {
+            "median_ms": 5.8837108,
+            "samples_ms": [
+              5.8929772,
+              5.807014199999999,
+              5.8790552,
+              6.1056812,
+              5.8115106,
+              6.0814639999999995,
+              5.8661068,
+              6.022702000000001,
+              5.8359184,
+              5.888366400000001
+            ],
+            "first_ms": 6.753672,
+            "warmup_ms": 6.835555,
+            "repetitions": 5,
+            "checksum": -0.0862166506703943,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 2,
+          "execution_order": [
+            "f64",
+            "f32",
+            "ducc"
+          ],
+          "f32_ms": 20.60999,
+          "f64_ms": 8.482344375,
+          "ducc_f32_ms": 5.7982548000000005,
+          "f32_over_f64": 2.4297516215851584,
+          "f32_over_ducc": 3.5545160933596773,
+          "f32_vs_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 20.60999,
+            "samples_ms": [
+              20.5521315,
+              20.569644500000003,
+              20.5497925,
+              20.624267000000003,
+              20.558418500000002,
+              20.6545135,
+              20.621201,
+              20.868914999999998,
+              20.662528,
+              20.598779
+            ],
+            "first_ms": 23.818116,
+            "warmup_ms": 20.562211,
+            "repetitions": 2,
+            "checksum": -0.0862149870954454,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 8.482344375,
+            "samples_ms": [
+              8.35551075,
+              8.39717375,
+              8.3933165,
+              8.52913325,
+              8.6372355,
+              8.406644,
+              8.65100875,
+              8.6515475,
+              8.8386025,
+              8.4355555
+            ],
+            "first_ms": 12.537049,
+            "warmup_ms": 8.384535,
+            "repetitions": 4,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "016b28dcf00b3f5142cff5e324558da5a4a41b1fa6cb57f2627396552fcdd68d"
+          },
+          "ducc": {
+            "median_ms": 5.7982548000000005,
+            "samples_ms": [
+              5.804191,
+              5.8035398,
+              5.8723886,
+              5.7911424,
+              5.795697,
+              5.794651,
+              5.7959876,
+              5.7976306,
+              5.8156164,
+              5.798879
+            ],
+            "first_ms": 6.704831,
+            "warmup_ms": 6.470973,
+            "repetitions": 5,
+            "checksum": -0.0862166506703943,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 3,
+          "execution_order": [
+            "ducc",
+            "f64",
+            "f32"
+          ],
+          "f32_ms": 20.8969595,
+          "f64_ms": 8.429251375,
+          "ducc_f32_ms": 5.828816,
+          "f32_over_f64": 2.4791002866491216,
+          "f32_over_ducc": 3.585112225192904,
+          "f32_vs_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 20.8969595,
+            "samples_ms": [
+              20.6520135,
+              21.187331,
+              20.656171,
+              21.137748000000002,
+              20.496703,
+              22.0176905,
+              20.501056,
+              21.351217499999997,
+              20.58078,
+              21.3874705
+            ],
+            "first_ms": 25.168072,
+            "warmup_ms": 22.133933000000003,
+            "repetitions": 2,
+            "checksum": -0.0862149870954454,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 8.429251375,
+            "samples_ms": [
+              8.57825525,
+              8.58237775,
+              8.4464985,
+              8.426406,
+              8.46223025,
+              8.39795025,
+              8.405492,
+              8.40191275,
+              8.43209675,
+              8.4162945
+            ],
+            "first_ms": 12.581391,
+            "warmup_ms": 8.367063,
+            "repetitions": 4,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "016b28dcf00b3f5142cff5e324558da5a4a41b1fa6cb57f2627396552fcdd68d"
+          },
+          "ducc": {
+            "median_ms": 5.828816,
+            "samples_ms": [
+              5.8578332,
+              5.8026298,
+              5.8200144,
+              5.8302758,
+              5.824509,
+              5.8871522,
+              5.9012024,
+              5.8356458,
+              5.7819434,
+              5.8273562
+            ],
+            "first_ms": 6.715671,
+            "warmup_ms": 6.322345,
+            "repetitions": 5,
+            "checksum": -0.0862166506703943,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        }
+      ],
+      "median_f32_over_f64": 2.4297516215851584,
+      "median_f32_over_ducc": 3.5545160933596773,
+      "median_f32_ms": 20.60999,
+      "median_f64_ms": 8.482344375,
+      "median_ducc_f32_ms": 5.828816
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8,
+      "case_id": "GL-T720-M180-s0-analysis-q8",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "pair_details": [
+        {
+          "pair": 1,
+          "execution_order": [
+            "f32",
+            "ducc",
+            "f64"
+          ],
+          "f32_ms": 3.2344106666666663,
+          "f64_ms": 1.4515092105,
+          "ducc_f32_ms": 1.0175188666666668,
+          "f32_over_f64": 2.2283087446289866,
+          "f32_over_ducc": 3.178723041531809,
+          "f32_vs_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 3.2344106666666663,
+            "samples_ms": [
+              3.226202555555555,
+              3.2564224444444445,
+              3.2675565555555557,
+              3.2134753333333332,
+              3.185150111111111,
+              3.2426187777777775,
+              3.1992375555555554,
+              3.215439,
+              3.2700745555555555,
+              3.2659301111111114
+            ],
+            "first_ms": 4.213426999999999,
+            "warmup_ms": 3.670941,
+            "repetitions": 9,
+            "checksum": -0.0862149870954454,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 1.4515092105,
+            "samples_ms": [
+              1.454035,
+              1.454552789,
+              1.475662842,
+              1.473569947,
+              1.454505316,
+              1.444102684,
+              1.445468947,
+              1.448983421,
+              1.441553684,
+              1.448490421
+            ],
+            "first_ms": 2.283715,
+            "warmup_ms": 1.653956,
+            "repetitions": 19,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "016b28dcf00b3f5142cff5e324558da5a4a41b1fa6cb57f2627396552fcdd68d"
+          },
+          "ducc": {
+            "median_ms": 1.0175188666666668,
+            "samples_ms": [
+              1.0296467666666667,
+              1.0841584333333332,
+              1.0114807333333333,
+              1.0838204666666666,
+              0.9928959333333334,
+              1.023557,
+              1.0036437333333332,
+              1.0560418,
+              1.0090545333333334,
+              0.930604
+            ],
+            "first_ms": 2.578457,
+            "warmup_ms": 4.111176,
+            "repetitions": 30,
+            "checksum": -0.0862166506703943,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 2,
+          "execution_order": [
+            "f64",
+            "f32",
+            "ducc"
+          ],
+          "f32_ms": 3.06871935,
+          "f64_ms": 1.361071237,
+          "ducc_f32_ms": 1.39711653125,
+          "f32_over_f64": 2.254635368508636,
+          "f32_over_ducc": 2.196466279913256,
+          "f32_vs_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 3.06871935,
+            "samples_ms": [
+              2.9818628,
+              3.1901447000000003,
+              3.0259704,
+              2.9999336000000003,
+              3.3530857,
+              3.1184044,
+              3.1560177000000005,
+              3.0390408,
+              3.0983978999999997,
+              2.9517865
+            ],
+            "first_ms": 3.687913,
+            "warmup_ms": 3.101125,
+            "repetitions": 10,
+            "checksum": -0.0862149870954454,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 1.361071237,
+            "samples_ms": [
+              1.431640421,
+              1.476918842,
+              1.475108105,
+              1.374394842,
+              1.273124211,
+              1.307738474,
+              1.280084632,
+              1.323751105,
+              1.387416632,
+              1.347747632
+            ],
+            "first_ms": 2.509437,
+            "warmup_ms": 1.640591,
+            "repetitions": 19,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "016b28dcf00b3f5142cff5e324558da5a4a41b1fa6cb57f2627396552fcdd68d"
+          },
+          "ducc": {
+            "median_ms": 1.39711653125,
+            "samples_ms": [
+              1.3953294375,
+              1.516974,
+              1.46362725,
+              1.4236474375,
+              1.276515125,
+              1.290463125,
+              1.398903625,
+              1.168340125,
+              1.0074308125,
+              1.4705815625
+            ],
+            "first_ms": 2.658176,
+            "warmup_ms": 1.922909,
+            "repetitions": 16,
+            "checksum": -0.0862166506703943,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        },
+        {
+          "pair": 3,
+          "execution_order": [
+            "ducc",
+            "f64",
+            "f32"
+          ],
+          "f32_ms": 3.215308125,
+          "f64_ms": 1.3912764995,
+          "ducc_f32_ms": 1.2265594615384616,
+          "f32_over_f64": 2.3110489727638788,
+          "f32_over_ducc": 2.6214042007935516,
+          "f32_vs_ducc": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "f32": {
+            "median_ms": 3.215308125,
+            "samples_ms": [
+              3.28770425,
+              2.90387825,
+              3.044607875,
+              3.142159375,
+              3.33509675,
+              3.331545,
+              3.192908,
+              3.405904375,
+              3.18938275,
+              3.23770825
+            ],
+            "first_ms": 4.614568,
+            "warmup_ms": 3.9728869999999996,
+            "repetitions": 8,
+            "checksum": -0.0862149870954454,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          },
+          "f64": {
+            "median_ms": 1.3912764995,
+            "samples_ms": [
+              1.578797875,
+              1.368193,
+              1.390487812,
+              1.381671375,
+              1.472874562,
+              1.36304525,
+              1.392065187,
+              1.374881125,
+              1.394089625,
+              1.461130125
+            ],
+            "first_ms": 3.02369,
+            "warmup_ms": 1.949038,
+            "repetitions": 16,
+            "checksum": null,
+            "repeat_consistent": null,
+            "reset_consistent": true,
+            "binary_output_sha256": "016b28dcf00b3f5142cff5e324558da5a4a41b1fa6cb57f2627396552fcdd68d"
+          },
+          "ducc": {
+            "median_ms": 1.2265594615384616,
+            "samples_ms": [
+              1.219932423076923,
+              1.2425201153846155,
+              1.2838509615384615,
+              1.5567641153846155,
+              1.2449685384615385,
+              1.1017411923076923,
+              1.1728631923076924,
+              1.1908838461538462,
+              1.2331865,
+              1.1912001923076923
+            ],
+            "first_ms": 3.514338,
+            "warmup_ms": 2.235104,
+            "repetitions": 26,
+            "checksum": -0.0862166506703943,
+            "repeat_consistent": true,
+            "reset_consistent": true,
+            "binary_output_sha256": null
+          }
+        }
+      ],
+      "median_f32_over_f64": 2.254635368508636,
+      "median_f32_over_ducc": 2.6214042007935516,
+      "median_f32_ms": 3.215308125,
+      "median_f64_ms": 1.3912764995,
+      "median_ducc_f32_ms": 1.2265594615384616
+    }
+  ]
+}
