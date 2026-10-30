@@ -1,0 +1,19 @@
+{
+  "source_head": "9cb2788cd3f18c0f262e24dff6fac58236e5a18d",
+  "candidate_patch_sha256": "bd501b116b599c8b7d4d2866fa835334c8ce261bb8d210797f5c915b2709d519",
+  "candidate_worker_sha256": "703d24f59dcef714ab4bdaa8dbab4a019751f125f314c1149b725a06b8453181",
+  "observations": [
+    {
+      "threads": 1,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "backend": "rustsht"
+    },
+    {
+      "threads": 8,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "backend": "rustsht"
+    }
+  ]
+}
