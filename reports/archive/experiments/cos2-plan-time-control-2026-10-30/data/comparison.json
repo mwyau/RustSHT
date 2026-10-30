@@ -1,0 +1,175 @@
+{
+  "accuracy_target": "UNSET; these are errors and sensitivity measurements, not acceptance PASSes",
+  "candidate": "native-f32 generic scalar synthesis, isolated plan-time cosine-squared control",
+  "direct_stage": {
+    "by_order": {
+      "0": {
+        "count": 7,
+        "improved": 2,
+        "unchanged": 5,
+        "worsened": 0
+      },
+      "1": {
+        "count": 70,
+        "improved": 20,
+        "unchanged": 50,
+        "worsened": 0
+      },
+      "16": {
+        "count": 70,
+        "improved": 20,
+        "unchanged": 50,
+        "worsened": 0
+      },
+      "2": {
+        "count": 70,
+        "improved": 20,
+        "unchanged": 50,
+        "worsened": 0
+      },
+      "5": {
+        "count": 70,
+        "improved": 20,
+        "unchanged": 50,
+        "worsened": 0
+      },
+      "8": {
+        "count": 70,
+        "improved": 20,
+        "unchanged": 50,
+        "worsened": 0
+      }
+    },
+    "candidate_correctly_rounded_bits": 0,
+    "candidate_max_abs_error": 0.009565585772434106,
+    "candidate_max_relative_error": 0.057983557494187855,
+    "candidate_rms_abs_error": 0.0021321461671831,
+    "candidate_rms_relative_error": 0.005021444117102645,
+    "improved_cases": 102,
+    "matched_cases": 357,
+    "nonzero_reference_cases": 357,
+    "parent_correctly_rounded_bits": 0,
+    "parent_max_abs_error": 0.009565585772434106,
+    "parent_max_relative_error": 0.057983557494187855,
+    "parent_rms_abs_error": 0.002318541399781049,
+    "parent_rms_relative_error": 0.006625425231328805,
+    "unchanged_cases": 255,
+    "worsened_cases": 0
+  },
+  "direct_stage_reference": "binary128 values and correctly rounded f32 bits from the archived mode-comparison matrix",
+  "geometry": "GL T720, phi0=0, nphi=34, 721 exact archived theta values",
+  "provenance": {
+    "direct_probe_lanes": 8,
+    "ducc_source_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "plan_input_comparison": {
+      "cos_squared_bit_changes": 12,
+      "other_prepared_field_changes": 0,
+      "shared_records": 24
+    },
+    "public_probe_workspace_capacity": 1,
+    "raw_candidate_public_map_sha256": "d5e7679872608589ed68869657fdb836613f6a5233dc846583be76b9f897a915",
+    "raw_candidate_stage_trace_sha256": "bd834e729ca198265fa1a6032da995259d30eb4a9fad3a29ef57bed9126cc6fc",
+    "rust_candidate_base_commit": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+    "rust_candidate_diff_sha256": "ebedf095a6dceac343ee98e0465b3702e23a7d86b37bdcc1f0ebf01fc58f0ee5",
+    "rust_flags": [
+      "-C",
+      "target-cpu=x86-64-v3",
+      "-Aunexpected_cfgs"
+    ],
+    "rust_trace_test_binary_sha256": "c806026b2bd11e884de229f5874453cd1e4f97beeb8b472cebd83b0dc70ec13f",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "test_features": [
+      "default",
+      "parallel"
+    ],
+    "theta_fixture_sha256": "1f16212ea7ef50ccaf9a52b552f9a822fb7052da1e8b164efdd858bdfd2a6f03"
+  },
+  "public_map": {
+    "by_order": {
+      "0": {
+        "candidate_relative_l2": 5.751085588959308e-08,
+        "candidate_rms_abs": 6.751466156286526e-08,
+        "changed_pixels": 0,
+        "parent_relative_l2": 5.751085588959308e-08,
+        "parent_rms_abs": 6.751466156286526e-08,
+        "pixels": 1190
+      },
+      "1": {
+        "candidate_relative_l2": 2.7894910641029056e-05,
+        "candidate_rms_abs": 0.0001431839763055605,
+        "changed_pixels": 0,
+        "parent_relative_l2": 2.7894910641029056e-05,
+        "parent_rms_abs": 0.0001431839763055605,
+        "pixels": 2380
+      },
+      "16": {
+        "candidate_relative_l2": 0.00022279491105950945,
+        "candidate_rms_abs": 0.00040087339130752484,
+        "changed_pixels": 670,
+        "parent_relative_l2": 0.0009297818704518631,
+        "parent_rms_abs": 0.0016729502923194496,
+        "pixels": 2380
+      },
+      "2": {
+        "candidate_relative_l2": 4.474801866184411e-05,
+        "candidate_rms_abs": 0.00015316811036810023,
+        "changed_pixels": 0,
+        "parent_relative_l2": 4.474801866184411e-05,
+        "parent_rms_abs": 0.00015316811036810023,
+        "pixels": 2380
+      },
+      "5": {
+        "candidate_relative_l2": 0.0003417951765101104,
+        "candidate_rms_abs": 0.0008746462331475803,
+        "changed_pixels": 666,
+        "parent_relative_l2": 0.0005957482323757065,
+        "parent_rms_abs": 0.0015245064388330468,
+        "pixels": 2380
+      },
+      "8": {
+        "candidate_relative_l2": 0.00026882730999974746,
+        "candidate_rms_abs": 0.0003692605600223044,
+        "changed_pixels": 672,
+        "parent_relative_l2": 0.0008605019102346365,
+        "parent_rms_abs": 0.0011819833977202805,
+        "pixels": 2380
+      }
+    },
+    "candidate_correctly_rounded_bits": 1704,
+    "candidate_max_abs_to_reference": 0.002668751059080463,
+    "candidate_relative_l2_to_reference": 0.0001481006662253321,
+    "candidate_rms_abs_to_reference": 0.0004484358662140205,
+    "changed_pixel_error_improved": 1992,
+    "changed_pixel_error_tied": 0,
+    "changed_pixel_error_worsened": 16,
+    "changed_pixels": 2008,
+    "changed_transform_cells": 60,
+    "count": 13090,
+    "improved_cases": 1992,
+    "parent_correctly_rounded_bits": 1704,
+    "parent_max_abs_to_reference": 0.00567914587824344,
+    "parent_relative_l2_to_reference": 0.00036079231541116905,
+    "parent_rms_abs_to_reference": 0.0010924475804761483,
+    "unchanged_error_cases": 11082,
+    "worsened_cases": 16
+  },
+  "public_map_reference": "independent long-double values; its correctly rounded f32 bits are also checked",
+  "recurrence": {
+    "candidate_max_abs_state_error": 0.0003214859902786987,
+    "candidate_max_ulp_from_quad_rounded_f32": 876858,
+    "candidate_rms_abs_state_error": 0.00014887470643568335,
+    "candidate_rms_relative_state_error": 0.003734219404977102,
+    "first_candidate_leading_bits": "41264501",
+    "first_candidate_next_bits": "b34c14e7",
+    "first_differing_degree": 7,
+    "first_parent_leading_bits": "41264500",
+    "first_parent_next_bits": "b34c14e6",
+    "m": 5,
+    "matched_degree_states": 357,
+    "north_ring": 5,
+    "parent_max_abs_state_error": 0.0012410582243984323,
+    "parent_max_ulp_from_quad_rounded_f32": 3818009,
+    "parent_rms_abs_state_error": 0.0005198252900226978,
+    "parent_rms_relative_state_error": 0.014580890483231218
+  }
+}

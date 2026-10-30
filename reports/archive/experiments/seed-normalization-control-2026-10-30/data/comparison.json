@@ -1,0 +1,133 @@
+{
+  "accuracy_target": "UNSET; these are errors and sensitivity measurements, not acceptance PASSes",
+  "candidate": "native-f32 generic scalar synthesis, isolated seed-normalization control",
+  "direct_stage": {
+    "by_order": {
+      "0": {
+        "count": 7,
+        "improved": 0,
+        "unchanged": 7,
+        "worsened": 0
+      },
+      "1": {
+        "count": 70,
+        "improved": 0,
+        "unchanged": 70,
+        "worsened": 0
+      },
+      "16": {
+        "count": 70,
+        "improved": 8,
+        "unchanged": 50,
+        "worsened": 12
+      },
+      "2": {
+        "count": 70,
+        "improved": 0,
+        "unchanged": 70,
+        "worsened": 0
+      },
+      "5": {
+        "count": 70,
+        "improved": 0,
+        "unchanged": 70,
+        "worsened": 0
+      },
+      "8": {
+        "count": 70,
+        "improved": 20,
+        "unchanged": 50,
+        "worsened": 0
+      }
+    },
+    "candidate_correctly_rounded_bits": 0,
+    "candidate_max_abs_error": 0.009565585772434106,
+    "candidate_rms_abs_error": 0.0023185192317189173,
+    "improved_cases": 28,
+    "matched_cases": 357,
+    "parent_correctly_rounded_bits": 0,
+    "parent_max_abs_error": 0.009565585772434106,
+    "parent_rms_abs_error": 0.002318541399781049,
+    "unchanged_cases": 317,
+    "worsened_cases": 12
+  },
+  "direct_stage_reference": "binary128 values and correctly rounded f32 bits from the archived mode-comparison matrix",
+  "geometry": "GL T720, phi0=0, nphi=34, 721 exact archived theta values",
+  "provenance": {
+    "direct_probe_lanes": 8,
+    "ducc_source_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "public_probe_workspace_capacity": 1,
+    "raw_candidate_public_map_sha256": "b5a9b06f0564bd03dcbd263ea5aca60aecf1680f77711c90b95ff2da15ed73e2",
+    "raw_candidate_stage_trace_sha256": "f75977cd166eb1dccd4d6f7c5f3132631593c95c5c08e7730a09c3378b79fab4",
+    "rust_candidate_base_commit": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+    "rust_candidate_diff_sha256": "16a42debe5294e46d99b68511b48b962a8a2e2b74571bcedbe38cc72dee8aa3b",
+    "rust_flags": [
+      "-C",
+      "target-cpu=x86-64-v3",
+      "-Aunexpected_cfgs"
+    ],
+    "rust_trace_test_binary_sha256": "37911ea2f1cdffe06e023f07fc1b0d33e6aebfd2a3169ef7b8ab2417165862d6",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "test_features": [
+      "default",
+      "parallel"
+    ],
+    "theta_fixture_sha256": "1f16212ea7ef50ccaf9a52b552f9a822fb7052da1e8b164efdd858bdfd2a6f03"
+  },
+  "public_map": {
+    "by_order": {
+      "0": {
+        "candidate_rms_abs": 6.751466156286526e-08,
+        "changed_pixels": 0,
+        "parent_rms_abs": 6.751466156286526e-08,
+        "pixels": 1190
+      },
+      "1": {
+        "candidate_rms_abs": 0.0001431839763055605,
+        "changed_pixels": 0,
+        "parent_rms_abs": 0.0001431839763055605,
+        "pixels": 2380
+      },
+      "16": {
+        "candidate_rms_abs": 0.0016729502923194496,
+        "changed_pixels": 668,
+        "parent_rms_abs": 0.0016729502923194496,
+        "pixels": 2380
+      },
+      "2": {
+        "candidate_rms_abs": 0.00015316811036810023,
+        "changed_pixels": 0,
+        "parent_rms_abs": 0.00015316811036810023,
+        "pixels": 2380
+      },
+      "5": {
+        "candidate_rms_abs": 0.0015245064388330468,
+        "changed_pixels": 0,
+        "parent_rms_abs": 0.0015245064388330468,
+        "pixels": 2380
+      },
+      "8": {
+        "candidate_rms_abs": 0.0011815398919066474,
+        "changed_pixels": 672,
+        "parent_rms_abs": 0.0011819833977202805,
+        "pixels": 2380
+      }
+    },
+    "candidate_correctly_rounded_bits": 1704,
+    "candidate_max_abs_to_reference": 0.00567914587824344,
+    "candidate_rms_abs_to_reference": 0.0010923603469855743,
+    "changed_pixel_error_improved": 936,
+    "changed_pixel_error_tied": 0,
+    "changed_pixel_error_worsened": 404,
+    "changed_pixels": 1340,
+    "changed_transform_cells": 40,
+    "count": 13090,
+    "improved_cases": 936,
+    "parent_correctly_rounded_bits": 1704,
+    "parent_max_abs_to_reference": 0.00567914587824344,
+    "parent_rms_abs_to_reference": 0.0010924475804761483,
+    "unchanged_error_cases": 11750,
+    "worsened_cases": 404
+  },
+  "public_map_reference": "independent long-double values; its correctly rounded f32 bits are also checked"
+}
