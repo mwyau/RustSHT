@@ -1,7 +1,8 @@
-8a8ec04fa3beee7f752070d7eba5514dc2734f1b98629aca3f2fadc61d84846c  ./README.md
+db96f61f4b3f8417777899e5caa06807a9584fb0fcc96f4d1bb53f00ee0cc577  ./README.md
 fbc134fae5540d4cc134ffa2758f1ea34b99d0ad9502c95df8e4846c74ce6b75  ./candidate.patch.gz
 2e760f63dd5454685cbe958b1ce318a6841855804c355fbe24c2fa8fc9db00c6  ./no-skip-control.patch.gz
 934416288841dd721058d787becd0d6c3cedec8cc40469ea3460e698d172807b  ./run_screen.py
 5766ff29f031caae607bd5345a69eb7270400883f59dc9e07c008d5839ea4078  ./screen-no-skip.json
 54518a432bbf715ddf8621fa287a7cbd9c40704cd28aa1dc88f568592df6269c  ./screen-prefix.json
 e9ccb3e66357d7834438de6a0787f3f6fe0f6f56ce62943ef0dffe5dbf8a1ccd  ./validation.txt
+84d45f10cccb0a2e7b7db26f5d8a92517ddb7725a1c7ab31e76d8c128a159929  ./accuracy-independent-binary128.json

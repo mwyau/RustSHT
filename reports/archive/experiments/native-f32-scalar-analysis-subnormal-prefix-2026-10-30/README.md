@@ -35,10 +35,10 @@ readings are not part of the reproducible measurement.
 
 Formatting, release library check, the strict prefix-bound unit test, and the
 T720 scalar-analysis analytic/adjoint/workspace-reset integration test passed.
-The full scalar-analysis suite was not rerun on this variant. Independent
-high-band accuracy is OPEN: the preceding adaptive-only result was about
-`4.9081e-5` relative L2 against binary128, and this prefix variant has no new
-independent high-band result or declared science tolerance.
+The full scalar-analysis suite was not rerun on this variant. At the time of
+the timing screen, independent high-band accuracy was still open. The exact
+candidate has since received a binary128 and Fourier-stage follow-up below;
+no science tolerance is declared.
 
 The candidate remains isolated and is a bounded GAP. The contribution bound
 does not remove enough scale-sensitive recurrence and accumulation work to
@@ -52,3 +52,42 @@ native-f32 worker and packaged matched-f64 worker with the recorded Rust flags,
 and set `RUSTSHT_B1_WORKTREE`, `RUSTSHT_B1_BUILD`, `RUSTSHT_B1_DUCC`,
 `RUSTSHT_B1_SCREEN_RUST`, and `RUSTSHT_B1_SCREEN_OUTDIR` before running
 `python3 run_screen.py`.
+
+## Independent accuracy and Fourier-stage follow-up
+
+The exact prefix candidate was checked against the independent GCC
+binary128/libquadmath reference used by the [cross-family diagnostic
+package](../native-f32-cross-family-accuracy-2026-10-30/README.md). Metrics,
+source and binary hashes, and fixture/output hashes are in
+[`accuracy-independent-binary128.json`](accuracy-independent-binary128.json).
+
+For GL T720 `mmax=16`, all output degrees for orders 0 through 16 were
+compared on deterministic scalar, Q and U maps. Relative L2 is `3.6553657e-5`
+for scalar analysis, `3.8152882e-5` for spin E and `3.2030944e-5` for spin B;
+matched f64 controls are approximately `6.5e-14`. Replacing the native-f32
+Fourier input with direct binary128 Fourier sums changes these relative-L2
+errors by only `9.02e-10`, `5.29e-10` and `8.06e-10`; forward-FFT residuals
+are about `1.1e-7`. This places the dominant discrepancy after Fourier
+extraction on these fixtures, but does not separate recurrence from
+coefficient accumulation.
+
+On the full `mmax=720` grid, the selected 11 orders and degrees 600 through
+720 yield relative L2 `4.9080809e-5` for scalar analysis, `4.8309102e-5` for
+spin E and `5.3312544e-5` for spin B. q1 and q8 analysis coefficients and
+comparison tables are byte-identical. These checks use the exact timing
+candidate but cover selected orders only at full mmax. They are not
+full-order accuracy acceptance, and no scientific tolerance was supplied.
+Existing analytic/adjoint/workspace tests remain separate validation; the
+full scalar-analysis suite and exceptional-magnitude coverage have not been
+rerun on this variant.
+
+To reproduce, apply `candidate.patch.gz` at the recorded base, then apply the
+test-only spectrum observer and copy `phasec_accuracy_dump.rs` and
+`phasec_fullorder_accuracy_dump.rs` from the cross-family package. Build with
+`RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'`, using
+`RAYON_NUM_THREADS=1` or `8`. Run the mmax16 example and spectrum capture into
+one directory, copy the example's map/geometry/output files alongside the
+captured spectra, then run the mmax16 binary128 reference. Run the full-order
+example and reference separately for selected high-band outputs. Reference
+source and binary hashes are recorded in the JSON. Full raw CSVs and generated
+arrays remain outside the repository.
