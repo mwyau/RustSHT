@@ -1,0 +1,11 @@
+[package]
+name = "m6-matched-f64"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rustsht = { path = "../../../../../", default-features = false, features = ["parallel"] }
+rayon = "1"
+pulp = "0.22.3"
+
+[workspace]

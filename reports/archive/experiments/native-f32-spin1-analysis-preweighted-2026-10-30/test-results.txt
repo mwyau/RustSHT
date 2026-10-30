@@ -1,0 +1,21 @@
+Candidate: 6633c6dba6ee9bf9be583e4870979efc37086715
+
+Passed on the isolated candidate source:
+
+- cargo fmt --all -- --check
+- cargo test --release --features parallel --lib spin1_analysis (3 passed)
+- cargo test --release --features parallel --lib native_f32_spin_analysis_fused_scaled_seed_matches_checked_recurrence (1 passed)
+- cargo test --release --features parallel --test f32 f32_spin (3 passed)
+- cargo test --release --features parallel --lib spin1_scalar_fast_analysis_honors_the_polar_order_cutoff (1 passed)
+- cargo clippy --release --features parallel --lib -- -D warnings
+- CARGO_TARGET_DIR=<isolated candidate target> RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo check --release --manifest-path f64-worker/Cargo.toml
+
+The focused test `native_f32_spin_analysis_fused_scaled_seed_matches_checked_recurrence`
+was also run after broadening its sine-theta fixture to exercise mixed hard-scale
+lanes; it passed. Test builds report an existing dead-code warning for unused
+WorkCounters fields in scalar_ordered/kernel.rs. Clippy with warnings denied is clean.
+
+These checks cover the candidate's changed shared paired-analysis route and the
+existing spin-analysis API, adjoint, pinned T511 comparison, polar cutoff,
+poisoned-workspace, table initialization and reuse behavior. They are not a
+complete independent high-degree accuracy acceptance result.

@@ -1,0 +1,29 @@
+AVX2 code generation inspection
+
+Source: candidate commit 6ef0ee11d545bd55e021e899f5b5fb0fac8c1483
+Test-only follow-up: 6633c6dba6ee9bf9be583e4870979efc37086715
+Worker binary SHA-256: b5976977774c2c4d35c695a846b3466aee6c16d394f7903f2faad45be0535953
+Command: objdump -Cd --start-address=0x2920d0 --stop-address=0x292170 target/release/examples/ducc_f32_full_transform_parity
+Symbol: pulp::x86::v3::V3::vectorize::imp<...NativeScaledFusedAnalysisPairChannels<f32>>
+Symbol start/size: 0x2914a0 / 0x2a07 bytes
+
+The loop loads one eight-lane basis vector, updates eight independent
+accumulators with packed single-precision FMA, advances by 32 bytes, and
+repeats. The coefficient streams are read as memory operands from stack-based
+preweighted arrays. This establishes AVX2/FMA execution, not a spill-free loop.
+Across the full symbol there are 21 YMM instructions with stack operands,
+including intentional coefficient loads and scratch stores/reloads. Their
+cycle cost was not separately measured.
+
+  2920f0: vmovups       (%rsi,%rcx,1),%ymm8
+  2920f5: vfmadd231ps   0x748(%rsp,%rcx,1),%ymm8,%ymm7
+  2920ff: vfmadd231ps   0xb48(%rsp,%rcx,1),%ymm8,%ymm6
+  292109: vfmadd231ps   0xf48(%rsp,%rcx,1),%ymm8,%ymm5
+  292113: vfmadd231ps   0x1348(%rsp,%rcx,1),%ymm8,%ymm4
+  29211d: vfmadd231ps   0x2370(%rsp,%rcx,1),%ymm8,%ymm3
+  292127: vfmadd231ps   0x2770(%rsp,%rcx,1),%ymm8,%ymm2
+  292131: vfmadd231ps   0x2b70(%rsp,%rcx,1),%ymm8,%ymm1
+  29213b: vfmadd231ps   0x2f70(%rsp,%rcx,1),%ymm8,%ymm0
+  292145: add           $0x20,%rcx
+  292149: dec           %rax
+  29214c: jne           2920f0
