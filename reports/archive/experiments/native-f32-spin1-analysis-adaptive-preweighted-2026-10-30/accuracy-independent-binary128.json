@@ -1,0 +1,110 @@
+{
+  "purpose": "independent binary128 accuracy and Fourier-stage screen for the isolated native-f32 spin-1 analysis adaptive/preweighted candidate",
+  "candidate": {
+    "base_commit": "053c5668079fa89f37438a488b2545b5ceab1e69",
+    "source_diff_sha256": "d83f1442fa7cc7b2c27880df12b352cb974394b71962e83aa21bde1ce0979ab9",
+    "source_patch_path": "candidate.patch.gz",
+    "source_patch_compressed_sha256": "68a603f3a8b47b902c13ef2a4e42f13fc0923c49706ec60d13d7aa3ef5866abe",
+    "test_only_spectrum_patch_path": "../native-f32-cross-family-accuracy-2026-10-30/phasec-spectrum-capture.patch",
+    "test_only_spectrum_patch_sha256": "600121286f23ad59d152034f8423daaa32264f0a65efb56b05204cf7a7de58c8"
+  },
+  "reference": {
+    "method": "independent direct Fourier projection and normalized scalar-harmonic recurrence in GCC __float128/libquadmath; spin analysis uses the independent E/B transpose",
+    "ducc_revision_for_project_context": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "mmax16_source_sha256": "62a162c07baf1ccbee15f0db7d21f84fc77381b8a7284f25a2203a892f20053d",
+    "fullorder_source_sha256": "3a26d8fd8089aaafc591568943f8a1d26a7a277c937fe14aa5cd3fe7693a8fd3",
+    "mmax16_binary_sha256": "5e21741eab8a32bcfbafe1850a1362626f4c324a9f17d3ba5e7d50bb0b6607a2",
+    "fullorder_binary_sha256": "abaaa049c17c3fefbc17d99f83675f2690ac3952392b5c9f8b6005c79fb93bfd",
+    "compiler": "g++ 15.2.0",
+    "flags": "-std=c++20 -O2 -march=x86-64-v3 -lquadmath"
+  },
+  "rust_build": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "mmax16_harness_sha256": "102a521dadf76bbcec56d15b60a347d522ecf64d3e2edf50ec77ab9b62df4373",
+    "fullorder_harness_sha256": "c2e5a92072e2929d4e03ef09a64be8ca661b352b730d2f52ee0557cfbae921ea",
+    "mmax16_binary_sha256": "3a5decda2f34af745eda6353b2e253a6059b5e86e570a7f29bedf2f1dc866fa2",
+    "fullorder_binary_sha256": "d29d6bfaa9b56278b18228aa47ade563492a144f6abc3f09f92580ef632430a4"
+  },
+  "fixtures": {
+    "grid": "Gauss-Legendre GL T720",
+    "lmax": 720,
+    "phi0": 0.0,
+    "mmax16_case": {
+      "mmax": 16,
+      "nphi": 34,
+      "coverage": "all output degrees for m=0..16; deterministic f32 scalar, Q and U maps",
+      "q1_q8_analysis_outputs_byte_identical": true,
+      "geometry_sha256": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+      "scalar_map_sha256": "d531035814bf0fa490a52f5ced4885e8c94df831979bd813849d21ffffd3cadb",
+      "q_map_sha256": "91565db27d5d3bc8c5109bf671ae1d8af605c1381ad1a50f8fb69ea39c359d80",
+      "u_map_sha256": "7c6f629da4dddbb92afefa4aec5f55fc1473523d22da8526111c01f3f469babe",
+      "spin_analysis_e_f32_sha256": "0570e218615cbd3af730a0921b464350841619ecfdcd9ca8e50c05e49fef5041",
+      "spin_analysis_b_f32_sha256": "9f4f3905c792a9ddec952da3d34567be562756534a43adea9279171ffd4803d4",
+      "spin_analysis_q_spectrum_f32_sha256": "794afe403379f465d0c4f27dd695f380387ab06101bd53e903f205521d246808",
+      "spin_analysis_u_spectrum_f32_sha256": "3f06cd472cb18e3e2cd288ca3ea523dbb31ba33694beb5d0ab0146c4c3629815"
+    },
+    "fullorder_selected_band_case": {
+      "mmax": 720,
+      "nphi": 1458,
+      "selected_orders_m": [0, 1, 2, 5, 8, 16, 64, 180, 360, 719, 720],
+      "selected_degrees_l": "600..720",
+      "selected_coefficients_per_channel": 1092,
+      "q1_q8_outputs_byte_identical": true,
+      "geometry_sha256": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+      "spin_analysis_e_f32_sha256": "2f436a2017dcd723fc4fd749b0b75280a65a96f9dae5c25a552356af2bb8c530",
+      "spin_analysis_b_f32_sha256": "bdf77c29feab7e65ae1ea2783b8d93ecf02687a9c61df5b0c725f7e4dd16dc67",
+      "spin_analysis_e_csv_sha256": "2f1e9eede322f8ce25ee354e3e510b067afb78f3a235c657298b5e35c07d7f31",
+      "spin_analysis_b_csv_sha256": "21200dff7fbbce2667096501d2f9f751889254ea79714f95fd19c3d9b246802f"
+    }
+  },
+  "measurements": {
+    "mmax16_all_degrees": {
+      "scalar_analysis": {
+        "f32_relative_l2": "3.65589473614050491204590394601663473e-5",
+        "matched_f64_relative_l2": "6.45325637767698430581507386091563456e-14",
+        "f32_max_absolute_error": "4.08813860668876989302731225162554566e-6",
+        "f32_actual_fft_input_relative_l2": "3.65589473614050491204590394601663473e-5",
+        "f32_direct_fourier_input_relative_l2": "3.65580564763164947795474674932379429e-5"
+      },
+      "spin_analysis_e": {
+        "f32_relative_l2": "3.81574360354562348012526426095917473e-5",
+        "matched_f64_relative_l2": "6.49227545698100656380407987800409981e-14",
+        "f32_max_absolute_error": "2.88909753311864727149086970086735438e-6",
+        "f32_actual_fft_input_relative_l2": "3.81574360354562348012526426095917473e-5",
+        "f32_direct_fourier_input_relative_l2": "3.81569027844493818769294937700824766e-5"
+      },
+      "spin_analysis_b": {
+        "f32_relative_l2": "3.20326805609480489350205297456127701e-5",
+        "matched_f64_relative_l2": "6.60109504389906822099278938524402084e-14",
+        "f32_max_absolute_error": "3.06782368742934791133874582610505733e-6",
+        "f32_actual_fft_input_relative_l2": "3.20326805609480489350205297456127701e-5",
+        "f32_direct_fourier_input_relative_l2": "3.20318622132709048980116615949722444e-5"
+      },
+      "forward_fft_relative_l2": {
+        "scalar_map": "1.08761933617513118593369237727715874e-7",
+        "q_map": "1.09424558585926706786604137940917685e-7",
+        "u_map": "1.10814056642355639174277740616278068e-7"
+      }
+    },
+    "fullorder_selected_high_band": {
+      "spin_analysis_e": {
+        "f32_relative_l2": "4.83067016683949486829939572527945716e-5",
+        "matched_f64_relative_l2": "1.01920695181718726709822690710171e-13",
+        "f32_max_absolute_error": "3.55060461420637228471327599688445609e-7",
+        "f32_max_envelope_scaled_error": "4.23357526291164186776511465988752298e-6"
+      },
+      "spin_analysis_b": {
+        "f32_relative_l2": "5.32980962728590492798957454760749222e-5",
+        "matched_f64_relative_l2": "1.01242638600513505020805119727153633e-13",
+        "f32_max_absolute_error": "4.48232500957883173692354582684693545e-7",
+        "f32_max_envelope_scaled_error": "5.82029549972123066974486654373943684e-6"
+      }
+    }
+  },
+  "interpretation": {
+    "result": "The binary128 high-band relative L2 is 4.8307e-5 for E and 5.3298e-5 for B. On the mmax=16 all-degree fixture, replacing the actual native-f32 forward-FFT spectrum with direct binary128 Fourier inputs changes the E/B errors by only about 5.3e-10/8.2e-10 absolute in relative-L2 units; the forward-FFT residual is about 1.1e-7. This rules out the longitude FFT as the main error source on these fixtures, but does not split recurrence from coefficient accumulation.",
+    "acceptance": "No scientific tolerance was supplied. This is not full-order all-coefficient accuracy acceptance, nor does it replace adjoint, exceptional-magnitude, reset, or application-tolerance validation. No PASS is claimed.",
+    "execution": "The transform candidate uses native f32 arithmetic. Widened f64 values are only matched diagnostic controls; binary128 is confined to the independent reference."
+  }
+}
