@@ -1,0 +1,12 @@
+Candidate worktree: isolated candidate/m6-b1-native-next-20261030
+Base: a53e17877440de962567fc21a5226f786b721d1e plus adaptive/preflight patch and exact normal-scale leaf.
+
+Passed:
+- cargo fmt --all -- --check
+- git diff --check
+- RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo test --locked --release --features parallel --lib legendre::scalar_paired::analysis::tests
+  38 passed; 8 manual diagnostics ignored.
+- RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo test --locked --release --features parallel --test f32
+  14 passed; 1 opt-in T1023 test ignored.
+
+The integration suite includes f32 T720 scalar-analysis analytic modes, adjoint identities and workspace reset. The full candidate remains isolated and was not promoted.
