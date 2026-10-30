@@ -27,6 +27,8 @@ The source inventory classifies the current implementation as follows:
 but the ordered kernel, reflected geometry and SIMD operations are f64-specific.
 The paired synthesis implementation has a typed f32/f64 SIMD abstraction to
 reuse. This is a targeted generalization, not a mechanical `f64` replacement.
+The detailed module-by-module [Phase 0 architecture inventory](../docs/NATIVE_GENERIC_ARCHITECTURE.md)
+also classifies the f32-only routes and conversion sidecar slated for removal.
 
 **Evidence at decision time (not native-f32 parity):**
 - The first isolated generic scalar-synthesis candidate is now measured. Its
