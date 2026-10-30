@@ -1,0 +1,4358 @@
+[
+  {
+    "degrees": [
+      0,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 0.0010084386591864658
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 0.03573155211363026
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 0.025570952652766925
+      },
+      "max_ulp_distance": {
+        "degree": 720,
+        "value": 541401
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0008737709052858272,
+          "actual_bits": "3f9ce1c9",
+          "relative_error": 0.0007124017924219674,
+          "rounded_exact_bits": "3f9cfe6b",
+          "state_scaled_error": 0.0007124017924219674,
+          "ulp_distance": 7330
+        },
+        "650": {
+          "absolute_error": 0.000764070136680005,
+          "actual_bits": "3f1912cb",
+          "relative_error": 0.0012762002733070585,
+          "rounded_exact_bits": "3f1944de",
+          "state_scaled_error": 0.001004358158315329,
+          "ulp_distance": 12819
+        },
+        "700": {
+          "absolute_error": 0.000995609479603702,
+          "actual_bits": "be6e59bb",
+          "relative_error": 0.00425911370910527,
+          "rounded_exact_bits": "be6f5eb9",
+          "state_scaled_error": 0.00425911370910527,
+          "ulp_distance": 66814
+        },
+        "720": {
+          "absolute_error": 0.0010084386591864658,
+          "actual_bits": "3cdef050",
+          "relative_error": 0.03573155211363026,
+          "rounded_exact_bits": "3ce73329",
+          "state_scaled_error": 0.025570952652766925,
+          "ulp_distance": 541401
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 2.2456406837058055e-13
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 0.06570268194554209
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 1.3471724298936787e-11
+      },
+      "max_ulp_distance": {
+        "degree": 720,
+        "value": 555993703241523
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.3561430541837185e-13,
+          "actual_bits": "3ff34020d290404f",
+          "relative_error": 1.1271545117977119e-13,
+          "rounded_exact_bits": "3ff34020d2903dec",
+          "state_scaled_error": 1.1271545117977119e-13,
+          "ulp_distance": 611
+        },
+        "650": {
+          "absolute_error": 1.387143969181088e-13,
+          "actual_bits": "3fe27e2605636872",
+          "relative_error": 2.4003225391434056e-13,
+          "rounded_exact_bits": "3fe27e2605636391",
+          "state_scaled_error": 1.8870294534911426e-13,
+          "ulp_distance": 1249
+        },
+        "700": {
+          "absolute_error": 2.099812197543601e-13,
+          "actual_bits": "bfca618b0bbb379a",
+          "relative_error": 1.0188229287029037e-12,
+          "rounded_exact_bits": "bfca618b0bbb1a0d",
+          "state_scaled_error": 1.0188229287029037e-12,
+          "ulp_distance": 7565
+        },
+        "720": {
+          "absolute_error": 2.2456406837058055e-13,
+          "actual_bits": "bd8c16b6ef3a141b",
+          "relative_error": 0.06570268194554209,
+          "rounded_exact_bits": "bd8e10634e67eb4e",
+          "state_scaled_error": 1.3471724298936787e-11,
+          "ulp_distance": 555993703241523
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 0,
+        "fma_bits": "3f999884",
+        "operation": "a*cos2+b",
+        "separate_bits": "3f999883",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 176,
+      "fma_state_differs_from_separate_steps": 252,
+      "leading_fma_correctly_rounded_steps": 360,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 20,
+        "value": 0.47745180130004883
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 480,
+        "value": 0.49933624267578125
+      },
+      "state_fma_correctly_rounded_steps": 360,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 4.000082852747683,
+        "degree": 0
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 6.024190133282631,
+        "degree": 720
+      }
+    },
+    "m": 0,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.02822263796718504,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.715640691301213,
+        "final_value": -3.41788282792948e-12,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.02822263796718504,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.009558958147427651
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.028222637963767155,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 0,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.007750722699521192,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.196534872368013,
+        "final_value": 0.020471915264245962,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.007750722699521192,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.002625156230370277
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.020514703962403215,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.5201908107443397,
+        "final_value": 0.007707934001363941,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.020514703962403215,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.006948294373172647
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.5150541271145833e-09,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 3.841718779611229e-08,
+        "final_value": 0.028222639478821282,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.5849573812662517e-07,
+        "max_trajectory_delta_degree": 280,
+        "max_trajectory_delta_over_f32_envelope": 5.368222945918958e-08
+      }
+    },
+    "ring": 0
+  },
+  {
+    "degrees": [
+      0,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 6,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 0.0005177608449539177
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 0.08366360437969134
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 0.017218664829630997
+      },
+      "max_ulp_distance": {
+        "degree": 720,
+        "value": 1111883
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.00025415334049445963,
+          "actual_bits": "bfce6b1d",
+          "relative_error": 0.00015762525828820188,
+          "rounded_exact_bits": "bfce62c9",
+          "state_scaled_error": 0.00015762525828820188,
+          "ulp_distance": 2132
+        },
+        "650": {
+          "absolute_error": 0.000319908966099144,
+          "actual_bits": "bf57244a",
+          "relative_error": 0.00038080884220101786,
+          "rounded_exact_bits": "bf570f53",
+          "state_scaled_error": 0.0003001146076714932,
+          "ulp_distance": 5367
+        },
+        "700": {
+          "absolute_error": 0.0004955512915018954,
+          "actual_bits": "3ea1963a",
+          "relative_error": 0.0015726609161922634,
+          "rounded_exact_bits": "3ea15546",
+          "state_scaled_error": 0.0015726609161922634,
+          "ulp_distance": 16628
+        },
+        "720": {
+          "absolute_error": 0.0005177608449539177,
+          "actual_bits": "bbdbc10f",
+          "relative_error": 0.08366360437969134,
+          "rounded_exact_bits": "bbcac9c4",
+          "state_scaled_error": 0.017218664829630997,
+          "ulp_distance": 1111883
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 8,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 1.2345772431849346e-13
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 3.15392119507686
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 4.922831719260413e-12
+      },
+      "max_ulp_distance": {
+        "degree": 720,
+        "value": 8817419923251485636
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 5.353564526286233e-14,
+          "actual_bits": "bff9bdc368773bba",
+          "relative_error": 3.3276157668929355e-14,
+          "rounded_exact_bits": "bff9bdc368773ac9",
+          "state_scaled_error": 3.3276157668929355e-14,
+          "ulp_distance": 241
+        },
+        "650": {
+          "absolute_error": 8.110043280201118e-14,
+          "actual_bits": "bfeac0ef93646833",
+          "relative_error": 9.700408366576071e-14,
+          "rounded_exact_bits": "bfeac0ef93646559",
+          "state_scaled_error": 7.643598853291408e-14,
+          "ulp_distance": 730
+        },
+        "700": {
+          "absolute_error": 1.19975992280984e-13,
+          "actual_bits": "3fd3c864019ab492",
+          "relative_error": 3.881388292457766e-13,
+          "rounded_exact_bits": "3fd3c864019aac21",
+          "state_scaled_error": 3.881388292457766e-13,
+          "ulp_distance": 2161
+        },
+        "720": {
+          "absolute_error": 1.2345772431849346e-13,
+          "actual_bits": "bd37bb6dfde39ff6",
+          "relative_error": 3.15392119507686,
+          "rounded_exact_bits": "3d2609461af7bbcd",
+          "state_scaled_error": 4.922831719260413e-12,
+          "ulp_distance": 8817419923251485636
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 0,
+        "fma_bits": "3f9993da",
+        "operation": "a*cos2+b",
+        "separate_bits": "3f9993d9",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 355,
+      "fma_state_differs_from_separate_steps": 351,
+      "leading_fma_correctly_rounded_steps": 360,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 22,
+        "value": 0.4570589065551758
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 636,
+        "value": 0.4943389892578125
+      },
+      "state_fma_correctly_rounded_steps": 360,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 4.000438754362083,
+        "degree": 0
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 21.49738843592722,
+        "degree": 720
+      }
+    },
+    "m": 0,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.006188603142262837,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.2058083076554565,
+        "final_value": 3.914420072105982e-14,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.006188603142262837,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.0030678795848618602
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -0.006188603142223693,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 0,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.00022760722386342964,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.007569310307456711,
+        "final_value": -0.005960995918360263,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.00022760722386342964,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.00011283185226228271
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.005961239583330792,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.19824710067374396,
+        "final_value": -0.00022736355889290113,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.005961239583330792,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.002955168524747879
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.322180139127139e-10,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.1048248796097816e-08,
+        "final_value": -0.006188603474441706,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.0828913088835405e-07,
+        "max_trajectory_delta_degree": 516,
+        "max_trajectory_delta_over_f32_envelope": 5.368222945918958e-08
+      }
+    },
+    "ring": 1
+  },
+  {
+    "degrees": [
+      0,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 7.39617149188889e-05
+      },
+      "max_relative_error": {
+        "degree": 344,
+        "value": 0.6752139623905242
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 0.0016388917389868354
+      },
+      "max_ulp_distance": {
+        "degree": 344,
+        "value": 14017775
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 5.344487368910535e-05,
+          "actual_bits": "be1a00f6",
+          "relative_error": 0.00035523880429575816,
+          "rounded_exact_bits": "be1a0ef9",
+          "state_scaled_error": 0.00035523880429575816,
+          "ulp_distance": 3587
+        },
+        "650": {
+          "absolute_error": 1.1385292150975672e-05,
+          "actual_bits": "bf6397b4",
+          "relative_error": 1.2806205426045904e-05,
+          "rounded_exact_bits": "bf639873",
+          "state_scaled_error": 1.0459683394602717e-05,
+          "ulp_distance": 191
+        },
+        "700": {
+          "absolute_error": 6.115784907004902e-05,
+          "actual_bits": "3f099134",
+          "relative_error": 0.0001138221279571629,
+          "rounded_exact_bits": "3f098d32",
+          "state_scaled_error": 0.0001138221279571629,
+          "ulp_distance": 1026
+        },
+        "720": {
+          "absolute_error": 7.39617149188889e-05,
+          "actual_bits": "3906141e",
+          "relative_error": 0.3664572939100069,
+          "rounded_exact_bits": "3953a210",
+          "state_scaled_error": 0.0016388917389868354,
+          "ulp_distance": 5082610
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 560,
+        "value": 1.864665450556272e-14
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 0.009966750759462371
+      },
+      "max_state_scaled_error": {
+        "degree": 596,
+        "value": 3.097668231501144e-13
+      },
+      "max_ulp_distance": {
+        "degree": 720,
+        "value": 67411596137733
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.0239470833152323e-14,
+          "actual_bits": "bfc338e00097b319",
+          "relative_error": 6.818441428490557e-14,
+          "rounded_exact_bits": "bfc338e00097b1a8",
+          "state_scaled_error": 6.818441428490557e-14,
+          "ulp_distance": 369
+        },
+        "650": {
+          "absolute_error": 9.283739657725603e-15,
+          "actual_bits": "bfec731a6107faa9",
+          "relative_error": 1.0442306641311029e-14,
+          "rounded_exact_bits": "bfec731a6107fafd",
+          "state_scaled_error": 8.529041637704094e-15,
+          "ulp_distance": 84
+        },
+        "700": {
+          "absolute_error": 1.7731305736468376e-14,
+          "actual_bits": "3fe1333cf4d9c8e6",
+          "relative_error": 3.2988190265280806e-14,
+          "rounded_exact_bits": "3fe1333cf4d9c986",
+          "state_scaled_error": 3.2988190265280806e-14,
+          "ulp_distance": 160
+        },
+        "720": {
+          "absolute_error": 1.3613663424410979e-14,
+          "actual_bits": "3d7844d00e6776bd",
+          "relative_error": 0.009966750759462371,
+          "rounded_exact_bits": "3d7807809229a1b8",
+          "state_scaled_error": 3.005660605164824e-13,
+          "ulp_distance": 67411596137733
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 4,
+        "fma_bits": "bef9d95e",
+        "operation": "leading*current+previous",
+        "separate_bits": "bef9d95d",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 24,
+      "fma_state_differs_from_separate_steps": 183,
+      "leading_fma_correctly_rounded_steps": 360,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 18,
+        "value": 0.4970850944519043
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 698,
+        "value": 0.4972553253173828
+      },
+      "state_fma_correctly_rounded_steps": 360,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 4.004711685164295,
+        "degree": 0
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 23603.318894118318,
+        "degree": 344
+      }
+    },
+    "m": 0,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0002018290143148446,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.004472258446294875,
+        "final_value": 1.3659078824145624e-12,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.00029479537789760404,
+        "max_trajectory_delta_degree": 584,
+        "max_trajectory_delta_over_f32_envelope": 0.00026354295496480593
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.0002018290156807525,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 0,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0013289631900050846,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.029448029915280994,
+        "final_value": -0.001127134174324332,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0013289631900050846,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.0011880745506635754
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0011270512197676821,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.024973933277749896,
+        "final_value": 0.0013288802354484348,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0011270512197676821,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.0010075680662721745
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.0834631531296528e-11,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 2.4008080573958273e-10,
+        "final_value": 0.00020182902651538404,
+        "max_trajectory_absolute_delta_from_f32_replay": 6.004817363424124e-08,
+        "max_trajectory_delta_degree": 532,
+        "max_trajectory_delta_over_f32_envelope": 5.368222945918958e-08
+      }
+    },
+    "ring": 5
+  },
+  {
+    "degrees": [
+      0,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 712,
+        "value": 0.002312601075488943
+      },
+      "max_relative_error": {
+        "degree": 692,
+        "value": 1.8590034216293176e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 692,
+        "value": 1.8590034216293176e-05
+      },
+      "max_ulp_distance": {
+        "degree": 708,
+        "value": 303
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0014849409872061995,
+          "actual_bits": "42d4fe51",
+          "relative_error": 1.3943343958962929e-05,
+          "rounded_exact_bits": "42d4ff14",
+          "state_scaled_error": 1.3943343958962929e-05,
+          "ulp_distance": 195
+        },
+        "650": {
+          "absolute_error": 0.001609907803071758,
+          "actual_bits": "c2ba70fd",
+          "relative_error": 1.726955860636167e-05,
+          "rounded_exact_bits": "c2ba71d0",
+          "state_scaled_error": 1.399967641733085e-05,
+          "ulp_distance": 211
+        },
+        "700": {
+          "absolute_error": 0.002295611455485093,
+          "actual_bits": "c2f866e3",
+          "relative_error": 1.8482700936494692e-05,
+          "rounded_exact_bits": "c2f86810",
+          "state_scaled_error": 1.8482700936494692e-05,
+          "ulp_distance": 301
+        },
+        "720": {
+          "absolute_error": 0.0023025587384462335,
+          "actual_bits": "42ff7c36",
+          "relative_error": 1.8024662444974295e-05,
+          "rounded_exact_bits": "42ff7d64",
+          "state_scaled_error": 1.8024662444974295e-05,
+          "ulp_distance": 302
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 2
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 4.570948959534255e-12
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 3.57850060139058e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 3.57850060139058e-14
+      },
+      "max_ulp_distance": {
+        "degree": 720,
+        "value": 322
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 2.742266626087701e-12,
+          "actual_bits": "405a9f4b59174e26",
+          "relative_error": 2.5751648515626123e-14,
+          "rounded_exact_bits": "405a9f4b59174ee7",
+          "state_scaled_error": 2.5751648515626123e-14,
+          "ulp_distance": 193
+        },
+        "650": {
+          "absolute_error": 2.8412350297639707e-12,
+          "actual_bits": "c0574dc390a591c1",
+          "relative_error": 3.048042868674759e-14,
+          "rounded_exact_bits": "c0574dc390a59289",
+          "state_scaled_error": 2.4709219453295028e-14,
+          "ulp_distance": 200
+        },
+        "700": {
+          "absolute_error": 4.2234044628577545e-12,
+          "actual_bits": "c05f0c57ceebeb65",
+          "relative_error": 3.4006821998587165e-14,
+          "rounded_exact_bits": "c05f0c57ceebec8e",
+          "state_scaled_error": 3.4006821998587165e-14,
+          "ulp_distance": 297
+        },
+        "720": {
+          "absolute_error": 4.570948959534255e-12,
+          "actual_bits": "405feef3e795d17c",
+          "relative_error": 3.57850060139058e-14,
+          "rounded_exact_bits": "405feef3e795d2be",
+          "state_scaled_error": 3.57850060139058e-14,
+          "ulp_distance": 322
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 2,
+        "fma_bits": "bf7ac03e",
+        "operation": "leading*current+previous",
+        "separate_bits": "bf7ac03d",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 0,
+      "fma_state_differs_from_separate_steps": 179,
+      "leading_fma_correctly_rounded_steps": 360,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 528,
+        "value": 1.0167472294248664e-25
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 392,
+        "value": 0.49989891052246094
+      },
+      "state_fma_correctly_rounded_steps": 360,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 1.0,
+        "degree": 620
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.988909648901107,
+        "degree": 720
+      }
+    },
+    "m": 0,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.01126528884887699,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 8.818581930429316e-05,
+        "final_value": 127.73363675719426,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.01126528884887699,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 8.818581930429316e-05
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 127.74490204604314,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 0,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.366212668034078e-33,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 2.6351052872707146e-35,
+        "final_value": 127.74490204604314,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.366212668034078e-33,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 2.6351052872707146e-35
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.011272145874906945,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 8.823949679685944e-05,
+        "final_value": 127.73362990016822,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.011272145874906945,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 8.823949679685944e-05
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 6.857631143877384e-06,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 5.368222945918958e-08,
+        "final_value": 127.74490890367427,
+        "max_trajectory_absolute_delta_from_f32_replay": 6.857631143877384e-06,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 5.368222945918958e-08
+      }
+    },
+    "ring": 360
+  },
+  {
+    "degrees": [
+      1,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 3,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 719,
+        "value": 0.002339925749689612
+      },
+      "max_relative_error": {
+        "degree": 719,
+        "value": 0.0007882850743600446
+      },
+      "max_state_scaled_error": {
+        "degree": 719,
+        "value": 0.0007882850743600446
+      },
+      "max_ulp_distance": {
+        "degree": 719,
+        "value": 9814
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 0.0013134303000580595,
+          "actual_bits": "c02a78f6",
+          "relative_error": 0.0004928543213227027,
+          "rounded_exact_bits": "c02a8e7b",
+          "state_scaled_error": 0.0004377230595425966,
+          "ulp_distance": 5509
+        },
+        "651": {
+          "absolute_error": 0.0018303477103213202,
+          "actual_bits": "c042379c",
+          "relative_error": 0.0006027871222467568,
+          "rounded_exact_bits": "c0425599",
+          "state_scaled_error": 0.0006027871222467568,
+          "ulp_distance": 7677
+        },
+        "701": {
+          "absolute_error": 0.001954342413463484,
+          "actual_bits": "402a32d6",
+          "relative_error": 0.0007343543319195182,
+          "rounded_exact_bits": "402a52db",
+          "state_scaled_error": 0.0006509900347465507,
+          "ulp_distance": 8197
+        },
+        "719": {
+          "absolute_error": 0.002339925749689612,
+          "actual_bits": "403dd385",
+          "relative_error": 0.0007882850743600446,
+          "rounded_exact_bits": "403df9db",
+          "state_scaled_error": 0.0007882850743600446,
+          "ulp_distance": 9814
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 5,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 591,
+        "value": 1.751931320901404e-13
+      },
+      "max_relative_error": {
+        "degree": 589,
+        "value": 5.885238181180004e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 587,
+        "value": 5.883534447910038e-14
+      },
+      "max_ulp_distance": {
+        "degree": 587,
+        "value": 394
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 1.5244255907434736e-13,
+          "actual_bits": "c005426db50bc83d",
+          "relative_error": 5.736453101259396e-14,
+          "rounded_exact_bits": "c005426db50bc994",
+          "state_scaled_error": 5.0946432775732176e-14,
+          "ulp_distance": 343
+        },
+        "651": {
+          "absolute_error": 1.6121447981342799e-13,
+          "actual_bits": "c00835505f61e7de",
+          "relative_error": 5.3275863871491606e-14,
+          "rounded_exact_bits": "c00835505f61e949",
+          "state_scaled_error": 5.3275863871491606e-14,
+          "ulp_distance": 363
+        },
+        "701": {
+          "absolute_error": 1.512435084737942e-13,
+          "actual_bits": "4005336c90842e0c",
+          "relative_error": 5.707066571184273e-14,
+          "rounded_exact_bits": "4005336c90842f61",
+          "state_scaled_error": 5.059018862001494e-14,
+          "ulp_distance": 341
+        },
+        "719": {
+          "absolute_error": 1.687089030921847e-13,
+          "actual_bits": "4007a3ba6d3088fd",
+          "relative_error": 5.7093745865824e-14,
+          "rounded_exact_bits": "4007a3ba6d308a79",
+          "state_scaled_error": 5.7093745865824e-14,
+          "ulp_distance": 380
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 3,
+        "fma_bits": "3ba814c1",
+        "operation": "leading*current+previous",
+        "separate_bits": "3ba814c0",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 5,
+      "fma_state_differs_from_separate_steps": 185,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 1,
+        "value": 0.5
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 455,
+        "value": 0.49944400787353516
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.0000384353986522,
+        "degree": 715
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 3.0051848290251186,
+        "degree": 719
+      }
+    },
+    "m": 1,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.013429629267745595,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.004524235996529777,
+        "final_value": 2.9549454241217146,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.013429629267745595,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.004422770347675667
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 2.96837505338946,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 1,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.006103038110930588,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0020560198765859424,
+        "final_value": 2.9622720152785296,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.006103038110930588,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0020099092424380434
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.007334745541456045,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.002470963206984513,
+        "final_value": 2.961040307848004,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.007334745541456045,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0024155465829879697
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.483529583836698e-07,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 8.366630022041393e-08,
+        "final_value": 2.9683748050365018,
+        "max_trajectory_absolute_delta_from_f32_replay": 2.54050585003709e-07,
+        "max_trajectory_delta_degree": 651,
+        "max_trajectory_delta_over_f32_envelope": 8.366630022041393e-08
+      }
+    },
+    "ring": 0
+  },
+  {
+    "degrees": [
+      1,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 9,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 495,
+        "value": 0.0008089467092903503
+      },
+      "max_relative_error": {
+        "degree": 499,
+        "value": 0.12015438321076585
+      },
+      "max_state_scaled_error": {
+        "degree": 501,
+        "value": 0.0359229662835106
+      },
+      "max_ulp_distance": {
+        "degree": 499,
+        "value": 1735741
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 0.00047259185747618073,
+          "actual_bits": "3f98bdc4",
+          "relative_error": 0.0003961975939067678,
+          "rounded_exact_bits": "3f98ae48",
+          "state_scaled_error": 0.00035721647880791757,
+          "ulp_distance": 3964
+        },
+        "651": {
+          "absolute_error": 0.00022225843801063996,
+          "actual_bits": "3fe22d19",
+          "relative_error": 0.0001257986632166092,
+          "rounded_exact_bits": "3fe225d1",
+          "state_scaled_error": 0.0001257986632166092,
+          "ulp_distance": 1864
+        },
+        "701": {
+          "absolute_error": 0.00015378171980556262,
+          "actual_bits": "bfdc80c1",
+          "relative_error": 8.926095350758125e-05,
+          "rounded_exact_bits": "bfdc85cb",
+          "state_scaled_error": 7.927659381967673e-05,
+          "ulp_distance": 1290
+        },
+        "719": {
+          "absolute_error": 0.00032691248591163407,
+          "actual_bits": "bff7fef6",
+          "relative_error": 0.00016870332088589785,
+          "rounded_exact_bits": "bff809ac",
+          "state_scaled_error": 0.00016870332088589785,
+          "ulp_distance": 2742
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 7,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 691,
+        "value": 4.573165083840504e-14
+      },
+      "max_relative_error": {
+        "degree": 499,
+        "value": 8.176539587805208e-12
+      },
+      "max_state_scaled_error": {
+        "degree": 501,
+        "value": 1.584833656398341e-12
+      },
+      "max_ulp_distance": {
+        "degree": 499,
+        "value": 44350
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 3.287519816077796e-14,
+          "actual_bits": "3ff31a346ced02f8",
+          "relative_error": 2.753602712557561e-14,
+          "rounded_exact_bits": "3ff31a346ced0264",
+          "state_scaled_error": 2.4825896585814726e-14,
+          "ulp_distance": 148
+        },
+        "651": {
+          "absolute_error": 3.1564817269214306e-14,
+          "actual_bits": "3ffc465fc5f64c23",
+          "relative_error": 1.7861675770154398e-14,
+          "rounded_exact_bits": "3ffc465fc5f64b95",
+          "state_scaled_error": 1.7861675770154398e-14,
+          "ulp_distance": 142
+        },
+        "701": {
+          "absolute_error": 3.959138269086786e-14,
+          "actual_bits": "bffb8e6d4ed49b76",
+          "relative_error": 2.298787752245838e-14,
+          "rounded_exact_bits": "bffb8e6d4ed49ac4",
+          "state_scaled_error": 2.0416068189412487e-14,
+          "ulp_distance": 178
+        },
+        "719": {
+          "absolute_error": 3.855313606404844e-14,
+          "actual_bits": "bffefcffbaa5cf40",
+          "relative_error": 1.9905920381120858e-14,
+          "rounded_exact_bits": "bffefcffbaa5ce92",
+          "state_scaled_error": 1.9905920381120858e-14,
+          "ulp_distance": 174
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 5,
+        "fma_bits": "3ca340c9",
+        "operation": "leading*current+previous",
+        "separate_bits": "3ca340ca",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 347,
+      "fma_state_differs_from_separate_steps": 345,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 1,
+        "value": 0.5
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 37,
+        "value": 0.4997084140777588
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.000228242173726,
+        "degree": 715
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 22.73709404773086,
+        "degree": 499
+      }
+    },
+    "m": 1,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0010278830474037604,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0005304394633192564,
+        "final_value": -1.9367673197674873,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0020395395310539564,
+        "max_trajectory_delta_degree": 479,
+        "max_trajectory_delta_over_f32_envelope": 0.0010207625295138951
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -1.937795202814891,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 1,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 7.678649084559596e-05,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 3.962569973031924e-05,
+        "final_value": -1.9377184163240455,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.00015001378790887313,
+        "max_trajectory_delta_degree": 479,
+        "max_trajectory_delta_over_f32_envelope": 7.507991449849043e-05
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.000950918413789311,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0004907218329408508,
+        "final_value": -1.9368442844011018,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0018896547503633573,
+        "max_trajectory_delta_degree": 479,
+        "max_trajectory_delta_over_f32_envelope": 0.0009457471814199514
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.2279872174305677e-08,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 1.665804112189725e-08,
+        "final_value": -1.9377952350947634,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.328367998991028e-08,
+        "max_trajectory_delta_degree": 283,
+        "max_trajectory_delta_over_f32_envelope": 1.665804112189725e-08
+      }
+    },
+    "ring": 1
+  },
+  {
+    "degrees": [
+      1,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 11,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 659,
+        "value": 0.00010406274335698001
+      },
+      "max_relative_error": {
+        "degree": 657,
+        "value": 0.004201093906206298
+      },
+      "max_state_scaled_error": {
+        "degree": 657,
+        "value": 0.0032146239434660906
+      },
+      "max_ulp_distance": {
+        "degree": 531,
+        "value": 59744
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 2.229465252688195e-05,
+          "actual_bits": "bf6e416d",
+          "relative_error": 2.3955653104369533e-05,
+          "rounded_exact_bits": "bf6e3ff7",
+          "state_scaled_error": 2.10763290291631e-05,
+          "ulp_distance": 374
+        },
+        "651": {
+          "absolute_error": 0.00010219594007308652,
+          "actual_bits": "be0a9c9c",
+          "relative_error": 0.0007555470986770569,
+          "rounded_exact_bits": "be0a81d2",
+          "state_scaled_error": 0.0006123004484500759,
+          "ulp_distance": 6858
+        },
+        "701": {
+          "absolute_error": 3.896706204862974e-05,
+          "actual_bits": "bf5adec0",
+          "relative_error": 4.5575491854335455e-05,
+          "rounded_exact_bits": "bf5ae14e",
+          "state_scaled_error": 4.148654341449925e-05,
+          "ulp_distance": 654
+        },
+        "719": {
+          "absolute_error": 1.0379287832804293e-05,
+          "actual_bits": "bf88c4fc",
+          "relative_error": 9.713876538904602e-06,
+          "rounded_exact_bits": "bf88c4a5",
+          "state_scaled_error": 9.713876538904602e-06,
+          "ulp_distance": 87
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 11,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 531,
+        "value": 3.3393416597060086e-14
+      },
+      "max_relative_error": {
+        "degree": 405,
+        "value": 3.5813411954514037e-12
+      },
+      "max_state_scaled_error": {
+        "degree": 531,
+        "value": 9.661262391503044e-13
+      },
+      "max_ulp_distance": {
+        "degree": 405,
+        "value": 30987
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 3.160821957127296e-15,
+          "actual_bits": "bfedc994af6ae691",
+          "relative_error": 3.3956041049556075e-15,
+          "rounded_exact_bits": "bfedc994af6ae675",
+          "state_scaled_error": 2.987567324255605e-15,
+          "ulp_distance": 28
+        },
+        "651": {
+          "absolute_error": 4.024620283246746e-15,
+          "actual_bits": "bfc1689f1ba16db5",
+          "relative_error": 2.959164402606809e-14,
+          "rounded_exact_bits": "bfc1689f1ba16e46",
+          "state_scaled_error": 2.4018663285798136e-14,
+          "ulp_distance": 145
+        },
+        "701": {
+          "absolute_error": 5.548762081052416e-15,
+          "actual_bits": "bfeb5a3e6b548f6c",
+          "relative_error": 6.4915561500723165e-15,
+          "rounded_exact_bits": "bfeb5a3e6b548f3a",
+          "state_scaled_error": 5.909408411729649e-15,
+          "ulp_distance": 50
+        },
+        "719": {
+          "absolute_error": 1.037376163914702e-14,
+          "actual_bits": "bff118f3e8f85467",
+          "relative_error": 9.70787894498776e-15,
+          "rounded_exact_bits": "bff118f3e8f85438",
+          "state_scaled_error": 9.70787894498776e-15,
+          "ulp_distance": 47
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 1,
+        "fma_bits": "4036a80b",
+        "operation": "a*cos2+b",
+        "separate_bits": "4036a80a",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 124,
+      "fma_state_differs_from_separate_steps": 226,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 339,
+        "value": 0.49916601181030273
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 117,
+        "value": 0.49932050704956055
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.0025063465285675,
+        "degree": 715
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 20.94298878383946,
+        "degree": 405
+      }
+    },
+    "m": 1,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 9.087897426428999e-05,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 8.505276568162082e-05,
+        "final_value": -1.0685919857398982,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0007457093517417497,
+        "max_trajectory_delta_degree": 655,
+        "max_trajectory_delta_over_f32_envelope": 0.0006760430974338687
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -1.068501106765634,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 1,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.00010885266981400417,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0001018741760067077,
+        "final_value": -1.068609959435448,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0011554363423618838,
+        "max_trajectory_delta_degree": 655,
+        "max_trajectory_delta_over_f32_envelope": 0.001047492246078876
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.8516490161851273e-05,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 1.7329406628226075e-05,
+        "final_value": -1.0684825902754722,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0004096627765496057,
+        "max_trajectory_delta_degree": 659,
+        "max_trajectory_delta_over_f32_envelope": 0.0003713909336326335
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.9228567484457544e-08,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 2.735473767821615e-08,
+        "final_value": -1.0685011359942014,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.017364392672259e-08,
+        "max_trajectory_delta_degree": 83,
+        "max_trajectory_delta_over_f32_envelope": 2.735473767821615e-08
+      }
+    },
+    "ring": 5
+  },
+  {
+    "degrees": [
+      1,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 23,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 719,
+        "value": 0.004180610873054919
+      },
+      "max_relative_error": {
+        "degree": 719,
+        "value": 3.434666289753187e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 719,
+        "value": 3.434666289753187e-05
+      },
+      "max_ulp_distance": {
+        "degree": 719,
+        "value": 548
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 0.0014638962503499278,
+          "actual_bits": "c2b4a4c0",
+          "relative_error": 1.6207829606358093e-05,
+          "rounded_exact_bits": "c2b4a400",
+          "state_scaled_error": 1.4429484258611867e-05,
+          "ulp_distance": 192
+        },
+        "651": {
+          "absolute_error": 0.0022150108018316452,
+          "actual_bits": "42dc7955",
+          "relative_error": 2.0093578190999482e-05,
+          "rounded_exact_bits": "42dc7833",
+          "state_scaled_error": 2.0093578190999482e-05,
+          "ulp_distance": 290
+        },
+        "701": {
+          "absolute_error": 0.0031465067702784915,
+          "actual_bits": "42d29ecd",
+          "relative_error": 2.9879366362774234e-05,
+          "rounded_exact_bits": "42d29d31",
+          "state_scaled_error": 2.6588354993495706e-05,
+          "ulp_distance": 412
+        },
+        "719": {
+          "absolute_error": 0.004180610873054919,
+          "actual_bits": "c2f371d0",
+          "relative_error": 3.434666289753187e-05,
+          "rounded_exact_bits": "c2f36fac",
+          "state_scaled_error": 3.434666289753187e-05,
+          "ulp_distance": 548
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 5,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 719,
+        "value": 2.964572334701216e-12
+      },
+      "max_relative_error": {
+        "degree": 719,
+        "value": 2.4352824920074668e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 719,
+        "value": 2.4352824920074668e-14
+      },
+      "max_ulp_distance": {
+        "degree": 719,
+        "value": 209
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 3.7511307596988675e-13,
+          "actual_bits": "c05694ed1b6f22b2",
+          "relative_error": 4.1528357277157466e-15,
+          "rounded_exact_bits": "c05694ed1b6f2298",
+          "state_scaled_error": 3.697180712022444e-15,
+          "ulp_distance": 26
+        },
+        "651": {
+          "absolute_error": 4.646400128126614e-13,
+          "actual_bits": "405b8faf0a426cad",
+          "relative_error": 4.214610783647728e-15,
+          "rounded_exact_bits": "405b8faf0a426cce",
+          "state_scaled_error": 4.214610783647728e-15,
+          "ulp_distance": 33
+        },
+        "701": {
+          "absolute_error": 1.9184052085708535e-12,
+          "actual_bits": "405a546b35a80c21",
+          "relative_error": 1.8215178792235564e-14,
+          "rounded_exact_bits": "405a546b35a80ca8",
+          "state_scaled_error": 1.620889887251463e-14,
+          "ulp_distance": 135
+        },
+        "719": {
+          "absolute_error": 2.964572334701216e-12,
+          "actual_bits": "c05e6efd964e9196",
+          "relative_error": 2.4352824920074668e-14,
+          "rounded_exact_bits": "c05e6efd964e9267",
+          "state_scaled_error": 2.4352824920074668e-14,
+          "ulp_distance": 209
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 5,
+        "fma_bits": "bfb66bbd",
+        "operation": "leading*current+previous",
+        "separate_bits": "bfb66bbe",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 0,
+      "fma_state_differs_from_separate_steps": 166,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 3,
+        "value": 1.1558699073422451e-25
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 489,
+        "value": 0.49901700019836426
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 1.0,
+        "degree": 1
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.9889022371644294,
+        "degree": 719
+      }
+    },
+    "m": 1,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0161183023044341,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.00013242320621109781,
+        "final_value": -121.73422773049388,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0161183023044341,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.00013242320621109781
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -121.71810942818945,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 1,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.198874675434676e-33,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 2.6281008557086816e-35,
+        "final_value": -121.71810942818945,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.198874675434676e-33,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 2.6281008557086816e-35
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.016118881593714187,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.00013242796548055088,
+        "final_value": -121.73422830978316,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.016118881593714187,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.00013242796548055088
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 5.792125761436241e-07,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 4.758639276149327e-09,
+        "final_value": -121.71810884897687,
+        "max_trajectory_absolute_delta_from_f32_replay": 5.792125761436241e-07,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 4.758639276149327e-09
+      }
+    },
+    "ring": 360
+  },
+  {
+    "degrees": [
+      2,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 6,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 0.0017013389904682215
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 0.0006480841051075717
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 0.0006480841051075717
+      },
+      "max_ulp_distance": {
+        "degree": 706,
+        "value": 10326
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0008262605386786675,
+          "actual_bits": "bffb604f",
+          "relative_error": 0.0004209064433806678,
+          "rounded_exact_bits": "bffb453c",
+          "state_scaled_error": 0.0004209064433806678,
+          "ulp_distance": 6931
+        },
+        "650": {
+          "absolute_error": 0.0008895265398756152,
+          "actual_bits": "3fe0cdb5",
+          "relative_error": 0.0005067406532971276,
+          "rounded_exact_bits": "3fe0b08f",
+          "state_scaled_error": 0.0003975915359851744,
+          "ulp_distance": 7462
+        },
+        "700": {
+          "absolute_error": 0.001525529438004627,
+          "actual_bits": "402179dd",
+          "relative_error": 0.0006049997231630291,
+          "rounded_exact_bits": "402160de",
+          "state_scaled_error": 0.0006049997231630291,
+          "ulp_distance": 6399
+        },
+        "720": {
+          "absolute_error": 0.0017013389904682215,
+          "actual_bits": "c0281edd",
+          "relative_error": 0.0006480841051075717,
+          "rounded_exact_bits": "c02802fd",
+          "state_scaled_error": 0.0006480841051075717,
+          "ulp_distance": 7136
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 720,
+        "value": 8.168847482866251e-14
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 3.1200525252269604e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 720,
+        "value": 3.1200525252269604e-14
+      },
+      "max_ulp_distance": {
+        "degree": 706,
+        "value": 272
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 5.286916361548909e-14,
+          "actual_bits": "bfff5a78fa613c8f",
+          "relative_error": 2.6979733907660514e-14,
+          "rounded_exact_bits": "bfff5a78fa613d7d",
+          "state_scaled_error": 2.6979733907660514e-14,
+          "ulp_distance": 238
+        },
+        "650": {
+          "absolute_error": 5.21569049433381e-14,
+          "actual_bits": "3ffc06eb899be05f",
+          "relative_error": 2.9775200365781404e-14,
+          "rounded_exact_bits": "3ffc06eb899be14a",
+          "state_scaled_error": 2.3361430128085643e-14,
+          "ulp_distance": 235
+        },
+        "700": {
+          "absolute_error": 7.361498962039761e-14,
+          "actual_bits": "40041f311ac8a646",
+          "relative_error": 2.9267692634812094e-14,
+          "rounded_exact_bits": "40041f311ac8a6ec",
+          "state_scaled_error": 2.9267692634812094e-14,
+          "ulp_distance": 166
+        },
+        "720": {
+          "absolute_error": 8.168847482866251e-14,
+          "actual_bits": "c004f20666784da4",
+          "relative_error": 3.1200525252269604e-14,
+          "rounded_exact_bits": "c004f20666784e5c",
+          "state_scaled_error": 3.1200525252269604e-14,
+          "ulp_distance": 184
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 4,
+        "fma_bits": "bfff4aaa",
+        "operation": "a*cos2+b",
+        "separate_bits": "bfff4aab",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 35,
+      "fma_state_differs_from_separate_steps": 179,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 112,
+        "value": 0.4989469051361084
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 566,
+        "value": 0.4988565444946289
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.0000153335519886,
+        "degree": 716
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.984423420882899,
+        "degree": 720
+      }
+    },
+    "m": 2,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0070061361506274025,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.002668818796771106,
+        "final_value": -2.618176270052386,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0070061361506274025,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.002668818796771106
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -2.625182406203013,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 2,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0030074083951525912,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0011455997831032315,
+        "final_value": -2.6221749978078606,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0030074083951525912,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.0011455997831032315
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0040018211661237485,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0015243973739378607,
+        "final_value": -2.6211805850368894,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0040018211661237485,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.0015243973739378607
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.127005287374254e-07,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 4.293055159562498e-08,
+        "final_value": -2.6251822935024847,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.127005287374254e-07,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 4.293055159562498e-08
+      }
+    },
+    "ring": 0
+  },
+  {
+    "degrees": [
+      2,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 608,
+        "value": 0.00033526515383638206
+      },
+      "max_relative_error": {
+        "degree": 670,
+        "value": 0.36215521802098416
+      },
+      "max_state_scaled_error": {
+        "degree": 672,
+        "value": 0.00980317024182648
+      },
+      "max_ulp_distance": {
+        "degree": 670,
+        "value": 5240672
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0003350094502418767,
+          "actual_bits": "bf82c9c4",
+          "relative_error": 0.000327975237808473,
+          "rounded_exact_bits": "bf82beca",
+          "state_scaled_error": 0.000327975237808473,
+          "ulp_distance": 2810
+        },
+        "650": {
+          "absolute_error": 0.00025238968478767703,
+          "actual_bits": "3e71e89f",
+          "relative_error": 0.0010695087613787463,
+          "rounded_exact_bits": "3e71a675",
+          "state_scaled_error": 0.0007593777687755883,
+          "ulp_distance": 16938
+        },
+        "700": {
+          "absolute_error": 0.00027436133650580405,
+          "actual_bits": "bee8187a",
+          "relative_error": 0.000604871566565982,
+          "rounded_exact_bits": "bee83c70",
+          "state_scaled_error": 0.000604871566565982,
+          "ulp_distance": 9206
+        },
+        "720": {
+          "absolute_error": 0.0002443881839893763,
+          "actual_bits": "3f3eb290",
+          "relative_error": 0.0003279689196550396,
+          "rounded_exact_bits": "3f3ec294",
+          "state_scaled_error": 0.0003279689196550396,
+          "ulp_distance": 4100
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 6,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 600,
+        "value": 1.3320487883932334e-13
+      },
+      "max_relative_error": {
+        "degree": 670,
+        "value": 2.9653911418288277e-11
+      },
+      "max_state_scaled_error": {
+        "degree": 670,
+        "value": 3.2949611922979398e-12
+      },
+      "max_ulp_distance": {
+        "degree": 670,
+        "value": 202196
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.3320487883932334e-13,
+          "actual_bits": "bff04b6da3fff872",
+          "relative_error": 1.307962516961229e-13,
+          "rounded_exact_bits": "bff04b6da3fffaca",
+          "state_scaled_error": 1.307962516961229e-13,
+          "ulp_distance": 600
+        },
+        "650": {
+          "absolute_error": 9.47640716022804e-14,
+          "actual_bits": "3fcde747b0af338c",
+          "relative_error": 4.056323324741305e-13,
+          "rounded_exact_bits": "3fcde747b0af40e2",
+          "state_scaled_error": 2.877506671903832e-13,
+          "ulp_distance": 3414
+        },
+        "700": {
+          "absolute_error": 9.470415923939547e-14,
+          "actual_bits": "bfdd3389053208b7",
+          "relative_error": 2.0756145160077723e-13,
+          "rounded_exact_bits": "bfdd33890532020d",
+          "state_scaled_error": 2.0756145160077723e-13,
+          "ulp_distance": 1706
+        },
+        "720": {
+          "absolute_error": 7.833640101522381e-14,
+          "actual_bits": "3fe7ec5488743365",
+          "relative_error": 1.0478399684761775e-13,
+          "rounded_exact_bits": "3fe7ec54887430a3",
+          "state_scaled_error": 1.0478399684761775e-13,
+          "ulp_distance": 706
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 6,
+        "fma_bits": "403b225b",
+        "operation": "a*cos2+b",
+        "separate_bits": "403b225c",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 159,
+      "fma_state_differs_from_separate_steps": 246,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 156,
+        "value": 0.4947993755340576
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 226,
+        "value": 0.49964094161987305
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.000205137038358,
+        "degree": 716
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 221.01224167370043,
+        "degree": 670
+      }
+    },
+    "m": 2,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0024423665304607925,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0032776556514355635,
+        "final_value": 0.7475989022364228,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0030712025465756305,
+        "max_trajectory_delta_degree": 624,
+        "max_trajectory_delta_over_f32_envelope": 0.0013692482683468983
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.7451565357059621,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 2,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.00017100309453048257,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.00022948613658534722,
+        "final_value": 0.7453275388004925,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.00021816962793632435,
+        "max_trajectory_delta_degree": 624,
+        "max_trajectory_delta_over_f32_envelope": 9.726756237252384e-05
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.002271747711920944,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.003048685213193075,
+        "final_value": 0.7474282834178829,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0028532981615268303,
+        "max_trajectory_delta_degree": 624,
+        "max_trajectory_delta_over_f32_envelope": 0.0012720989604232185
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 7.939053501406943e-09,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.0654209043319301e-08,
+        "final_value": 0.7451565436450155,
+        "max_trajectory_absolute_delta_from_f32_replay": 2.3897224997111662e-08,
+        "max_trajectory_delta_degree": 432,
+        "max_trajectory_delta_over_f32_envelope": 1.0654209043319301e-08
+      }
+    },
+    "ring": 1
+  },
+  {
+    "degrees": [
+      2,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 8,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 716,
+        "value": 4.088140825514896e-05
+      },
+      "max_relative_error": {
+        "degree": 716,
+        "value": 0.0030548844837635604
+      },
+      "max_state_scaled_error": {
+        "degree": 716,
+        "value": 0.0012046371461153778
+      },
+      "max_ulp_distance": {
+        "degree": 716,
+        "value": 43896
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.358737113816571e-05,
+          "actual_bits": "be9aec7c",
+          "relative_error": 4.4906256504779914e-05,
+          "rounded_exact_bits": "be9aeab4",
+          "state_scaled_error": 4.4906256504779914e-05,
+          "ulp_distance": 456
+        },
+        "650": {
+          "absolute_error": 6.259009410279347e-06,
+          "actual_bits": "3f63e87b",
+          "relative_error": 7.0304432158097205e-06,
+          "rounded_exact_bits": "3f63e8e4",
+          "state_scaled_error": 5.511729431318879e-06,
+          "ulp_distance": 105
+        },
+        "700": {
+          "absolute_error": 3.856416390122116e-05,
+          "actual_bits": "3edc736b",
+          "relative_error": 8.955775622452294e-05,
+          "rounded_exact_bits": "3edc7879",
+          "state_scaled_error": 8.955775622452294e-05,
+          "ulp_distance": 1294
+        },
+        "720": {
+          "absolute_error": 4.0497725294354986e-05,
+          "actual_bits": "3e01eeea",
+          "relative_error": 0.00031926322069108256,
+          "rounded_exact_bits": "3e01e44c",
+          "state_scaled_error": 0.00031926322069108256,
+          "ulp_distance": 2718
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 4,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 568,
+        "value": 5.72350605651619e-14
+      },
+      "max_relative_error": {
+        "degree": 462,
+        "value": 4.276277500308451e-12
+      },
+      "max_state_scaled_error": {
+        "degree": 464,
+        "value": 1.153228852617129e-12
+      },
+      "max_ulp_distance": {
+        "degree": 462,
+        "value": 23530
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 4.133597164165014e-14,
+          "actual_bits": "bfd3529498e1e4f8",
+          "relative_error": 1.3691247219253167e-13,
+          "rounded_exact_bits": "bfd3529498e1e7e1",
+          "state_scaled_error": 1.3691247219253167e-13,
+          "ulp_distance": 745
+        },
+        "650": {
+          "absolute_error": 1.7697617963116186e-14,
+          "actual_bits": "3fec7de7e30821e1",
+          "relative_error": 1.987671491387202e-14,
+          "rounded_exact_bits": "3fec7de7e3082142",
+          "state_scaled_error": 1.5583476216585378e-14,
+          "ulp_distance": 159
+        },
+        "700": {
+          "absolute_error": 3.322861984238499e-14,
+          "actual_bits": "3fdb9cd1e8b662b8",
+          "relative_error": 7.701677377512357e-14,
+          "rounded_exact_bits": "3fdb9cd1e8b66061",
+          "state_scaled_error": 7.701677377512357e-14,
+          "ulp_distance": 599
+        },
+        "720": {
+          "absolute_error": 1.807216903810041e-14,
+          "actual_bits": "3fc0211a64027b90",
+          "relative_error": 1.4341827325305674e-13,
+          "rounded_exact_bits": "3fc0211a64027e1b",
+          "state_scaled_error": 1.4341827325305674e-13,
+          "ulp_distance": 651
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 4,
+        "fma_bits": "bfff0346",
+        "operation": "a*cos2+b",
+        "separate_bits": "bfff0347",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 192,
+      "fma_state_differs_from_separate_steps": 264,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 2,
+        "value": 0.4993727207183838
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 110,
+        "value": 0.49826502799987793
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.0024832019051875,
+        "degree": 716
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 22.398154986468718,
+        "degree": 462
+      }
+    },
+    "m": 2,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.000837223505327689,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.006600239169147956,
+        "final_value": 0.12601022609031606,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.00086385582485863,
+        "max_trajectory_delta_degree": 708,
+        "max_trajectory_delta_over_f32_envelope": 0.000697507077761408
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.12684744959564376,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 2,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0013188770956666044,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.010397348152216202,
+        "final_value": 0.12552857249997715,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0013442655052373967,
+        "max_trajectory_delta_degree": 712,
+        "max_trajectory_delta_over_f32_envelope": 0.0010854064732932062
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0004814766669386575,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.003795714210048986,
+        "final_value": 0.1273289262625824,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.00048349981964740797,
+        "max_trajectory_delta_degree": 716,
+        "max_trajectory_delta_over_f32_envelope": 0.0003903944808795164
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.0752280702965532e-09,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 8.476544650476592e-09,
+        "final_value": 0.12684744852041568,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.0498119236996807e-08,
+        "max_trajectory_delta_degree": 132,
+        "max_trajectory_delta_over_f32_envelope": 8.476544650476592e-09
+      }
+    },
+    "ring": 5
+  },
+  {
+    "degrees": [
+      2,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 8,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 516,
+        "value": 0.0012844110717711902
+      },
+      "max_relative_error": {
+        "degree": 508,
+        "value": 1.3826570315119543e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 508,
+        "value": 1.3826570315119543e-05
+      },
+      "max_ulp_distance": {
+        "degree": 450,
+        "value": 169
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0007042460688453457,
+          "actual_bits": "42d8a879",
+          "relative_error": 6.500947830349668e-06,
+          "rounded_exact_bits": "42d8a8d5",
+          "state_scaled_error": 6.500947830349668e-06,
+          "ulp_distance": 92
+        },
+        "650": {
+          "absolute_error": 0.00025654071589633134,
+          "actual_bits": "42b73325",
+          "relative_error": 2.8006583059988017e-06,
+          "rounded_exact_bits": "42b73347",
+          "state_scaled_error": 2.193158721748222e-06,
+          "ulp_distance": 34
+        },
+        "700": {
+          "absolute_error": 0.00010332830873593052,
+          "actual_bits": "c2fcacff",
+          "relative_error": 8.178720568729831e-07,
+          "rounded_exact_bits": "c2fcad0d",
+          "state_scaled_error": 8.178720568729831e-07,
+          "ulp_distance": 14
+        },
+        "720": {
+          "absolute_error": 4.73889208073653e-05,
+          "actual_bits": "4301f08b",
+          "relative_error": 3.6469941323733807e-07,
+          "rounded_exact_bits": "4301f08e",
+          "state_scaled_error": 3.6469941323733807e-07,
+          "ulp_distance": 3
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 8,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 716,
+        "value": 6.16438703396128e-12
+      },
+      "max_relative_error": {
+        "degree": 708,
+        "value": 4.803515787847756e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 708,
+        "value": 4.803515787847756e-14
+      },
+      "max_ulp_distance": {
+        "degree": 708,
+        "value": 432
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 4.685890089213892e-12,
+          "actual_bits": "405b162de95ccc51",
+          "relative_error": 4.324909277869716e-14,
+          "rounded_exact_bits": "405b162de95ccb07",
+          "state_scaled_error": 4.324909277869716e-14,
+          "ulp_distance": 330
+        },
+        "650": {
+          "absolute_error": 4.165759786535485e-12,
+          "actual_bits": "4056e764624ebf8d",
+          "relative_error": 4.5470031792522875e-14,
+          "rounded_exact_bits": "4056e764624ebe68",
+          "state_scaled_error": 3.560697856549234e-14,
+          "ulp_distance": 293
+        },
+        "700": {
+          "absolute_error": 6.027636291685174e-12,
+          "actual_bits": "c05f9702b0ad0777",
+          "relative_error": 4.770226553669842e-14,
+          "rounded_exact_bits": "c05f9702b0ad05cf",
+          "state_scaled_error": 4.770226553669842e-14,
+          "ulp_distance": 424
+        },
+        "720": {
+          "absolute_error": 6.160198585281617e-12,
+          "actual_bits": "40603ec9ca4b355c",
+          "relative_error": 4.739994998794032e-14,
+          "rounded_exact_bits": "40603ec9ca4b3483",
+          "state_scaled_error": 4.739994998794032e-14,
+          "ulp_distance": 217
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 6,
+        "fma_bits": "3fd448bd",
+        "operation": "leading*current+previous",
+        "separate_bits": "3fd448be",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 0,
+      "fma_state_differs_from_separate_steps": 181,
+      "leading_fma_correctly_rounded_steps": 359,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 4,
+        "value": 1.1120613956258238e-25
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 640,
+        "value": 0.498260498046875
+      },
+      "state_fma_correctly_rounded_steps": 359,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 1.0,
+        "degree": 2
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.988912134649152,
+        "degree": 720
+      }
+    },
+    "m": 2,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.02246423339842871,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.00017288202811236494,
+        "final_value": 129.96213259399892,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.02246423339842871,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.00017288202811236494
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 129.9396683606005,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 2,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.4244540543900186e-33,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 2.635418496595425e-35,
+        "final_value": 129.9396683606005,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.4244540543900186e-33,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 2.635418496595425e-35
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.022469796968643416,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.00017292484467704372,
+        "final_value": 129.96213815756914,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.022469796968643416,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 0.00017292484467704372
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 5.562608301527722e-06,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 4.2809161911131846e-08,
+        "final_value": 129.93966279799218,
+        "max_trajectory_absolute_delta_from_f32_replay": 5.562608301527722e-06,
+        "max_trajectory_delta_degree": 720,
+        "max_trajectory_delta_over_f32_envelope": 4.2809161911131846e-08
+      }
+    },
+    "ring": 360
+  },
+  {
+    "degrees": [
+      5,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 13,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 719,
+        "value": 2.0618439369476323e-05
+      },
+      "max_relative_error": {
+        "degree": 719,
+        "value": 0.00019519379031351336
+      },
+      "max_state_scaled_error": {
+        "degree": 719,
+        "value": 0.00019519379031351336
+      },
+      "max_ulp_distance": {
+        "degree": 697,
+        "value": 3047
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 3.9037144528573235e-06,
+          "actual_bits": "3cedff41",
+          "relative_error": 0.00013438621018571138,
+          "rounded_exact_bits": "3cedf711",
+          "state_scaled_error": 9.33675266141733e-05,
+          "ulp_distance": 2096
+        },
+        "651": {
+          "absolute_error": 1.0231309976772341e-05,
+          "actual_bits": "3d831ef4",
+          "relative_error": 0.00015983012751823132,
+          "rounded_exact_bits": "3d831997",
+          "state_scaled_error": 0.00015983012751823132,
+          "ulp_distance": 1373
+        },
+        "701": {
+          "absolute_error": 1.1816830456177243e-05,
+          "actual_bits": "bd8227a9",
+          "relative_error": 0.00018597352318968507,
+          "rounded_exact_bits": "bd822177",
+          "state_scaled_error": 0.00012884655037345233,
+          "ulp_distance": 1586
+        },
+        "719": {
+          "absolute_error": 2.0618439369476323e-05,
+          "actual_bits": "bdd85fac",
+          "relative_error": 0.00019519379031351336,
+          "rounded_exact_bits": "bdd854dd",
+          "state_scaled_error": 0.00019519379031351336,
+          "ulp_distance": 2767
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 7,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 719,
+        "value": 2.94826636911685e-15
+      },
+      "max_relative_error": {
+        "degree": 599,
+        "value": 3.887003764593445e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 599,
+        "value": 3.887003764593445e-14
+      },
+      "max_ulp_distance": {
+        "degree": 609,
+        "value": 337
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 1.1270377399921213e-15,
+          "actual_bits": "3f9db9c6a3c257b6",
+          "relative_error": 3.88245572257235e-14,
+          "rounded_exact_bits": "3f9db9c6a3c25671",
+          "state_scaled_error": 2.6973972786774443e-14,
+          "ulp_distance": 325
+        },
+        "651": {
+          "absolute_error": 2.1001843570558056e-15,
+          "actual_bits": "3fb05fc00230db08",
+          "relative_error": 3.28353744680242e-14,
+          "rounded_exact_bits": "3fb05fc00230da71",
+          "state_scaled_error": 3.28353744680242e-14,
+          "ulp_distance": 151
+        },
+        "701": {
+          "absolute_error": 1.7129652148778283e-15,
+          "actual_bits": "bfb040070c36c960",
+          "relative_error": 2.6985611876220193e-14,
+          "rounded_exact_bits": "bfb040070c36c8e5",
+          "state_scaled_error": 1.869608142271483e-14,
+          "ulp_distance": 123
+        },
+        "719": {
+          "absolute_error": 2.94826636911685e-15,
+          "actual_bits": "bfbb03368ac05737",
+          "relative_error": 2.7940944586770095e-14,
+          "rounded_exact_bits": "bfbb03368ac05663",
+          "state_scaled_error": 2.7940944586770095e-14,
+          "ulp_distance": 212
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 5,
+        "fma_bits": "412665cf",
+        "operation": "a*cos2+b",
+        "separate_bits": "412665d0",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 58,
+      "fma_state_differs_from_separate_steps": 198,
+      "leading_fma_correctly_rounded_steps": 357,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 209,
+        "value": 0.4988532066345215
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 505,
+        "value": 0.49936676025390625
+      },
+      "state_fma_correctly_rounded_steps": 357,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 2.9998525462406125,
+        "degree": 717
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.9450086159685975,
+        "degree": 719
+      }
+    },
+    "m": 5,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0001128338570463029,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0010681927879161487,
+        "final_value": -0.10551777732356409,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0001128338570463029,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0010681927879161487
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -0.10563061118061039,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 5,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 5.442753722123943e-05,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0005152629205957882,
+        "final_value": -0.10557618364338914,
+        "max_trajectory_absolute_delta_from_f32_replay": 5.442753722123943e-05,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0005152629205957882
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 5.841533769623528e-05,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0005530152390802225,
+        "final_value": -0.10557219584291415,
+        "max_trajectory_absolute_delta_from_f32_replay": 5.841533769623528e-05,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0005530152390802225
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.5990658700925783e-08,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 1.5138280960605705e-07,
+        "final_value": -0.10563059518995169,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.5990658700925783e-08,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 1.5138280960605705e-07
+      }
+    },
+    "ring": 0
+  },
+  {
+    "degrees": [
+      5,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 23,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 719,
+        "value": 0.00019378837083390828
+      },
+      "max_relative_error": {
+        "degree": 719,
+        "value": 9.275573941757337e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 719,
+        "value": 9.275573941757337e-05
+      },
+      "max_ulp_distance": {
+        "degree": 703,
+        "value": 1350
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 1.9087553174901666e-05,
+          "actual_bits": "3f58dcc7",
+          "relative_error": 2.2532829381181413e-05,
+          "rounded_exact_bits": "3f58db87",
+          "state_scaled_error": 1.5566361556065895e-05,
+          "ulp_distance": 320
+        },
+        "651": {
+          "absolute_error": 8.069601254988282e-05,
+          "actual_bits": "3fcd66de",
+          "relative_error": 5.028976279206244e-05,
+          "rounded_exact_bits": "3fcd6439",
+          "state_scaled_error": 5.028976279206244e-05,
+          "ulp_distance": 677
+        },
+        "701": {
+          "absolute_error": 0.0001073718669761692,
+          "actual_bits": "bfabf1d3",
+          "relative_error": 7.99367675699138e-05,
+          "rounded_exact_bits": "bfabee4e",
+          "state_scaled_error": 5.4983783113607834e-05,
+          "ulp_distance": 901
+        },
+        "719": {
+          "absolute_error": 0.00019378837083390828,
+          "actual_bits": "c005b92c",
+          "relative_error": 9.275573941757337e-05,
+          "rounded_exact_bits": "c005b5ff",
+          "state_scaled_error": 9.275573941757337e-05,
+          "ulp_distance": 813
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 11,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 659,
+        "value": 3.995757190488e-14
+      },
+      "max_relative_error": {
+        "degree": 631,
+        "value": 2.62573690895457e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 631,
+        "value": 2.62573690895457e-14
+      },
+      "max_ulp_distance": {
+        "degree": 629,
+        "value": 233
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 2.100087082078994e-14,
+          "actual_bits": "3feb189f49f9aa47",
+          "relative_error": 2.480157175135104e-14,
+          "rounded_exact_bits": "3feb189f49f9a98a",
+          "state_scaled_error": 1.713359021479657e-14,
+          "ulp_distance": 189
+        },
+        "651": {
+          "absolute_error": 3.982337590642437e-14,
+          "actual_bits": "3ff9a909b2cd33d6",
+          "relative_error": 2.4831116912336798e-14,
+          "rounded_exact_bits": "3ff9a909b2cd3323",
+          "state_scaled_error": 2.4831116912336798e-14,
+          "ulp_distance": 179
+        },
+        "701": {
+          "absolute_error": 2.518088634764354e-14,
+          "actual_bits": "bff579fc0cada094",
+          "relative_error": 1.875976718300318e-14,
+          "rounded_exact_bits": "bff579fc0cada023",
+          "state_scaled_error": 1.290364052625605e-14,
+          "ulp_distance": 113
+        },
+        "719": {
+          "absolute_error": 2.863826532928644e-14,
+          "actual_bits": "c000b37ef66846d4",
+          "relative_error": 1.3717979882627432e-14,
+          "rounded_exact_bits": "c000b37ef6684694",
+          "state_scaled_error": 1.3717979882627432e-14,
+          "ulp_distance": 64
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 5,
+        "fma_bits": "41266349",
+        "operation": "a*cos2+b",
+        "separate_bits": "41266348",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 130,
+      "fma_state_differs_from_separate_steps": 239,
+      "leading_fma_correctly_rounded_steps": 357,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 431,
+        "value": 0.498976469039917
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 359,
+        "value": 0.49997377395629883
+      },
+      "state_fma_correctly_rounded_steps": 357,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.0000423265538263,
+        "degree": 717
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.9744787688261307,
+        "degree": 719
+      }
+    },
+    "m": 5,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0015887003975133874,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0007604227201571704,
+        "final_value": -2.0876445055553834,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0015887003975133874,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0007604227201571704
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": -2.0892332059528966,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 5,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0001366013660934774,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 6.538349366851734e-05,
+        "final_value": -2.089096604586803,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0001366013660934774,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 6.538349366851734e-05
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.001452490243859803,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0006952264781744765,
+        "final_value": -2.087780715709037,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.001452490243859803,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0006952264781744765
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.1799767843489965e-07,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 1.5220784234561373e-07,
+        "final_value": -2.089233523950575,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.1799767843489965e-07,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 1.5220784234561373e-07
+      }
+    },
+    "ring": 1
+  },
+  {
+    "degrees": [
+      5,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 11,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 643,
+        "value": 3.384701240948456e-05
+      },
+      "max_relative_error": {
+        "degree": 625,
+        "value": 0.0033616781320651725
+      },
+      "max_state_scaled_error": {
+        "degree": 627,
+        "value": 0.0006387989287502372
+      },
+      "max_ulp_distance": {
+        "degree": 625,
+        "value": 46059
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 1.4275756596388994e-05,
+          "actual_bits": "3eeeada9",
+          "relative_error": 3.0622648618513194e-05,
+          "rounded_exact_bits": "3eeeaf88",
+          "state_scaled_error": 1.951257663781404e-05,
+          "ulp_distance": 479
+        },
+        "651": {
+          "absolute_error": 3.306076467180289e-05,
+          "actual_bits": "bf374ac3",
+          "relative_error": 4.617738268862017e-05,
+          "rounded_exact_bits": "bf374898",
+          "state_scaled_error": 4.617738268862017e-05,
+          "ulp_distance": 555
+        },
+        "701": {
+          "absolute_error": 2.8633072058858096e-06,
+          "actual_bits": "3f530e85",
+          "relative_error": 3.4730436499320063e-06,
+          "rounded_exact_bits": "3f530e55",
+          "state_scaled_error": 2.3469295003165512e-06,
+          "ulp_distance": 48
+        },
+        "719": {
+          "absolute_error": 1.2197181227873595e-05,
+          "actual_bits": "3f78b4a4",
+          "relative_error": 1.2554758911146168e-05,
+          "rounded_exact_bits": "3f78b571",
+          "state_scaled_error": 1.2554758911146168e-05,
+          "ulp_distance": 205
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 7,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 311,
+        "value": 5.0282185750821e-14
+      },
+      "max_relative_error": {
+        "degree": 491,
+        "value": 8.089087401957587e-12
+      },
+      "max_state_scaled_error": {
+        "degree": 491,
+        "value": 7.53939204040154e-13
+      },
+      "max_ulp_distance": {
+        "degree": 491,
+        "value": 36990
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 2.3179059838563264e-14,
+          "actual_bits": "3fdde16b9ab5c230",
+          "relative_error": 4.9646339204761916e-14,
+          "rounded_exact_bits": "3fdde16b9ab5c08e",
+          "state_scaled_error": 3.1637948258454506e-14,
+          "ulp_distance": 418
+        },
+        "651": {
+          "absolute_error": 1.1873467464791366e-14,
+          "actual_bits": "bfe6e4718a956044",
+          "relative_error": 1.659728399825777e-14,
+          "rounded_exact_bits": "bfe6e4718a9560af",
+          "state_scaled_error": 1.659728399825777e-14,
+          "ulp_distance": 107
+        },
+        "701": {
+          "absolute_error": 1.5883465887592e-14,
+          "actual_bits": "3fea65805bcdb418",
+          "relative_error": 1.9255246108501903e-14,
+          "rounded_exact_bits": "3fea65805bcdb389",
+          "state_scaled_error": 1.3012396119905667e-14,
+          "ulp_distance": 143
+        },
+        "719": {
+          "absolute_error": 2.7469859036174396e-14,
+          "actual_bits": "3fef1ed33ae05afe",
+          "relative_error": 2.8246268986176294e-14,
+          "rounded_exact_bits": "3fef1ed33ae05a07",
+          "state_scaled_error": 2.8246268986176294e-14,
+          "ulp_distance": 247
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 7,
+        "fma_bits": "c03007c1",
+        "operation": "a*cos2+b",
+        "separate_bits": "c03007c0",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 165,
+      "fma_state_differs_from_separate_steps": 269,
+      "leading_fma_correctly_rounded_steps": 357,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 437,
+        "value": 0.49921417236328125
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 587,
+        "value": 0.4999852180480957
+      },
+      "state_fma_correctly_rounded_steps": 357,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.002320113176758,
+        "degree": 717
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 76.7777341405025,
+        "degree": 491
+      }
+    },
+    "m": 5,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0009942773069516663,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0010234259577184346,
+        "final_value": 0.9725128316811728,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0010417024449384383,
+        "max_trajectory_delta_degree": 607,
+        "max_trajectory_delta_over_f32_envelope": 0.0007157255204189172
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.9715185543742211,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 5,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.001233621718691844,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0012697870906711094,
+        "final_value": 0.9727521760929129,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.001277418160399144,
+        "max_trajectory_delta_degree": 611,
+        "max_trajectory_delta_over_f32_envelope": 0.0008776794007604395
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.00023966592024133142,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0002466920669319652,
+        "final_value": 0.9712788884539797,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0002576099299767623,
+        "max_trajectory_delta_degree": 627,
+        "max_trajectory_delta_over_f32_envelope": 0.00017699680181570014
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.3085045494634424e-07,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 1.3468652179332616e-07,
+        "final_value": 0.971518685224676,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.9602944851015233e-07,
+        "max_trajectory_delta_degree": 263,
+        "max_trajectory_delta_over_f32_envelope": 1.3468652179332616e-07
+      }
+    },
+    "ring": 5
+  },
+  {
+    "degrees": [
+      5,
+      719
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 13,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 555,
+        "value": 0.0007265932617233009
+      },
+      "max_relative_error": {
+        "degree": 401,
+        "value": 7.203866152162945e-06
+      },
+      "max_state_scaled_error": {
+        "degree": 403,
+        "value": 7.189142622360758e-06
+      },
+      "max_ulp_distance": {
+        "degree": 485,
+        "value": 102
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 0.00024475396660950235,
+          "actual_bits": "429e77a8",
+          "relative_error": 3.089022871563422e-06,
+          "rounded_exact_bits": "429e7788",
+          "state_scaled_error": 2.1166876013451454e-06,
+          "ulp_distance": 32
+        },
+        "651": {
+          "absolute_error": 4.067902080854171e-05,
+          "actual_bits": "c2fb485a",
+          "relative_error": 3.237711660795938e-07,
+          "rounded_exact_bits": "c2fb4855",
+          "state_scaled_error": 3.237711660795938e-07,
+          "ulp_distance": 5
+        },
+        "701": {
+          "absolute_error": 0.00016065444525473088,
+          "actual_bits": "c2b8c31d",
+          "relative_error": 1.7390375256435382e-06,
+          "rounded_exact_bits": "c2b8c332",
+          "state_scaled_error": 1.1910746142811984e-06,
+          "ulp_distance": 21
+        },
+        "719": {
+          "absolute_error": 0.0003527278016318192,
+          "actual_bits": "430abba9",
+          "relative_error": 2.5424865323698553e-06,
+          "rounded_exact_bits": "430abbc0",
+          "state_scaled_error": 2.5424865323698553e-06,
+          "ulp_distance": 23
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 15,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 451,
+        "value": 2.0983226396051656e-12
+      },
+      "max_relative_error": {
+        "degree": 383,
+        "value": 2.4720843843472487e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 383,
+        "value": 2.4720843843472487e-14
+      },
+      "max_ulp_distance": {
+        "degree": 453,
+        "value": 202
+      },
+      "selected_degrees": {
+        "601": {
+          "absolute_error": 6.420238493029851e-13,
+          "actual_bits": "4053cf6f2629d73e",
+          "relative_error": 8.102151172386685e-15,
+          "rounded_exact_bits": "4053cf6f2629d711",
+          "state_scaled_error": 5.551830764315021e-15,
+          "ulp_distance": 45
+        },
+        "651": {
+          "absolute_error": 2.4483149740711274e-13,
+          "actual_bits": "c05f6a08679d24ff",
+          "relative_error": 1.9484148054720543e-15,
+          "rounded_exact_bits": "c05f6a08679d24ee",
+          "state_scaled_error": 1.9484148054720543e-15,
+          "ulp_distance": 17
+        },
+        "701": {
+          "absolute_error": 3.3066682563809727e-13,
+          "actual_bits": "c057193ef6b4b41a",
+          "relative_error": 3.578859565941215e-15,
+          "rounded_exact_bits": "c057193ef6b4b431",
+          "state_scaled_error": 2.451176750786982e-15,
+          "ulp_distance": 23
+        },
+        "719": {
+          "absolute_error": 8.93213567715583e-13,
+          "actual_bits": "406158198517c081",
+          "relative_error": 6.437430729323487e-15,
+          "rounded_exact_bits": "406158198517c0a0",
+          "state_scaled_error": 6.437430729323487e-15,
+          "ulp_distance": 31
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 9,
+        "fma_bits": "c0079339",
+        "operation": "leading*current+previous",
+        "separate_bits": "c0079338",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 0,
+      "fma_state_differs_from_separate_steps": 203,
+      "leading_fma_correctly_rounded_steps": 357,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 5,
+        "value": 2.0443959136410764e-25
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 131,
+        "value": 0.4978904724121094
+      },
+      "state_fma_correctly_rounded_steps": 357,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 1.0,
+        "degree": 5
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.988895485136906,
+        "degree": 719
+      }
+    },
+    "m": 5,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.019715008243728606,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.00014210715093436772,
+        "final_value": 138.7531152213969,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.019715008243728606,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.00014210715093436772
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 138.7334002131532,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 5,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.64582231197611e-33,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 2.62793408535694e-35,
+        "final_value": 138.7334002131532,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.64582231197611e-33,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 2.62793408535694e-35
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.01971091553900545,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 0.0001420776504340061,
+        "final_value": 138.7531111286922,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.01971091553900545,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 0.0001420776504340061
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 4.092123323888373e-06,
+        "final_degree": 719,
+        "final_delta_over_final_local_state_scale": 2.949630959524628e-08,
+        "final_value": 138.7334043052765,
+        "max_trajectory_absolute_delta_from_f32_replay": 4.092123323888373e-06,
+        "max_trajectory_delta_degree": 719,
+        "max_trajectory_delta_over_f32_envelope": 2.949630959524628e-08
+      }
+    },
+    "ring": 360
+  },
+  {
+    "degrees": [
+      8,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 16,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 7.285423591325669e-09
+      },
+      "max_relative_error": {
+        "degree": 372,
+        "value": 1.6101709892093633e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 374,
+        "value": 1.608256194914981e-05
+      },
+      "max_ulp_distance": {
+        "degree": 390,
+        "value": 265
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.781564559382287e-10,
+          "actual_bits": "38bb6772",
+          "relative_error": 1.9936700752608396e-06,
+          "rounded_exact_bits": "38bb675a",
+          "state_scaled_error": 1.3385505755877354e-06,
+          "ulp_distance": 24
+        },
+        "650": {
+          "absolute_error": 1.065201300832048e-09,
+          "actual_bits": "398ab039",
+          "relative_error": 4.026797717491232e-06,
+          "rounded_exact_bits": "398ab05e",
+          "state_scaled_error": 4.026797717491232e-06,
+          "ulp_distance": 37
+        },
+        "700": {
+          "absolute_error": 3.1332015866401654e-09,
+          "actual_bits": "b9a64b1f",
+          "relative_error": 9.87822339227652e-06,
+          "rounded_exact_bits": "b9a64b8b",
+          "state_scaled_error": 6.604648212678374e-06,
+          "ulp_distance": 108
+        },
+        "720": {
+          "absolute_error": 4.9667583990117225e-09,
+          "actual_bits": "39d15025",
+          "relative_error": 1.2440596755509692e-05,
+          "rounded_exact_bits": "39d150d0",
+          "state_scaled_error": 8.312052713869336e-06,
+          "ulp_distance": 171
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 16,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 566,
+        "value": 1.1738001340588091e-18
+      },
+      "max_relative_error": {
+        "degree": 536,
+        "value": 1.578060880339638e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 534,
+        "value": 1.5777218025473593e-14
+      },
+      "max_ulp_distance": {
+        "degree": 542,
+        "value": 133
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 5.416463464595411e-19,
+          "actual_bits": "3f176af6782b57c7",
+          "relative_error": 6.063302206920829e-15,
+          "rounded_exact_bits": "3f176af6782b57ef",
+          "state_scaled_error": 4.07088968247564e-15,
+          "ulp_distance": 40
+        },
+        "650": {
+          "absolute_error": 7.171831302535515e-19,
+          "actual_bits": "3f3154268ab17d3c",
+          "relative_error": 2.712337226141846e-15,
+          "rounded_exact_bits": "3f3154268ab17d2f",
+          "state_scaled_error": 2.712337226141846e-15,
+          "ulp_distance": 13
+        },
+        "700": {
+          "absolute_error": 3.95766899377374e-19,
+          "actual_bits": "bf34c6990f648086",
+          "relative_error": 1.2484242825703572e-15,
+          "rounded_exact_bits": "bf34c6990f64807f",
+          "state_scaled_error": 8.347011905478602e-16,
+          "ulp_distance": 7
+        },
+        "720": {
+          "absolute_error": 5.300985757507777e-19,
+          "actual_bits": "3f3a263b84d8e7db",
+          "relative_error": 1.3285433859955654e-15,
+          "rounded_exact_bits": "3f3a263b84d8e7e5",
+          "state_scaled_error": 8.876478530632103e-16,
+          "ulp_distance": 10
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 8,
+        "fma_bits": "418248b7",
+        "operation": "a*cos2+b",
+        "separate_bits": "418248b8",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 303,
+      "fma_state_differs_from_separate_steps": 320,
+      "leading_fma_correctly_rounded_steps": 356,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 170,
+        "value": 0.49814915657043457
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 102,
+        "value": 0.4994516372680664
+      },
+      "state_fma_correctly_rounded_steps": 356,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 2.999551659841659,
+        "degree": 718
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.9111150979526847,
+        "degree": 720
+      }
+    },
+    "m": 8,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.3060434734693533e-07,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.000385924850215497,
+        "final_value": 0.0003990073499583454,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.4224237343032286e-07,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.0005727551896703168
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.00039923795430569234,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 8,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.3488033304360056e-07,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.00022572719432975463,
+        "final_value": 0.00039910307397264874,
+        "max_trajectory_absolute_delta_from_f32_replay": 2.007383412226819e-07,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.0003359429913622589
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 9.567236493156368e-08,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.00016011121876391966,
+        "final_value": 0.00039914228194076073,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.414259700422243e-07,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.0002366815584053738
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 7.9188586749545e-11,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.3252501018169202e-07,
+        "final_value": 0.00039923787511710556,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.1852105722885743e-10,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 1.983493450347437e-07
+      }
+    },
+    "ring": 0
+  },
+  {
+    "degrees": [
+      8,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 14,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 3.446959040621276e-06
+      },
+      "max_relative_error": {
+        "degree": 526,
+        "value": 2.045876542396659e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 526,
+        "value": 2.045876542396659e-05
+      },
+      "max_ulp_distance": {
+        "degree": 524,
+        "value": 339
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 6.673462836326393e-07,
+          "actual_bits": "3d2bfe9c",
+          "relative_error": 1.589290786371224e-05,
+          "rounded_exact_bits": "3d2bfde9",
+          "state_scaled_error": 1.0634135472478123e-05,
+          "ulp_distance": 179
+        },
+        "650": {
+          "absolute_error": 6.167762606809396e-07,
+          "actual_bits": "3de8b965",
+          "relative_error": 5.427732277673397e-06,
+          "rounded_exact_bits": "3de8b912",
+          "state_scaled_error": 5.427732277673397e-06,
+          "ulp_distance": 83
+        },
+        "700": {
+          "absolute_error": 1.1480896811044343e-06,
+          "actual_bits": "bdfce6da",
+          "relative_error": 9.297150681032668e-06,
+          "rounded_exact_bits": "bdfce774",
+          "state_scaled_error": 6.190666765115341e-06,
+          "ulp_distance": 154
+        },
+        "720": {
+          "absolute_error": 2.3828658858733023e-06,
+          "actual_bits": "3e18a2ff",
+          "relative_error": 1.598577278704964e-05,
+          "rounded_exact_bits": "3e18a39f",
+          "state_scaled_error": 1.0635396571268814e-05,
+          "ulp_distance": 160
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 10,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 8.1091617555281e-15
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 3.682630856043784e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 610,
+        "value": 3.6731847691727207e-14
+      },
+      "max_ulp_distance": {
+        "degree": 524,
+        "value": 311
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.520244134361295e-15,
+          "actual_bits": "3fa57f0cb4947c8a",
+          "relative_error": 3.620927532200901e-14,
+          "rounded_exact_bits": "3fa57f0cb4947baf",
+          "state_scaled_error": 2.4228011752095105e-14,
+          "ulp_distance": 219
+        },
+        "650": {
+          "absolute_error": 3.959528878660941e-15,
+          "actual_bits": "3fbd15aaa4726a42",
+          "relative_error": 3.4851370537608774e-14,
+          "rounded_exact_bits": "3fbd15aaa4726925",
+          "state_scaled_error": 3.4851370537608774e-14,
+          "ulp_distance": 285
+        },
+        "700": {
+          "absolute_error": 4.076180247718426e-15,
+          "actual_bits": "bfbf9ab3994992ea",
+          "relative_error": 3.30177237175748e-14,
+          "rounded_exact_bits": "bfbf9ab3994991c4",
+          "state_scaled_error": 2.1985339760609454e-14,
+          "ulp_distance": 294
+        },
+        "720": {
+          "absolute_error": 5.4877075314139865e-15,
+          "actual_bits": "3fc312f46e323902",
+          "relative_error": 3.682630856043784e-14,
+          "rounded_exact_bits": "3fc312f46e32383c",
+          "state_scaled_error": 2.4500596234136718e-14,
+          "ulp_distance": 198
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 12,
+        "fma_bits": "40ca2667",
+        "operation": "a*cos2+b",
+        "separate_bits": "40ca2666",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 170,
+      "fma_state_differs_from_separate_steps": 247,
+      "leading_fma_correctly_rounded_steps": 356,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 16,
+        "value": 0.4952341318130493
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 516,
+        "value": 0.4995841979980469
+      },
+      "state_fma_correctly_rounded_steps": 356,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 2.9997413973262987,
+        "degree": 718
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.927413096346341,
+        "degree": 720
+      }
+    },
+    "m": 8,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 4.570883203051264e-05,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0002040112951114967,
+        "final_value": 0.14901595478699103,
+        "max_trajectory_absolute_delta_from_f32_replay": 6.788519274629174e-05,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.00030299059231746536
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.14906166361902157,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 8,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 5.638824806187009e-06,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 2.516765142563946e-05,
+        "final_value": 0.14905602479421537,
+        "max_trajectory_absolute_delta_from_f32_replay": 8.423550044098927e-06,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 3.759665862356654e-05
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 4.010967184340849e-05,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.00017902067796894274,
+        "final_value": 0.14902155394717814,
+        "max_trajectory_absolute_delta_from_f32_replay": 5.95212254558863e-05,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.0002656598681798031
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 3.841904287498083e-08,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.714749282728731e-07,
+        "final_value": 0.14906170203806443,
+        "max_trajectory_absolute_delta_from_f32_replay": 5.774660925710006e-08,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 2.5773925999627866e-07
+      }
+    },
+    "ring": 1
+  },
+  {
+    "degrees": [
+      8,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 12,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 4.4433822583745707e-05
+      },
+      "max_relative_error": {
+        "degree": 486,
+        "value": 0.0002443149416812302
+      },
+      "max_state_scaled_error": {
+        "degree": 488,
+        "value": 0.00012280534616187691
+      },
+      "max_ulp_distance": {
+        "degree": 486,
+        "value": 2076
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.4260320114799711e-05,
+          "actual_bits": "bf274f08",
+          "relative_error": 2.1820271523141242e-05,
+          "rounded_exact_bits": "bf274e19",
+          "state_scaled_error": 1.3726885363604129e-05,
+          "ulp_distance": 239
+        },
+        "650": {
+          "absolute_error": 7.762657318546523e-06,
+          "actual_bits": "3ea4f3bb",
+          "relative_error": 2.4095340312537382e-05,
+          "rounded_exact_bits": "3ea4f2b7",
+          "state_scaled_error": 2.4095340312537382e-05,
+          "ulp_distance": 260
+        },
+        "700": {
+          "absolute_error": 2.5830061205132195e-05,
+          "actual_bits": "bf56f4df",
+          "relative_error": 3.076296011525091e-05,
+          "rounded_exact_bits": "bf56f32e",
+          "state_scaled_error": 2.030896073949721e-05,
+          "ulp_distance": 433
+        },
+        "720": {
+          "absolute_error": 2.906175332866777e-05,
+          "actual_bits": "3f55e0d1",
+          "relative_error": 3.478647209706155e-05,
+          "rounded_exact_bits": "3f55dee9",
+          "state_scaled_error": 2.2501635841923747e-05,
+          "ulp_distance": 488
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 10,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 694,
+        "value": 2.6389662380368277e-14
+      },
+      "max_relative_error": {
+        "degree": 486,
+        "value": 1.060688597975631e-12
+      },
+      "max_state_scaled_error": {
+        "degree": 488,
+        "value": 4.820195213940317e-13
+      },
+      "max_ulp_distance": {
+        "degree": 486,
+        "value": 5142
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 7.942659567268343e-15,
+          "actual_bits": "bfe4f0b6fbf5f98e",
+          "relative_error": 1.2137610341090399e-14,
+          "rounded_exact_bits": "bfe4f0b6fbf5f946",
+          "state_scaled_error": 7.636122470923605e-15,
+          "ulp_distance": 72
+        },
+        "650": {
+          "absolute_error": 1.3775358136092636e-14,
+          "actual_bits": "3fd48e727aead995",
+          "relative_error": 4.288793020353473e-14,
+          "rounded_exact_bits": "3fd48e727aead89d",
+          "state_scaled_error": 4.288793020353473e-14,
+          "ulp_distance": 248
+        },
+        "700": {
+          "absolute_error": 1.6931809541314854e-14,
+          "actual_bits": "bfeae0bb461372ee",
+          "relative_error": 2.0158522825071243e-14,
+          "rounded_exact_bits": "bfeae0bb46137255",
+          "state_scaled_error": 1.3308753835704529e-14,
+          "ulp_distance": 153
+        },
+        "720": {
+          "absolute_error": 1.47758409176092e-14,
+          "actual_bits": "3feac130bafeef6f",
+          "relative_error": 1.7672700356211444e-14,
+          "rounded_exact_bits": "3feac130bafeeeea",
+          "state_scaled_error": 1.1432111192244496e-14,
+          "ulp_distance": 133
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 8,
+        "fma_bits": "418230bd",
+        "operation": "a*cos2+b",
+        "separate_bits": "418230bc",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 185,
+      "fma_state_differs_from_separate_steps": 259,
+      "leading_fma_correctly_rounded_steps": 356,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 414,
+        "value": 0.4989204406738281
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 694,
+        "value": 0.4969024658203125
+      },
+      "state_fma_correctly_rounded_steps": 356,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.002018669699539,
+        "degree": 718
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 16.7513330583999,
+        "degree": 486
+      }
+    },
+    "m": 8,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0006501924355456882,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0005034243201490016,
+        "final_value": 0.8360828068029751,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0013528703887115475,
+        "max_trajectory_delta_degree": 614,
+        "max_trajectory_delta_over_f32_envelope": 0.0008577323861962494
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 0.8354326143674294,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 8,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0006788888092582,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0005256430536149462,
+        "final_value": 0.8361115031766876,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0013944204841153586,
+        "max_trajectory_delta_degree": 614,
+        "max_trajectory_delta_over_f32_envelope": 0.0008840755324242741
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.8976818584900464e-05,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 2.243587344097825e-05,
+        "final_value": 0.8354036375488445,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0001182697507135226,
+        "max_trajectory_delta_degree": 470,
+        "max_trajectory_delta_over_f32_envelope": 7.498411994290065e-05
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 1.474156274590435e-07,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.1413945776010589e-07,
+        "final_value": 0.8354327617830568,
+        "max_trajectory_absolute_delta_from_f32_replay": 2.7831491591074036e-07,
+        "max_trajectory_delta_degree": 390,
+        "max_trajectory_delta_over_f32_envelope": 1.7645424050228545e-07
+      }
+    },
+    "ring": 5
+  },
+  {
+    "degrees": [
+      8,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 16,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 0.0016394642812381259
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 1.1617065449109915e-05
+      },
+      "max_state_scaled_error": {
+        "degree": 718,
+        "value": 1.1571737086274081e-05
+      },
+      "max_ulp_distance": {
+        "degree": 646,
+        "value": 156
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0006034813755256964,
+          "actual_bits": "429ab70d",
+          "relative_error": 7.80113761968619e-06,
+          "rounded_exact_bits": "429ab75c",
+          "state_scaled_error": 5.112277115551788e-06,
+          "ulp_distance": 79
+        },
+        "650": {
+          "absolute_error": 0.001202012105600891,
+          "actual_bits": "c300490b",
+          "relative_error": 9.369745538059083e-06,
+          "rounded_exact_bits": "c300495a",
+          "state_scaled_error": 9.369745538059083e-06,
+          "ulp_distance": 79
+        },
+        "700": {
+          "absolute_error": 0.0009739956646176482,
+          "actual_bits": "c2b470c6",
+          "relative_error": 1.0795636623301912e-05,
+          "rounded_exact_bits": "c2b47146",
+          "state_scaled_error": 7.071286006802888e-06,
+          "ulp_distance": 128
+        },
+        "720": {
+          "absolute_error": 0.0010779926530424774,
+          "actual_bits": "42b995eb",
+          "relative_error": 1.1617065449109915e-05,
+          "rounded_exact_bits": "42b99678",
+          "state_scaled_error": 7.608733965537848e-06,
+          "ulp_distance": 141
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 12,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 9.989484082424957e-12
+      },
+      "max_relative_error": {
+        "degree": 708,
+        "value": 7.070105581358038e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 710,
+        "value": 7.065750507914677e-14
+      },
+      "max_ulp_distance": {
+        "degree": 646,
+        "value": 591
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 4.236619619816327e-12,
+          "actual_bits": "405356e3ff5efa08",
+          "relative_error": 5.476664235414531e-14,
+          "rounded_exact_bits": "405356e3ff5efb32",
+          "state_scaled_error": 3.588995600818442e-14,
+          "ulp_distance": 298
+        },
+        "650": {
+          "absolute_error": 8.555835434837366e-12,
+          "actual_bits": "c060092a3b66700e",
+          "relative_error": 6.669323547059616e-14,
+          "rounded_exact_bits": "c060092a3b66713b",
+          "state_scaled_error": 6.669323547059616e-14,
+          "ulp_distance": 301
+        },
+        "700": {
+          "absolute_error": 6.356817317033328e-12,
+          "actual_bits": "c0568e2ef30e334d",
+          "relative_error": 7.045780855446654e-14,
+          "rounded_exact_bits": "c0568e2ef30e350c",
+          "state_scaled_error": 4.6150808280969255e-14,
+          "ulp_distance": 447
+        },
+        "720": {
+          "absolute_error": 6.536717242524377e-12,
+          "actual_bits": "405732d6bed3dfd4",
+          "relative_error": 7.044304688801891e-14,
+          "rounded_exact_bits": "405732d6bed3e1a0",
+          "state_scaled_error": 4.6137480408189164e-14,
+          "ulp_distance": 460
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 10,
+        "fma_bits": "bfa1a375",
+        "operation": "leading*current+previous",
+        "separate_bits": "bfa1a374",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 0,
+      "fma_state_differs_from_separate_steps": 186,
+      "leading_fma_correctly_rounded_steps": 356,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 8,
+        "value": 2.987963558350477e-25
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 220,
+        "value": 0.49945068359375
+      },
+      "state_fma_correctly_rounded_steps": 356,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 1.0,
+        "degree": 8
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.9889102261707894,
+        "degree": 720
+      }
+    },
+    "m": 8,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.00047049492952500586,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 3.3208674853085355e-06,
+        "final_value": 92.79435702029741,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.002421605916707908,
+        "max_trajectory_delta_degree": 426,
+        "max_trajectory_delta_over_f32_envelope": 1.709228271417249e-05
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 92.79388652536788,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 8,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.4449641988200645e-33,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.7257151142525662e-35,
+        "final_value": 92.79388652536788,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.712316567087155e-33,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 2.6202431969368804e-35
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.00046616081787143434,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 3.2902762725986066e-06,
+        "final_value": 92.79435268618576,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0024255370353346954,
+        "max_trajectory_delta_degree": 426,
+        "max_trajectory_delta_over_f32_envelope": 1.712002950422136e-05
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 4.334089880769903e-06,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 3.0591059032206987e-08,
+        "final_value": 92.79389085945776,
+        "max_trajectory_absolute_delta_from_f32_replay": 6.6173171562149415e-06,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 4.6706631687261583e-08
+      }
+    },
+    "ring": 360
+  },
+  {
+    "degrees": [
+      16,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 18,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 666,
+        "value": 5.134407587271207e-06
+      },
+      "max_relative_error": {
+        "degree": 626,
+        "value": 4.193101592042664e-06
+      },
+      "max_state_scaled_error": {
+        "degree": 626,
+        "value": 4.193101592042664e-06
+      },
+      "max_ulp_distance": {
+        "degree": 622,
+        "value": 67
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 1.7466793679740931e-06,
+          "actual_bits": "3eed8615",
+          "relative_error": 3.765082184059679e-06,
+          "rounded_exact_bits": "3eed8650",
+          "state_scaled_error": 2.4220736365122264e-06,
+          "ulp_distance": 59
+        },
+        "650": {
+          "absolute_error": 3.7362415293876155e-06,
+          "actual_bits": "3fa1fc3b",
+          "relative_error": 2.9523517062848333e-06,
+          "rounded_exact_bits": "3fa1fc5a",
+          "state_scaled_error": 2.9523517062848333e-06,
+          "ulp_distance": 31
+        },
+        "700": {
+          "absolute_error": 1.5928444906955132e-06,
+          "actual_bits": "bf884400",
+          "relative_error": 1.4962232019477585e-06,
+          "rounded_exact_bits": "bf88440d",
+          "state_scaled_error": 9.438877261366126e-07,
+          "ulp_distance": 13
+        },
+        "720": {
+          "absolute_error": 1.5958778232448628e-06,
+          "actual_bits": "3f8daeb6",
+          "relative_error": 1.441759694405036e-06,
+          "rounded_exact_bits": "3f8daec3",
+          "state_scaled_error": 9.049783416509264e-07,
+          "ulp_distance": 13
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 20,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 8.06095813496462e-14
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 4.6724131020977954e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 718,
+        "value": 4.5666297862159336e-14
+      },
+      "max_ulp_distance": {
+        "degree": 718,
+        "value": 363
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 7.106144755892569e-15,
+          "actual_bits": "3fddb50b6737486b",
+          "relative_error": 1.530919050000621e-14,
+          "rounded_exact_bits": "3fddb50b673748eb",
+          "state_scaled_error": 9.84843092251573e-15,
+          "ulp_distance": 128
+        },
+        "650": {
+          "absolute_error": 3.233566243513e-14,
+          "actual_bits": "3ff44333515283af",
+          "relative_error": 2.5533401757859283e-14,
+          "rounded_exact_bits": "3ff4433351528441",
+          "state_scaled_error": 2.5533401757859283e-14,
+          "ulp_distance": 146
+        },
+        "700": {
+          "absolute_error": 3.94938951032392e-14,
+          "actual_bits": "bff10c781561515a",
+          "relative_error": 3.706452984709969e-14,
+          "rounded_exact_bits": "bff10c781561520c",
+          "state_scaled_error": 2.338228186989539e-14,
+          "ulp_distance": 178
+        },
+        "720": {
+          "absolute_error": 5.177049010540523e-14,
+          "actual_bits": "3ff1ba61a3df4671",
+          "relative_error": 4.6724131020977954e-14,
+          "rounded_exact_bits": "3ff1ba61a3df475a",
+          "state_scaled_error": 2.932860563273207e-14,
+          "ulp_distance": 233
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 16,
+        "fma_bits": "42008f93",
+        "operation": "a*cos2+b",
+        "separate_bits": "42008f94",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 173,
+      "fma_state_differs_from_separate_steps": 251,
+      "leading_fma_correctly_rounded_steps": 352,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 16,
+        "value": 0.4993727207183838
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 376,
+        "value": 0.499969482421875
+      },
+      "state_fma_correctly_rounded_steps": 352,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 3.0005333753296832,
+        "degree": 718
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.99261711960013,
+        "degree": 720
+      }
+    },
+    "m": 16,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0011074225678715654,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0006279888249474399,
+        "final_value": 1.108003273130143,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0017444577330081707,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.0009892339145912438
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 1.1068958505622715,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 16,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0011658373717829777,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.000661114250717269,
+        "final_value": 1.1080616879340546,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0018349247038232687,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 0.0010405352410649488
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 5.902391454269232e-05,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 3.347083562573946e-05,
+        "final_value": 1.1068368266477289,
+        "max_trajectory_absolute_delta_from_f32_replay": 9.143999482855866e-05,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 5.1853101581587305e-05
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 6.634248673244372e-07,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 3.762099626276561e-07,
+        "final_value": 1.1068965139871387,
+        "max_trajectory_absolute_delta_from_f32_replay": 1.0569305252427009e-06,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 5.993561788016789e-07
+      }
+    },
+    "ring": 5
+  },
+  {
+    "degrees": [
+      16,
+      720
+    ],
+    "f32_simd_vs_exact_same_f32_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 28,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 698,
+        "value": 0.0011160255368155127
+      },
+      "max_relative_error": {
+        "degree": 688,
+        "value": 7.982321347145209e-06
+      },
+      "max_state_scaled_error": {
+        "degree": 690,
+        "value": 7.977838098479109e-06
+      },
+      "max_ulp_distance": {
+        "degree": 634,
+        "value": 103
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 0.0004207065177697531,
+          "actual_bits": "42977c66",
+          "relative_error": 5.554428067022559e-06,
+          "rounded_exact_bits": "42977c2f",
+          "state_scaled_error": 3.4925786148846886e-06,
+          "ulp_distance": 55
+        },
+        "650": {
+          "absolute_error": 0.0009709785156739506,
+          "actual_bits": "c302ea22",
+          "relative_error": 7.416940937601614e-06,
+          "rounded_exact_bits": "c302e9e2",
+          "state_scaled_error": 7.416940937601614e-06,
+          "ulp_distance": 64
+        },
+        "700": {
+          "absolute_error": 0.0006977227969070841,
+          "actual_bits": "c2b0b0a7",
+          "relative_error": 7.897765770014898e-06,
+          "rounded_exact_bits": "c2b0b04c",
+          "state_scaled_error": 4.9636811548401885e-06,
+          "ulp_distance": 91
+        },
+        "720": {
+          "absolute_error": 0.0005989603144513233,
+          "actual_bits": "42b5bb19",
+          "relative_error": 6.591773074715748e-06,
+          "rounded_exact_bits": "42b5baca",
+          "state_scaled_error": 4.142547581659857e-06,
+          "ulp_distance": 79
+        }
+      }
+    },
+    "f64_simd_vs_exact_same_f64_operands": {
+      "first_state_ulp_divergence": {
+        "degree": 28,
+        "ulp_distance": 1
+      },
+      "max_absolute_error": {
+        "degree": 718,
+        "value": 2.562647022615653e-12
+      },
+      "max_relative_error": {
+        "degree": 720,
+        "value": 1.8088892730213924e-14
+      },
+      "max_state_scaled_error": {
+        "degree": 718,
+        "value": 1.772264593070528e-14
+      },
+      "max_ulp_distance": {
+        "degree": 310,
+        "value": 118
+      },
+      "selected_degrees": {
+        "600": {
+          "absolute_error": 2.9029018017539e-13,
+          "actual_bits": "4052efb18ba62fd8",
+          "relative_error": 3.832455865647565e-15,
+          "rounded_exact_bits": "4052efb18ba62fec",
+          "state_scaled_error": 2.4098201738794374e-15,
+          "ulp_distance": 20
+        },
+        "650": {
+          "absolute_error": 6.516918563400308e-13,
+          "actual_bits": "c0605d76cb0bf764",
+          "relative_error": 4.977758306298614e-15,
+          "rounded_exact_bits": "c0605d76cb0bf74d",
+          "state_scaled_error": 4.977758306298614e-15,
+          "ulp_distance": 23
+        },
+        "700": {
+          "absolute_error": 1.2543111482858071e-12,
+          "actual_bits": "c056166bfb027562",
+          "relative_error": 1.419701542367825e-14,
+          "rounded_exact_bits": "c056166bfb02750a",
+          "state_scaled_error": 8.92272421551145e-15,
+          "ulp_distance": 88
+        },
+        "720": {
+          "absolute_error": 1.6437589518262606e-12,
+          "actual_bits": "4056b7c15842e3b6",
+          "relative_error": 1.8088892730213924e-14,
+          "rounded_exact_bits": "4056b7c15842e342",
+          "state_scaled_error": 1.1367838661178444e-14,
+          "ulp_distance": 116
+        }
+      }
+    },
+    "local_f32_rounding_and_conditioning": {
+      "first_fma_vs_separate_difference": {
+        "degree": 20,
+        "fma_bits": "403e2f78",
+        "operation": "leading*current+previous",
+        "separate_bits": "403e2f77",
+        "ulp_distance": 1
+      },
+      "first_leading_fma_rounding_mismatch": null,
+      "first_state_fma_rounding_mismatch": null,
+      "fma_leading_differs_from_separate_steps": 0,
+      "fma_state_differs_from_separate_steps": 170,
+      "leading_fma_correctly_rounded_steps": 352,
+      "max_leading_fma_roundoff_ulp": {
+        "degree": 16,
+        "value": 5.504143444322244e-25
+      },
+      "max_state_fma_roundoff_ulp": {
+        "degree": 580,
+        "value": 0.49899303913116455
+      },
+      "state_fma_correctly_rounded_steps": 352,
+      "worst_leading_cancellation_condition": {
+        "condition_number": 1.0,
+        "degree": 16
+      },
+      "worst_state_update_cancellation_condition": {
+        "condition_number": 2.9889046572073386,
+        "degree": 720
+      }
+    },
+    "m": 16,
+    "one_change_at_a_time_preparation_sensitivity": {
+      "all_f64_prepared": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.006349678736434741,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 4.391584159967318e-05,
+        "final_value": 90.87117582828526,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.009883917458608126,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 6.835945116495735e-05
+      },
+      "f32_prepared_seed_factors_geometry": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.0,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 0.0,
+        "final_value": 90.86482614954883,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.0,
+        "max_trajectory_delta_degree": 16,
+        "max_trajectory_delta_over_f32_envelope": 0.0
+      },
+      "f64_cos2_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.3932260307459502e-33,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.6552102813545846e-35,
+        "final_value": 90.86482614954883,
+        "max_trajectory_absolute_delta_from_f32_replay": 3.787091613357326e-33,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 2.6192398437630837e-35
+      },
+      "f64_factors_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 0.006321027388878313,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 4.371768227648012e-05,
+        "final_value": 90.87114717693771,
+        "max_trajectory_absolute_delta_from_f32_replay": 0.009838326456838,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 6.80441332890121e-05
+      },
+      "f64_seed_only": {
+        "final_absolute_delta_from_f32_prepared_replay": 2.864935455910957e-05,
+        "final_degree": 720,
+        "final_delta_over_final_local_state_scale": 1.98145539164265e-07,
+        "final_value": 90.8648547989034,
+        "max_trajectory_absolute_delta_from_f32_replay": 4.558789978099755e-05,
+        "max_trajectory_delta_degree": 718,
+        "max_trajectory_delta_over_f32_envelope": 3.152964218734911e-07
+      }
+    },
+    "ring": 360
+  }
+]
