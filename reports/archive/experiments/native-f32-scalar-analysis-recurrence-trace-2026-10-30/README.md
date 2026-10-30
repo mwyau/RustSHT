@@ -60,7 +60,16 @@ as the recurrence evolves and can become large relative to near-zero states.
 
 The selected recurrence cases do not exercise a nonzero scaling exponent, so
 this trace does not diagnose scaled-prefix accuracy or the exceptional range.
-It also does not compare DUCC, coefficient accumulation, the FFT, or final
+A separate ignored test-only route counter ran on the same isolated candidate
+with an all-zero map: all 4,635 full and 1,206 reduced typed blocks succeeded
+at both q1 and q8, with no typed seed or recurrence declines. The counted
+scaled-accumulator visits were 266,685/896,576 (29.7%) full and 89,429/373,707
+(23.9%) reduced. These counts are not timing attribution and the zero-map input
+does not match the timing fixture; they only show that scale-aware accumulation
+still handles a substantial share of the recurrence visits. Full counts and
+caveats are in `route-counts.json`.
+
+This trace does not compare DUCC, coefficient accumulation, the FFT, or final
 maps. The complete bounded bit traces, exact-rational replay, summary script,
 and AVX2 assembly are retained in this directory; the CSV is compressed to
 avoid storing its multi-megabyte text form.

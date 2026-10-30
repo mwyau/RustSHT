@@ -1,0 +1,66 @@
+{
+  "purpose": "test-only B1 typed-route counters; path-frequency evidence, not timing attribution",
+  "base_source": "053c5668079fa89f37438a488b2545b5ceab1e69",
+  "candidate_source_diff_sha256": "645951812d6dc995c3921d16f32af4091f5d67ed46c2259fce897a0f934320c5",
+  "test": "report_f32_scalar_analysis_typed_routes_t720",
+  "input": "all-zero f32 map; route counts can differ for coefficient-dependent prefix decisions on nonzero maps",
+  "geometry": {
+    "grid": "Gauss-Legendre",
+    "ntheta": 721,
+    "lmax": 720,
+    "phi0": 0.23,
+    "full": {"mmax": 720, "nphi": 1458},
+    "reduced": {"mmax": 180, "nphi": 378}
+  },
+  "counts": [
+    {
+      "cell": "full",
+      "threads": 1,
+      "typed_attempts": 4635,
+      "typed_successes": 4635,
+      "seed_declines": 0,
+      "recurrence_declines": 0,
+      "normal_pair_accumulations": 629891,
+      "scaled_pair_accumulations": 266685,
+      "scaled_fraction": 0.29744829216931973
+    },
+    {
+      "cell": "full",
+      "threads": 8,
+      "typed_attempts": 4635,
+      "typed_successes": 4635,
+      "seed_declines": 0,
+      "recurrence_declines": 0,
+      "normal_pair_accumulations": 629891,
+      "scaled_pair_accumulations": 266685,
+      "scaled_fraction": 0.29744829216931973
+    },
+    {
+      "cell": "reduced",
+      "threads": 1,
+      "typed_attempts": 1206,
+      "typed_successes": 1206,
+      "seed_declines": 0,
+      "recurrence_declines": 0,
+      "normal_pair_accumulations": 284278,
+      "scaled_pair_accumulations": 89429,
+      "scaled_fraction": 0.2393024481746395
+    },
+    {
+      "cell": "reduced",
+      "threads": 8,
+      "typed_attempts": 1206,
+      "typed_successes": 1206,
+      "seed_declines": 0,
+      "recurrence_declines": 0,
+      "normal_pair_accumulations": 284278,
+      "scaled_pair_accumulations": 89429,
+      "scaled_fraction": 0.2393024481746395
+    }
+  ],
+  "validation": {
+    "command": "cargo test --release --features parallel --lib report_f32_scalar_analysis_typed_routes_t720 -- --ignored --nocapture",
+    "result": "passed: 1 test"
+  },
+  "caveat": "The zero-map fixture does not match the random timing fixture and this counter only classifies normal/scaled accumulator visits. It does not measure CPU cost or establish that scaling alone causes the B1 performance gap."
+}
