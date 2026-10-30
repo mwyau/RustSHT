@@ -1,0 +1,229 @@
+{
+  "rust_source_base": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+  "ducc_reference_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b (not executed in this replay)",
+  "experiment": "native f32 recurrence replay with plan-time f64 cos(theta)^2 rounded once to f32; compares f32 leading/state, f64 recurrence references, a test-only double-single state path, full double-single, and first-order residual leading+state",
+  "fixture": {
+    "grid": "GL T720",
+    "nphi": 34,
+    "phi0": "0.23 (unused by pre-FFT recurrence replay)",
+    "orders": "m=1..16",
+    "nonzero_degrees": "l=600..720",
+    "rings": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      360,
+      715,
+      716,
+      717,
+      718,
+      719,
+      720
+    ],
+    "outputs": 208,
+    "coefficients": "(((((degree*37 + m*13) % 997) as f32 / 997.0) - 0.5) / 721.0) for l>=600; zero otherwise",
+    "prepared_data": "recurrence factors and even/odd coefficient pairs are native f32; accumulated diagnostic sums are f64"
+  },
+  "corrected_cos2_expression": "(angle.cos() * angle.cos()) as f32; matches ScalarLatitudeGeometry plan-time T::from_f64(angle.cos()*angle.cos()) narrowed to f32",
+  "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13), -C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "host": "AMD Ryzen 9 5950X; AVX2 f32 width 8",
+  "runs": [
+    {
+      "observations": 208,
+      "f32_lanes": 8,
+      "reference_rms": "2.410272274e-3",
+      "f32_leading_and_state_vs_f64_reference_relative_rms": "1.648789356e-4",
+      "double_single_state_vs_f32_leading_reference_relative_rms": "5.844473102e-13",
+      "double_single_state_vs_full_f64_reference_relative_rms": "1.636576384e-4",
+      "double_single_leading_and_state_vs_f64_reference_relative_rms": "1.154223230e-12",
+      "first_order_residual_leading_and_state_vs_f64_reference_relative_rms": "1.138386001e-7",
+      "max_baseline_absolute_error": "3.437994748e-6",
+      "max_double_single_absolute_error": "2.488634299e-14",
+      "max_first_order_residual_absolute_error": "3.501379025e-9",
+      "per_ring": [
+        {
+          "ring": 0,
+          "baseline_relative_rms": "5.947241e-4",
+          "double_single_relative_rms": "3.299221e-12",
+          "first_order_residual_relative_rms": "1.178065e-7"
+        },
+        {
+          "ring": 1,
+          "baseline_relative_rms": "9.395051e-5",
+          "double_single_relative_rms": "1.455143e-12",
+          "first_order_residual_relative_rms": "3.695059e-7"
+        },
+        {
+          "ring": 2,
+          "baseline_relative_rms": "1.215657e-4",
+          "double_single_relative_rms": "5.549380e-13",
+          "first_order_residual_relative_rms": "1.054722e-8"
+        },
+        {
+          "ring": 3,
+          "baseline_relative_rms": "3.482606e-5",
+          "double_single_relative_rms": "7.455384e-13",
+          "first_order_residual_relative_rms": "4.840282e-9"
+        },
+        {
+          "ring": 4,
+          "baseline_relative_rms": "1.974994e-5",
+          "double_single_relative_rms": "6.545913e-13",
+          "first_order_residual_relative_rms": "2.536095e-9"
+        },
+        {
+          "ring": 5,
+          "baseline_relative_rms": "1.769042e-5",
+          "double_single_relative_rms": "5.728725e-13",
+          "first_order_residual_relative_rms": "4.371978e-10"
+        },
+        {
+          "ring": 360,
+          "baseline_relative_rms": "1.689226e-4",
+          "double_single_relative_rms": "1.418137e-11",
+          "first_order_residual_relative_rms": "1.330640e-8"
+        },
+        {
+          "ring": 715,
+          "baseline_relative_rms": "1.743715e-5",
+          "double_single_relative_rms": "5.931382e-13",
+          "first_order_residual_relative_rms": "7.396493e-10"
+        },
+        {
+          "ring": 716,
+          "baseline_relative_rms": "3.314359e-5",
+          "double_single_relative_rms": "8.884270e-13",
+          "first_order_residual_relative_rms": "2.618252e-9"
+        },
+        {
+          "ring": 717,
+          "baseline_relative_rms": "4.617402e-5",
+          "double_single_relative_rms": "1.487037e-12",
+          "first_order_residual_relative_rms": "2.263830e-8"
+        },
+        {
+          "ring": 718,
+          "baseline_relative_rms": "1.545465e-4",
+          "double_single_relative_rms": "1.375686e-12",
+          "first_order_residual_relative_rms": "4.129890e-8"
+        },
+        {
+          "ring": 719,
+          "baseline_relative_rms": "5.606436e-4",
+          "double_single_relative_rms": "6.113610e-12",
+          "first_order_residual_relative_rms": "4.652132e-7"
+        },
+        {
+          "ring": 720,
+          "baseline_relative_rms": "5.250534e-4",
+          "double_single_relative_rms": "2.032670e-12",
+          "first_order_residual_relative_rms": "1.095189e-7"
+        }
+      ],
+      "native_f32_state_update_error_vs_f64_state_replay_with_f32_leading_fixed_relative_rms": "1.009843351e-5"
+    },
+    {
+      "observations": 208,
+      "f32_lanes": 8,
+      "reference_rms": "2.410272274e-3",
+      "f32_leading_and_state_vs_f64_reference_relative_rms": "1.648789356e-4",
+      "double_single_state_vs_f32_leading_reference_relative_rms": "5.844473102e-13",
+      "double_single_state_vs_full_f64_reference_relative_rms": "1.636576384e-4",
+      "double_single_leading_and_state_vs_f64_reference_relative_rms": "1.154223230e-12",
+      "first_order_residual_leading_and_state_vs_f64_reference_relative_rms": "1.138386001e-7",
+      "max_baseline_absolute_error": "3.437994748e-6",
+      "max_double_single_absolute_error": "2.488634299e-14",
+      "max_first_order_residual_absolute_error": "3.501379025e-9",
+      "per_ring": [
+        {
+          "ring": 0,
+          "baseline_relative_rms": "5.947241e-4",
+          "double_single_relative_rms": "3.299221e-12",
+          "first_order_residual_relative_rms": "1.178065e-7"
+        },
+        {
+          "ring": 1,
+          "baseline_relative_rms": "9.395051e-5",
+          "double_single_relative_rms": "1.455143e-12",
+          "first_order_residual_relative_rms": "3.695059e-7"
+        },
+        {
+          "ring": 2,
+          "baseline_relative_rms": "1.215657e-4",
+          "double_single_relative_rms": "5.549380e-13",
+          "first_order_residual_relative_rms": "1.054722e-8"
+        },
+        {
+          "ring": 3,
+          "baseline_relative_rms": "3.482606e-5",
+          "double_single_relative_rms": "7.455384e-13",
+          "first_order_residual_relative_rms": "4.840282e-9"
+        },
+        {
+          "ring": 4,
+          "baseline_relative_rms": "1.974994e-5",
+          "double_single_relative_rms": "6.545913e-13",
+          "first_order_residual_relative_rms": "2.536095e-9"
+        },
+        {
+          "ring": 5,
+          "baseline_relative_rms": "1.769042e-5",
+          "double_single_relative_rms": "5.728725e-13",
+          "first_order_residual_relative_rms": "4.371978e-10"
+        },
+        {
+          "ring": 360,
+          "baseline_relative_rms": "1.689226e-4",
+          "double_single_relative_rms": "1.418137e-11",
+          "first_order_residual_relative_rms": "1.330640e-8"
+        },
+        {
+          "ring": 715,
+          "baseline_relative_rms": "1.743715e-5",
+          "double_single_relative_rms": "5.931382e-13",
+          "first_order_residual_relative_rms": "7.396493e-10"
+        },
+        {
+          "ring": 716,
+          "baseline_relative_rms": "3.314359e-5",
+          "double_single_relative_rms": "8.884270e-13",
+          "first_order_residual_relative_rms": "2.618252e-9"
+        },
+        {
+          "ring": 717,
+          "baseline_relative_rms": "4.617402e-5",
+          "double_single_relative_rms": "1.487037e-12",
+          "first_order_residual_relative_rms": "2.263830e-8"
+        },
+        {
+          "ring": 718,
+          "baseline_relative_rms": "1.545465e-4",
+          "double_single_relative_rms": "1.375686e-12",
+          "first_order_residual_relative_rms": "4.129890e-8"
+        },
+        {
+          "ring": 719,
+          "baseline_relative_rms": "5.606436e-4",
+          "double_single_relative_rms": "6.113610e-12",
+          "first_order_residual_relative_rms": "4.652132e-7"
+        },
+        {
+          "ring": 720,
+          "baseline_relative_rms": "5.250534e-4",
+          "double_single_relative_rms": "2.032670e-12",
+          "first_order_residual_relative_rms": "1.095189e-7"
+        }
+      ],
+      "native_f32_state_update_error_vs_f64_state_replay_with_f32_leading_fixed_relative_rms": "1.009843351e-5"
+    }
+  ],
+  "repeat_metrics_identical": true,
+  "source_patch_sha256": "9b70b1584568e5239bee1f6abe2f25053d7c147b50bb4420cb317c378ec3ec8d",
+  "test_binary_sha256": "a2adc699477b630b040b2743e949407a544a523d3ce1cf365bc4daf9200f885d",
+  "execution_note": "The test initializes an eight-lane AVX2 seed batch, but all recurrence and accumulation variants in this accuracy replay are scalar f32/f64 operations; this is not a SIMD kernel or transform timing result.",
+  "reference_note": "The widened comparator uses scalar f64 FMA recurrence and f64 accumulation with the exact same f32 seed, recurrence tables, even/odd pairs, and corrected f32 cos\u00b2. It is a diagnostic reference, not DUCC or a binary128 run in this experiment; the saved numerical-causality package separately validates f64 recurrence accuracy against binary128/long double for comparable high-degree cases.",
+  "log_note": "Two raw test runs produced identical metrics and pass results; their console captures remain in the isolated worktree. This committed JSON retains normalized numerical evidence and the executable hash."
+}

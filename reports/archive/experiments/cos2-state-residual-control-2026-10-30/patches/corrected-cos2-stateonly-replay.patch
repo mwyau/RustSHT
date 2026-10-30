@@ -1,0 +1,17 @@
+diff --git a/src/legendre/scalar_ordered/tests.rs b/src/legendre/scalar_ordered/tests.rs
+index 7d7df999..f89b9625 100644
+--- a/src/legendre/scalar_ordered/tests.rs
++++ b/src/legendre/scalar_ordered/tests.rs
+@@ -1807,11 +1807,7 @@ fn native_f32_compensated_recurrence_state_probe() {
+         for (ring_slot, &ring) in target_rings.iter().enumerate() {
+             let angle = grid.theta()[ring];
+             let (sine, cosine) = crate::legendre::sin_cos_from_f64::<f32>(angle);
+-            let csq = if cosine.abs() > 0.99 {
+-                (1.0_f32 - sine) * (1.0_f32 + sine)
+-            } else {
+-                cosine * cosine
+-            };
++            let csq = (angle.cos() * angle.cos()) as f32;
+             let sine_batch = vec![sine; lanes];
+             let mut initial = vec![0.0_f32; lanes];
+             let mut initial_scale = vec![0_i64; lanes];
