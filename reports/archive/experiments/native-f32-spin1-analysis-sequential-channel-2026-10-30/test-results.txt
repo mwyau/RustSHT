@@ -1,0 +1,8 @@
+Candidate source: f01fb9b161769173397e50dae6c76aae97351c7f plus the archived sequential-channel patch.
+
+cargo fmt --all -- --check: passed
+cargo test --release --features parallel --lib scalar_analysis: 17 passed, 8 ignored
+cargo test --release --features parallel --test f32: 14 passed, 1 ignored
+git diff --check: passed
+
+The strict Clippy screen was run for the B1 adaptive/preflight candidate, not this B3 probe.

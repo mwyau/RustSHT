@@ -1,0 +1,179 @@
+{
+  "source_head": "f01fb9b161769173397e50dae6c76aae97351c7f",
+  "source_diff_sha256": "3baf60bc7efdcddc0fbeca27ea6aef455f5c545d8216ffd2419f46194f8853b5",
+  "purpose": "verify the matched spin-1-analysis f64 path built from the B3 candidate source",
+  "cases": [
+    {
+      "case_id": "GL-T720-M720-s1-analysis-q1",
+      "candidate_source": {
+        "binary": "candidate_source",
+        "sha256": "fde58359d8cbe130aa77974c9b3a0a1a9d6115421f31d5df821959ec9cea0fbb",
+        "median_ms": 36.995988,
+        "checksum": -0.00081491247818932,
+        "stable": true,
+        "batch_ms": [
+          37.164964000000005,
+          36.59101,
+          36.248478,
+          36.184759,
+          36.827011999999996,
+          36.634491,
+          37.944664,
+          37.599478,
+          37.75551,
+          37.545877
+        ]
+      },
+      "base_source": {
+        "binary": "base_source",
+        "sha256": "865c30367d0a54f7dda66e4500194c59445115e98fd03dc9d06dcf106743cb3c",
+        "median_ms": 37.370799500000004,
+        "checksum": -0.00081491247818932,
+        "stable": true,
+        "batch_ms": [
+          36.537079,
+          37.348518,
+          37.88938,
+          36.146527999999996,
+          37.598876000000004,
+          37.851469,
+          37.340883999999996,
+          36.667433,
+          37.393081,
+          37.432515
+        ]
+      },
+      "checksum_identical": true,
+      "time_ratio_candidate_over_base": 0.9899704714639566
+    },
+    {
+      "case_id": "GL-T720-M720-s1-analysis-q8",
+      "candidate_source": {
+        "binary": "candidate_source",
+        "sha256": "fde58359d8cbe130aa77974c9b3a0a1a9d6115421f31d5df821959ec9cea0fbb",
+        "median_ms": 5.431205,
+        "checksum": -0.00081491247818932,
+        "stable": true,
+        "batch_ms": [
+          5.2730760000000005,
+          5.398086,
+          5.5396008,
+          5.430643000000001,
+          5.3560132000000005,
+          5.431767,
+          5.3748084,
+          5.4657446,
+          5.4693994,
+          5.5046494
+        ]
+      },
+      "base_source": {
+        "binary": "base_source",
+        "sha256": "865c30367d0a54f7dda66e4500194c59445115e98fd03dc9d06dcf106743cb3c",
+        "median_ms": 5.394129,
+        "checksum": -0.00081491247818932,
+        "stable": true,
+        "batch_ms": [
+          5.2987055,
+          5.391912250000001,
+          5.33014925,
+          5.4494575,
+          5.3598550000000005,
+          5.2296587500000005,
+          5.39634575,
+          5.47808625,
+          5.4977979999999995,
+          5.421460000000001
+        ]
+      },
+      "checksum_identical": true,
+      "time_ratio_candidate_over_base": 1.0068733988378846
+    },
+    {
+      "case_id": "GL-T720-M180-s1-analysis-q1",
+      "candidate_source": {
+        "binary": "candidate_source",
+        "sha256": "fde58359d8cbe130aa77974c9b3a0a1a9d6115421f31d5df821959ec9cea0fbb",
+        "median_ms": 14.98766375,
+        "checksum": 0.0006040397208557,
+        "stable": true,
+        "batch_ms": [
+          15.091613,
+          15.0283095,
+          14.9596765,
+          14.9024185,
+          15.015651,
+          15.0641965,
+          14.940104,
+          14.950764,
+          14.946842,
+          15.0774065
+        ]
+      },
+      "base_source": {
+        "binary": "base_source",
+        "sha256": "865c30367d0a54f7dda66e4500194c59445115e98fd03dc9d06dcf106743cb3c",
+        "median_ms": 15.199723,
+        "checksum": 0.0006040397208557,
+        "stable": true,
+        "batch_ms": [
+          15.0070395,
+          15.116059,
+          15.4361325,
+          15.820697500000001,
+          15.172129,
+          15.0603595,
+          15.5641875,
+          14.964555500000001,
+          15.227317000000001,
+          15.4978385
+        ]
+      },
+      "checksum_identical": true,
+      "time_ratio_candidate_over_base": 0.9860484793045241
+    },
+    {
+      "case_id": "GL-T720-M180-s1-analysis-q8",
+      "candidate_source": {
+        "binary": "candidate_source",
+        "sha256": "fde58359d8cbe130aa77974c9b3a0a1a9d6115421f31d5df821959ec9cea0fbb",
+        "median_ms": 2.221709611111111,
+        "checksum": 0.0006040397208557,
+        "stable": true,
+        "batch_ms": [
+          2.204693333333333,
+          2.187834,
+          2.241933,
+          2.2169195555555556,
+          2.346249333333333,
+          2.191605555555556,
+          2.289679111111111,
+          2.2104685555555554,
+          2.2264996666666668,
+          2.277595333333333
+        ]
+      },
+      "base_source": {
+        "binary": "base_source",
+        "sha256": "865c30367d0a54f7dda66e4500194c59445115e98fd03dc9d06dcf106743cb3c",
+        "median_ms": 2.261886,
+        "checksum": 0.0006040397208557,
+        "stable": true,
+        "batch_ms": [
+          2.343143090909091,
+          2.201293,
+          2.2217814545454546,
+          2.220455272727273,
+          2.339976272727273,
+          2.2548414545454545,
+          2.311868181818182,
+          2.2689305454545456,
+          2.2392814545454547,
+          2.3189751818181814
+        ]
+      },
+      "checksum_identical": true,
+      "time_ratio_candidate_over_base": 0.9822376596836052
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+AVX2 assembly summary — sequential-channel probe
+
+Exact source diff SHA-256: 3baf60bc7efdcddc0fbeca27ea6aef455f5c545d8216ffd2419f46194f8853b5
+Candidate binary SHA-256: a501424e87ac776772899770d41e6d53ca2817b6aefad7fd38acfe8fb8466eed
+Parent f32 binary SHA-256: 92262258bc39f87ad37495d4d85ec2b6cb98a4ec039d428715c5de9ce0b4f2d8
+DUCC binary SHA-256: a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8
+
+Function-level counts from the preserved local disassembly:
+
+| Kernel | Parent YMM instructions | Candidate YMM instructions | Parent YMM stack operands | Candidate YMM stack operands |
+|---|---:|---:|---:|---:|
+| Ordinary | 73 | 99 | 0 | 0 |
+| Checked | 162 | 188 | 4 | 3 |
+
+The raw host-specific disassembly is not archived. The whole-call measurements
+and recoverable source patch are retained separately. This summary showed no
+meaningful spill reduction and agrees with the rejected timing result.
