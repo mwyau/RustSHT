@@ -1,0 +1,1060 @@
+{
+  "scope": {
+    "matched_pre_fft_cases": 357,
+    "matched_orders_and_rings": 42,
+    "deduplicated_recurrence_rows": 14581,
+    "ducc_output_matches_binary128_correctly_rounded_f32": 357
+  },
+  "geometry_rounding": {
+    "sin_rounded_equal": {
+      "matches": 42,
+      "total": 42
+    },
+    "cos_rounded_equal": {
+      "matches": 42,
+      "total": 42
+    },
+    "csq_rounded_equal": {
+      "matches": 24,
+      "total": 42
+    },
+    "mfac_rounded_equal": {
+      "matches": 21,
+      "total": 42
+    }
+  },
+  "recurrence_constant_rounding": {
+    "a": {
+      "matches": 14581,
+      "total": 14581
+    },
+    "b": {
+      "matches": 14581,
+      "total": 14581
+    }
+  },
+  "direct_generic_stage_maxima": {
+    "rust_abs_error_quad": {
+      "value": 0.009565585772434382,
+      "m": 2,
+      "l": 720,
+      "ring": 0,
+      "part": "im"
+    },
+    "rust_rel_error_quad": {
+      "value": 0.05798355749418785,
+      "m": 0,
+      "l": 720,
+      "ring": 719,
+      "part": "re"
+    },
+    "rust_scaled_error_quad": {
+      "value": 0.008666728523422559,
+      "m": 0,
+      "l": 720,
+      "ring": 5,
+      "part": "re"
+    }
+  },
+  "selected_cases": [
+    {
+      "m": "0",
+      "l": "720",
+      "ring": "0",
+      "part": "re",
+      "theta_bits": "3f6b4dffc29fc705",
+      "rust_stage_bits": "3c993c39",
+      "ducc_stage_bits": "3c97e636",
+      "reference_quad_decimal": "0.018542391016906403175873969749269616",
+      "rust_abs_error_quad": 0.00016308319585929196,
+      "rust_rel_error_quad": 0.008795154611430508,
+      "rust_scaled_error_quad": 0.0005123410317192283,
+      "rust_seed_bits": "3e906eba",
+      "exact_seed_from_rust_f32_inputs_bits": "3e906eba",
+      "ducc_seed_rounded_f32_bits": "3e906ebb",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "0"
+    },
+    {
+      "m": "0",
+      "l": "720",
+      "ring": "1",
+      "part": "re",
+      "theta_bits": "3f7f567b765c8ee8",
+      "rust_stage_bits": "bcd74742",
+      "ducc_stage_bits": "bce48780",
+      "reference_quad_decimal": "-0.0278966421119078068685027552234920664",
+      "rust_abs_error_quad": 0.001617546551595534,
+      "rust_rel_error_quad": 0.05798355748719582,
+      "rust_scaled_error_quad": 0.0050816729751443435,
+      "rust_seed_bits": "3e906eba",
+      "exact_seed_from_rust_f32_inputs_bits": "3e906eba",
+      "ducc_seed_rounded_f32_bits": "3e906ebb",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "0"
+    },
+    {
+      "m": "0",
+      "l": "720",
+      "ring": "5",
+      "part": "re",
+      "theta_bits": "3f99a5cb599f0cdd",
+      "rust_stage_bits": "bd4311a8",
+      "ducc_stage_bits": "bd4e5e5e",
+      "reference_quad_decimal": "-0.0503829652248888345072117203330229039",
+      "rust_abs_error_quad": 0.0027587050377397837,
+      "rust_rel_error_quad": 0.05475471769924734,
+      "rust_scaled_error_quad": 0.008666728523422559,
+      "rust_seed_bits": "3e906eba",
+      "exact_seed_from_rust_f32_inputs_bits": "3e906eba",
+      "ducc_seed_rounded_f32_bits": "3e906ebb",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "0"
+    },
+    {
+      "m": "5",
+      "l": "720",
+      "ring": "0",
+      "part": "re",
+      "theta_bits": "3f6b4dffc29fc705",
+      "rust_stage_bits": "be32bf27",
+      "ducc_stage_bits": "be329746",
+      "reference_quad_decimal": "-0.174405194340096652327434096906509203",
+      "rust_abs_error_quad": 0.0001521189829242764,
+      "rust_rel_error_quad": 0.0008722158964350493,
+      "rust_scaled_error_quad": 4.40862728033357e-05,
+      "rust_seed_bits": "aa56f7c7",
+      "exact_seed_from_rust_f32_inputs_bits": "aa56f7c7",
+      "ducc_seed_rounded_f32_bits": "aa56f7c5",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "5"
+    },
+    {
+      "m": "5",
+      "l": "720",
+      "ring": "5",
+      "part": "re",
+      "theta_bits": "3f99a5cb599f0cdd",
+      "rust_stage_bits": "3fcd6e9b",
+      "ducc_stage_bits": "3fcdafae",
+      "reference_quad_decimal": "1.60692385100497628631616974270379586",
+      "rust_abs_error_quad": 0.0019859399713459958,
+      "rust_rel_error_quad": 0.0012358643940121874,
+      "rust_scaled_error_quad": 0.0005755540147897996,
+      "rust_seed_bits": "b19d1beb",
+      "exact_seed_from_rust_f32_inputs_bits": "b19d1bec",
+      "ducc_seed_rounded_f32_bits": "b19d1bec",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "5"
+    },
+    {
+      "m": "8",
+      "l": "720",
+      "ring": "1",
+      "part": "re",
+      "theta_bits": "3f7f567b765c8ee8",
+      "rust_stage_bits": "3ebb1f1f",
+      "ducc_stage_bits": "3ebb1617",
+      "reference_quad_decimal": "0.365402901728960078463369954220429787",
+      "rust_abs_error_quad": 6.89083735027074e-05,
+      "rust_rel_error_quad": 0.00018858190007976626,
+      "rust_scaled_error_quad": 3.314358092251534e-05,
+      "rust_seed_bits": "22df4000",
+      "exact_seed_from_rust_f32_inputs_bits": "22df3b40",
+      "ducc_seed_rounded_f32_bits": "22df3b44",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "8"
+    },
+    {
+      "m": "16",
+      "l": "720",
+      "ring": "0",
+      "part": "re",
+      "theta_bits": "3f6b4dffc29fc705",
+      "rust_stage_bits": "2d1a4351",
+      "ducc_stage_bits": "2d1a3a40",
+      "reference_quad_decimal": "8.76682055254003159487828532763282628e-12",
+      "rust_abs_error_quad": 2.0131968551567895e-15,
+      "rust_rel_error_quad": 0.0002296381958649195,
+      "rust_scaled_error_quad": 7.197640621244083e-16,
+      "rust_seed_bits": "0001881d",
+      "exact_seed_from_rust_f32_inputs_bits": "0001881d",
+      "ducc_seed_rounded_f32_bits": "0001881d",
+      "ducc_prefix_recurrence_rows": "136",
+      "ducc_ordinary_start": "288"
+    },
+    {
+      "m": "16",
+      "l": "720",
+      "ring": "5",
+      "part": "re",
+      "theta_bits": "3f99a5cb599f0cdd",
+      "rust_stage_bits": "4032d3e8",
+      "ducc_stage_bits": "4033026e",
+      "reference_quad_decimal": "2.79702330401822057199914639383592245",
+      "rust_abs_error_quad": 0.0028395729391190727,
+      "rust_rel_error_quad": 0.0010152124707147505,
+      "rust_scaled_error_quad": 0.0010152124707147499,
+      "rust_seed_bits": "148fc452",
+      "exact_seed_from_rust_f32_inputs_bits": "148fc456",
+      "ducc_seed_rounded_f32_bits": "148fc458",
+      "ducc_prefix_recurrence_rows": "14",
+      "ducc_ordinary_start": "44"
+    },
+    {
+      "m": "1",
+      "l": "719",
+      "ring": "360",
+      "part": "re",
+      "theta_bits": "3ff921fb54442d18",
+      "rust_stage_bits": "3ea3480a",
+      "ducc_stage_bits": "3ea2f987",
+      "reference_quad_decimal": "0.318310001473296223965163594697165291",
+      "rust_abs_error_quad": 0.0005989879561776323,
+      "rust_rel_error_quad": 0.0018817754811511407,
+      "rust_scaled_error_quad": 0.00010752400306879642,
+      "rust_seed_bits": "beb0e49c",
+      "exact_seed_from_rust_f32_inputs_bits": "beb0e49c",
+      "ducc_seed_rounded_f32_bits": "beb0e49c",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "1"
+    },
+    {
+      "m": "2",
+      "l": "719",
+      "ring": "360",
+      "part": "re",
+      "theta_bits": "3ff921fb54442d18",
+      "rust_stage_bits": "287c8cf8",
+      "ducc_stage_bits": "287ca0a9",
+      "reference_quad_decimal": "1.40236477710847657384572550742913986e-14",
+      "rust_abs_error_quad": 4.2699358072796046e-18,
+      "rust_rel_error_quad": 0.0003044811076960837,
+      "rust_scaled_error_quad": 9.264840591047433e-19,
+      "rust_seed_bits": "3ec5c5bc",
+      "exact_seed_from_rust_f32_inputs_bits": "3ec5c5bc",
+      "ducc_seed_rounded_f32_bits": "3ec5c5bb",
+      "ducc_prefix_recurrence_rows": "0",
+      "ducc_ordinary_start": "2"
+    }
+  ],
+  "public_map": {
+    "summary": {
+      "rust_vs_ref": {
+        "cells": 385,
+        "values": 13090,
+        "max_abs": 0.005679130554199219,
+        "max_scaled_per_ring": 0.0032882983054688436,
+        "rms_max_cell": 0.00401568190321811,
+        "pixel_bit_mismatches": 11386,
+        "worst_scaled_cell": {
+          "key": [
+            8,
+            650,
+            "im",
+            5
+          ],
+          "max_abs": 0.0030997395515441895,
+          "max_scaled": 0.0032882983054688436,
+          "rms": 0.002201204198183135,
+          "mismatches": 34,
+          "scale": 0.9426576495170593
+        },
+        "worst_absolute_cell": {
+          "key": [
+            16,
+            720,
+            "re",
+            5
+          ],
+          "max_abs": 0.005679130554199219,
+          "max_scaled": 0.0010152097341480243,
+          "rms": 0.00401568190321811,
+          "mismatches": 34,
+          "scale": 5.594046592712402
+        }
+      },
+      "ducc_vs_ref": {
+        "cells": 385,
+        "values": 13090,
+        "max_abs": 9.5367431640625e-07,
+        "max_scaled_per_ring": 1.1905711526990844e-07,
+        "rms_max_cell": 6.187545108362024e-07,
+        "pixel_bit_mismatches": 3018,
+        "worst_scaled_cell": {
+          "key": [
+            2,
+            650,
+            "im",
+            5
+          ],
+          "max_abs": 4.76837158203125e-07,
+          "max_scaled": 1.1905711526990844e-07,
+          "rms": 2.3488625672907305e-07,
+          "mismatches": 26,
+          "scale": 4.005112648010254
+        },
+        "worst_absolute_cell": {
+          "key": [
+            1,
+            600,
+            "im",
+            0
+          ],
+          "max_abs": 9.5367431640625e-07,
+          "max_scaled": 8.495036350260543e-08,
+          "rms": 5.897015975960181e-07,
+          "mismatches": 17,
+          "scale": 11.226253509521484
+        }
+      },
+      "rust_vs_ducc": {
+        "cells": 385,
+        "values": 13090,
+        "max_abs": 0.005679130554199219,
+        "max_scaled_per_ring": 0.0032882983054688436,
+        "rms_max_cell": 0.00401568190321811,
+        "pixel_bit_mismatches": 11374,
+        "worst_scaled_cell": {
+          "key": [
+            8,
+            650,
+            "im",
+            5
+          ],
+          "max_abs": 0.0030997395515441895,
+          "max_scaled": 0.0032882983054688436,
+          "rms": 0.002201204198183135,
+          "mismatches": 34,
+          "scale": 0.9426576495170593
+        },
+        "worst_absolute_cell": {
+          "key": [
+            16,
+            720,
+            "re",
+            5
+          ],
+          "max_abs": 0.005679130554199219,
+          "max_scaled": 0.0010152097341480243,
+          "rms": 0.00401568190321811,
+          "mismatches": 34,
+          "scale": 5.594046592712402
+        }
+      },
+      "m0_all": {
+        "cells": 35,
+        "values": 1190,
+        "max_abs": 2.384185791015625e-07,
+        "max_scaled": 1.0935591226725098e-07,
+        "mismatches_vs_ducc": 816,
+        "worst_scaled": {
+          "key": [
+            0,
+            600,
+            "re",
+            0
+          ],
+          "max_abs": 2.384185791015625e-07,
+          "max_scaled": 1.0935591226725098e-07,
+          "rms": 2.384185791015625e-07,
+          "mismatches": 34,
+          "scale": 2.1802074909210205
+        }
+      },
+      "m1m2_polar": {
+        "cells": 120,
+        "values": 4080,
+        "max_abs": 2.384185791015625e-06,
+        "max_scaled": 2.5976660074829406e-07,
+        "mismatches_vs_ducc": 2804,
+        "worst_scaled": {
+          "key": [
+            2,
+            719,
+            "im",
+            0
+          ],
+          "max_abs": 2.384185791015625e-06,
+          "max_scaled": 2.5976660074829406e-07,
+          "rms": 1.100955182531862e-06,
+          "mismatches": 32,
+          "scale": 9.178184509277344
+        }
+      },
+      "m1m2_equator": {
+        "cells": 20,
+        "values": 680,
+        "max_abs": 0.0011979937553405762,
+        "max_scaled": 0.0018818035615793742,
+        "mismatches_vs_ducc": 673,
+        "worst_scaled": {
+          "key": [
+            1,
+            719,
+            "re",
+            360
+          ],
+          "max_abs": 0.0011979937553405762,
+          "max_scaled": 0.0018818035615793742,
+          "rms": 0.0008470839849141738,
+          "mismatches": 34,
+          "scale": 0.6366199851036072
+        }
+      },
+      "m_ge3": {
+        "cells": 210,
+        "values": 7140,
+        "max_abs": 0.005679130554199219,
+        "max_scaled": 0.0032882983054688436,
+        "mismatches_vs_ducc": 7081,
+        "worst_scaled": {
+          "key": [
+            8,
+            650,
+            "im",
+            5
+          ],
+          "max_abs": 0.0030997395515441895,
+          "max_scaled": 0.0032882983054688436,
+          "rms": 0.002201204198183135,
+          "mismatches": 34,
+          "scale": 0.9426576495170593
+        }
+      },
+      "stage_to_fft": {
+        "cases": 48,
+        "max_abs_residual": 4.76837158203125e-07,
+        "max_relative_to_pixel": 1.8895579595407182e-07,
+        "examples": [
+          {
+            "m": 5,
+            "ring": 0,
+            "part": "re",
+            "path": "rust",
+            "stage_fourier": -0.17455731332302094,
+            "pixel": 0,
+            "map_pixel": -0.3491145968437195,
+            "analytic_from_stage": -0.34911462664604187,
+            "absolute_residual": 2.9802322387695312e-08,
+            "fft_stage_error": 8.536543620073273e-08
+          },
+          {
+            "m": 5,
+            "ring": 0,
+            "part": "re",
+            "path": "ducc",
+            "stage_fourier": -0.17440518736839294,
+            "pixel": 0,
+            "map_pixel": -0.3488103747367859,
+            "analytic_from_stage": -0.3488103747367859,
+            "absolute_residual": 0.0,
+            "fft_stage_error": 0.0
+          },
+          {
+            "m": 5,
+            "ring": 5,
+            "part": "re",
+            "path": "rust",
+            "stage_fourier": 1.6049379110336304,
+            "pixel": 0,
+            "map_pixel": 3.2098755836486816,
+            "analytic_from_stage": 3.2098758220672607,
+            "absolute_residual": 2.384185791015625e-07,
+            "fft_stage_error": 7.427657402273384e-08
+          },
+          {
+            "m": 5,
+            "ring": 5,
+            "part": "re",
+            "path": "ducc",
+            "stage_fourier": 1.6069238185882568,
+            "pixel": 0,
+            "map_pixel": 3.2138476371765137,
+            "analytic_from_stage": 3.2138476371765137,
+            "absolute_residual": 0.0,
+            "fft_stage_error": 0.0
+          }
+        ]
+      }
+    },
+    "stage_checks": [
+      {
+        "m": 5,
+        "ring": 0,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": -0.17455731332302094,
+        "pixel": 0,
+        "map_pixel": -0.3491145968437195,
+        "analytic_from_stage": -0.34911462664604187,
+        "absolute_residual": 2.9802322387695312e-08,
+        "fft_stage_error": 8.536543620073273e-08
+      },
+      {
+        "m": 5,
+        "ring": 0,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": -0.17440518736839294,
+        "pixel": 0,
+        "map_pixel": -0.3488103747367859,
+        "analytic_from_stage": -0.3488103747367859,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 5,
+        "ring": 0,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": -0.17455731332302094,
+        "pixel": 1,
+        "map_pixel": 0.27859950065612793,
+        "analytic_from_stage": 0.27859948635905035,
+        "absolute_residual": 1.4297077577385409e-08,
+        "fft_stage_error": 5.131767122236203e-08
+      },
+      {
+        "m": 5,
+        "ring": 0,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": -0.17440518736839294,
+        "pixel": 1,
+        "map_pixel": 0.2783567011356354,
+        "analytic_from_stage": 0.2783566880940312,
+        "absolute_residual": 1.3041604185470845e-08,
+        "fft_stage_error": 4.68521294161912e-08
+      },
+      {
+        "m": 5,
+        "ring": 1,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": -3.4518182277679443,
+        "pixel": 0,
+        "map_pixel": -6.9036359786987305,
+        "analytic_from_stage": -6.903636455535889,
+        "absolute_residual": 4.76837158203125e-07,
+        "fft_stage_error": 6.907043284713504e-08
+      },
+      {
+        "m": 5,
+        "ring": 1,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": -3.450484037399292,
+        "pixel": 0,
+        "map_pixel": -6.900968074798584,
+        "analytic_from_stage": -6.900968074798584,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 5,
+        "ring": 1,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": -3.4518182277679443,
+        "pixel": 1,
+        "map_pixel": 5.509221076965332,
+        "analytic_from_stage": 5.5092208223975305,
+        "absolute_residual": 2.545678015053454e-07,
+        "fft_stage_error": 4.6207585055847876e-08
+      },
+      {
+        "m": 5,
+        "ring": 1,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": -3.450484037399292,
+        "pixel": 1,
+        "map_pixel": 5.507091522216797,
+        "analytic_from_stage": 5.5070914086002185,
+        "absolute_residual": 1.1361657836772565e-07,
+        "fft_stage_error": 2.0630958811810523e-08
+      },
+      {
+        "m": 5,
+        "ring": 5,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 1.6049379110336304,
+        "pixel": 0,
+        "map_pixel": 3.2098755836486816,
+        "analytic_from_stage": 3.2098758220672607,
+        "absolute_residual": 2.384185791015625e-07,
+        "fft_stage_error": 7.427657402273384e-08
+      },
+      {
+        "m": 5,
+        "ring": 5,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 1.6069238185882568,
+        "pixel": 0,
+        "map_pixel": 3.2138476371765137,
+        "analytic_from_stage": 3.2138476371765137,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 5,
+        "ring": 5,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 1.6049379110336304,
+        "pixel": 1,
+        "map_pixel": -2.5615363121032715,
+        "analytic_from_stage": -2.561536203439995,
+        "absolute_residual": 1.0866327659897479e-07,
+        "fft_stage_error": 4.24211345689461e-08
+      },
+      {
+        "m": 5,
+        "ring": 5,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 1.6069238185882568,
+        "pixel": 1,
+        "map_pixel": -2.5647058486938477,
+        "analytic_from_stage": -2.5647057803207507,
+        "absolute_residual": 6.837309696194893e-08,
+        "fft_stage_error": 2.6659235403845612e-08
+      },
+      {
+        "m": 5,
+        "ring": 360,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 1.403584076764032e-14,
+        "pixel": 0,
+        "map_pixel": 2.8071679841214746e-14,
+        "analytic_from_stage": 2.807168153528064e-14,
+        "absolute_residual": 1.6940658945086007e-21,
+        "fft_stage_error": 6.03478595459089e-08
+      },
+      {
+        "m": 5,
+        "ring": 360,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 1.4042996501978725e-14,
+        "pixel": 0,
+        "map_pixel": 2.808599300395745e-14,
+        "analytic_from_stage": 2.808599300395745e-14,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 5,
+        "ring": 360,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 1.403584076764032e-14,
+        "pixel": 1,
+        "map_pixel": -2.2401685338007717e-14,
+        "analytic_from_stage": -2.2401685463878552e-14,
+        "absolute_residual": 1.258708353636819e-22,
+        "fft_stage_error": 5.618810940214364e-09
+      },
+      {
+        "m": 5,
+        "ring": 360,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 1.4042996501978725e-14,
+        "pixel": 1,
+        "map_pixel": -2.2413106730268494e-14,
+        "analytic_from_stage": -2.2413106262430328e-14,
+        "absolute_residual": 4.678381660476677e-22,
+        "fft_stage_error": 2.0873418918576813e-08
+      },
+      {
+        "m": 8,
+        "ring": 0,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 0.0009767365409061313,
+        "pixel": 0,
+        "map_pixel": 0.0019534730818122625,
+        "analytic_from_stage": 0.0019534730818122625,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 8,
+        "ring": 0,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 0.0009763518464751542,
+        "pixel": 0,
+        "map_pixel": 0.0019527036929503083,
+        "analytic_from_stage": 0.0019527036929503083,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 8,
+        "ring": 0,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 0.0009767365409061313,
+        "pixel": 1,
+        "map_pixel": -0.0019451398402452469,
+        "analytic_from_stage": -0.0019451399100328557,
+        "absolute_residual": 6.978760885151258e-11,
+        "fft_stage_error": 3.5877937875601855e-08
+      },
+      {
+        "m": 8,
+        "ring": 0,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 0.0009763518464751542,
+        "pixel": 1,
+        "map_pixel": -0.0019443738274276257,
+        "analytic_from_stage": -0.0019443738032481471,
+        "absolute_residual": 2.417947851489355e-11,
+        "fft_stage_error": 1.2435612007225275e-08
+      },
+      {
+        "m": 8,
+        "ring": 1,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 0.36547181010246277,
+        "pixel": 0,
+        "map_pixel": 0.7309435606002808,
+        "analytic_from_stage": 0.7309436202049255,
+        "absolute_residual": 5.960464477539063e-08,
+        "fft_stage_error": 8.154479104514246e-08
+      },
+      {
+        "m": 8,
+        "ring": 1,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 0.3654029071331024,
+        "pixel": 0,
+        "map_pixel": 0.7308058142662048,
+        "analytic_from_stage": 0.7308058142662048,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 8,
+        "ring": 1,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 0.36547181010246277,
+        "pixel": 1,
+        "map_pixel": -0.7278255224227905,
+        "analytic_from_stage": -0.727825543582862,
+        "absolute_residual": 2.1160071472792197e-08,
+        "fft_stage_error": 2.9072999236365975e-08
+      },
+      {
+        "m": 8,
+        "ring": 1,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 0.3654029071331024,
+        "pixel": 1,
+        "map_pixel": -0.7276883125305176,
+        "analytic_from_stage": -0.7276883254999814,
+        "absolute_residual": 1.2969463836220996e-08,
+        "fft_stage_error": 1.782282796320789e-08
+      },
+      {
+        "m": 8,
+        "ring": 5,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 2.077519655227661,
+        "pixel": 0,
+        "map_pixel": 4.155039310455322,
+        "analytic_from_stage": 4.155039310455322,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 8,
+        "ring": 5,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 2.0790865421295166,
+        "pixel": 0,
+        "map_pixel": 4.158173084259033,
+        "analytic_from_stage": 4.158173084259033,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 8,
+        "ring": 5,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 2.077519655227661,
+        "pixel": 1,
+        "map_pixel": -4.137314319610596,
+        "analytic_from_stage": -4.1373146452697185,
+        "absolute_residual": 3.2565912277959796e-07,
+        "fft_stage_error": 7.871267976969823e-08
+      },
+      {
+        "m": 8,
+        "ring": 5,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 2.0790865421295166,
+        "pixel": 1,
+        "map_pixel": -4.140435218811035,
+        "analytic_from_stage": -4.140435050946851,
+        "absolute_residual": 1.6786418388647917e-07,
+        "fft_stage_error": 4.0542642262298925e-08
+      },
+      {
+        "m": 8,
+        "ring": 360,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 0.3177569806575775,
+        "pixel": 0,
+        "map_pixel": 0.6355140209197998,
+        "analytic_from_stage": 0.635513961315155,
+        "absolute_residual": 5.960464477539063e-08,
+        "fft_stage_error": 9.378966130302352e-08
+      },
+      {
+        "m": 8,
+        "ring": 360,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 0.3183196485042572,
+        "pixel": 0,
+        "map_pixel": 0.6366392970085144,
+        "analytic_from_stage": 0.6366392970085144,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 8,
+        "ring": 360,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 0.3177569806575775,
+        "pixel": 1,
+        "map_pixel": -0.6328029632568359,
+        "analytic_from_stage": -0.6328029707941403,
+        "absolute_residual": 7.537304336224793e-09,
+        "fft_stage_error": 1.1910981275523726e-08
+      },
+      {
+        "m": 8,
+        "ring": 360,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 0.3183196485042572,
+        "pixel": 1,
+        "map_pixel": -0.6339235305786133,
+        "analytic_from_stage": -0.6339235060038229,
+        "absolute_residual": 2.4574790424836124e-08,
+        "fft_stage_error": 3.876617484510395e-08
+      },
+      {
+        "m": 16,
+        "ring": 0,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 8.768833749395188e-12,
+        "pixel": 0,
+        "map_pixel": 1.7537667498790377e-11,
+        "analytic_from_stage": 1.7537667498790377e-11,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 0,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 8.766820602801317e-12,
+        "pixel": 0,
+        "map_pixel": 1.7533641205602635e-11,
+        "analytic_from_stage": 1.7533641205602635e-11,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 0,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 8.768833749395188e-12,
+        "pixel": 1,
+        "map_pixel": -3.2225385554474073e-12,
+        "analytic_from_stage": -3.2225379465300696e-12,
+        "absolute_residual": 6.0891733773724965e-19,
+        "fft_stage_error": 1.8895579595407182e-07
+      },
+      {
+        "m": 16,
+        "ring": 0,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 8.766820602801317e-12,
+        "pixel": 1,
+        "map_pixel": -3.2217980453635997e-12,
+        "analytic_from_stage": -3.2217981170982336e-12,
+        "absolute_residual": 7.173463389330471e-20,
+        "fft_stage_error": 2.2265403133922527e-08
+      },
+      {
+        "m": 16,
+        "ring": 1,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 3.605984602472745e-06,
+        "pixel": 0,
+        "map_pixel": 7.21196920494549e-06,
+        "analytic_from_stage": 7.21196920494549e-06,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 1,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 3.6059361718798755e-06,
+        "pixel": 0,
+        "map_pixel": 7.211872343759751e-06,
+        "analytic_from_stage": 7.211872343759751e-06,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 1,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 3.605984602472745e-06,
+        "pixel": 1,
+        "map_pixel": -1.3251958534965524e-06,
+        "analytic_from_stage": -1.325195863916688e-06,
+        "absolute_residual": 1.0420135577893122e-14,
+        "fft_stage_error": 7.863090929891561e-09
+      },
+      {
+        "m": 16,
+        "ring": 1,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 3.6059361718798755e-06,
+        "pixel": 1,
+        "map_pixel": -1.3251781183498679e-06,
+        "analytic_from_stage": -1.3251780657205135e-06,
+        "absolute_residual": 5.262935435052733e-14,
+        "fft_stage_error": 3.971492859847566e-08
+      },
+      {
+        "m": 16,
+        "ring": 5,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 2.7941837310791016,
+        "pixel": 0,
+        "map_pixel": 5.588367462158203,
+        "analytic_from_stage": 5.588367462158203,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 5,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 2.797023296356201,
+        "pixel": 0,
+        "map_pixel": 5.594046592712402,
+        "analytic_from_stage": 5.594046592712402,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 5,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 2.7941837310791016,
+        "pixel": 1,
+        "map_pixel": -1.0268597602844238,
+        "analytic_from_stage": -1.0268598265533808,
+        "absolute_residual": 6.626895698857993e-08,
+        "fft_stage_error": 6.453554348406965e-08
+      },
+      {
+        "m": 16,
+        "ring": 5,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 2.797023296356201,
+        "pixel": 1,
+        "map_pixel": -1.0279033184051514,
+        "analytic_from_stage": -1.0279033640543322,
+        "absolute_residual": 4.5649180879792084e-08,
+        "fft_stage_error": 4.4409992686218305e-08
+      },
+      {
+        "m": 16,
+        "ring": 360,
+        "part": "re",
+        "path": "rust",
+        "stage_fourier": 0.3183809816837311,
+        "pixel": 0,
+        "map_pixel": 0.6367619633674622,
+        "analytic_from_stage": 0.6367619633674622,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 360,
+        "part": "re",
+        "path": "ducc",
+        "stage_fourier": 0.31834909319877625,
+        "pixel": 0,
+        "map_pixel": 0.6366981863975525,
+        "analytic_from_stage": 0.6366981863975525,
+        "absolute_residual": 0.0,
+        "fft_stage_error": 0.0
+      },
+      {
+        "m": 16,
+        "ring": 360,
+        "part": "im",
+        "path": "rust",
+        "stage_fourier": 0.3183809816837311,
+        "pixel": 1,
+        "map_pixel": -0.11700469255447388,
+        "analytic_from_stage": -0.11700470373270382,
+        "absolute_residual": 1.1178229938901829e-08,
+        "fft_stage_error": 9.553658598579416e-08
+      },
+      {
+        "m": 16,
+        "ring": 360,
+        "part": "im",
+        "path": "ducc",
+        "stage_fourier": 0.31834909319877625,
+        "pixel": 1,
+        "map_pixel": -0.11699298769235611,
+        "analytic_from_stage": -0.11699298474523512,
+        "absolute_residual": 2.9471209916920316e-09,
+        "fft_stage_error": 2.519057808354941e-08
+      }
+    ]
+  }
+}

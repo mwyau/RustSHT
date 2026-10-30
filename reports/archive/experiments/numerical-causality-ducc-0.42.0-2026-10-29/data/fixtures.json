@@ -1,0 +1,73 @@
+{
+  "grid": {
+    "kind": "GL",
+    "lmax": 720,
+    "ntheta": 721,
+    "longitude_samples": 34,
+    "phi0": 0.0,
+    "theta_bits_file": "gl-t720-theta.bits"
+  },
+  "coefficients": {
+    "ordinary_real_ieee754_f32": "3f800000",
+    "ordinary_imag_ieee754_f32": "00000000",
+    "imaginary_only_real_ieee754_f32": "00000000",
+    "imaginary_only_imag_ieee754_f32": "3f800000"
+  },
+  "matched_modes": [
+    {
+      "m": 0,
+      "l": 720,
+      "parts": [
+        "re"
+      ]
+    },
+    {
+      "m": [
+        1,
+        2,
+        5,
+        8,
+        16
+      ],
+      "l": [
+        600,
+        650,
+        700,
+        719,
+        720
+      ],
+      "parts": [
+        "re",
+        "im"
+      ]
+    }
+  ],
+  "trace_rings": [
+    0,
+    1,
+    5,
+    360,
+    715,
+    719,
+    720
+  ],
+  "dense_high_band_fixture": {
+    "source": "reports/data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/fixtures/GL-T720-M720-s0/alm0.f32",
+    "source_sha256": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+    "extracted_file": "high-band-alm0.f32",
+    "extracted_sha256": "bb40e9dc604d336095a364e11c10303ec90de8547aa721176101278fce386a8d",
+    "coefficient_layout": "orders m=1..16, degrees l=600..720, complex f32 little-endian interleaved real/imag",
+    "nonzero_complex_coefficients": 1936,
+    "extracted_bytes": 15488
+  },
+  "dense_trace": {
+    "north_representative_rings": [0, 1, 5, 360],
+    "paired_south_rings": [720, 719, 715, 360],
+    "order_ring_cases": 64,
+    "pre_fft_components": 256,
+    "stage": "reflected Legendre/Fourier coefficient before longitude FFT"
+  },
+  "single_mode_case_count": 357,
+  "pre_fft_stage": "north/south scalar Fourier coefficient before longitude FFT; phase0=0; ringfactor=1",
+  "reference": "binary128 (113-bit) independent recurrence and accumulator; final float correctly rounded comparison"
+}

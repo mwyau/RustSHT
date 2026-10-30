@@ -1,0 +1,380 @@
+diff --git a/CMakeLists-C++.txt b/CMakeLists-C++.txt
+index fc3c85ab..4fc44f54 100644
+--- a/CMakeLists-C++.txt
++++ b/CMakeLists-C++.txt
+@@ -70,6 +70,7 @@ add_library(ducc0 STATIC
+         src/ducc0/infra/system.cc
+         src/ducc0/infra/threading.cc
+         src/ducc0/infra/mav.cc
++        src/ducc0/sht/sht.cc
+         # add more source files here
+ )
+ 
+diff --git a/src/ducc0/sht/sht_inner_loop.h b/src/ducc0/sht/sht_inner_loop.h
+index f86d5a2c..4f796cfb 100644
+--- a/src/ducc0/sht/sht_inner_loop.h
++++ b/src/ducc0/sht/sht_inner_loop.h
+@@ -252,6 +252,47 @@ class Ylmgen: public YlmBase
+ using Tv=native_simd<double>;
+ static constexpr size_t VLEN=Tv::size();
+ 
++#ifdef DUCC_NUMERIC_TRACE
++static size_t numeric_trace_order=0, numeric_trace_ring=0;
++static const char *numeric_trace_part="re";
++static inline uint64_t numeric_trace_bits(double value)
++  {
++  uint64_t result;
++  std::memcpy(&result, &value, sizeof(result));
++  return result;
++  }
++static inline void numeric_trace_recurrence(size_t degree, double csq,
++  double a, double b, double previous, double current, double leading,
++  double next)
++  {
++  std::printf("DUCC_REC,%zu,%zu,%s,%zu,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx\n",
++    numeric_trace_order, numeric_trace_ring, numeric_trace_part, degree,
++    (unsigned long long)numeric_trace_bits(csq),
++    (unsigned long long)numeric_trace_bits(a),
++    (unsigned long long)numeric_trace_bits(b),
++    (unsigned long long)numeric_trace_bits(previous),
++    (unsigned long long)numeric_trace_bits(current),
++    (unsigned long long)numeric_trace_bits(leading),
++    (unsigned long long)numeric_trace_bits(next),
++    (unsigned long long)numeric_trace_bits(next));
++  }
++static inline void numeric_trace_prefix_recurrence(size_t degree, double scale,
++  double csq, double a, double b, double previous, double current,
++  double leading, double next)
++  {
++  std::printf("DUCC_PREFIX_REC,%zu,%zu,%s,%zu,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx\n",
++    numeric_trace_order, numeric_trace_ring, numeric_trace_part, degree,
++    (unsigned long long)numeric_trace_bits(scale),
++    (unsigned long long)numeric_trace_bits(csq),
++    (unsigned long long)numeric_trace_bits(a),
++    (unsigned long long)numeric_trace_bits(b),
++    (unsigned long long)numeric_trace_bits(previous),
++    (unsigned long long)numeric_trace_bits(current),
++    (unsigned long long)numeric_trace_bits(leading),
++    (unsigned long long)numeric_trace_bits(next));
++  }
++#endif
++
+ #if ((!defined(DUCC0_NO_SIMD)) && defined(__AVX__) && (!defined(__AVX512F__)))
+ static_assert(Tv::size()==4, "must not happen");
+ static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
+@@ -420,6 +461,16 @@ DUCC0_NOINLINE static void init_lambda(const Ylmgen &gen,
+     mypow(d.sth[i],gen.m,gen.powlimit,d.lam2[i],d.scale[i]);
+     d.lam2[i] *= mfac;
+     Tvnormalize(d.lam2[i],d.scale[i],sht_ftol);
++#ifdef DUCC_NUMERIC_TRACE
++    if (i==0)
++      std::printf("DUCC_SEED,%zu,%zu,%s,%016llx,%016llx,%016llx,%016llx,%016llx\n",
++        numeric_trace_order,numeric_trace_ring,numeric_trace_part,
++        (unsigned long long)numeric_trace_bits(d.sth[i][0]),
++        (unsigned long long)numeric_trace_bits(d.csq[i][0]),
++        (unsigned long long)numeric_trace_bits(d.scale[i][0]),
++        (unsigned long long)numeric_trace_bits(d.lam1[i][0]),
++        (unsigned long long)numeric_trace_bits(d.lam2[i][0]));
++#endif
+     }
+   }
+ 
+@@ -445,10 +496,31 @@ DUCC0_NOINLINE static void iter_to_ieee(const Ylmgen &gen,
+     Tv a2=gen.coef[il+1].a, b2=gen.coef[il+1].b;
+     for (size_t i=0; i<nv2; ++i)
+       {
+-      d.lam1[i] = (a1*d.csq[i] + b1)*d.lam2[i] + d.lam1[i];
+-      d.lam2[i] = (a2*d.csq[i] + b2)*d.lam1[i] + d.lam2[i];
++      Tv oldlam1=d.lam1[i], oldlam2=d.lam2[i];
++      Tv leading1=(a1*d.csq[i] + b1);
++      Tv next1=leading1*oldlam2+oldlam1;
++#ifdef DUCC_NUMERIC_TRACE
++      if (i==0) numeric_trace_prefix_recurrence(l+2,d.scale[i][0],d.csq[i][0],
++        a1[0],b1[0],oldlam1[0],oldlam2[0],leading1[0],next1[0]);
++#endif
++      d.lam1[i] = next1;
++      Tv leading2=(a2*d.csq[i] + b2);
++      Tv next2=leading2*d.lam1[i]+oldlam2;
++#ifdef DUCC_NUMERIC_TRACE
++      if (i==0) numeric_trace_prefix_recurrence(l+4,d.scale[i][0],d.csq[i][0],
++        a2[0],b2[0],oldlam2[0],next1[0],leading2[0],next2[0]);
++#endif
++      d.lam2[i] = next2;
+       if (rescale(d.lam1[i], d.lam2[i], d.scale[i], sht_ftol))
+         below_limit &= all_of(d.scale[i]<1);
++#ifdef DUCC_NUMERIC_TRACE
++      if (i==0)
++        std::printf("DUCC_PREFIX_STATE,%zu,%zu,%s,%zu,%zu,%016llx,%016llx,%016llx\n",
++          numeric_trace_order,numeric_trace_ring,numeric_trace_part,l+4,il+2,
++          (unsigned long long)numeric_trace_bits(d.scale[i][0]),
++          (unsigned long long)numeric_trace_bits(d.lam1[i][0]),
++          (unsigned long long)numeric_trace_bits(d.lam2[i][0]));
++#endif
+       }
+     l+=4; il+=2;
+     }
+@@ -480,12 +552,25 @@ DUCC0_NOINLINE static void alm2map_kernel(s0data_v & DUCC0_RESTRICT d,
+         d.p1i[i] += d.lam2[i]*ai1;
+         d.p2r[i] += d.lam2[i]*ar2;
+         d.p2i[i] += d.lam2[i]*ai2;
+-        d.lam1[i] = (a1*d.csq[i] + b1)*d.lam2[i] + d.lam1[i];
++        Tv oldlam1=d.lam1[i], oldlam2=d.lam2[i];
++        Tv leading1=(a1*d.csq[i] + b1);
++        Tv next1=leading1*oldlam2+oldlam1;
++#ifdef DUCC_NUMERIC_TRACE
++        if (i==0) numeric_trace_recurrence(l+2,d.csq[i][0],a1[0],b1[0],
++          oldlam1[0],oldlam2[0],leading1[0],next1[0]);
++#endif
++        d.lam1[i] = next1;
+         d.p1r[i] += d.lam1[i]*ar3;
+         d.p1i[i] += d.lam1[i]*ai3;
+         d.p2r[i] += d.lam1[i]*ar4;
+         d.p2i[i] += d.lam1[i]*ai4;
+-        d.lam2[i] = (a2*d.csq[i] + b2)*d.lam1[i] + d.lam2[i];
++        Tv leading2=(a2*d.csq[i] + b2);
++        Tv next2=leading2*d.lam1[i]+oldlam2;
++#ifdef DUCC_NUMERIC_TRACE
++        if (i==0) numeric_trace_recurrence(l+4,d.csq[i][0],a2[0],b2[0],
++          oldlam2[0],next1[0],leading2[0],next2[0]);
++#endif
++        d.lam2[i] = next2;
+         d.p1r[i] += d.lam2[i]*ar5;
+         d.p1i[i] += d.lam2[i]*ai5;
+         d.p2r[i] += d.lam2[i]*ar6;
+@@ -513,12 +598,25 @@ DUCC0_NOINLINE static void alm2map_kernel(s0data_v & DUCC0_RESTRICT d,
+       d.p1i[i] += d.lam2[i]*ai1;
+       d.p2r[i] += d.lam2[i]*ar2;
+       d.p2i[i] += d.lam2[i]*ai2;
+-      d.lam1[i] = (a1*d.csq[i] + b1)*d.lam2[i] + d.lam1[i];
++      Tv oldlam1=d.lam1[i], oldlam2=d.lam2[i];
++      Tv leading1=(a1*d.csq[i] + b1);
++      Tv next1=leading1*oldlam2+oldlam1;
++#ifdef DUCC_NUMERIC_TRACE
++      if (i==0) numeric_trace_recurrence(l+2,d.csq[i][0],a1[0],b1[0],
++        oldlam1[0],oldlam2[0],leading1[0],next1[0]);
++#endif
++      d.lam1[i] = next1;
+       d.p1r[i] += d.lam1[i]*ar3;
+       d.p1i[i] += d.lam1[i]*ai3;
+       d.p2r[i] += d.lam1[i]*ar4;
+       d.p2i[i] += d.lam1[i]*ai4;
+-      d.lam2[i] = (a2*d.csq[i] + b2)*d.lam1[i] + d.lam2[i];
++      Tv leading2=(a2*d.csq[i] + b2);
++      Tv next2=leading2*d.lam1[i]+oldlam2;
++#ifdef DUCC_NUMERIC_TRACE
++      if (i==0) numeric_trace_recurrence(l+4,d.csq[i][0],a2[0],b2[0],
++        oldlam2[0],next1[0],leading2[0],next2[0]);
++#endif
++      d.lam2[i] = next2;
+       }
+     }
+   for (; l<=lmax; ++il, l+=2)
+@@ -546,6 +644,16 @@ DUCC0_NOINLINE static void calc_alm2map (const dcmplx * DUCC0_RESTRICT alm,
+   size_t nv2 = (nth+VLEN-1)/VLEN;
+   iter_to_ieee(gen, d, l, il, nv2, lstart, lstop);
+ 
++#ifdef DUCC_NUMERIC_TRACE
++  if (nv2>0)
++    std::printf("DUCC_PREFIX,%zu,%zu,%s,%zu,%zu,%016llx,%016llx,%016llx,%016llx\n",
++      numeric_trace_order,numeric_trace_ring,numeric_trace_part,l,il,
++      (unsigned long long)numeric_trace_bits(d.scale[0][0]),
++      (unsigned long long)numeric_trace_bits(d.lam1[0][0]),
++      (unsigned long long)numeric_trace_bits(d.lam2[0][0]),
++      (unsigned long long)numeric_trace_bits(d.csq[0][0]));
++#endif
++
+   if (l>=lstop) return;
+ 
+   auto &coef = gen.coef;
+@@ -555,6 +663,13 @@ DUCC0_NOINLINE static void calc_alm2map (const dcmplx * DUCC0_RESTRICT alm,
+     getCorfac(d.scale[i], d.corfac[i]);
+     full_ieee &= all_of(d.scale[i]>=0);
+     }
++#ifdef DUCC_NUMERIC_TRACE
++  if (nv2>0)
++    std::printf("DUCC_CORFAC,%zu,%zu,%s,%016llx,%016llx\n",
++      numeric_trace_order,numeric_trace_ring,numeric_trace_part,
++      (unsigned long long)numeric_trace_bits(d.scale[0][0]),
++      (unsigned long long)numeric_trace_bits(d.corfac[0][0]));
++#endif
+ 
+   while((!full_ieee) && (l<lstop))
+     {
+@@ -1435,6 +1550,22 @@ template<typename T> DUCC0_NOINLINE static void extract_a2m( size_t mi,
+     auto t2r = d.v.p2r[i]*cth[i];
+     auto t1i = d.v.p1i[i];
+     auto t2i = d.v.p2i[i]*cth[i];
++#ifdef DUCC_NUMERIC_TRACE
++    if (i==0)
++      std::printf("DUCC_ACCUM,%zu,%zu,%s,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx\n",
++        numeric_trace_order,numeric_trace_ring,numeric_trace_part,
++        (unsigned long long)numeric_trace_bits(t1r[0]),
++        (unsigned long long)numeric_trace_bits(d.v.p2r[i][0]),
++        (unsigned long long)numeric_trace_bits(cth[i][0]),
++        (unsigned long long)numeric_trace_bits(t2r[0]),
++        (unsigned long long)numeric_trace_bits(t1r[0]+t2r[0]),
++        (unsigned long long)numeric_trace_bits(t1r[0]-t2r[0]),
++        (unsigned long long)numeric_trace_bits(t1i[0]),
++        (unsigned long long)numeric_trace_bits(d.v.p2i[i][0]),
++        (unsigned long long)numeric_trace_bits(t2i[0]),
++        (unsigned long long)numeric_trace_bits(t1i[0]+t2i[0]),
++        (unsigned long long)numeric_trace_bits(t1i[0]-t2i[0]));
++#endif
+     d.v.p1r[i] = t1r+t2r;
+     d.v.p1i[i] = t1i+t2i;
+     d.v.p2r[i] = t1r-t2r;
+diff --git a/test/numeric_map_smoke.cc b/test/numeric_map_smoke.cc
+new file mode 100644
+index 00000000..fb3b6b34
+--- /dev/null
++++ b/test/numeric_map_smoke.cc
+@@ -0,0 +1,65 @@
++#include <complex>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <fstream>
++#include <string>
++#include <vector>
++#include "ducc0/infra/simd.h"
++#include "ducc0/sht/sht.h"
++#include "ducc0/sht/sphere_interpol.h"
++#include "ducc0/fft/fft.h"
++#include "ducc0/nufft/nufft.h"
++#include "ducc0/math/math_utils.h"
++#include "ducc0/math/gl_integrator.h"
++#include "ducc0/math/constants.h"
++#include "ducc0/math/solvers.h"
++#include "ducc0/sht/sht_utils.h"
++#include "ducc0/infra/timers.h"
++#include "ducc0/sht/sht_inner_loop.h"
++
++static uint32_t float_bits(float x) { uint32_t u; std::memcpy(&u,&x,4); return u; }
++
++int main(int argc,char **argv) {
++  using namespace ducc0;
++  if (argc != 5) return 2;
++  const std::string theta_path=argv[1];
++  const size_t m=std::strtoul(argv[2],nullptr,10);
++  const size_t l=std::strtoul(argv[3],nullptr,10);
++  const bool imag=std::strtoul(argv[4],nullptr,10)!=0;
++  const size_t ntheta=721, nphi=34, lmax=720;
++  std::ifstream in(theta_path);
++  if (!in) return 3;
++  std::vector<double> theta(ntheta);
++  for (size_t i=0;i<ntheta;++i) {
++    std::string line;
++    if (!std::getline(in,line)) return 4;
++    uint64_t bits=std::stoull(line,nullptr,16);
++    std::memcpy(&theta[i],&bits,8);
++  }
++  const size_t nalm=(lmax+1)*(lmax+2)/2;
++  vmav<std::complex<float>,2> alm({1,nalm},UNINITIALIZED);
++  for(size_t i=0;i<nalm;++i) alm(0,i)={0.f,0.f};
++  const size_t lmstart=m*(2*lmax+1-m)/2;
++  alm(0,lmstart+l)=imag ? std::complex<float>(0.f,1.f) : std::complex<float>(1.f,0.f);
++  vmav<float,2> map({1,ntheta*nphi},UNINITIALIZED);
++  vmav<size_t,1> mstart({m+1},UNINITIALIZED);
++  for(size_t mm=0;mm<=m;++mm)
++    mstart(mm)=mm*(2*lmax+1-mm)/2;
++  vmav<size_t,1> nphi_v({ntheta},UNINITIALIZED), ringstart({ntheta},UNINITIALIZED);
++  vmav<double,1> theta_v({ntheta},UNINITIALIZED), phi0({ntheta},UNINITIALIZED), ringfactor({ntheta},UNINITIALIZED);
++  for(size_t r=0;r<ntheta;++r) {
++    theta_v(r)=theta[r]; nphi_v(r)=nphi; ringstart(r)=r*nphi; phi0(r)=0.; ringfactor(r)=1.;
++  }
++  synthesis(alm,map,0,lmax,mstart,1,theta_v,nphi_v,phi0,ringstart,ringfactor,1,1,STANDARD,false);
++  constexpr size_t rings[]={0,1,5,360,715,719,720};
++  for(size_t r:rings) {
++    uint64_t theta_bits; std::memcpy(&theta_bits,&theta[r],8);
++    std::printf("DUCC_MAP,m=%zu,l=%zu,part=%s,ring=%zu,theta=%016llx",
++      m,l,imag?"im":"re",r,(unsigned long long)theta_bits);
++    for(size_t p=0;p<nphi;++p) std::printf(",%08x",float_bits(map(0,r*nphi+p)));
++    std::printf("\n");
++  }
++  return 0;
++}
+diff --git a/test/numeric_trace_smoke.cc b/test/numeric_trace_smoke.cc
+new file mode 100644
+index 00000000..9ba9a9bd
+--- /dev/null
++++ b/test/numeric_trace_smoke.cc
+@@ -0,0 +1,78 @@
++#include <cmath>
++#include <complex>
++#include <cstdio>
++#include <cstdint>
++#include <cstring>
++#include <cstdlib>
++#include <string>
++#include <vector>
++#include "ducc0/infra/simd.h"
++#include "ducc0/sht/sht.h"
++#include "ducc0/sht/sphere_interpol.h"
++#include "ducc0/fft/fft.h"
++#include "ducc0/nufft/nufft.h"
++#include "ducc0/math/math_utils.h"
++#include "ducc0/math/gl_integrator.h"
++#include "ducc0/math/constants.h"
++#include "ducc0/math/solvers.h"
++#include "ducc0/sht/sht_utils.h"
++#include "ducc0/infra/timers.h"
++#include "ducc0/sht/sht_inner_loop.h"
++
++static uint32_t float_bits(float value) {
++  uint32_t result;
++  std::memcpy(&result, &value, sizeof(result));
++  return result;
++}
++
++int main(int argc, char **argv) {
++  using namespace ducc0;
++  using namespace ducc0::detail_sht::detail_sht_inner_loop;
++  const size_t m = std::strtoul(argv[1], nullptr, 10);
++  const size_t l = std::strtoul(argv[2], nullptr, 10);
++  const double theta = std::strtod(argv[3], nullptr);
++  const float re = std::strtof(argv[4], nullptr);
++  const float im = std::strtof(argv[5], nullptr);
++  const size_t ring = (argc>6) ? std::strtoul(argv[6], nullptr, 10) : 0;
++  const size_t lmax = 720;
++  YlmBase base(lmax, m, 0);
++  Ylmgen gen(base);
++  gen.prepare(m);
++  vmav<std::complex<double>,2> almtmp({lmax+2, 1}, UNINITIALIZED);
++  for (size_t i=0; i<lmax+2; ++i) almtmp(i,0) = {0.,0.};
++  almtmp(l,0) = {double(re), double(im)};
++  const double cth=std::cos(theta), sth=std::sin(theta);
++  const double csq=(std::abs(cth)>0.99) ? (1.-sth)*(1.+sth) : cth*cth;
++  numeric_trace_order=m;
++  numeric_trace_ring=ring;
++  std::string part_tag=(im!=0.f) ? "im" : "re";
++  part_tag += "_l" + std::to_string(l);
++  numeric_trace_part=part_tag.c_str();
++  std::printf("DUCC_PLAN,%zu,%zu,%zu,%016llx,%016llx,%016llx,%016llx,%d,%016llx,%016llx,%016llx,%016llx,%016llx,%016llx,%08x,%08x\n",
++      m,l,ring,(unsigned long long)numeric_trace_bits(theta),
++      (unsigned long long)numeric_trace_bits(cth),(unsigned long long)numeric_trace_bits(sth),
++      (unsigned long long)numeric_trace_bits(csq),std::abs(cth)>0.99,
++      (unsigned long long)numeric_trace_bits(gen.mfac[m]),
++      (unsigned long long)numeric_trace_bits(gen.eps[l]),
++      (unsigned long long)numeric_trace_bits(gen.eps[l+1]),
++      (unsigned long long)numeric_trace_bits(gen.alpha[(l-m)/2]),
++      (unsigned long long)numeric_trace_bits(gen.coef[(l-m)/2].a),
++      (unsigned long long)numeric_trace_bits(gen.coef[(l-m)/2].b),
++      float_bits(re),float_bits(im));
++  std::vector<ringdata> rdata{{lmax,0,1,cth,sth,1.}};
++  vmav<std::complex<float>,3> phase({1,2,1}, UNINITIALIZED);
++  inner_loop_a2m(STANDARD, almtmp, phase, rdata, gen, 0);
++  for (size_t pair=0; pair<=(lmax-m)/2; ++pair)
++    {
++    size_t degree=m+2*pair;
++    std::printf("DUCC_PAIR,%zu,%zu,%zu,%016llx,%016llx,%016llx,%016llx\n",
++      m,ring,degree,
++      (unsigned long long)numeric_trace_bits(almtmp(degree,0).real()),
++      (unsigned long long)numeric_trace_bits(almtmp(degree,0).imag()),
++      (unsigned long long)numeric_trace_bits(almtmp(degree+1,0).real()),
++      (unsigned long long)numeric_trace_bits(almtmp(degree+1,0).imag()));
++    }
++  std::printf("DUCC_OUTPUT,%zu,%zu,%s,%08x,%08x,%08x,%08x\n",m,ring,numeric_trace_part,
++      float_bits(phase(0,0,0).real()),float_bits(phase(0,0,0).imag()),
++      float_bits(phase(0,1,0).real()),float_bits(phase(0,1,0).imag()));
++}

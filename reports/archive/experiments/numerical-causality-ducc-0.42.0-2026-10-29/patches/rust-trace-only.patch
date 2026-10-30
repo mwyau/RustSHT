@@ -1,0 +1,1579 @@
+diff --git a/src/legendre/numeric.rs b/src/legendre/numeric.rs
+index 730976b5..68c75024 100644
+--- a/src/legendre/numeric.rs
++++ b/src/legendre/numeric.rs
+@@ -64,6 +64,9 @@ pub(crate) trait OrderedSimdPrecision: LegendrePrecision {
+     const REFLECTION_TOLERANCE: Self;
+     const SYNTHESIS_FACTOR_LIMIT: Self;
+ 
++    #[cfg(test)]
++    fn trace_bits(self) -> u64;
++
+     fn lane_count<S: Simd>() -> usize;
+     fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]);
+     fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]);
+@@ -188,6 +191,12 @@ macro_rules! impl_ordered_simd_precision {
+             const REFLECTION_TOLERANCE: Self = $reflection_tolerance;
+             const SYNTHESIS_FACTOR_LIMIT: Self = $synthesis_factor_limit;
+ 
++            #[cfg(test)]
++            #[inline(always)]
++            fn trace_bits(self) -> u64 {
++                self.to_bits() as u64
++            }
++
+             #[inline(always)]
+             fn lane_count<S: Simd>() -> usize {
+                 S::$lanes
+diff --git a/src/legendre/scalar_ordered.rs b/src/legendre/scalar_ordered.rs
+index cce00d03..4100dfe6 100644
+--- a/src/legendre/scalar_ordered.rs
++++ b/src/legendre/scalar_ordered.rs
+@@ -25,6 +25,151 @@ use crate::legendre::{
+ };
+ use crate::plan::{LowOrderDoubleSingleView, ZonalDoubleSingleView};
+ 
++#[cfg(test)]
++#[derive(Clone, Copy, Debug)]
++pub(crate) struct ZonalRecurrenceTrace {
++    pub(crate) ring: usize,
++    pub(crate) degree: usize,
++    pub(crate) values: [u32; 30],
++}
++
++#[cfg(test)]
++thread_local! {
++    static ZONAL_TRACE_TARGET: Cell<Option<usize>> = const { Cell::new(None) };
++    static ZONAL_TRACE_RECORDS: std::cell::RefCell<Vec<ZonalRecurrenceTrace>> = const { std::cell::RefCell::new(Vec::new()) };
++}
++
++#[cfg(test)]
++pub(crate) fn begin_zonal_trace(ring: usize) {
++    ZONAL_TRACE_TARGET.with(|target| target.set(Some(ring)));
++    ZONAL_TRACE_RECORDS.with(|records| records.borrow_mut().clear());
++}
++
++#[cfg(test)]
++pub(crate) fn zonal_trace_snapshot() -> Vec<ZonalRecurrenceTrace> {
++    ZONAL_TRACE_RECORDS.with(|records| records.borrow().clone())
++}
++
++#[cfg(test)]
++#[derive(Clone, Copy, Debug)]
++pub(crate) struct LowOrderRecurrenceTrace {
++    pub(crate) m: usize,
++    pub(crate) ring: usize,
++    pub(crate) degree: usize,
++    pub(crate) values: [u32; 38],
++}
++
++#[cfg(test)]
++thread_local! {
++    static LOW_ORDER_TRACE_TARGET: Cell<Option<(usize, usize)>> = const { Cell::new(None) };
++    static LOW_ORDER_TRACE_RECORDS: std::cell::RefCell<Vec<LowOrderRecurrenceTrace>> = const { std::cell::RefCell::new(Vec::new()) };
++    static LOW_ORDER_TRACE_FAILURE: Cell<Option<(usize, usize, u32)>> = const { Cell::new(None) };
++}
++
++#[cfg(test)]
++pub(crate) fn begin_low_order_trace(m: usize, ring: usize) {
++    LOW_ORDER_TRACE_TARGET.with(|target| target.set(Some((m, ring))));
++    LOW_ORDER_TRACE_RECORDS.with(|records| records.borrow_mut().clear());
++    LOW_ORDER_TRACE_FAILURE.with(|failure| failure.set(None));
++}
++
++#[cfg(test)]
++pub(crate) fn low_order_trace_failure_snapshot() -> Option<(usize, usize, u32)> {
++    LOW_ORDER_TRACE_FAILURE.with(Cell::get)
++}
++
++#[cfg(test)]
++pub(crate) fn low_order_trace_snapshot() -> Vec<LowOrderRecurrenceTrace> {
++    LOW_ORDER_TRACE_RECORDS.with(|records| records.borrow().clone())
++}
++
++#[cfg(test)]
++fn record_low_order_failure(m: usize, ring_start: usize, active_lanes: usize, source_line: u32) {
++    let matches = LOW_ORDER_TRACE_TARGET.with(|target| {
++        target.get().is_some_and(|(target_m, target_ring)| {
++            target_m == m && (ring_start..ring_start + active_lanes).contains(&target_ring)
++        })
++    });
++    if matches {
++        LOW_ORDER_TRACE_FAILURE.with(|failure| failure.set(Some((m, ring_start, source_line))));
++    }
++}
++
++#[cfg(test)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "Test trace records the compensated zonal recurrence operands and accumulation at one SIMD lane."
++)]
++fn record_zonal_trace<S: Simd>(
++    simd: S,
++    ring: usize,
++    degree: usize,
++    cosine_squared: DoubleSingleF32Vector<S>,
++    factor_a: DoubleSingleF32Vector<S>,
++    factor_b: DoubleSingleF32Vector<S>,
++    previous: DoubleSingleF32Vector<S>,
++    current: DoubleSingleF32Vector<S>,
++    product_a_csq: DoubleSingleF32Vector<S>,
++    leading: DoubleSingleF32Vector<S>,
++    leading_current: DoubleSingleF32Vector<S>,
++    next: DoubleSingleF32Vector<S>,
++    even: DoubleSingleF32Vector<S>,
++    even_term: DoubleSingleF32Vector<S>,
++    even_sum_in: DoubleSingleF32Vector<S>,
++    even_sum_out: DoubleSingleF32Vector<S>,
++    odd_sum_in: DoubleSingleF32Vector<S>,
++    odd_sum_out: DoubleSingleF32Vector<S>,
++) {
++    let target_matches = ZONAL_TRACE_TARGET.with(|target| target.get() == Some(ring));
++    if !target_matches {
++        return;
++    }
++    fn lane0<S: Simd>(simd: S, value: S::f32s) -> u32 {
++        let mut lanes = [0.0_f32; SCALAR_ORDER_BATCH_SIZE];
++        simd.partial_store_f32s(&mut lanes[..S::F32_LANES], value);
++        lanes[0].to_bits()
++    }
++    let values = [
++        lane0(simd, cosine_squared.high),
++        lane0(simd, cosine_squared.low),
++        lane0(simd, factor_a.high),
++        lane0(simd, factor_a.low),
++        lane0(simd, factor_b.high),
++        lane0(simd, factor_b.low),
++        lane0(simd, previous.high),
++        lane0(simd, previous.low),
++        lane0(simd, current.high),
++        lane0(simd, current.low),
++        lane0(simd, product_a_csq.high),
++        lane0(simd, product_a_csq.low),
++        lane0(simd, leading.high),
++        lane0(simd, leading.low),
++        lane0(simd, leading_current.high),
++        lane0(simd, leading_current.low),
++        lane0(simd, next.high),
++        lane0(simd, next.low),
++        lane0(simd, even.high),
++        lane0(simd, even.low),
++        lane0(simd, even_term.high),
++        lane0(simd, even_term.low),
++        lane0(simd, even_sum_in.high),
++        lane0(simd, even_sum_in.low),
++        lane0(simd, even_sum_out.high),
++        lane0(simd, even_sum_out.low),
++        lane0(simd, odd_sum_in.high),
++        lane0(simd, odd_sum_in.low),
++        lane0(simd, odd_sum_out.high),
++        lane0(simd, odd_sum_out.low),
++    ];
++    ZONAL_TRACE_RECORDS.with(|records| {
++        records.borrow_mut().push(ZonalRecurrenceTrace {
++            ring,
++            degree,
++            values,
++        })
++    });
++}
++
+ mod kernel;
+ 
+ #[derive(Clone, Copy)]
+@@ -33,6 +178,99 @@ struct DoubleSingleF32Vector<S: Simd> {
+     low: S::f32s,
+ }
+ 
++#[cfg(test)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "test-only trace captures the active low-order recurrence and paired sums"
++)]
++fn record_low_order_trace<S: Simd>(
++    simd: S,
++    m: usize,
++    ring_start: usize,
++    active_lanes: usize,
++    pair: usize,
++    cosine_squared: DoubleSingleF32Vector<S>,
++    factor_a: DoubleSingleF32Vector<S>,
++    factor_b: DoubleSingleF32Vector<S>,
++    previous: DoubleSingleF32Vector<S>,
++    current: DoubleSingleF32Vector<S>,
++    product_a_csq: DoubleSingleF32Vector<S>,
++    leading: DoubleSingleF32Vector<S>,
++    leading_current: DoubleSingleF32Vector<S>,
++    next: DoubleSingleF32Vector<S>,
++    even_re_in: DoubleSingleF32Vector<S>,
++    even_re_out: DoubleSingleF32Vector<S>,
++    even_im_in: DoubleSingleF32Vector<S>,
++    even_im_out: DoubleSingleF32Vector<S>,
++    odd_re_in: DoubleSingleF32Vector<S>,
++    odd_re_out: DoubleSingleF32Vector<S>,
++    odd_im_in: DoubleSingleF32Vector<S>,
++    odd_im_out: DoubleSingleF32Vector<S>,
++    coefficients: [f32; 4],
++) {
++    let target = LOW_ORDER_TRACE_TARGET.with(Cell::get);
++    let Some((target_m, target_ring)) = target else {
++        return;
++    };
++    if target_m != m || target_ring < ring_start || target_ring >= ring_start + active_lanes {
++        return;
++    }
++    let lane_idx = target_ring - ring_start;
++    fn lane_bits<S: Simd>(simd: S, value: S::f32s, lane_idx: usize) -> u32 {
++        let mut lanes = [0.0_f32; SCALAR_ORDER_BATCH_SIZE];
++        simd.partial_store_f32s(&mut lanes[..S::F32_LANES], value);
++        lanes[lane_idx].to_bits()
++    }
++    let values = [
++        lane_bits(simd, cosine_squared.high, lane_idx),
++        lane_bits(simd, cosine_squared.low, lane_idx),
++        lane_bits(simd, factor_a.high, lane_idx),
++        lane_bits(simd, factor_a.low, lane_idx),
++        lane_bits(simd, factor_b.high, lane_idx),
++        lane_bits(simd, factor_b.low, lane_idx),
++        lane_bits(simd, previous.high, lane_idx),
++        lane_bits(simd, previous.low, lane_idx),
++        lane_bits(simd, current.high, lane_idx),
++        lane_bits(simd, current.low, lane_idx),
++        lane_bits(simd, product_a_csq.high, lane_idx),
++        lane_bits(simd, product_a_csq.low, lane_idx),
++        lane_bits(simd, leading.high, lane_idx),
++        lane_bits(simd, leading.low, lane_idx),
++        lane_bits(simd, leading_current.high, lane_idx),
++        lane_bits(simd, leading_current.low, lane_idx),
++        lane_bits(simd, next.high, lane_idx),
++        lane_bits(simd, next.low, lane_idx),
++        lane_bits(simd, even_re_in.high, lane_idx),
++        lane_bits(simd, even_re_in.low, lane_idx),
++        lane_bits(simd, even_re_out.high, lane_idx),
++        lane_bits(simd, even_re_out.low, lane_idx),
++        lane_bits(simd, even_im_in.high, lane_idx),
++        lane_bits(simd, even_im_in.low, lane_idx),
++        lane_bits(simd, even_im_out.high, lane_idx),
++        lane_bits(simd, even_im_out.low, lane_idx),
++        lane_bits(simd, odd_re_in.high, lane_idx),
++        lane_bits(simd, odd_re_in.low, lane_idx),
++        lane_bits(simd, odd_re_out.high, lane_idx),
++        lane_bits(simd, odd_re_out.low, lane_idx),
++        lane_bits(simd, odd_im_in.high, lane_idx),
++        lane_bits(simd, odd_im_in.low, lane_idx),
++        lane_bits(simd, odd_im_out.high, lane_idx),
++        lane_bits(simd, odd_im_out.low, lane_idx),
++        coefficients[0].to_bits(),
++        coefficients[1].to_bits(),
++        coefficients[2].to_bits(),
++        coefficients[3].to_bits(),
++    ];
++    LOW_ORDER_TRACE_RECORDS.with(|records| {
++        records.borrow_mut().push(LowOrderRecurrenceTrace {
++            m,
++            ring: target_ring,
++            degree: m + pair * 2,
++            values,
++        })
++    });
++}
++
+ #[inline(always)]
+ fn ds_vector_renormalize<S: Simd>(
+     simd: S,
+@@ -215,7 +453,12 @@ pub(super) fn zonal_double_single_batch_f32<S: Simd>(
+         } else {
+             first_term
+         };
+-        even_sum = ds_vector_add(simd, even_sum, ds_vector_mul(simd, current, even));
++        #[cfg(test)]
++        let even_sum_in = even_sum;
++        #[cfg(test)]
++        let odd_sum_in = odd_sum;
++        let even_term = ds_vector_mul(simd, current, even);
++        even_sum = ds_vector_add(simd, even_sum, even_term);
+ 
+         if degree < lmax {
+             let odd_coefficient = DoubleSingleF32Vector {
+@@ -227,7 +470,8 @@ pub(super) fn zonal_double_single_batch_f32<S: Simd>(
+                 low: simd.splat_f32s(geometry.odd_factor.low[pair]),
+             };
+             let odd = ds_vector_mul(simd, odd_coefficient, odd_factor);
+-            odd_sum = ds_vector_add(simd, odd_sum, ds_vector_mul(simd, current, odd));
++            let odd_term = ds_vector_mul(simd, current, odd);
++            odd_sum = ds_vector_add(simd, odd_sum, odd_term);
+         }
+ 
+         if pair + 1 < pair_count {
+@@ -239,12 +483,31 @@ pub(super) fn zonal_double_single_batch_f32<S: Simd>(
+                 high: simd.splat_f32s(geometry.factor_b.high[pair]),
+                 low: simd.splat_f32s(geometry.factor_b.low[pair]),
+             };
+-            let leading = ds_vector_add(
++            let product_a_csq = ds_vector_mul(simd, factor_a, cosine_squared);
++            let leading = ds_vector_add(simd, product_a_csq, factor_b);
++            let leading_current = ds_vector_mul(simd, leading, current);
++            let next = ds_vector_add(simd, leading_current, previous);
++            #[cfg(test)]
++            record_zonal_trace(
+                 simd,
+-                ds_vector_mul(simd, factor_a, cosine_squared),
++                ring_start,
++                degree + 2,
++                cosine_squared,
++                factor_a,
+                 factor_b,
++                previous,
++                current,
++                product_a_csq,
++                leading,
++                leading_current,
++                next,
++                even,
++                even_term,
++                even_sum_in,
++                even_sum,
++                odd_sum_in,
++                odd_sum,
+             );
+-            let next = ds_vector_add(simd, ds_vector_mul(simd, leading, current), previous);
+             previous = current;
+             current = next;
+         }
+@@ -381,6 +644,7 @@ pub(super) fn low_order_double_single_batch_f32<S: Simd>(
+         .and_then(|count| count.checked_add(2))
+         .map(|count| count / 2)
+     else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     if !(1..=2).contains(&m)
+@@ -405,6 +669,7 @@ pub(super) fn low_order_double_single_batch_f32<S: Simd>(
+             .checked_add(active_lanes)
+             .is_none_or(|end| end > geometry.cos_theta.high.len())
+     {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     }
+     let ring_end = ring_start + active_lanes;
+@@ -422,6 +687,7 @@ pub(super) fn low_order_double_single_batch_f32<S: Simd>(
+             .chain(&coefficient_odd[..pair_count])
+             .any(|value| !value.re.is_finite() || !value.im.is_finite())
+     {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     }
+ 
+@@ -446,10 +712,13 @@ pub(super) fn low_order_double_single_batch_f32<S: Simd>(
+     let mut odd_re = previous;
+     let mut odd_im = previous;
+     if !ds_vector_normal_or_zero(simd, current) {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     }
+ 
+     for pair in 0..pair_count {
++        #[cfg(test)]
++        let (even_re_in, even_im_in, odd_re_in, odd_im_in) = (even_re, even_im, odd_re, odd_im);
+         let even_re_coefficient = DoubleSingleF32Vector {
+             high: simd.splat_f32s(coefficient_even[pair].re),
+             low: simd.splat_f32s(0.0),
+@@ -467,30 +736,38 @@ pub(super) fn low_order_double_single_batch_f32<S: Simd>(
+             low: simd.splat_f32s(0.0),
+         };
+         let Some(term) = ds_vector_checked_mul(simd, current, even_re_coefficient) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         let Some(next) = ds_vector_checked_add(simd, even_re, term) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         even_re = next;
+         let Some(term) = ds_vector_checked_mul(simd, current, even_im_coefficient) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         let Some(next) = ds_vector_checked_add(simd, even_im, term) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         even_im = next;
+         let Some(term) = ds_vector_checked_mul(simd, current, odd_re_coefficient) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         let Some(next) = ds_vector_checked_add(simd, odd_re, term) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         odd_re = next;
+         let Some(term) = ds_vector_checked_mul(simd, current, odd_im_coefficient) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         let Some(next) = ds_vector_checked_add(simd, odd_im, term) else {
++            record_low_order_failure(m, ring_start, active_lanes, line!());
+             return false;
+         };
+         odd_im = next;
+@@ -504,39 +781,80 @@ pub(super) fn low_order_double_single_batch_f32<S: Simd>(
+                 high: simd.splat_f32s(geometry.factor_b.high[pair]),
+                 low: simd.splat_f32s(geometry.factor_b.low[pair]),
+             };
+-            let Some(product) = ds_vector_checked_mul(simd, factor_a, cosine_squared) else {
++            let Some(product_a_csq) = ds_vector_checked_mul(simd, factor_a, cosine_squared) else {
++                record_low_order_failure(m, ring_start, active_lanes, line!());
+                 return false;
+             };
+-            let Some(leading) = ds_vector_checked_add(simd, product, factor_b) else {
++            let Some(leading) = ds_vector_checked_add(simd, product_a_csq, factor_b) else {
++                record_low_order_failure(m, ring_start, active_lanes, line!());
+                 return false;
+             };
+-            let Some(product) = ds_vector_checked_mul(simd, leading, current) else {
++            let Some(leading_current) = ds_vector_checked_mul(simd, leading, current) else {
++                record_low_order_failure(m, ring_start, active_lanes, line!());
+                 return false;
+             };
+-            let Some(next) = ds_vector_checked_add(simd, product, previous) else {
++            let Some(next) = ds_vector_checked_add(simd, leading_current, previous) else {
++                record_low_order_failure(m, ring_start, active_lanes, line!());
+                 return false;
+             };
++            #[cfg(test)]
++            record_low_order_trace(
++                simd,
++                m,
++                ring_start,
++                active_lanes,
++                pair,
++                cosine_squared,
++                factor_a,
++                factor_b,
++                previous,
++                current,
++                product_a_csq,
++                leading,
++                leading_current,
++                next,
++                even_re_in,
++                even_re,
++                even_im_in,
++                even_im,
++                odd_re_in,
++                odd_re,
++                odd_im_in,
++                odd_im,
++                [
++                    coefficient_even[pair].re,
++                    coefficient_even[pair].im,
++                    coefficient_odd[pair].re,
++                    coefficient_odd[pair].im,
++                ],
++            );
+             previous = current;
+             current = next;
+         }
+     }
+ 
+     let Some(odd_re) = ds_vector_checked_mul(simd, cosine, odd_re) else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     let Some(odd_im) = ds_vector_checked_mul(simd, cosine, odd_im) else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     let Some(north_re_value) = ds_vector_checked_add(simd, even_re, odd_re) else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     let Some(south_re_value) = ds_vector_checked_sub(simd, even_re, odd_re) else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     let Some(north_im_value) = ds_vector_checked_add(simd, even_im, odd_im) else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     let Some(south_im_value) = ds_vector_checked_sub(simd, even_im, odd_im) else {
++        record_low_order_failure(m, ring_start, active_lanes, line!());
+         return false;
+     };
+     simd.partial_store_f32s(
+diff --git a/src/legendre/scalar_ordered/kernel.rs b/src/legendre/scalar_ordered/kernel.rs
+index 788b2ab4..c1dab902 100644
+--- a/src/legendre/scalar_ordered/kernel.rs
++++ b/src/legendre/scalar_ordered/kernel.rs
+@@ -62,6 +62,67 @@ pub(crate) struct PrefixObservation {
+     pub(crate) reached_full_ieee: bool,
+ }
+ 
++#[cfg(test)]
++#[derive(Clone, Copy, Debug)]
++pub(crate) struct RecurrenceTrace {
++    pub(crate) order: usize,
++    pub(crate) ring: usize,
++    pub(crate) degree: usize,
++    pub(crate) cosine_squared: u64,
++    pub(crate) coefficient_a: u64,
++    pub(crate) coefficient_b: u64,
++    pub(crate) previous: u64,
++    pub(crate) current: u64,
++    pub(crate) leading: u64,
++    pub(crate) next: u64,
++    pub(crate) actual_next: u64,
++    pub(crate) even_re: u64,
++    pub(crate) odd_re: u64,
++    pub(crate) even_im: u64,
++    pub(crate) odd_im: u64,
++    pub(crate) sum_even_re_in: u64,
++    pub(crate) sum_even_re_out: u64,
++    pub(crate) sum_odd_re_in: u64,
++    pub(crate) sum_odd_re_out: u64,
++}
++
++#[cfg(test)]
++mod numeric_trace {
++    use super::RecurrenceTrace;
++    use std::sync::{Mutex, OnceLock};
++
++    static TRACE: OnceLock<Mutex<(Option<(usize, usize)>, Vec<RecurrenceTrace>)>> = OnceLock::new();
++
++    fn trace() -> &'static Mutex<(Option<(usize, usize)>, Vec<RecurrenceTrace>)> {
++        TRACE.get_or_init(|| Mutex::new((None, Vec::new())))
++    }
++
++    pub(super) fn begin(order: usize, ring: usize) {
++        let mut trace = trace()
++            .lock()
++            .unwrap_or_else(|poisoned| poisoned.into_inner());
++        trace.0 = Some((order, ring));
++        trace.1.clear();
++    }
++
++    pub(super) fn record(record: RecurrenceTrace) {
++        let mut trace = trace()
++            .lock()
++            .unwrap_or_else(|poisoned| poisoned.into_inner());
++        if trace.0 == Some((record.order, record.ring)) {
++            trace.1.push(record);
++        }
++    }
++
++    pub(super) fn snapshot() -> Vec<RecurrenceTrace> {
++        trace()
++            .lock()
++            .unwrap_or_else(|poisoned| poisoned.into_inner())
++            .1
++            .clone()
++    }
++}
++
+ #[cfg(test)]
+ mod work_counters {
+     use super::{PrefixObservation, WorkCounters};
+@@ -284,6 +345,16 @@ pub(super) fn prefix_observation_snapshot() -> Vec<PrefixObservation> {
+     work_counters::prefix_detail_snapshot()
+ }
+ 
++#[cfg(test)]
++pub(super) fn begin_numeric_trace(order: usize, ring: usize) {
++    numeric_trace::begin(order, ring);
++}
++
++#[cfg(test)]
++pub(super) fn numeric_trace_snapshot() -> Vec<RecurrenceTrace> {
++    numeric_trace::snapshot()
++}
++
+ pub(super) struct ScalarSynthesisBatch<'a, T> {
+     pub(super) sin_theta: &'a [T],
+     pub(super) active_lanes: usize,
+@@ -508,6 +579,10 @@ pub(super) fn synthesize_batch<T: OrderedSimdPrecision, S: Simd>(
+                 status.degree,
+                 status.pair,
+                 active_count,
++                #[cfg(test)]
++                m,
++                #[cfg(test)]
++                ring_start,
+             )
+         {
+             return false;
+@@ -608,6 +683,10 @@ pub(super) fn synthesize_batch<T: OrderedSimdPrecision, S: Simd>(
+                         first.pair,
+                         group_start,
+                         first_end,
++                        #[cfg(test)]
++                        m,
++                        #[cfg(test)]
++                        ring_start,
+                     )
+                 {
+                     return false;
+@@ -625,6 +704,10 @@ pub(super) fn synthesize_batch<T: OrderedSimdPrecision, S: Simd>(
+                         second.pair,
+                         first_end,
+                         first_end + simd_lanes,
++                        #[cfg(test)]
++                        m,
++                        #[cfg(test)]
++                        ring_start,
+                     )
+                 {
+                     return false;
+@@ -664,6 +747,8 @@ fn synthesize_ordinary_suffix_batch<T: OrderedSimdPrecision, S: Simd>(
+     degree: usize,
+     pair: usize,
+     active_count: usize,
++    #[cfg(test)] order: usize,
++    #[cfg(test)] ring_base: usize,
+ ) -> bool {
+     let lanes = T::lane_count::<S>();
+     if lanes <= 1 {
+@@ -679,6 +764,10 @@ fn synthesize_ordinary_suffix_batch<T: OrderedSimdPrecision, S: Simd>(
+                 pair,
+                 start,
+                 start + lanes,
++                #[cfg(test)]
++                order,
++                #[cfg(test)]
++                ring_base,
+             ) {
+                 return false;
+             }
+@@ -700,6 +789,10 @@ fn synthesize_ordinary_suffix_batch<T: OrderedSimdPrecision, S: Simd>(
+                 pair,
+                 start,
+                 start + lanes,
++                #[cfg(test)]
++                order,
++                #[cfg(test)]
++                ring_base,
+             ) {
+                 return false;
+             }
+@@ -734,6 +827,10 @@ fn synthesize_ordinary_suffix_batch<T: OrderedSimdPrecision, S: Simd>(
+             pair,
+             start,
+             active_count,
++            #[cfg(test)]
++            order,
++            #[cfg(test)]
++            ring_base,
+         )
+ }
+ 
+@@ -886,6 +983,105 @@ fn coefficients_allow_shared_basis<T: OrderedSimdPrecision>(
+     })
+ }
+ 
++#[cfg(test)]
++fn vector_lane_value<T: OrderedSimdPrecision, S: Simd>(vector: T::Vector<S>, lane: usize) -> T {
++    let lanes = T::lane_count::<S>();
++    let mut values = [T::zero(); SCALAR_ORDER_BATCH_SIZE];
++    let (vectors, tail) = T::as_mut_simd::<S>(&mut values[..lanes]);
++    assert_eq!(vectors.len(), 1);
++    assert!(tail.is_empty());
++    vectors[0] = vector;
++    values[lane]
++}
++
++#[cfg(test)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "Test-only scalar extraction records the actual SIMD recurrence pair."
++)]
++fn record_ordinary_pair_trace<T: OrderedSimdPrecision, S: Simd>(
++    order: usize,
++    first_ring: usize,
++    first_degree: usize,
++    csq: T::Vector<S>,
++    a1: T,
++    b1: T,
++    a2: T,
++    b2: T,
++    even1: Complex<T>,
++    odd1: Complex<T>,
++    even2: Complex<T>,
++    odd2: Complex<T>,
++    previous_in: T::Vector<S>,
++    current_in: T::Vector<S>,
++    previous_out: T::Vector<S>,
++    current_out: T::Vector<S>,
++    sum_even_re_in: T::Vector<S>,
++    sum_even_re_out: T::Vector<S>,
++    sum_odd_re_in: T::Vector<S>,
++    sum_odd_re_out: T::Vector<S>,
++) {
++    for lane in 0..T::lane_count::<S>() {
++        let ring = first_ring + lane;
++        let cosine_squared = vector_lane_value::<T, S>(csq, lane);
++        let previous = vector_lane_value::<T, S>(previous_in, lane);
++        let current = vector_lane_value::<T, S>(current_in, lane);
++        let leading1 = a1.mul_add(cosine_squared, b1);
++        let next1 = leading1.mul_add(current, previous);
++        let actual_next1 = vector_lane_value::<T, S>(previous_out, lane);
++        let leading2 = a2.mul_add(cosine_squared, b2);
++        let next2 = leading2.mul_add(next1, current);
++        let actual_next2 = vector_lane_value::<T, S>(current_out, lane);
++        let sum_even_re_in = vector_lane_value::<T, S>(sum_even_re_in, lane);
++        let sum_even_re_out = vector_lane_value::<T, S>(sum_even_re_out, lane);
++        let sum_odd_re_in = vector_lane_value::<T, S>(sum_odd_re_in, lane);
++        let sum_odd_re_out = vector_lane_value::<T, S>(sum_odd_re_out, lane);
++
++        numeric_trace::record(RecurrenceTrace {
++            order,
++            ring,
++            degree: first_degree + 2,
++            cosine_squared: cosine_squared.trace_bits(),
++            coefficient_a: a1.trace_bits(),
++            coefficient_b: b1.trace_bits(),
++            previous: previous.trace_bits(),
++            current: current.trace_bits(),
++            leading: leading1.trace_bits(),
++            next: next1.trace_bits(),
++            actual_next: actual_next1.trace_bits(),
++            even_re: even1.re.trace_bits(),
++            odd_re: odd1.re.trace_bits(),
++            even_im: even1.im.trace_bits(),
++            odd_im: odd1.im.trace_bits(),
++            sum_even_re_in: sum_even_re_in.trace_bits(),
++            sum_even_re_out: sum_even_re_out.trace_bits(),
++            sum_odd_re_in: sum_odd_re_in.trace_bits(),
++            sum_odd_re_out: sum_odd_re_out.trace_bits(),
++        });
++        numeric_trace::record(RecurrenceTrace {
++            order,
++            ring,
++            degree: first_degree + 4,
++            cosine_squared: cosine_squared.trace_bits(),
++            coefficient_a: a2.trace_bits(),
++            coefficient_b: b2.trace_bits(),
++            previous: current.trace_bits(),
++            current: next1.trace_bits(),
++            leading: leading2.trace_bits(),
++            next: next2.trace_bits(),
++            actual_next: actual_next2.trace_bits(),
++            even_re: even2.re.trace_bits(),
++            odd_re: odd2.re.trace_bits(),
++            even_im: even2.im.trace_bits(),
++            odd_im: odd2.im.trace_bits(),
++            sum_even_re_in: sum_even_re_in.trace_bits(),
++            sum_even_re_out: sum_even_re_out.trace_bits(),
++            sum_odd_re_in: sum_odd_re_in.trace_bits(),
++            sum_odd_re_out: sum_odd_re_out.trace_bits(),
++        });
++    }
++}
++
+ #[expect(
+     clippy::too_many_arguments,
+     reason = "The ordinary DUCC suffix keeps one packed SIMD recurrence state in registers."
+@@ -901,6 +1097,8 @@ fn synthesize_ordinary_suffix_vector<T: OrderedSimdPrecision, S: Simd>(
+     pair: usize,
+     start: usize,
+     end: usize,
++    #[cfg(test)] order: usize,
++    #[cfg(test)] ring_base: usize,
+ ) -> bool {
+     #[cfg(test)]
+     work_counters::record_ordinary_pair_updates(
+@@ -967,12 +1165,23 @@ fn synthesize_ordinary_suffix_vector<T: OrderedSimdPrecision, S: Simd>(
+ 
+     // Iterate over checked coefficient slices once, then keep the ordinary
+     // recurrence and accumulators in registers for the whole suffix.
+-    for (((a, b), even), odd) in coefficient_a_pairs
++    for (pair_offset, (((a, b), even), odd)) in coefficient_a_pairs
+         .iter()
+         .zip(coefficient_b_pairs)
+         .zip(coefficient_even_pairs)
+         .zip(coefficient_odd_pairs)
++        .enumerate()
+     {
++        #[cfg(not(test))]
++        let _ = pair_offset;
++        #[cfg(test)]
++        let trace_previous_in = previous_vector;
++        #[cfg(test)]
++        let trace_current_in = current_vector;
++        #[cfg(test)]
++        let trace_sum_even_re_in = sum_even_re_vector;
++        #[cfg(test)]
++        let trace_sum_odd_re_in = sum_odd_re_vector;
+         ordinary_two_pair_step::<T, S>(
+             simd,
+             csq_vector,
+@@ -993,6 +1202,29 @@ fn synthesize_ordinary_suffix_vector<T: OrderedSimdPrecision, S: Simd>(
+             &mut sum_odd_re_vector,
+             &mut sum_odd_im_vector,
+         );
++        #[cfg(test)]
++        record_ordinary_pair_trace::<T, S>(
++            order,
++            ring_base + start,
++            degree + pair_offset * 4,
++            csq_vector,
++            a[0],
++            b[0],
++            a[1],
++            b[1],
++            even[0],
++            odd[0],
++            even[1],
++            odd[1],
++            trace_previous_in,
++            trace_current_in,
++            previous_vector,
++            current_vector,
++            trace_sum_even_re_in,
++            sum_even_re_vector,
++            trace_sum_odd_re_in,
++            sum_odd_re_vector,
++        );
+     }
+     let tail_offset = coefficient_a_pairs.len() * 2;
+     if tail_offset < coefficient_a.len() {
+diff --git a/src/legendre/scalar_ordered/tests.rs b/src/legendre/scalar_ordered/tests.rs
+index 7d7df999..e52ad0ac 100644
+--- a/src/legendre/scalar_ordered/tests.rs
++++ b/src/legendre/scalar_ordered/tests.rs
+@@ -7,6 +7,79 @@ use super::{
+ use num_complex::Complex64;
+ use pulp::{Arch, Simd};
+ 
++#[cfg(test)]
++struct NativeF32TraceBatch<'scratch, 'data> {
++    scratch: &'scratch mut super::ScalarOrderedScratch<'data, f32>,
++    sine: f32,
++    cosine_squared: f32,
++    sectoral_norm: f32,
++    order: usize,
++    lmax: usize,
++    ring: usize,
++}
++
++#[cfg(test)]
++impl WithSimd for NativeF32TraceBatch<'_, '_> {
++    type Output = bool;
++
++    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
++        let lanes = <f32 as crate::legendre::OrderedSimdPrecision>::lane_count::<S>();
++        if lanes == 0 || lanes > super::SCALAR_ORDER_BATCH_SIZE {
++            return false;
++        }
++        let mut sine = [0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        sine[..lanes].fill(self.sine);
++        self.scratch.packed_csq[..lanes].fill(self.cosine_squared);
++        super::kernel::synthesize_batch::<f32, S>(
++            simd,
++            self.scratch,
++            self.order,
++            self.lmax,
++            self.sectoral_norm,
++            super::kernel::power_lower_limit::<f32>(self.order),
++            super::kernel::ScalarSynthesisBatch {
++                sin_theta: &sine[..lanes],
++                active_lanes: lanes,
++                vector_lanes: lanes,
++                ring_start: self.ring,
++            },
++        )
++    }
++}
++
++#[cfg(test)]
++struct ZonalProductionTraceBatch<'a> {
++    coefficients: &'a [num_complex::Complex32],
++    geometry: crate::plan::ZonalDoubleSingleView<'a, f32>,
++    lmax: usize,
++    sectoral_norm: f32,
++    ring: usize,
++    north: &'a mut [f32],
++    south: &'a mut [f32],
++}
++
++#[cfg(test)]
++impl WithSimd for ZonalProductionTraceBatch<'_> {
++    type Output = bool;
++
++    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
++        if S::F32_LANES != 8 {
++            return false;
++        }
++        super::zonal_double_single_batch_f32(
++            simd,
++            self.coefficients,
++            self.lmax,
++            self.sectoral_norm,
++            self.geometry,
++            self.ring,
++            1,
++            self.north,
++            self.south,
++        )
++    }
++}
++
+ #[cfg(feature = "parallel")]
+ use super::initialize_inactive_spectrum_tails;
+ 
+@@ -890,7 +963,7 @@ fn native_f32_ordered_sectoral_keeps_representable_scaled_contributions() {
+ 
+ #[test]
+ fn native_f32_ordered_high_degree_zonal_probe_reports_near_pole_error() {
+-    use num_complex::{Complex, Complex32};
++    use num_complex::Complex32;
+ 
+     let lmax = 720;
+     let ntheta = 2;
+@@ -909,8 +982,8 @@ fn native_f32_ordered_high_degree_zonal_probe_reports_near_pole_error() {
+         let mut alpha = vec![0.0_f32; lmax + 4];
+         let mut coefficient_a = vec![0.0_f32; lmax + 4];
+         let mut coefficient_b = vec![0.0_f32; lmax + 4];
+-        let mut coefficient_even = vec![Complex::new(0.0_f32, 0.0); lmax + 4];
+-        let mut coefficient_odd = vec![Complex::new(0.0_f32, 0.0); lmax + 4];
++        let mut coefficient_even = vec![num_complex::Complex::new(0.0_f32, 0.0); lmax + 4];
++        let mut coefficient_odd = vec![num_complex::Complex::new(0.0_f32, 0.0); lmax + 4];
+         let mut packed_sin = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
+         let mut packed_csq = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
+         let mut previous = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
+@@ -1035,10 +1108,10 @@ fn native_f32_ordered_high_degree_zonal_probe_reports_near_pole_error() {
+         &mut b64,
+         f64::MAX,
+     ));
+-    let mut alm64 = vec![Complex::new(0.0_f64, 0.0); lmax + 1];
+-    alm64[lmax] = Complex::new(1.0, 0.0);
+-    let mut even64 = vec![Complex::new(0.0_f64, 0.0); lmax + 4];
+-    let mut odd64 = vec![Complex::new(0.0_f64, 0.0); lmax + 4];
++    let mut alm64 = vec![num_complex::Complex::new(0.0_f64, 0.0); lmax + 1];
++    alm64[lmax] = num_complex::Complex::new(1.0, 0.0);
++    let mut even64 = vec![num_complex::Complex::new(0.0_f64, 0.0); lmax + 4];
++    let mut odd64 = vec![num_complex::Complex::new(0.0_f64, 0.0); lmax + 4];
+     assert!(
+         crate::legendre::scalar_paired::prepare_synthesis_coefficients(
+             0,
+@@ -2266,3 +2339,621 @@ fn native_f32_vector_residual_recurrence_cost_probe() {
+         precombined_ratios[7],
+     );
+ }
++
++#[test]
++#[ignore = "bounded AVX2 source-execution trace for exact Rust-versus-DUCC comparison"]
++fn native_f32_ordered_t720_numeric_trace_probe() {
++    use num_complex::Complex32;
++    use std::fmt::Write as _;
++
++    struct LaneCount;
++    impl WithSimd for LaneCount {
++        type Output = usize;
++        fn with_simd<S: Simd>(self, _simd: S) -> Self::Output {
++            <f32 as crate::legendre::OrderedSimdPrecision>::lane_count::<S>()
++        }
++    }
++
++    const LMAX: usize = 720;
++    const RINGS: [usize; 7] = [0, 1, 5, 360, 715, 719, 720];
++    const DEGREES: [usize; 5] = [600, 650, 700, 719, 720];
++    const ORDERS: [usize; 6] = [0, 1, 2, 5, 8, 16];
++    let grid = crate::grid::GridSpec::new(crate::grid::GridKind::GaussLegendre, LMAX + 1, 34, 0.0)
++        .unwrap();
++    let harmonics = crate::harmonics::HarmonicSpec::scalar(LMAX, 16).unwrap();
++    let plan = crate::plan::ShtPlan::<f32>::new(grid.clone(), harmonics).unwrap();
++    let geometry = plan.scalar_latitude_geometry.as_ref().unwrap();
++    let lanes = Arch::new().dispatch(LaneCount);
++    assert_eq!(lanes, 8, "trace build must execute AVX2 eight-lane f32");
++    let mut csv = String::from("RUST_NATIVE_F32_TRACE,1,GL_T720,phi0=0,AVX2_lanes=8\n");
++
++    for &order in &ORDERS {
++        for &ring in &RINGS {
++          for &degree in &DEGREES {
++            let theta = grid.theta()[ring];
++            let sine = geometry.theta_sin[ring];
++            let cosine = geometry.theta_cos[ring];
++            let cosine_squared = if cosine.abs() > 0.99 {
++                (1.0_f32 - sine) * (1.0_f32 + sine)
++            } else {
++                cosine * cosine
++            };
++            for (part, coefficient) in [
++                ("re", Complex32::new(1.0, 0.0)),
++                ("im", Complex32::new(0.0, 1.0)),
++            ] {
++                let trace_part = format!("{part}_l{degree}");
++                let mut order_alm = vec![Complex32::new(0.0, 0.0); LMAX - order + 1];
++                order_alm[degree - order] = coefficient;
++                let mut epsilon = vec![0.0_f32; LMAX + 4];
++                let mut alpha = vec![0.0_f32; LMAX + 4];
++                let mut coefficient_a = vec![0.0_f32; LMAX + 4];
++                let mut coefficient_b = vec![0.0_f32; LMAX + 4];
++                let mut coefficient_even = vec![Complex32::new(0.0, 0.0); LMAX + 4];
++                let mut coefficient_odd = vec![Complex32::new(0.0, 0.0); LMAX + 4];
++                let mut packed_sin = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut packed_csq = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut previous = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut current = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut scale = vec![0_i64; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut corfac = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut sum_even_re = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut sum_even_im = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut sum_odd_re = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut sum_odd_im = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++                let mut scratch = super::ScalarOrderedScratch {
++                    epsilon: &mut epsilon,
++                    alpha: &mut alpha,
++                    coefficient_a: &mut coefficient_a,
++                    coefficient_b: &mut coefficient_b,
++                    coefficient_even: &mut coefficient_even,
++                    coefficient_odd: &mut coefficient_odd,
++                    packed_sin: &mut packed_sin,
++                    packed_csq: &mut packed_csq,
++                    previous: &mut previous,
++                    current: &mut current,
++                    scale: &mut scale,
++                    corfac: &mut corfac,
++                    sum_even_re: &mut sum_even_re,
++                    sum_even_im: &mut sum_even_im,
++                    sum_odd_re: &mut sum_odd_re,
++                    sum_odd_im: &mut sum_odd_im,
++                };
++                assert!(super::prepare_order(&mut scratch, order, LMAX, &order_alm));
++                let last_pair = (LMAX - order) / 2;
++                writeln!(
++                    &mut csv,
++                    "PLAN,{order},{ring},{trace_part},theta={:016x},sin={:08x},cos={:08x},csq={:08x},sectoral={:08x},pair={last_pair},alpha={:08x},a={:08x},b={:08x},epsilon_lmax1={:08x},even=({:08x},{:08x}),odd=({:08x},{:08x})",
++                    theta.to_bits(),
++                    sine.to_bits(),
++                    cosine.to_bits(),
++                    cosine_squared.to_bits(),
++                    plan.sectoral_norms[order].to_bits(),
++                    scratch.alpha[last_pair].to_bits(),
++                    scratch.coefficient_a[last_pair].to_bits(),
++                    scratch.coefficient_b[last_pair].to_bits(),
++                    scratch.epsilon[LMAX + 1].to_bits(),
++                    scratch.coefficient_even[last_pair].re.to_bits(),
++                    scratch.coefficient_even[last_pair].im.to_bits(),
++                    scratch.coefficient_odd[last_pair].re.to_bits(),
++                    scratch.coefficient_odd[last_pair].im.to_bits(),
++                )
++                .unwrap();
++
++                let lower_limit = super::kernel::power_lower_limit::<f32>(order);
++                let (power, power_scale) = super::kernel::mypow(sine, order, lower_limit).unwrap();
++                let signed_norm = if order.is_multiple_of(2) {
++                    plan.sectoral_norms[order]
++                } else {
++                    -plan.sectoral_norms[order]
++                };
++                let prefactor = power * signed_norm;
++                let mut normalized = prefactor;
++                let mut normalized_scale = power_scale;
++                assert!(super::kernel::normalize_lane(
++                    &mut normalized,
++                    &mut normalized_scale,
++                    <f32 as crate::legendre::OrderedSimdPrecision>::SCALE_FTOL,
++                ));
++                let mut prefix_value = normalized;
++                let mut prefix_scale = normalized_scale;
++                if prefix_value.abs() > <f32 as crate::legendre::OrderedSimdPrecision>::SCALE_FTOL {
++                    let next =
++                        prefix_value * <f32 as crate::legendre::LegendrePrecision>::SCALE_DOWN;
++                    if prefix_value == 0.0 || next != 0.0 {
++                        prefix_value = next;
++                        prefix_scale += 1;
++                    }
++                }
++                assert!(prefix_scale >= 0, "selected case should start ordinary");
++                let restored = crate::legendre::numeric::scale_binary_f32(
++                    prefix_value,
++                    prefix_scale * <f32 as crate::legendre::LegendrePrecision>::SCALE_EXPONENT,
++                );
++                writeln!(
++                    &mut csv,
++                    "INIT,{order},{ring},{trace_part},sin={:08x},norm={:08x},lower={:08x},power={:08x},pow_scale={power_scale},factor={:08x},prefactor={:08x},normalized={:08x},normalized_scale={normalized_scale},prefix={:08x},prefix_scale={prefix_scale},restored={:08x}",
++                    sine.to_bits(),
++                    plan.sectoral_norms[order].to_bits(),
++                    lower_limit.to_bits(),
++                    power.to_bits(),
++                    signed_norm.to_bits(),
++                    prefactor.to_bits(),
++                    normalized.to_bits(),
++                    prefix_value.to_bits(),
++                    restored.to_bits(),
++                )
++                .unwrap();
++
++                super::kernel::reset_work_counters();
++                super::kernel::begin_prefix_observation();
++                super::kernel::begin_numeric_trace(order, ring);
++                assert!(Arch::new().dispatch(NativeF32TraceBatch {
++                    scratch: &mut scratch,
++                    sine,
++                    cosine_squared,
++                    sectoral_norm: plan.sectoral_norms[order],
++                    order,
++                    lmax: LMAX,
++                    ring,
++                }));
++                let observations = super::kernel::prefix_observation_snapshot();
++                let trace = super::kernel::numeric_trace_snapshot();
++                assert!(
++                    trace.len() > 300,
++                    "incomplete ordinary trace for m={order}, ring={ring}: {}",
++                    trace.len()
++                );
++                assert!(trace.iter().all(|entry| entry.next == entry.actual_next));
++                for observation in observations {
++                    writeln!(
++                        &mut csv,
++                        "PREFIX,{},{} ,active={},scaled_pairs={},ordinary_start={},full_ieee={}",
++                        observation.order,
++                        observation.first_north_ring,
++                        observation.active_lanes,
++                        observation.scaled_pairs,
++                        observation.ordinary_start_degree,
++                        observation.reached_full_ieee,
++                    )
++                    .unwrap();
++                }
++                for entry in trace {
++                    write!(
++                        &mut csv,
++                        "REC,{},{},{},{},",
++                        entry.order, entry.ring, trace_part, entry.degree,
++                    )
++                    .unwrap();
++                    for bits in [
++                        entry.cosine_squared,
++                        entry.coefficient_a,
++                        entry.coefficient_b,
++                        entry.previous,
++                        entry.current,
++                        entry.leading,
++                        entry.next,
++                        entry.actual_next,
++                        entry.even_re,
++                        entry.odd_re,
++                        entry.even_im,
++                        entry.odd_im,
++                        entry.sum_even_re_in,
++                        entry.sum_even_re_out,
++                        entry.sum_odd_re_in,
++                        entry.sum_odd_re_out,
++                    ] {
++                        write!(&mut csv, "{bits:016x},").unwrap();
++                    }
++                    writeln!(&mut csv).unwrap();
++                }
++                let north_re = scratch.sum_even_re[0] + scratch.sum_odd_re[0] * cosine;
++                let south_re = scratch.sum_even_re[0] - scratch.sum_odd_re[0] * cosine;
++                let north_im = scratch.sum_even_im[0] + scratch.sum_odd_im[0] * cosine;
++                let south_im = scratch.sum_even_im[0] - scratch.sum_odd_im[0] * cosine;
++                writeln!(
++                    &mut csv,
++                    "OUTPUT,{order},{ring},{trace_part},theta={:016x},sin={:08x},cos={:08x},csq={:08x},north=({:08x},{:08x}),south=({:08x},{:08x}),even=({:08x},{:08x}),odd=({:08x},{:08x})",
++                    theta.to_bits(), sine.to_bits(), cosine.to_bits(), cosine_squared.to_bits(),
++                    north_re.to_bits(), north_im.to_bits(), south_re.to_bits(), south_im.to_bits(),
++                    scratch.sum_even_re[0].to_bits(), scratch.sum_even_im[0].to_bits(),
++                    scratch.sum_odd_re[0].to_bits(), scratch.sum_odd_im[0].to_bits(),
++                )
++                .unwrap();
++            }
++          }
++        }
++    }
++    let path = std::env::var("NUM_TRACE_RUST_CSV").unwrap_or_else(|_| {
++        "rust-native-f32.csv".to_owned()
++    });
++    std::fs::write(path, csv).unwrap();
++    eprintln!("native-f32 T720 AVX2 trace written; lanes={lanes}");
++}
++
++#[test]
++#[ignore = "dense high-band diagnostic trace only"]
++fn native_f32_ordered_t720_dense_high_band_trace_probe() {
++    use num_complex::Complex32;
++    use std::fmt::Write as _;
++
++    const LMAX: usize = 720;
++    const BAND_START: usize = 600;
++    const BAND_LEN: usize = LMAX - BAND_START + 1;
++    const RINGS: [usize; 7] = [0, 1, 5, 360, 715, 719, 720];
++    const ORDERS: [usize; 16] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
++
++    struct LaneCount;
++    impl WithSimd for LaneCount {
++        type Output = usize;
++        fn with_simd<S: Simd>(self, _simd: S) -> Self::Output {
++            <f32 as crate::legendre::OrderedSimdPrecision>::lane_count::<S>()
++        }
++    }
++
++    let input = std::fs::read(std::env::var("NUM_TRACE_BAND_ALM_FILE").unwrap()).unwrap();
++    assert_eq!(input.len(), ORDERS.len() * BAND_LEN * 8);
++    let grid = crate::grid::GridSpec::new(
++        crate::grid::GridKind::GaussLegendre,
++        LMAX + 1,
++        34,
++        0.0,
++    )
++    .unwrap();
++    let lanes = Arch::new().dispatch(LaneCount);
++    assert_eq!(lanes, 8);
++    let mut csv = String::from("RUST_NATIVE_F32_DENSE_BAND_TRACE,1,GL_T720,orders=1..16,degrees=600..720,phi0=0,AVX2_lanes=8\n");
++
++    for order in ORDERS {
++        let harmonics = crate::harmonics::HarmonicSpec::scalar(LMAX, order).unwrap();
++        let plan = crate::plan::ShtPlan::<f32>::new(grid.clone(), harmonics).unwrap();
++        let geometry = plan.scalar_latitude_geometry.as_ref().unwrap();
++        let mut order_alm = vec![Complex32::new(0.0, 0.0); LMAX - order + 1];
++        for (band_index, degree) in (BAND_START..=LMAX).enumerate() {
++            let offset = ((order - 1) * BAND_LEN + band_index) * 8;
++            let read_f32 = |at: usize| f32::from_le_bytes(input[at..at + 4].try_into().unwrap());
++            order_alm[degree - order] = Complex32::new(read_f32(offset), read_f32(offset + 4));
++        }
++        let mut epsilon = vec![0.0_f32; LMAX + 4];
++        let mut alpha = vec![0.0_f32; LMAX + 4];
++        let mut coefficient_a = vec![0.0_f32; LMAX + 4];
++        let mut coefficient_b = vec![0.0_f32; LMAX + 4];
++        let mut coefficient_even = vec![Complex32::new(0.0, 0.0); LMAX + 4];
++        let mut coefficient_odd = vec![Complex32::new(0.0, 0.0); LMAX + 4];
++        let mut packed_sin = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut packed_csq = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut previous = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut current = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut scale = vec![0_i64; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut corfac = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut sum_even_re = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut sum_even_im = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut sum_odd_re = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut sum_odd_im = vec![0.0_f32; super::SCALAR_ORDER_BATCH_SIZE];
++        let mut scratch = super::ScalarOrderedScratch {
++            epsilon: &mut epsilon,
++            alpha: &mut alpha,
++            coefficient_a: &mut coefficient_a,
++            coefficient_b: &mut coefficient_b,
++            coefficient_even: &mut coefficient_even,
++            coefficient_odd: &mut coefficient_odd,
++            packed_sin: &mut packed_sin,
++            packed_csq: &mut packed_csq,
++            previous: &mut previous,
++            current: &mut current,
++            scale: &mut scale,
++            corfac: &mut corfac,
++            sum_even_re: &mut sum_even_re,
++            sum_even_im: &mut sum_even_im,
++            sum_odd_re: &mut sum_odd_re,
++            sum_odd_im: &mut sum_odd_im,
++        };
++        assert!(super::prepare_order(&mut scratch, order, LMAX, &order_alm));
++        for (index, (&even, &odd)) in scratch.coefficient_even.iter().zip(scratch.coefficient_odd.iter()).enumerate() {
++            let base_degree = order + 2 * index;
++            if base_degree <= LMAX && base_degree + 2 >= BAND_START {
++                writeln!(
++                    &mut csv,
++                    "PAIR_STATE,{order},{base_degree},{:08x},{:08x},{:08x},{:08x}",
++                    even.re.to_bits(), even.im.to_bits(), odd.re.to_bits(), odd.im.to_bits()
++                )
++                .unwrap();
++            }
++        }
++
++        for ring in RINGS {
++            let sine = geometry.theta_sin[ring];
++            let cosine = geometry.theta_cos[ring];
++            let cosine_squared = if cosine.abs() > 0.99 {
++                (1.0_f32 - sine) * (1.0_f32 + sine)
++            } else {
++                cosine * cosine
++            };
++            super::kernel::reset_work_counters();
++            super::kernel::begin_prefix_observation();
++            super::kernel::begin_numeric_trace(order, ring);
++            assert!(Arch::new().dispatch(NativeF32TraceBatch {
++                scratch: &mut scratch,
++                sine,
++                cosine_squared,
++                sectoral_norm: plan.sectoral_norms[order],
++                order,
++                lmax: LMAX,
++                ring,
++            }));
++            for observation in super::kernel::prefix_observation_snapshot() {
++                writeln!(
++                    &mut csv,
++                    "PREFIX,{order},{ring},{},{},{},{}",
++                    observation.active_lanes,
++                    observation.scaled_pairs,
++                    observation.ordinary_start_degree,
++                    observation.reached_full_ieee,
++                )
++                .unwrap();
++            }
++            let trace = super::kernel::numeric_trace_snapshot();
++            assert!(trace.len() > 300, "incomplete m={order}, ring={ring} trace: {}", trace.len());
++            for entry in trace {
++                write!(&mut csv, "REC,{order},{ring},{},", entry.degree).unwrap();
++                for bits in [
++                    entry.cosine_squared,
++                    entry.coefficient_a,
++                    entry.coefficient_b,
++                    entry.previous,
++                    entry.current,
++                    entry.leading,
++                    entry.next,
++                    entry.actual_next,
++                    entry.even_re,
++                    entry.odd_re,
++                    entry.even_im,
++                    entry.odd_im,
++                    entry.sum_even_re_in,
++                    entry.sum_even_re_out,
++                    entry.sum_odd_re_in,
++                    entry.sum_odd_re_out,
++                ] {
++                    write!(&mut csv, "{bits:016x},").unwrap();
++                }
++                writeln!(&mut csv).unwrap();
++            }
++            let sums = [
++                scratch.sum_even_re[0], scratch.sum_odd_re[0],
++                scratch.sum_even_im[0], scratch.sum_odd_im[0],
++            ];
++            let north = Complex32::new(
++                sums[0] + cosine * sums[1],
++                sums[2] + cosine * sums[3],
++            );
++            let south = Complex32::new(
++                sums[0] - cosine * sums[1],
++                sums[2] - cosine * sums[3],
++            );
++            writeln!(
++                &mut csv,
++                "OUTPUT,{order},{ring},theta={:016x},sin={:08x},cos={:08x},csq={:08x},even=({:08x},{:08x}),odd=({:08x},{:08x}),north=({:08x},{:08x}),south=({:08x},{:08x})",
++                grid.theta()[ring].to_bits(), sine.to_bits(), cosine.to_bits(), cosine_squared.to_bits(),
++                sums[0].to_bits(), sums[2].to_bits(), sums[1].to_bits(), sums[3].to_bits(),
++                north.re.to_bits(), north.im.to_bits(), south.re.to_bits(), south.im.to_bits(),
++            )
++            .unwrap();
++        }
++    }
++    let output = std::env::var("NUM_TRACE_RUST_DENSE_CSV").unwrap();
++    std::fs::write(output, csv).unwrap();
++}
++
++#[test]
++#[ignore = "bounded AVX2 trace of the active compensated native-f32 zonal synthesis leaf"]
++fn native_f32_zonal_production_t720_numeric_trace_probe() {
++    use num_complex::Complex32;
++    use std::fmt::Write as _;
++
++    const LMAX: usize = 720;
++    const RINGS: [usize; 4] = [0, 1, 5, 360];
++    let grid = crate::grid::GridSpec::new(crate::grid::GridKind::GaussLegendre, LMAX + 1, 34, 0.0)
++        .unwrap();
++    let harmonics = crate::harmonics::HarmonicSpec::scalar(LMAX, 0).unwrap();
++    let plan = crate::plan::ShtPlan::<f32>::new(grid.clone(), harmonics).unwrap();
++    let latitude = plan.scalar_latitude_geometry.as_ref().unwrap();
++    let geometry = latitude.zonal_double_single.as_ref().unwrap();
++    let geometry_view = geometry.view();
++    let mut coefficients = vec![Complex32::new(0.0, 0.0); LMAX + 1];
++    coefficients[LMAX] = Complex32::new(1.0, 0.0);
++    let pair = LMAX / 2;
++    let mut csv = String::from("RUST_NATIVE_F32_ZONAL_TRACE,1,GL_T720,phi0=0,AVX2_lanes=8\n");
++
++    for ring in RINGS {
++        let theta = grid.theta()[ring];
++        let sine = latitude.theta_sin[ring];
++        let cosine = latitude.theta_cos[ring];
++        let cosine_high = geometry.cos_theta.high[ring];
++        let cosine_low = geometry.cos_theta.low[ring];
++        let cosine_squared_high = geometry.cos_theta_squared.high[ring];
++        let cosine_squared_low = geometry.cos_theta_squared.low[ring];
++        writeln!(
++            &mut csv,
++            "PLAN,{ring},theta={:016x},sin={:08x},cos={:08x},cos_hi={:08x},cos_lo={:08x},csq_hi={:08x},csq_lo={:08x},a_hi={:08x},a_lo={:08x},b_hi={:08x},b_lo={:08x},even_first_hi={:08x},even_first_lo={:08x},even_second_hi={:08x},even_second_lo={:08x},sectoral={:08x}",
++            theta.to_bits(),
++            sine.to_bits(),
++            cosine.to_bits(),
++            cosine_high.to_bits(),
++            cosine_low.to_bits(),
++            cosine_squared_high.to_bits(),
++            cosine_squared_low.to_bits(),
++            geometry.factor_a.high[pair].to_bits(),
++            geometry.factor_a.low[pair].to_bits(),
++            geometry.factor_b.high[pair].to_bits(),
++            geometry.factor_b.low[pair].to_bits(),
++            geometry.even_first.high[pair].to_bits(),
++            geometry.even_first.low[pair].to_bits(),
++            geometry.even_second.high[pair].to_bits(),
++            geometry.even_second.low[pair].to_bits(),
++            plan.sectoral_norms[0].to_bits(),
++        )
++        .unwrap();
++        let mut north = [0.0_f32; 8];
++        let mut south = [0.0_f32; 8];
++        super::begin_zonal_trace(ring);
++        assert!(Arch::new().dispatch(ZonalProductionTraceBatch {
++            coefficients: &coefficients,
++            geometry: geometry_view,
++            lmax: LMAX,
++            sectoral_norm: plan.sectoral_norms[0],
++            ring,
++            north: &mut north,
++            south: &mut south,
++        }));
++        let trace = super::zonal_trace_snapshot();
++        assert_eq!(
++            trace.len(),
++            pair,
++            "incomplete zonal recurrence trace at ring {ring}"
++        );
++        for entry in trace {
++            write!(&mut csv, "REC,{},{}", entry.ring, entry.degree).unwrap();
++            for bits in entry.values {
++                write!(&mut csv, ",{bits:08x}").unwrap();
++            }
++            writeln!(&mut csv).unwrap();
++        }
++        writeln!(
++            &mut csv,
++            "OUTPUT,{ring},north={:08x},south={:08x}",
++            north[0].to_bits(),
++            south[0].to_bits(),
++        )
++        .unwrap();
++        eprintln!(
++            "zonal trace ring={ring} theta={theta:.17e} sin={sine:.9e} cos={cosine:.9e} north={:.9e} south={:.9e}",
++            north[0], south[0]
++        );
++    }
++    let path = std::env::var("NUM_TRACE_RUST_ZONAL_CSV").unwrap_or_else(|_| {
++        "rust-zonal-f32.csv".to_owned()
++    });
++    std::fs::write(path, csv).unwrap();
++}
++
++#[test]
++#[ignore = "isolated deterministic native-f32 public-map cross-language trace"]
++fn native_f32_public_map_t720_numeric_probe() {
++    use num_complex::Complex32;
++    use std::fmt::Write as _;
++
++    const LMAX: usize = 720;
++    const NTHETA: usize = LMAX + 1;
++    const NPHI: usize = 34;
++    const TARGET_RINGS: [usize; 7] = [0, 1, 5, 360, 715, 719, 720];
++    const TARGET_DEGREES: [usize; 5] = [600, 650, 700, 719, 720];
++    const ORDERS: [usize; 6] = [0, 1, 2, 5, 8, 16];
++
++    let grid = crate::grid::GridSpec::new(crate::grid::GridKind::GaussLegendre, NTHETA, NPHI, 0.0)
++        .unwrap();
++    let mut theta_csv = String::new();
++    for theta in grid.theta() {
++        writeln!(&mut theta_csv, "{:016x}", theta.to_bits()).unwrap();
++    }
++    let theta_path = std::env::var("NUM_TRACE_THETA_FILE").unwrap_or_else(|_| {
++        "gl-t720-theta.bits".to_owned()
++    });
++    std::fs::write(theta_path, theta_csv).unwrap();
++
++    let mut csv = String::from("RUST_NATIVE_F32_PUBLIC_MAP,1,GL_T720,phi0=0,nphi=34\n");
++    let mut low_csv = String::from("RUST_NATIVE_F32_LOW_ORDER_TRACE,1,GL_T720,AVX2_lanes=8\n");
++    for order in ORDERS {
++        let harmonics = crate::harmonics::HarmonicSpec::scalar(LMAX, order).unwrap();
++        let plan = crate::plan::ShtPlan::<f32>::new(grid.clone(), harmonics.clone()).unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        plan.prepare_workspace(&mut workspace, 1).unwrap();
++        for degree in TARGET_DEGREES {
++            for (part, value) in [
++                ("re", Complex32::new(1.0, 0.0)),
++                ("im", Complex32::new(0.0, 1.0)),
++            ] {
++                if order == 0 && part == "im" {
++                    continue;
++                }
++                let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
++                alm[harmonics.index(degree, order).unwrap()] = value;
++                let mut map = vec![f32::NAN; NTHETA * NPHI];
++                plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
++                if degree == LMAX && order > 0 && order <= 2 && part == "re" {
++                    for trace_ring in [0, 1, 5, 360] {
++                        super::begin_low_order_trace(order, trace_ring);
++                        let mut trace_map = vec![f32::NAN; NTHETA * NPHI];
++                        plan.synthesis_into(&alm, &mut trace_map, &mut workspace)
++                            .unwrap();
++                        let trace = super::low_order_trace_snapshot();
++                        if trace.len() < 300 {
++                            writeln!(
++                                &mut low_csv,
++                                "FAIL,{order},{trace_ring},{:?},partial={}",
++                                super::low_order_trace_failure_snapshot(),
++                                trace.len()
++                            )
++                            .unwrap();
++                            let zonal = plan
++                                .scalar_latitude_geometry
++                                .as_ref()
++                                .and_then(|latitude| latitude.zonal_double_single.as_ref())
++                                .unwrap();
++                            let zonal_view = zonal.view();
++                            let low = zonal_view.low_order(order).unwrap();
++                            writeln!(
++                                &mut low_csv,
++                                "FAIL_SETUP,{order},{trace_ring},a0={:08x},{:08x},b0={:08x},{:08x},csq={:08x},{:08x},seed={:08x},{:08x},cos={:08x},{:08x}",
++                                low.factor_a.high[0].to_bits(),
++                                low.factor_a.low[0].to_bits(),
++                                low.factor_b.high[0].to_bits(),
++                                low.factor_b.low[0].to_bits(),
++                                low.cos_theta_squared.high[trace_ring].to_bits(),
++                                low.cos_theta_squared.low[trace_ring].to_bits(),
++                                low.sectoral_seed.high[trace_ring].to_bits(),
++                                low.sectoral_seed.low[trace_ring].to_bits(),
++                                low.cos_theta.high[trace_ring].to_bits(),
++                                low.cos_theta.low[trace_ring].to_bits(),
++                            )
++                            .unwrap();
++                        }
++                        for entry in trace {
++                            write!(
++                                &mut low_csv,
++                                "LOWREC,{},{},{}",
++                                entry.m, entry.ring, entry.degree
++                            )
++                            .unwrap();
++                            for bits in entry.values {
++                                write!(&mut low_csv, ",{bits:08x}").unwrap();
++                            }
++                            writeln!(&mut low_csv).unwrap();
++                        }
++                    }
++                }
++                for ring in TARGET_RINGS {
++                    write!(
++                        &mut csv,
++                        "MAP,{order},{degree},{part},{ring},{:016x},{:08x},{:08x}",
++                        grid.theta()[ring].to_bits(),
++                        value.re.to_bits(),
++                        value.im.to_bits(),
++                    )
++                    .unwrap();
++                    for pixel in &map[ring * NPHI..(ring + 1) * NPHI] {
++                        write!(&mut csv, ",{:08x}", pixel.to_bits()).unwrap();
++                    }
++                    writeln!(&mut csv).unwrap();
++                }
++            }
++        }
++    }
++    let path = std::env::var("NUM_TRACE_RUST_MAP_CSV").unwrap_or_else(|_| {
++        "rust-public-map.csv".to_owned()
++    });
++    std::fs::write(path, csv).unwrap();
++    let low_path = std::env::var("NUM_TRACE_RUST_LOW_CSV").unwrap_or_else(|_| {
++        "rust-low-order.csv".to_owned()
++    });
++    std::fs::write(low_path, low_csv).unwrap();
++}

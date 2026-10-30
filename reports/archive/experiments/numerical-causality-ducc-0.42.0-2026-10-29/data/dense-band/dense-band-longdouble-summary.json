@@ -1,0 +1,11 @@
+{
+  "component_count": 256,
+  "quad128_vs_longdouble_max_abs": 1.2543818650955339e-16,
+  "quad128_vs_longdouble_rms_abs": 1.1072784055381815e-17,
+  "quad128_vs_longdouble_rounded_f32_bit_mismatches": 0,
+  "ducc_f32_vs_longdouble_max_abs": 1.714072777946959e-09,
+  "ducc_f32_vs_longdouble_rms_abs": 2.964702911869243e-10,
+  "rust_f32_vs_longdouble_max_abs": 4.5002376475959484e-05,
+  "rust_f32_vs_longdouble_rms_abs": 9.942688231038254e-06,
+  "reference": "binary128 recurrence compared against independent host x86 extended-precision recurrence"
+}
