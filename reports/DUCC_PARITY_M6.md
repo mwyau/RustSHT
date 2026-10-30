@@ -1,6 +1,6 @@
 # M6 — live f32 performance and accuracy ledger
 
-**Active direction (2026-10-30):** [breadth-first native-f32 port](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md). Isolated native-f32 candidates now exist for **scalar analysis, spin-1 synthesis and spin-1 analysis**. Their 12-cell GL T720 screens are complete; every cell misses the provisional **f32/f64 <=2.0x** target (stretch <=1.5x). None is production code. Phase C's plan-time cos² control now covers dense and random T720 controls: dense RMS absolute error falls 35.5%; random relative L2 to DUCC falls 7.05% full and 11.46% reduced. Seed initialization and recurrence errors remain, and the candidate is not accepted or promoted. Next return to B1 scalar-analysis performance work. Final acceptance still requires independent numerical validation and native-f32 DUCC <=1.0x per cell.
+**Active direction (2026-10-30):** [breadth-first native-f32 port](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md). Exact-source 3-pair GL T720 screens exist for isolated scalar-analysis, spin-1 synthesis and spin-1 analysis candidates. B2 spin-1 synthesis meets the interim **f32/f64 <=2.0x** gate in all four cells (1.55–1.74x); B1 and B3 remain GAPs (10.7–23.5x). No candidate is production code, and independent high-degree accuracy is UNMEASURED for every candidate. See the [current follow-up matrix and source patches](archive/experiments/native-f32-breadth-port-2026-10-30/README.md). Next port the shared fused B1 analysis block. Final acceptance still requires independent numerical validation and native-f32 DUCC <=1.0x per cell.
 
 **Source baseline:** production transform code unchanged since `c63cde440d91e3ca2810226163a191199b4ca29d`; diagnostics through `3bb97c157632bbc2dfd5e8d2daf2a19d7e8c3ec7`. Reference is pinned native-f32 DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Timings are historical warm *whole transforms* on Ryzen 5950X, GL T720, 721 latitudes; full M720 / nphi1458, reduced M180 / nphi378; q1/q8 threads. All 16 Stage B native-f32 timings come from [the saved matrix](data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/results-16-cell.csv); the four current production scalar-synthesis sidecar measurements come from [its production checkpoint](data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
 
@@ -29,19 +29,28 @@ Ratio is Rust/DUCC (lower is faster). "Production f32 route" states what is actu
 
 **Isolated native-f32 scalar-synthesis prototype (NOT production):** the uniform-exponent eight-lane f32 scaler variant, measured in 15 matched pairs against native-f32 DUCC, gave **1.249 [1.233,1.258]** full q1, **1.256 [1.135,1.320]** full q8, **0.995 [0.992,1.009]** reduced q1 (**inconclusive**) and **1.082 [1.032,1.148]** reduced q8. Its full-grid gaps are ~25%; high-degree numerical accuracy is NOT accepted. The original generic native-f32 patch had 1.355/1.338/1.054/1.134; all were slower. Exact source patches, source/binary hashes, paired records and rejected scaling variants: [native generic synthesis archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
 
-**Matched Rust f64 controls:** The f64 full GL T1023 spin-1 synthesis route remains protected. A current B2 parent/candidate screen found bitwise-identical outputs; q1 was a small ~0.24% slowdown and q8 was inconclusive. See the candidate evidence package for pair data. The original production checkpoint's Rust/DUCC ~0.739 q1 and ~0.714 q8 remains historical and is not substituted for current candidate measurements.
+**Matched Rust f64 controls:** The saved f64 full GL T1023 spin-1 synthesis parent/candidate screen found bitwise-identical outputs, with q1 about 0.24% slower and q8 inconclusive. That control predates generic scalar-order integration and does not protect the current B2 source; rerun it before promotion. The original production checkpoint's Rust/DUCC ~0.739 q1 and ~0.714 q8 remains historical and is not substituted for current candidate measurements.
 
-## Isolated native-f32 B1–B3 candidates — screen only
+## Isolated native-f32 B1–B3 candidates — current 3-pair screens
 
-Each cell lists matched native-f32 / same-source Rust f64 whole-call milliseconds, f32/f64 ratio, and the separate f32/DUCC ratio. All cells used three pairs. All twelve are **GAP** against the 2.0x interim limit; f32/DUCC is not an accuracy pass. Exact source, binary and fixture hashes, candidate patches, raw pairs and protected T1023 f64 control are in the [evidence package](archive/experiments/native-f32-breadth-port-2026-10-30/README.md) and its [machine-readable matrix](archive/experiments/native-f32-breadth-port-2026-10-30/matrix.json).
+Each row gives whole-call Rust f32 and matched same-source f64 milliseconds, their ratio, and a separate f32/DUCC ratio. DUCC uses native f32. All rows are **screening evidence**, not 15-pair performance claims. `PASS` applies only to the interim <=2.0x f64 timing gate. Random-fixture distance to DUCC is not independent accuracy validation. Exact source, binary and fixture hashes, per-pair timings, test notes, and patches are in the [follow-up evidence package](archive/experiments/native-f32-breadth-port-2026-10-30/README.md), [CSV](archive/experiments/native-f32-breadth-port-2026-10-30/followup-matrix.csv), and [JSON](archive/experiments/native-f32-breadth-port-2026-10-30/followup-screen.json).
 
-| Candidate family | Full q1: f32/f64 ms (ratio); f32/DUCC | Full q8 | Reduced q1 | Reduced q8 | Independent accuracy |
-|---|---:|---:|---:|---:|---|
-| Scalar analysis | 461.610 / 19.612 (23.54x); 31.77x | 63.461 / 3.023 (20.99x); 28.21x | 138.536 / 8.210 (16.87x); 23.41x | 19.842 / 1.220 (16.26x); 20.32x | UNMEASURED |
-| Spin-1 synthesis | 1160.539 / 39.305 (29.53x); 26.11x | 221.618 / 8.112 (27.32x); 35.37x | 544.511 / 39.909 (13.64x); 29.25x | 85.722 / 3.059 (28.02x); 28.22x | UNMEASURED |
-| Spin-1 analysis | 907.290 / 37.528 (24.18x); 30.42x | 123.190 / 5.832 (21.12x); 27.33x | 268.704 / 15.057 (17.85x); 22.09x | 38.507 / 2.535 (15.19x); 20.39x | UNMEASURED |
+| Candidate family | Cell | f32 ms | f64 ms | f32/f64 | DUCC ms | f32/DUCC | Interim / accuracy |
+|---|---|---:|---:|---:|---:|---:|---|
+| Scalar analysis | Full q1 | 461.610 | 19.612 | 23.54x | 14.550 | 31.77x | GAP / UNMEASURED |
+| Scalar analysis | Full q8 | 63.461 | 3.023 | 20.99x | 2.232 | 28.21x | GAP / UNMEASURED |
+| Scalar analysis | Reduced q1 | 138.536 | 8.210 | 16.87x | 5.927 | 23.41x | GAP / UNMEASURED |
+| Scalar analysis | Reduced q8 | 19.842 | 1.220 | 16.26x | 0.975 | 20.32x | GAP / UNMEASURED |
+| Spin-1 synthesis | Full q1 | 67.687 | 38.882 | 1.74x | 42.160 | 1.61x | PASS / UNMEASURED |
+| Spin-1 synthesis | Full q8 | 10.524 | 6.371 | 1.65x | 5.942 | 1.77x | PASS / UNMEASURED |
+| Spin-1 synthesis | Reduced q1 | 27.745 | 16.638 | 1.65x | 18.119 | 1.53x | PASS / UNMEASURED |
+| Spin-1 synthesis | Reduced q8 | 4.448 | 2.855 | 1.55x | 2.673 | 1.71x | PASS / UNMEASURED |
+| Spin-1 analysis | Full q1 | 506.474 | 37.495 | 13.51x | 32.333 | 16.07x | GAP / UNMEASURED |
+| Spin-1 analysis | Full q8 | 72.530 | 6.161 | 11.98x | 5.091 | 15.90x | GAP / UNMEASURED |
+| Spin-1 analysis | Reduced q1 | 174.224 | 15.230 | 11.19x | 13.122 | 13.10x | GAP / UNMEASURED |
+| Spin-1 analysis | Reduced q8 | 25.837 | 2.414 | 10.70x | 2.204 | 13.43x | GAP / UNMEASURED |
 
-Random-fixture relative-L2 versus DUCC is 1.83e-5 / 2.21e-5 for scalar analysis full/reduced, 2.14e-4 / 1.95e-4 for spin-1 synthesis, and 1.85e-5 / 2.17e-5 for spin-1 analysis. These comparisons do not independently validate high-degree accuracy. Candidate execution uses native f32 recurrence, SIMD, accumulation, spectra and FFT; f64 widening occurs only inside matched diagnostic reference workers.
+**Execution blockers:** f32 scalar analysis does not override `ShtScalar`'s fused paired-analysis hooks, so it declines the optimized fused block and uses per-degree recurrence callbacks. The best spin-1 analysis candidate fuses native-f32 two-channel recurrence, but lane-wise exponent restoration remains expensive and the f64 production route does not yet use that new kernel. B2 uses the shared native-f32/f64 order-major reflected kernel on GL and meets the interim timing target; its f64 T1023 protection control and independent accuracy are still open. All candidates use native f32 recurrence, SIMD, accumulation, spectra, FFT and output; widening exists only in matched diagnostic f64 workers.
 
 ## Accuracy status — do not confuse speed with correctness
 
@@ -54,6 +63,6 @@ Random-fixture relative-L2 versus DUCC is 1.83e-5 / 2.21e-5 for scalar analysis 
 
 ## Current decision and reporting contract
 
-**NEXT:** resume B1 scalar analysis in its isolated candidate. All three B1–B3 native-f32 candidates remain performance GAPs against the interim 2.0x f64 gate; independent high-degree accuracy remains UNMEASURED. The scalar-synthesis cos² correction remains isolated because its dense correctly-rounded count is zero, random maps lack an independent high-precision oracle, and no science tolerance is set. For performance revisions, report per-cell `matched f32 ms / matched f64 ms / f32:f64 / DUCC ms / f32:DUCC`, actual dispatch, independent numerical status, source/compiler/fixture hashes and uncertainty.
+**NEXT:** port the f64 fused scalar-analysis order block into shared f32/f64 control flow with typed SIMD/scaling leaves, then confirm f32 actually takes that route. B1/B3 remain timing GAPs; B2's interim screen passes, with accuracy and the protected f64 T1023 rerun still open. Independent high-degree accuracy is UNMEASURED for all candidates. Keep scalar-synthesis compensation deferred. Every new screen reports per-cell `f32 ms / f64 ms / f32:f64 / DUCC ms / f32:DUCC`, actual dispatch, independent numerical status, source/compiler/fixture hashes and uncertainty.
 
 Do not claim conversion-sidecar PASS as native-f32 parity; do not promote known inaccurate routes to production. Keep long diagnostic detail in immutable archives, not here. Preserved full previous [long-form ledger](archive/DUCC_PARITY_M6-2026-10-30-pre-breadth-port.md) and original [pre-generic ledger](archive/DUCC_PARITY_M6-2026-10-29-pre-native-generic.md).

@@ -1,8 +1,37 @@
 # Native-f32 breadth-port candidate checkpoint (2026-10-30)
 
-All three requested transform families now have isolated native-f32 candidate implementations and 3-pair GL T720 screens. None approaches the <=2.0x matching f64 interim gate. These are candidate measurements, not production results. No candidate was promoted. The f32/DUCC error columns are comparisons to DUCC, not independent accuracy validation.
+This archive contains the initial three-family screens and the later exact-source follow-up. The original `matrix.csv` and `matrix.json` remain the initial candidate results. Current isolated candidate results are in [`followup-matrix.csv`](followup-matrix.csv) and [`followup-screen.json`](followup-screen.json). No candidate transform code was promoted. DUCC distance on random fixtures is not independent accuracy validation.
 
-## Per-cell screen
+## Current follow-up status
+
+The latest screens use three interleaved process pairs on GL T720. Ratios are shown separately against same-source Rust f64 and native-f32 DUCC. B2 spin-1 synthesis meets the interim <=2.0x f64 gate in all four cells, but misses the <=1.5x stretch. B1 scalar analysis and B3 spin-1 analysis remain far above the interim gate.
+
+| Family | Cell | Rust f32 ms | Rust f64 ms | f32/f64 | DUCC f32 ms | f32/DUCC | Independent accuracy |
+|---|---|---:|---:|---:|---:|---:|---|
+| Scalar analysis | Full q1 | 461.610 | 19.612 | 23.54x | 14.550 | 31.77x | UNMEASURED |
+| Scalar analysis | Full q8 | 63.461 | 3.023 | 20.99x | 2.232 | 28.21x | UNMEASURED |
+| Scalar analysis | Reduced q1 | 138.536 | 8.210 | 16.87x | 5.927 | 23.41x | UNMEASURED |
+| Scalar analysis | Reduced q8 | 19.842 | 1.220 | 16.26x | 0.975 | 20.32x | UNMEASURED |
+| Spin-1 synthesis | Full q1 | 67.687 | 38.882 | 1.74x | 42.160 | 1.61x | UNMEASURED |
+| Spin-1 synthesis | Full q8 | 10.524 | 6.371 | 1.65x | 5.942 | 1.77x | UNMEASURED |
+| Spin-1 synthesis | Reduced q1 | 27.745 | 16.638 | 1.65x | 18.119 | 1.53x | UNMEASURED |
+| Spin-1 synthesis | Reduced q8 | 4.448 | 2.855 | 1.55x | 2.673 | 1.71x | UNMEASURED |
+| Spin-1 analysis | Full q1 | 506.474 | 37.495 | 13.51x | 32.333 | 16.07x | UNMEASURED |
+| Spin-1 analysis | Full q8 | 72.530 | 6.161 | 11.98x | 5.091 | 15.90x | UNMEASURED |
+| Spin-1 analysis | Reduced q1 | 174.224 | 15.230 | 11.19x | 13.122 | 13.10x | UNMEASURED |
+| Spin-1 analysis | Reduced q8 | 25.837 | 2.414 | 10.70x | 2.204 | 13.43x | UNMEASURED |
+
+Candidate source diffs are B1 `a7c617785c3e312bd6bdf18c66f7b545e66f18fbcbdedc8a1b93f20cb8776c3a` on base `8fb2e1fd`; B2 `37115d60240f6d378c6a1341b0efeaec06ecc6fd2c81570ec7d8daa9a6b0a5bf` on base `bb5e5c04`; B3 `8a2180a0f26db10c27cfb7199852661c7de0464256e558e8243552e48b081670` on base `bb5e5c04`. Exact binary and fixture hashes, process-pair medians, tests and patch checksums are in `followup-screen.json` and `SHA256SUMS`.
+
+### Measured blockers and implementation status
+
+- **B1 scalar analysis:** f32 does not override `fused_scalar_analysis_pair_block_preweighted` or the paired-input preparation hooks in `ShtScalar`; `transform/scalar.rs` therefore declines the fused block and uses per-degree recurrence callbacks. The isolated SIMD normalizer change does not port the optimized f64 order block. The next implementation is the shared fused analysis block, with precision-specific SIMD leaves.
+- **B2 spin-1 synthesis:** the isolated GL T720 route uses the generic order-major/reflected scalar kernel with native f32 SIMD, spectrum, FFT and output. It passes only the interim timing screen. Its random-map relative L2 distance to DUCC is about `2.81e-4` full and `2.70e-4` reduced; this does not establish accuracy. The protected f64 T1023 control predates the generic scalar-order integration and must be rerun before promotion.
+- **B3 spin-1 analysis:** a generic two-channel scaled recurrence candidate reduces the screen from the initial 15–24x to 10.7–13.5x f64, but remains a GAP. Lane-wise exponent restoration follows the vector product work and remains a major cost. The f64 production route does not yet dispatch through this new kernel, so this is not yet a shared maintained f32/f64 implementation. Independent accuracy is unmeasured.
+
+The current candidate tests are summarized in `followup-screen.json`; they cover existing analytic, reset and focused recurrence behavior, not the missing high-degree independent reference and adjoint matrix.
+
+## Initial candidate screen (superseded by the follow-up above)
 
 Each table cell is **matched f32/f64 ratio; separately measured f32/DUCC ratio**.
 
@@ -18,7 +47,7 @@ Whole-call times are ms. The f32/f64 numerator and denominator use the source-ma
 
 All candidate outputs were finite and repeat/reset checks passed in the recorded workers. The f32/DUCC maximum relative-L2 values are approximately 1.83e-5 / 2.21e-5 (scalar analysis full/reduced), 2.14e-4 / 1.95e-4 (spin-1 synthesis), and 1.85e-5 / 2.17e-5 (spin-1 analysis). These are random-fixture cross-implementation measurements; independent high-degree, analytic and adjoint acceptance for the exact candidate source remains **UNMEASURED**. No accuracy PASS is claimed.
 
-## Bounded blockers
+## Initial-screen blockers (superseded by measured follow-up above)
 
 - **Scalar analysis:** the typed ordinary-range block is reached only when scaled initialization fits ordinary f32. Checked scaled traversal remains on the exceptional path. The measured gap is 16.3–23.5x f64; fallback costs have not been separated enough to justify another compensation kernel.
 - **Spin-1 synthesis:** the candidate includes prepared dual-channel recurrence and a bounded SIMD scaled-accumulation path. This change did not materially reduce whole-call time: the paired f32/f64 gap is 13.6–29.5x, with reduced q1 best. Measure transition/fallback work before choosing another kernel.
@@ -26,7 +55,7 @@ All candidate outputs were finite and repeat/reset checks passed in the recorded
 
 ## Protected f64 control
 
-The B2 candidate was compared with clean parent `bb5e5c04` on GL T1023 full spin-1 synthesis, using the same f64 inputs and three interleaved pairs at each thread count. All output hashes were bitwise identical. q1 candidate/parent paired ratios were 1.0024, 1.0037, 1.0015 (median 1.0024). q8 ratios were 0.9654, 1.1272, 1.0068 (median 1.0068); the middle pair is noisy, so q8 is **INCONCLUSIVE**. This is a protection screen, not 15-pair performance evidence. Binary and input/output hashes are in the protected T1023 entry of local captures; the compact result is summarized in `matrix.json`.
+An earlier B2 candidate was compared with clean parent `bb5e5c04` on GL T1023 full spin-1 synthesis, using the same f64 inputs and three interleaved pairs at each thread count. All output hashes were bitwise identical. q1 candidate/parent paired ratios were 1.0024, 1.0037, 1.0015 (median 1.0024); q8 ratios were 0.9654, 1.1272, 1.0068 (median 1.0068), with q8 **INCONCLUSIVE**. This result predates generic scalar-order integration and does not protect the current B2 source. It is a protection screen, not 15-pair performance evidence; rerun before promotion.
 
 ## Reproduction and disposition
 
