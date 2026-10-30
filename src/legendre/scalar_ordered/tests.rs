@@ -683,7 +683,9 @@ fn native_f32_ordered_sectoral_keeps_representable_scaled_contributions() {
     }
 }
 
+// The diagnostic replay intentionally uses `term + sum` to preserve source order.
 #[test]
+#[allow(clippy::assign_op_pattern)]
 fn native_f32_ordered_high_degree_zonal_probe_reports_near_pole_error() {
     use num_complex::{Complex, Complex32};
 
