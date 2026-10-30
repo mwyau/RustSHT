@@ -1,0 +1,6 @@
+cargo fmt --all -- --check: passed after formatting the copied diagnostic harness
+cargo clippy --release --features parallel --lib -- -D warnings: passed
+cargo test --release --features parallel --lib spin1_analysis -- --test-threads=1: 3 passed
+cargo test --release --features parallel --test f32 -- --test-threads=1: 14 passed, 1 ignored (opt-in T1023)
+
+The performance and binary128 outputs used the exact harness archived here before formatting; rustfmt changed whitespace only. The performance patch touches only the three source files listed in the JSON.

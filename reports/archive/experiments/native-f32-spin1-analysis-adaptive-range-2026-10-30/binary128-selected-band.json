@@ -1,0 +1,68 @@
+{
+  "purpose": "selected full-order high-band comparison to the independent binary128 direct-Fourier reference; not full-array or tolerance acceptance",
+  "base_source_sha": "00f9770741a6e3e84646217d51374e35515daaa1",
+  "candidate_source_diff_sha256": "a6ba43101cdd1bb7c61c315b9100748954296a78a345ec197456a61c59017120",
+  "candidate_source_files": [
+    "src/legendre/mod.rs",
+    "src/legendre/scalar.rs",
+    "src/transform/spin/analysis.rs"
+  ],
+  "rust_harness_sha256": "da3b48d5d1bc1c40a1281732f6137de230639963104404afd8f34b7b7c0b5c22",
+  "reference_cpp_path": "reports/archive/experiments/native-f32-cross-family-accuracy-2026-10-30/phasec_fullorder_accuracy_reference.cpp",
+  "reference_cpp_sha256": "3a26d8fd8089aaafc591568943f8a1d26a7a277c937fe14aa5cd3fe7693a8fd3",
+  "grid": {
+    "grid": "GL",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0,
+    "degree_band": "600..720",
+    "coefficient_orders": "11 selected orders; see harness",
+    "threads": [
+      1,
+      8
+    ]
+  },
+  "q1_q8_output_hashes": [
+    {
+      "artifact": "scalar-analysis-highband.csv",
+      "q1_sha256": "3dbbc59f61d2ab7eaea03d1dc9d10e08262487b21c0a7fda62bd23bff70f6c2c",
+      "q8_sha256": "3dbbc59f61d2ab7eaea03d1dc9d10e08262487b21c0a7fda62bd23bff70f6c2c",
+      "byte_identical": true
+    },
+    {
+      "artifact": "spin-analysis-e-highband.csv",
+      "q1_sha256": "c0c52e966c9c35a0d930bc16e3051b5289e0210c6ab82c0759f509abaa7c2e1d",
+      "q8_sha256": "c0c52e966c9c35a0d930bc16e3051b5289e0210c6ab82c0759f509abaa7c2e1d",
+      "byte_identical": true
+    },
+    {
+      "artifact": "spin-analysis-b-highband.csv",
+      "q1_sha256": "b0eb64531ab7eec31f2f68081fa7f90634b59284856328be4350c9a013919210",
+      "q8_sha256": "b0eb64531ab7eec31f2f68081fa7f90634b59284856328be4350c9a013919210",
+      "byte_identical": true
+    }
+  ],
+  "measurements": [
+    {
+      "transform": "scalar analysis",
+      "relative_l2_f32": 4.90832168436231e-05,
+      "absolute_max_f32": 3.829846614915005e-07,
+      "relative_l2_f64_control": 8.756720491873799e-14
+    },
+    {
+      "transform": "spin-1 analysis E",
+      "relative_l2_f32": 4.830665597700583e-05,
+      "absolute_max_f32": 3.5506046142063723e-07,
+      "relative_l2_f64_control": 1.0192069518171873e-13
+    },
+    {
+      "transform": "spin-1 analysis B",
+      "relative_l2_f32": 5.330232362988872e-05,
+      "absolute_max_f32": 4.482325009578832e-07,
+      "relative_l2_f64_control": 1.012426386005135e-13
+    }
+  ],
+  "caveat": "These selected-mode direct-Fourier sums do not separate recurrence, accumulation and FFT contributions. No application tolerance is specified."
+}

@@ -1,0 +1,32 @@
+{
+  "source_head": "00f9770741a6e3e84646217d51374e35515daaa1",
+  "source_diff_sha256": "a6ba43101cdd1bb7c61c315b9100748954296a78a345ec197456a61c59017120",
+  "purpose": "verify that the matched f64 diagnostic worker built from the candidate source preserves the base-source output checksums",
+  "baseline_measurement": "reports/archive/experiments/native-f32-spin1-analysis-sequential-channel-2026-10-30/f64-source-equivalence.json",
+  "cells": [
+    {
+      "case_id": "GL-T720-M720-s1-analysis-q1",
+      "candidate_source_checksum": -0.00081491247818932,
+      "base_source_checksum": -0.00081491247818932,
+      "identical": true
+    },
+    {
+      "case_id": "GL-T720-M720-s1-analysis-q8",
+      "candidate_source_checksum": -0.00081491247818932,
+      "base_source_checksum": -0.00081491247818932,
+      "identical": true
+    },
+    {
+      "case_id": "GL-T720-M180-s1-analysis-q1",
+      "candidate_source_checksum": 0.0006040397208557,
+      "base_source_checksum": 0.0006040397208557,
+      "identical": true
+    },
+    {
+      "case_id": "GL-T720-M180-s1-analysis-q8",
+      "candidate_source_checksum": 0.0006040397208557,
+      "base_source_checksum": 0.0006040397208557,
+      "identical": true
+    }
+  ]
+}

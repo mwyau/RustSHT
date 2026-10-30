@@ -1,0 +1,173 @@
+{
+  "purpose": "bounded reflected-ring tile-size sensitivity screen; each tile was measured in three interleaved pairs",
+  "variants": [
+    {
+      "tile_size": 16,
+      "source_head": "00f9770741a6e3e84646217d51374e35515daaa1",
+      "source_diff_sha256": "39c6cd1db314cdfe3098bff4d223b7d0e4571093fab190f7c72b0318d2f8eaa8",
+      "binary_sha256": "f61346f0067a734b477dfb1a9277505445b5ad70bb25caab9051075bc13eeb8d",
+      "cells": [
+        {
+          "case_id": "GL-T720-M720-s1-analysis-q1",
+          "median_ms": {
+            "rust_f32_candidate": 130.050397,
+            "rust_f64": 37.333555000000004,
+            "ducc_f32": 29.661026999999997,
+            "rust_f32_parent": 129.240633
+          },
+          "f32_over_f64": 3.4834720936701578,
+          "f32_over_ducc": 4.404868734292093,
+          "candidate_over_parent": 1.006265552722881
+        },
+        {
+          "case_id": "GL-T720-M720-s1-analysis-q8",
+          "median_ms": {
+            "rust_f32_candidate": 17.6077725,
+            "rust_f64": 5.427190875,
+            "ducc_f32": 4.165385416666666,
+            "rust_f32_parent": 17.3748535
+          },
+          "f32_over_f64": 3.1836501758404068,
+          "f32_over_ducc": 4.294341721598741,
+          "candidate_over_parent": 1.0042610634345612
+        },
+        {
+          "case_id": "GL-T720-M180-s1-analysis-q1",
+          "median_ms": {
+            "rust_f32_candidate": 49.4735955,
+            "rust_f64": 15.088586750000001,
+            "ducc_f32": 11.820387,
+            "rust_f32_parent": 54.9383695
+          },
+          "f32_over_f64": 3.295212290176878,
+          "f32_over_ducc": 4.196756378701747,
+          "candidate_over_parent": 0.9005838597666205
+        },
+        {
+          "case_id": "GL-T720-M180-s1-analysis-q8",
+          "median_ms": {
+            "rust_f32_candidate": 6.865030624999999,
+            "rust_f64": 2.246524958333333,
+            "ducc_f32": 1.750616576923077,
+            "rust_f32_parent": 7.538812875
+          },
+          "f32_over_f64": 3.0558443606578374,
+          "f32_over_ducc": 3.914885542182756,
+          "candidate_over_parent": 0.9106248873434201
+        }
+      ]
+    },
+    {
+      "tile_size": 32,
+      "source_head": "00f9770741a6e3e84646217d51374e35515daaa1",
+      "source_diff_sha256": "a6ba43101cdd1bb7c61c315b9100748954296a78a345ec197456a61c59017120",
+      "binary_sha256": "0baf749364c398e429a4dbc4ea954eab5b23637880527e6db80167c72fd5a2c1",
+      "cells": [
+        {
+          "case_id": "GL-T720-M720-s1-analysis-q1",
+          "median_ms": {
+            "rust_f32_candidate": 117.761397,
+            "rust_f64": 37.0257285,
+            "ducc_f32": 29.284917999999998,
+            "rust_f32_parent": 132.63285399999998
+          },
+          "f32_over_f64": 3.1915862828040535,
+          "f32_over_ducc": 4.021230211400968,
+          "candidate_over_parent": 0.8961281041272023
+        },
+        {
+          "case_id": "GL-T720-M720-s1-analysis-q8",
+          "median_ms": {
+            "rust_f32_candidate": 15.891133,
+            "rust_f64": 5.8076317500000005,
+            "ducc_f32": 4.181031083333334,
+            "rust_f32_parent": 17.36942175
+          },
+          "f32_over_f64": 2.732233151662896,
+          "f32_over_ducc": 3.8450901056643265,
+          "candidate_over_parent": 0.920762539252246
+        },
+        {
+          "case_id": "GL-T720-M180-s1-analysis-q1",
+          "median_ms": {
+            "rust_f32_candidate": 47.5302215,
+            "rust_f64": 15.1948585,
+            "ducc_f32": 11.89689375,
+            "rust_f32_parent": 55.7271195
+          },
+          "f32_over_f64": 3.1280463388323096,
+          "f32_over_ducc": 3.9582045523437577,
+          "candidate_over_parent": 0.8529100719085256
+        },
+        {
+          "case_id": "GL-T720-M180-s1-analysis-q8",
+          "median_ms": {
+            "rust_f32_candidate": 6.52493975,
+            "rust_f64": 2.2195967916666666,
+            "ducc_f32": 1.7462133666666666,
+            "rust_f32_parent": 7.529143666666666
+          },
+          "f32_over_f64": 2.939695972934123,
+          "f32_over_ducc": 3.7294080146868653,
+          "candidate_over_parent": 0.8649512365970261
+        }
+      ]
+    },
+    {
+      "tile_size": 64,
+      "source_head": "00f9770741a6e3e84646217d51374e35515daaa1",
+      "source_diff_sha256": "c99033a40fff6b01426ed54654f53b09bd0aba812901482b64893068ad118d9f",
+      "binary_sha256": "a10dd37c968fcfc6bbedc040babce67028abc63942e1de1f8cb2a947bd683925",
+      "cells": [
+        {
+          "case_id": "GL-T720-M720-s1-analysis-q1",
+          "median_ms": {
+            "rust_f32_candidate": 128.223154,
+            "rust_f64": 37.516692500000005,
+            "ducc_f32": 29.2180475,
+            "rust_f32_parent": 129.426675
+          },
+          "f32_over_f64": 3.4520197644508106,
+          "f32_over_ducc": 4.383825989741443,
+          "candidate_over_parent": 0.9907011363770258
+        },
+        {
+          "case_id": "GL-T720-M720-s1-analysis-q8",
+          "median_ms": {
+            "rust_f32_candidate": 17.300966250000002,
+            "rust_f64": 5.551495375,
+            "ducc_f32": 4.151534166666666,
+            "rust_f32_parent": 17.2600535
+          },
+          "f32_over_f64": 3.1164515290621138,
+          "f32_over_ducc": 4.183342726618208,
+          "candidate_over_parent": 0.989236280913176
+        },
+        {
+          "case_id": "GL-T720-M180-s1-analysis-q1",
+          "median_ms": {
+            "rust_f32_candidate": 55.913828499999994,
+            "rust_f64": 15.59795525,
+            "ducc_f32": 11.848351000000001,
+            "rust_f32_parent": 56.5211695
+          },
+          "f32_over_f64": 3.5846896342390773,
+          "f32_over_ducc": 4.722893019435821,
+          "candidate_over_parent": 1.003990479852562
+        },
+        {
+          "case_id": "GL-T720-M180-s1-analysis-q8",
+          "median_ms": {
+            "rust_f32_candidate": 7.570534875,
+            "rust_f64": 2.2604728181818183,
+            "ducc_f32": 1.7832998076923077,
+            "rust_f32_parent": 7.562050333333333
+          },
+          "f32_over_f64": 3.329631499861996,
+          "f32_over_ducc": 4.245239551052667,
+          "candidate_over_parent": 1.0017742192531338
+        }
+      ]
+    }
+  ]
+}
