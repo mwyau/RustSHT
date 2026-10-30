@@ -1,0 +1,19 @@
+Base: 053c5668079fa89f37438a488b2545b5ceab1e69
+DUCC: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+Uncompressed combined source patch SHA-256:
+d83f1442fa7cc7b2c27880df12b352cb974394b71962e83aa21bde1ce0979ab9
+
+Passed on the isolated combined candidate with
+RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs':
+- cargo fmt --all -- --check
+- git diff --check
+- cargo check --release --locked --features parallel --lib
+- cargo clippy --release --locked --features parallel --lib -- -D warnings
+- cargo test --release --locked --features parallel --lib spin1_analysis -- --test-threads=1 (3 passed)
+- cargo test --release --locked --features parallel --lib native_f32_spin_analysis_fused_scaled_seed_matches_checked_recurrence -- --test-threads=1 (1 passed)
+- cargo test --release --locked --features parallel --lib spin1_gl_paired_analysis_matches_full_latitude_recurrence -- --test-threads=1 (1 passed)
+- cargo test --release --locked --features parallel --lib spin1_ -- --test-threads=1 (51 passed, 5 ignored)
+- cargo test --release --locked --features parallel --test f32 -- --test-threads=1 (14 passed, 1 ignored)
+
+The source candidate is a performance GAP. No independent high-band accuracy
+measurement was repeated for this combined source.

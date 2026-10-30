@@ -1,0 +1,13 @@
+Base: 053c5668079fa89f37438a488b2545b5ceab1e69
+DUCC: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+
+Passed on the isolated adaptive + prefix candidate:
+- cargo fmt --all -- --check
+- git diff --check
+- cargo check --release --locked --features parallel --lib
+- cargo test --release --locked --features parallel --lib f32_analysis_prefix_bound_is_strict_and_covers_every_pair_and_tile
+- cargo test --release --locked --features parallel --test f32 f32_t720_scalar_analysis_matches_analytic_modes_adjoint_and_workspace_reset -- --exact
+
+Three interleaved timing pairs are a screen only. The full scalar-analysis unit
+suite, strict Clippy, and independent high-band accuracy were not rerun for
+this prefix variant.
