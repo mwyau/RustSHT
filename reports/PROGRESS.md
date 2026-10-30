@@ -1,25 +1,7 @@
 # Recent substantive checkpoints
 
-- **2026-10-29 — split setup narrowed to a low-order trial.** The full split
-  residual loop costs `5.15x` ordinary in the pinned AVX2 microkernel. A
-  plan-time precombined high/low factor reduces that to `2.44x`; raw pair
-  counts project `0.80%` extra recurrence work for `m=1–2`. The selected
-  setup replay error falls from `4.56e-4` to `3.09e-4` with that cutoff.
-  No whole-transform or production result exists. Next, test `m=1–2` using
-  cached constants in the isolated generic route. See the [split-setup
-  screen](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-low-split-screen/README.md)
-  and [live ledger](DUCC_PARITY_M6.md).
-- **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
-  route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.
-  This does not satisfy native-f32 execution; the isolated generic candidate
-  remains a measured GAP. See the [checkpoint](data/ducc-parity-m6-2026-10-29/f32-internal-scalar-synthesis-production/README.md).
-- **2026-10-29 — remaining focused f32 families have material gaps.** Last
-  measured native-f32 GL T720 scalar analysis and spin-1 analysis/synthesis
-  range from about `20–47x` DUCC. See the [16-cell source evidence](data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md).
-- **2026-10-29 — recent analysis and spin-1 candidates rejected.** Scalar
-  analysis tile/mask screens did not close parity; reflected spin-1 packet
-  variants regressed q8. Keep their source patches and results archived; do
-  not repeat them unchanged. See the [live ledger](DUCC_PARITY_M6.md).
-- **2026-10-29 — f64 performance control preserved.** GL T1023 full spin-1
-  synthesis stayed bitwise equal to its parent and below DUCC at q1/q8 during
-  the sidecar validation. Continue to protect it during genericization.
+1. **2026-10-30 — owner switches to breadth-first native-f32 port.** Implement scalar analysis → spin-1 synthesis → spin-1 analysis by genericizing optimized f64 execution, targeting each GL T720 full/reduced q1/q8 native-f32 whole call at **<=2.0x matching Rust f64** (stretch <=1.5x). First establish same-source matched f64 benchmarks; final native-f32 DUCC <=1.0x and independently accepted high-degree accuracy are later gates. See [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and [live matrix](DUCC_PARITY_M6.md). **NEXT: matched baseline, then scalar analysis.**
+2. **2026-10-30 — source-level numerical causality traced.** At `3bb97c1`, 357 pre-FFT single-mode cases, 256 dense-band components, 385 public-map single modes, binary128/long-double checks, bitwise FMA replay and DUCC source crosswalk found consistent scalar equations, but f32 seed/subnormal, cos² and conditioned high-degree recurrence differences. Max scaled public-map error reaches `3.29e-3` on selected generic f32 routes vs `1.19e-7` DUCC. Full/random-field post-correction accuracy remains open. See [diagnosis](archive/experiments/numerical-causality-ducc-0.42.0-2026-10-29/REPORT.md).
+3. **2026-10-29 — isolated native-f32 scalar synthesis is near, not at, parity.** Uniform-exponent SIMD prototype Rust/DUCC was `1.249 / 1.256 / 0.995 (inconclusive) / 1.082` for full q1/q8 then reduced q1/q8; it was not numerically accepted or promoted. Further compensation and scaling micro-tuning are deferred until three other families have fast native candidate routes. See [archive](archive/experiments/native-generic-scalar-synthesis-2026-10-29/README.md).
+4. **2026-10-29 — production f32 16-cell status.** The guarded f64 conversion sidecar passes four scalar-synthesis T720 timing cells at `0.775–0.961x` DUCC but violates final native architecture. The remaining 12 native-f32 scalar analysis/spin-1 cells last measured `~20–47x` DUCC. No exact matching Rust f64 T720 baseline yet. See [ledger](DUCC_PARITY_M6.md) and [saved Stage B matrix](data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/README.md).
+5. **2026-10-29 — f64 regression guard.** The f64 GL T1023 full spin-1 synthesis implementation remained below DUCC at q1/q8, with unchanged output in recorded controls. Keep this protected during shared generic implementation; retain correct spin signs, adjoints, polar, scaled and exceptional handling.
