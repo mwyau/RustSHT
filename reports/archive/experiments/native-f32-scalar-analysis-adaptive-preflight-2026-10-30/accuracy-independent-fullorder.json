@@ -1,0 +1,85 @@
+{
+  "purpose": "independent binary128 accuracy measurement for the isolated B1 adaptive-schedule and SIMD-preflight candidate",
+  "rust_source_base": "c921d3550c6a6610f39c54b0798c03d9ad4b47eb",
+  "rust_candidate_patch_sha256": "52d3557bd004ff53a4da32bdbd3d4d8bacae0eac61fd5b6ae896296b06f82efa",
+  "geometry": {
+    "grid": "GL",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.0,
+    "selected_orders": [0, 1, 2, 5, 8, 16, 64, 180, 360, 719, 720],
+    "degree_range": [600, 720],
+    "complex_coefficients_per_output": 1092
+  },
+  "reference": {
+    "kind": "independent IEEE binary128",
+    "method": "direct Fourier sums from input f32 maps, normalized scalar-harmonic recurrence, direct quadrature projection, and independent spin-analysis transpose",
+    "source_sha256": "3a26d8fd8089aaafc591568943f8a1d26a7a277c937fe14aa5cd3fe7693a8fd3",
+    "binary_sha256": "abaaa049c17c3fefbc17d99f83675f2690ac3952392b5c9f8b6005c79fb93bfd",
+    "compiler": "c++ 15.2.0",
+    "flags": "-std=c++20 -O2 -march=x86-64-v3 -lquadmath"
+  },
+  "rust": {
+    "harness_source_sha256": "c2e5a92072e2929d4e03ef09a64be8ca661b352b730d2f52ee0557cfbae921ea",
+    "binary_sha256": "bb3c0e9175949e778b3bfffe6dc4e211f68cc74b5e5dde9719edc6c88e1a3f98",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "features": ["parallel"],
+    "execution": "native f32 and matched f64 control; q1 and q8",
+    "thread_counts": {
+      "q1": 1,
+      "q8": 8
+    }
+  },
+  "fixtures": {
+    "scalar_map_seed": 11,
+    "q_map_seed": 23,
+    "u_map_seed": 47,
+    "geometry_csv_sha256": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+    "scalar_map_f32_sha256": "ce871c8fd381a44ccfe41d6525caffd19b45d4d83dcd2bc9390a7208f9e76c51",
+    "q_map_f32_sha256": "bb517521306e5cc0b45c1ceb1535d3ab60e48928be05bc1b247ba1bb99465eb3",
+    "u_map_f32_sha256": "8d9f479983c5b972a45291b49a61525d9f352d95e7010bcf5b32b701d1c5d26a"
+  },
+  "results": {
+    "scalar_analysis": {
+      "q1": {
+        "relative_l2_f32": "4.90808087505561294975289744851421052e-05",
+        "relative_l2_f64": "8.75672049187379869047453039394592593e-14",
+        "max_absolute_f32": "3.82984661491500471744451496336560805e-07",
+        "max_absolute_at": "m=0,l=676",
+        "max_envelope_scaled_f32": "1.08462257224918953174374259646799015e-05",
+        "max_envelope_scaled_at": "m=0,l=703"
+      },
+      "q8_matches_q1_bitwise": true,
+      "f32_output_sha256": "9cac496b3c6144dde682050d4fabb122159c3db8c1cb23d721df11d2885da58f"
+    },
+    "spin_analysis_e": {
+      "q1": {
+        "relative_l2_f32": "4.83091015026356562433474383862678123e-05",
+        "relative_l2_f64": "1.01920695181718726709822690710171e-13",
+        "max_absolute_f32": "3.55060461420637228471327599688445609e-07",
+        "max_absolute_at": "m=1,l=717",
+        "max_envelope_scaled_f32": "4.23357526291164186776511465988752298e-06",
+        "max_envelope_scaled_at": "m=0,l=668"
+      },
+      "q8_matches_q1_bitwise": true,
+      "f32_output_sha256": "951c868cfd363384e2ce4a2e64daca935c1a1d3e42bb97fd946e9b6ac474b9ef"
+    },
+    "spin_analysis_b": {
+      "q1": {
+        "relative_l2_f32": "5.331254350383213396886499049040171e-05",
+        "relative_l2_f64": "1.01242638600513505020805119727153633e-13",
+        "max_absolute_f32": "4.48232500957883173692354582684693545e-07",
+        "max_absolute_at": "m=0,l=682",
+        "max_envelope_scaled_f32": "5.82029549972123066974486654373943684e-06",
+        "max_envelope_scaled_at": "m=0,l=682"
+      },
+      "q8_matches_q1_bitwise": true,
+      "f32_output_sha256": "0145ee6ad765bfe85476270452124734190aea82e3a1bae7b182c1461485761d"
+    }
+  },
+  "acceptance": "MEASURED_NOT_ACCEPTED: selected 11-order high-band probe only; no scientific tolerance supplied; no adjoint, exceptional, complete-array, or spin-synthesis check in this run",
+  "stage_limit": "The reference computes independent direct Fourier sums, but this end-to-end result does not quantify the Rust FFT residual separately from Legendre recurrence and accumulation error."
+}
