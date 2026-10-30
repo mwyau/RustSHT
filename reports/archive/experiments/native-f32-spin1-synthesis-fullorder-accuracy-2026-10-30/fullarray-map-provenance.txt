@@ -1,0 +1,39 @@
+Production source: dc1aa4f65109fc93fef8a0595998df464a70a639
+Current dev tip at publication: 91535b9bb5ab0d74dcf439fef0e90792626e8b52
+The intervening dev commit changes reports only; src/ is identical to the tested source.
+Pinned DUCC was not used as the accuracy oracle; it remains in the separate timing matrix.
+
+Fixture: GL T720, lmax=mmax=720, ntheta=721, nphi=1458, phi0=0
+Synthesis coefficient support: all m=0..720 and l=max(600,m)..720
+Rust: 1.99.1 (58cf8f9c3 2026-10-13), --release --features parallel
+Rust flags: -C target-cpu=x86-64-v3
+Thread settings: Rayon q1 and q8
+Host: AMD Ryzen 9 5950X, x86-64 Linux
+Binary128 reference: GCC 15.2.0, -std=c++20 -O2 -march=x86-64-v3 -lquadmath
+Map FFT reference: NumPy 2.3.5 pocketfft inverse real FFT, after one binary128-to-binary64 rounding
+
+Spectrum capture test: phasec_capture_fullarray_spin_synthesis_spectra
+Test-only patch SHA-256, compressed:
+714d610a0dc1910f8d37e7ae77d6eb586e9609e169a7a7d6d20a8634b730e23e
+Test-only patch SHA-256, uncompressed:
+2266849056ec1acdd7da260273436766561018aa79f3e68a9d555a9273c520ca
+The q1 and q8 ignored capture tests passed. Each asserts the recomputed Rust maps
+match the deterministic dump maps exactly before writing pre-inverse-FFT spectra.
+
+Deterministic dump example SHA-256:
+da3b48d5d1bc1c40a1281732f6137de230639963104404afd8f34b7b7c0b5c22
+Binary128 map-spectrum source SHA-256:
+8bf1719a02ddbb6d91cd53db4c79ff3aefc9dc193c5ee805bab2167cf1eb4bb9
+Included binary128 channel/reference source SHA-256:
+e4ab95cb223d8fdc6c021883d950f027e3c2991afb4c8cd04e2e800bf8e8e716
+NumPy comparison script SHA-256:
+bc8d749b13efcc2665787d5ad0dfbc07e8604839f7f41f9ec6ac07fdc8b99d35
+Diagnostic executable SHA-256 (not retained):
+63c7fc56e4d64a64404c7aa6d0075cd5b41d7f6b204038027aea53e2a14477fd
+
+The expected Q/U spectra were cross-checked at selected ring-0, longitude-0
+pixels against the earlier direct binary128 Fourier evaluation; differences
+were 8.9e-16 for Q and 3.6e-15 for U. The full q1/q8 input, spectrum and map
+hashes and the binary128-derived reference-spectrum hashes are in
+generated/full-array-map-summary.json. Raw maps, actual spectra and temporary
+binary128-derived arrays remain outside Git.

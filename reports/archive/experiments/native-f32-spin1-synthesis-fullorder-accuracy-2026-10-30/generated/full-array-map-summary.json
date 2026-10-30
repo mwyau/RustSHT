@@ -1,0 +1,202 @@
+{
+  "source_sha": "dc1aa4f65109fc93fef8a0595998df464a70a639",
+  "grid": {
+    "kind": "GaussLegendre",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458
+  },
+  "reference": "GCC __float128 spin-1-to-scalar channel conversion and normalized scalar-harmonic recurrence; expected spectra rounded once to binary64, then NumPy 2.x pocketfft inverse real FFT",
+  "q1_q8_hashes": {
+    "geometry.csv": {
+      "q1": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+      "q8": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11"
+    },
+    "spin-synthesis-e-input.f32": {
+      "q1": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0",
+      "q8": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0"
+    },
+    "spin-synthesis-b-input.f32": {
+      "q1": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1",
+      "q8": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1"
+    },
+    "spin-synthesis-e-input.f64": {
+      "q1": "3807be1568cbb0561384e2be937b5c16af25491520362b97b5343ae7f7163d6c",
+      "q8": "3807be1568cbb0561384e2be937b5c16af25491520362b97b5343ae7f7163d6c"
+    },
+    "spin-synthesis-b-input.f64": {
+      "q1": "9d909dc80a40d197255cc0c8588f9e9faa6f007f10c4d658da6c0ae124559240",
+      "q8": "9d909dc80a40d197255cc0c8588f9e9faa6f007f10c4d658da6c0ae124559240"
+    },
+    "spin-synthesis-q.f32": {
+      "q1": "cd5aeaf60ce0e6600b8681726e7abb30e207c22571d6da0a895fed5b47e710b2",
+      "q8": "cd5aeaf60ce0e6600b8681726e7abb30e207c22571d6da0a895fed5b47e710b2"
+    },
+    "spin-synthesis-u.f32": {
+      "q1": "0e8b7dd8792f3c5a6ef014abf7a3ceb42b95c94398710ccb665bfbfb723aecf2",
+      "q8": "0e8b7dd8792f3c5a6ef014abf7a3ceb42b95c94398710ccb665bfbfb723aecf2"
+    },
+    "spin-synthesis-q.f64": {
+      "q1": "259ca904d9228a9e1dcf34c745d1ca701fbd4c48707b51659038dbb0d59d66d0",
+      "q8": "259ca904d9228a9e1dcf34c745d1ca701fbd4c48707b51659038dbb0d59d66d0"
+    },
+    "spin-synthesis-u.f64": {
+      "q1": "42f2b4d00a2890b89e0ff61280d39b7df4689a28129362973ab112e9e681e972",
+      "q8": "42f2b4d00a2890b89e0ff61280d39b7df4689a28129362973ab112e9e681e972"
+    },
+    "spin-synthesis-q-spectrum.f32": {
+      "q1": "398cabb4c33badd3657610557ad57e570e6d82e2976e93875e3d908ade2929b4",
+      "q8": "398cabb4c33badd3657610557ad57e570e6d82e2976e93875e3d908ade2929b4"
+    },
+    "spin-synthesis-u-spectrum.f32": {
+      "q1": "ab40568922bf64616c2c852ee373c75feb72e3117bb679849110d7ed4e547c1b",
+      "q8": "ab40568922bf64616c2c852ee373c75feb72e3117bb679849110d7ed4e547c1b"
+    },
+    "spin-synthesis-q-spectrum.f64": {
+      "q1": "c36101164d8e572ea6ebb57496fbffc37c31ca9bbc519ba03689202ae656a912",
+      "q8": "c36101164d8e572ea6ebb57496fbffc37c31ca9bbc519ba03689202ae656a912"
+    },
+    "spin-synthesis-u-spectrum.f64": {
+      "q1": "3c8bf85ff491b17bd4b424dc1d28e03c4dfe81e248b783ea8d8c363683b83996",
+      "q8": "3c8bf85ff491b17bd4b424dc1d28e03c4dfe81e248b783ea8d8c363683b83996"
+    }
+  },
+  "q1_q8_bitwise_equal": true,
+  "components": {
+    "q": {
+      "reference_spectrum_sha256": "dd95b98cde37edc210fc8dc685818cec6deccad529b64ecf2701a609ed861c83",
+      "f32_spectrum_vs_binary128": {
+        "relative_l2": 0.0001467032563031023,
+        "max_absolute": 0.02395664273471413
+      },
+      "f64_spectrum_vs_binary128": {
+        "relative_l2": 1.3652525496195792e-13,
+        "max_absolute": 5.056445129731368e-11
+      },
+      "f32_vs_f64_spectrum": {
+        "relative_l2": 0.00014670325626720668,
+        "max_absolute": 0.023956642684167494
+      },
+      "f32_inverse_fft_residual": {
+        "relative_l2": 1.422158874368276e-07,
+        "max_absolute": 0.0001747307741197801,
+        "max_absolute_ring_longitude": [
+          199,
+          191
+        ],
+        "max_envelope_scaled": 2.0977706864615834e-07,
+        "max_envelope_scaled_ring_longitude": [
+          719,
+          670
+        ]
+      },
+      "f64_inverse_fft_residual": {
+        "relative_l2": 6.273394966590463e-16,
+        "max_absolute": 7.958078640513122e-13,
+        "max_absolute_ring_longitude": [
+          204,
+          154
+        ],
+        "max_envelope_scaled": 9.31035998123568e-16,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1457
+        ]
+      },
+      "f32_map_vs_binary128_reference": {
+        "relative_l2": 0.00014645628012848548,
+        "max_absolute": 0.10425836313850212,
+        "max_absolute_ring_longitude": [
+          0,
+          1379
+        ],
+        "max_envelope_scaled": 0.003311793265256041,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1379
+        ]
+      },
+      "f64_map_vs_binary128_reference": {
+        "relative_l2": 1.361356700014301e-13,
+        "max_absolute": 2.1446311393447104e-10,
+        "max_absolute_ring_longitude": [
+          0,
+          1381
+        ],
+        "max_envelope_scaled": 6.812475037906341e-12,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1381
+        ]
+      }
+    },
+    "u": {
+      "reference_spectrum_sha256": "52c017945ba6bcb9d9aaeed00a48bb4a856dee320fb9ad8664073969288d7e91",
+      "f32_spectrum_vs_binary128": {
+        "relative_l2": 0.0001386540139297298,
+        "max_absolute": 0.025124916331513217
+      },
+      "f64_spectrum_vs_binary128": {
+        "relative_l2": 1.3340462105432448e-13,
+        "max_absolute": 5.624982989829948e-11
+      },
+      "f32_vs_f64_spectrum": {
+        "relative_l2": 0.0001386540138951638,
+        "max_absolute": 0.025124916275263427
+      },
+      "f32_inverse_fft_residual": {
+        "relative_l2": 1.4155992232287778e-07,
+        "max_absolute": 0.00015788004202477168,
+        "max_absolute_ring_longitude": [
+          203,
+          168
+        ],
+        "max_envelope_scaled": 2.1018561140085606e-07,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1288
+        ]
+      },
+      "f64_inverse_fft_residual": {
+        "relative_l2": 6.247208933235119e-16,
+        "max_absolute": 9.094947017729282e-13,
+        "max_absolute_ring_longitude": [
+          385,
+          644
+        ],
+        "max_envelope_scaled": 8.90515389432637e-16,
+        "max_envelope_scaled_ring_longitude": [
+          719,
+          484
+        ]
+      },
+      "f32_map_vs_binary128_reference": {
+        "relative_l2": 0.00013810489292235572,
+        "max_absolute": 0.0860310624787548,
+        "max_absolute_ring_longitude": [
+          0,
+          1189
+        ],
+        "max_envelope_scaled": 0.0026518200459077976,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          1189
+        ]
+      },
+      "f64_map_vs_binary128_reference": {
+        "relative_l2": 1.325498595312977e-13,
+        "max_absolute": 1.8238921484226012e-10,
+        "max_absolute_ring_longitude": [
+          0,
+          73
+        ],
+        "max_envelope_scaled": 5.6219621394950114e-12,
+        "max_envelope_scaled_ring_longitude": [
+          0,
+          73
+        ]
+      }
+    }
+  }
+}
