@@ -45,7 +45,7 @@ At the equatorial ring the selected `cos²` bits change from `0x099bbe75` to `0x
 - Pinned DUCC reference source: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`; archived binary128 and long-double outputs provide the numerical references.
 - Rustc: `1.99.1 (58cf8f9c3 2026-10-13)`; release test build; flags `-C target-cpu=x86-64-v3 -Aunexpected_cfgs`; AVX2 trace asserts 8 f32 lanes. The public probe uses workspace capacity 1.
 - The exact diagnostic patch is `data/candidate.diff.patch.gz`. It includes test instrumentation and candidate-only changes; none of these source edits were applied to `dev`.
-- The full local direct trace SHA-256 is `bd834e729ca198265fa1a6032da995259d30eb4a9fad3a29ef57bed9126cc6fc`; full public-map trace SHA-256 is `d5e7679872608589ed68869657fdb836613f6a5233dc846583be76b9f897a915`. Full traces remain in bounded local scratch; only selected plan, recurrence, output and map records are archived.
+- The full local direct trace SHA-256 is `bd834e729ca198265fa1a6032da995259d30eb4a9fad3a29ef57bed9126cc6fc`; full public-map trace SHA-256 is `d5e7679872608589ed68869657fdb836613f6a5233dc846583be76b9f897a915`. Those single-mode raw traces remain in bounded local scratch; the full dense high-band trace is archived compressed below.
 - The test binary SHA-256 is `c806026b2bd11e884de229f5874453cd1e4f97beeb8b472cebd83b0dc70ec13f`.
 - `cargo fmt`, `git diff --check`, and `cargo test --release --lib` pass in the isolated candidate (320 passed, 44 ignored). Both ignored direct and public-map trace probes pass. No performance timings were collected from the instrumented binary.
 
@@ -56,6 +56,55 @@ python3 reports/archive/experiments/cos2-plan-time-control-2026-10-30/tracers/co
 python3 reports/archive/experiments/cos2-plan-time-control-2026-10-30/tracers/compare_csqonly.py
 ```
 
+## Dense high-band control
+
+The same candidate was traced on 256 pre-FFT outputs for orders 1–16, degrees 600–720, and north rings 0, 1, 5 and 360. This uses the archived deterministic high-band coefficients, `phi0=0`, the pinned DUCC trace, and the independent binary128 reference cross-checked against long double.
+
+| Error to binary128 | Original f32 `cos²` | Plan-time f64 `cos²`, narrowed to f32 |
+|---|---:|---:|
+| Outputs closer / farther / unchanged | — | 62 / 2 / 192 |
+| RMS absolute error | 9.94269e-6 | 6.40809e-6 |
+| Maximum absolute error | 4.50024e-5 | 4.32209e-5 |
+| RMS cancellation-scaled error | 1.01733e-3 | 7.15017e-4 |
+| Maximum cancellation-scaled error | 5.04414e-3 | 3.09606e-3 |
+| Correctly rounded f32 outputs | 0 / 256 | 0 / 256 |
+
+The control improves both RMS measures, but the maximum errors and rounded-output count remain far from an accuracy acceptance. DUCC's maximum absolute error on these same outputs is `1.71407e-9`; the independent binary128 and long-double results differ by at most `1.2544e-16`.
+
+The dense trace also locates the remaining error. Across all 64 order/ring cases the recurrence enters ordinary f32 execution at degree `m`; the scaled-prefix count is zero. For `m=5`, ring 5, the initialized current state is already one ULP from correctly rounded binary128 (`0xb19d1beb` vs `0xb19d1bec`). At degree 7, `cos²`, `a`, `b`, and the leading factor match their rounded reference bits, but the next state differs by two ULP (`0xb34c14e7` vs `0xb34c14e9`). At degree 719 the next state differs by 5,325 ULP. For `m=2`, ring 0, degree 4 instead begins with a one-ULP difference in the leading `a*cos²+b` result and a one-ULP next-state difference, even though each prepared f32 operand matches its separately rounded reference. The earlier replay confirms the AVX2 FMA path matches scalar f32 replay; these differences come from rounded f32 inputs and the sectoral seed, not a different recurrence formula or SIMD result.
+
+Controlled substitutions attribute the dense residual mainly to recurrence state: f64 recurrence with Rust's prepared f32 coefficient pairs has maximum absolute error `1.23702e-7`; f32 recurrence with binary128-rounded coefficient pairs remains at `4.32173e-5`. The accumulation-only output delta with identical f32 terms is at most `3.46918e-8`, far smaller than the recurrence error. These substitutions are diagnostic and are not runtime backends.
+
+## Random full-transform one-change control
+
+The same source and exact archived full/reduced GL T720 fixtures were run with only the `cos²` source switched between the cached plan-time f64 value and the original f32 stable/direct expression. Recurrence-factor preparation stayed unchanged; recurrence, accumulation, Fourier spectra, FFT and map storage were f32. Rust q1 and q8 outputs were bitwise identical in each shape, and both runs passed finite, repeat and poisoned-workspace reset checks.
+
+| Shape | Original f32 `cos²` relative L2 to DUCC | Plan-time f64 `cos²` relative L2 to DUCC | Relative-L2 change | Maximum absolute error, old → candidate |
+|---|---:|---:|---:|---:|
+| Full M720 | 1.83217e-4 | 1.70306e-4 | −7.05% | 5.20408e-4 → 2.85864e-4 |
+| Reduced M180 | 1.81741e-4 | 1.60901e-4 | −11.46% | 4.68373e-4 → 2.77132e-4 |
+
+The full map has 255,806 pixels move closer to DUCC, 211,761 farther, and 583,651 unchanged. The reduced map has 74,923 closer, 46,212 farther, and 151,403 unchanged. These controls show the selected aggregate improvement generalizes to these random inputs, while individual pixels still move in both directions. DUCC f32 uses a double Legendre recurrence; there is no independent high-precision full-map oracle in this experiment. The random results measure proximity to DUCC, not an absolute science error bound.
+
 ## Decision and NEXT
 
-The plan-time constant change is a verified causal improvement on the selected single-mode recurrence and map samples. Keep it isolated: the 16 worsened public pixels, unchanged correctly-rounded count, unchanged maximum direct error, and unset science tolerance mean it cannot be treated as a production accuracy pass. Next, run the saved 256 dense high-band pre-FFT fixture and matched full/reduced random T720 fixtures against independent references using this same isolated candidate. Then decide whether the improvement generalizes before considering any production source promotion or whole-transform timing.
+The plan-time `cos²` value is a verified, one-change numerical improvement on selected modes, dense high-band outputs, and both random full-transform shapes. It removes the prior `cos²` operand mismatch in the traced ordinary recurrence, but seed initialization and accumulated native-f32 recurrence rounding still dominate the dense residual. There is no supplied science tolerance, no dense output becomes correctly rounded, and random full-map results have no independent high-precision oracle. Keep the candidate isolated and unpromoted.
+
+Phase C's dense and random controls are complete. Return to the breadth-first B1 scalar-analysis candidate: inspect its executed loop work and SIMD path against DUCC and the matching f64 baseline, then make one bounded performance change or document a measured blocker before moving to B2/B3. Defer further scalar-synthesis compensation until that family work is complete.
+
+## Dense and random evidence provenance
+
+- Rust candidate base: `45380d7e4bd849a33ffef7d91978ee18fd7e4193`; complete isolated candidate plus dense-trace patch SHA-256 (uncompressed): `87d02ad7262c90123123d48e0ac63909704330e691ccbf7f22473097c57fef8c`. The original control patch remains at `data/candidate.diff.patch.gz`; the complete trace state is `data/dense-high-band/candidate-full-validation.patch.gz`.
+- The one-change f32-`cos²` replay patch is `patches/disable-plan-cos2-only.patch.gz`. Test instrumentation and a non-test no-op trace guard are separately available in `patches/dense-trace-test-overlay.patch.gz` and `patches/non_test_trace_guard.patch.gz`.
+- Pinned DUCC source: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`; DUCC f32 worker binary SHA-256 `acc82387af2c42aed53b25678e3872157ed3fb6e5d5874322badc472a1d35d5d`. The binary128 dense reference and source DUCC trace are preserved in the numerical-causality archive linked above.
+- Final Rust AVX2 example binary SHA-256 `33329cde79244c96527263df14a817021bfa09261002afcd139235cef5ada9c8`; f32 uses eight lanes. The original-f32-`cos²` control binary SHA-256 is `7ee06f33900a6fec49f1da87c11f575c75d41af75ef2897b1e2bfe1ad26bfb6c`. Dense test binary SHA-256 is `6968d2d6658c0610fc0645c87a0b18e409a93f3b35e4136a6d6d81e60732704a`.
+- Rustc `1.99.1 (58cf8f9c3 2026-10-13)`, flags `-C target-cpu=x86-64-v3 -Aunexpected_cfgs`, host AMD Ryzen 9 5950X. Candidate execution uses native f32 recurrence, accumulation, spectra, FFT and map outputs; f64 is used only to prepare the small plan-time `cos²` constant.
+- `cargo fmt --check`, `git diff --check`, `cargo build --release --example ducc_f32_full_transform_parity`, and `cargo test --release --lib` pass in the isolated candidate (320 passed, 45 ignored). The dense trace probe passes. No timing claim was made from these runs.
+- The candidate dense raw trace is preserved compressed at `data/dense-high-band/rust-native-f32-dense-trace.csv.gz`; derived recurrence, pair, precision-control, accumulation, output and long-double tables are alongside it. `data/random-field/one-change-random-field-results.json` records all input/output hashes and per-cell numerical metrics. Checksums are in `SHA256SUMS`.
+
+The dense comparator is `reports/archive/experiments/numerical-causality-ducc-0.42.0-2026-10-29/tracers/compare_dense_band.py`; it consumes the saved Rust trace plus the pinned DUCC and binary128 traces from that package. The public single-mode comparisons remain reproducible with:
+
+```sh
+python3 reports/archive/experiments/cos2-plan-time-control-2026-10-30/tracers/compare_recurrence_csq.py
+python3 reports/archive/experiments/cos2-plan-time-control-2026-10-30/tracers/compare_csqonly.py
+```

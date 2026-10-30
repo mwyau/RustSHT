@@ -1,0 +1,391 @@
+{
+  "case": {
+    "grid": "GL T720",
+    "orders": "1..16",
+    "degrees": "600..720",
+    "north_rings": [
+      0,
+      1,
+      5,
+      360
+    ],
+    "reflected_south_rings": [
+      720,
+      719,
+      715,
+      360
+    ],
+    "pre_fft_outputs": 256,
+    "phi0": 0.0
+  },
+  "rust_candidate": {
+    "base_source_sha": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+    "candidate_full_patch_sha256_uncompressed": "87d02ad7262c90123123d48e0ac63909704330e691ccbf7f22473097c57fef8c",
+    "trace_csv_sha256": "00eb26809c862402798a2dd5db3fbf26497a86721296e338d030ccbf53aa1c78",
+    "trace_binary_sha256": "6968d2d6658c0610fc0645c87a0b18e409a93f3b35e4136a6d6d81e60732704a",
+    "execution": "native f32 recurrence, accumulation and AVX2 8-lane SIMD; plan-time theta.cos()^2 narrowed once to f32; no runtime f64 promotion"
+  },
+  "pinned_ducc": {
+    "source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "trace_sha256": "2dd708fe5aadfe1218cb6b12678e7e1f35e05b73b8c628f1fababb7decd2ddd5",
+    "public_f32_legendre_recurrence": "f64"
+  },
+  "independent_reference": {
+    "binary128_reference_sha256": "17984083ec5f40e2d3710df37a41ccf9df9e27ef1553df54d8431c5200692988",
+    "longdouble_summary": {
+      "component_count": 256,
+      "quad128_vs_longdouble_max_abs": 1.2543818650955339e-16,
+      "quad128_vs_longdouble_rms_abs": 1.1072784055381815e-17,
+      "quad128_vs_longdouble_rounded_f32_bit_mismatches": 0,
+      "ducc_f32_vs_longdouble_max_abs": 1.714072777946959e-09,
+      "ducc_f32_vs_longdouble_rms_abs": 2.964702911869243e-10,
+      "rust_f32_vs_longdouble_max_abs": 4.3220853930657735e-05,
+      "rust_f32_vs_longdouble_rms_abs": 6.408086445852737e-06,
+      "reference": "binary128 recurrence compared against independent host x86 extended-precision recurrence"
+    }
+  },
+  "baseline_vs_candidate": {
+    "baseline_source": "archived generic native-f32 trace at 3bb97c157632bbc2dfd5e8d2daf2a19d7e8c3ec7",
+    "closer_farther_unchanged": {
+      "closer_to_binary128": 62,
+      "farther_from_binary128": 2,
+      "unchanged": 192
+    },
+    "baseline_abs_error": {
+      "max": 4.500237647595865e-05,
+      "rms": 9.94268823104049e-06,
+      "count": 256
+    },
+    "candidate_abs_error": {
+      "max": 4.3220853930688275e-05,
+      "rms": 6.408086445856585e-06,
+      "count": 256
+    },
+    "baseline_cancellation_scaled_error": {
+      "max": 0.005044141694131181,
+      "rms": 0.0010173322276643946,
+      "count": 256
+    },
+    "candidate_cancellation_scaled_error": {
+      "max": 0.0030960610510144407,
+      "rms": 0.0007150169075690184,
+      "count": 256
+    },
+    "per_order_cancellation_scaled_rms": [
+      {
+        "order": 1,
+        "baseline_cancellation_scaled_rms": 0.001919382011777916,
+        "candidate_cancellation_scaled_rms": 0.0009863383092559917
+      },
+      {
+        "order": 2,
+        "baseline_cancellation_scaled_rms": 0.00172643416219416,
+        "candidate_cancellation_scaled_rms": 0.0015395365474224103
+      },
+      {
+        "order": 3,
+        "baseline_cancellation_scaled_rms": 0.0009787142907375544,
+        "candidate_cancellation_scaled_rms": 0.0007304957782045963
+      },
+      {
+        "order": 4,
+        "baseline_cancellation_scaled_rms": 0.001180458259304726,
+        "candidate_cancellation_scaled_rms": 0.0010664210735546833
+      },
+      {
+        "order": 5,
+        "baseline_cancellation_scaled_rms": 0.0011741714146065976,
+        "candidate_cancellation_scaled_rms": 0.0008982368486925079
+      },
+      {
+        "order": 6,
+        "baseline_cancellation_scaled_rms": 0.0008853976138999131,
+        "candidate_cancellation_scaled_rms": 0.0008610111202780116
+      },
+      {
+        "order": 7,
+        "baseline_cancellation_scaled_rms": 0.0003956545117685631,
+        "candidate_cancellation_scaled_rms": 0.0003157917296828495
+      },
+      {
+        "order": 8,
+        "baseline_cancellation_scaled_rms": 0.0011570444409492655,
+        "candidate_cancellation_scaled_rms": 0.0005537651303457996
+      },
+      {
+        "order": 9,
+        "baseline_cancellation_scaled_rms": 0.0008372760501524247,
+        "candidate_cancellation_scaled_rms": 0.00035191826214008476
+      },
+      {
+        "order": 10,
+        "baseline_cancellation_scaled_rms": 0.00041240885034047795,
+        "candidate_cancellation_scaled_rms": 0.0003056387882107263
+      },
+      {
+        "order": 11,
+        "baseline_cancellation_scaled_rms": 0.0005762191353983259,
+        "candidate_cancellation_scaled_rms": 0.0005309963352923647
+      },
+      {
+        "order": 12,
+        "baseline_cancellation_scaled_rms": 0.001271042690459962,
+        "candidate_cancellation_scaled_rms": 0.0004043874321523731
+      },
+      {
+        "order": 13,
+        "baseline_cancellation_scaled_rms": 0.00047086127686564883,
+        "candidate_cancellation_scaled_rms": 0.0003395673144121199
+      },
+      {
+        "order": 14,
+        "baseline_cancellation_scaled_rms": 0.0004647823864494823,
+        "candidate_cancellation_scaled_rms": 0.00018405213423807354
+      },
+      {
+        "order": 15,
+        "baseline_cancellation_scaled_rms": 0.000719555725878879,
+        "candidate_cancellation_scaled_rms": 0.0006083913921706533
+      },
+      {
+        "order": 16,
+        "baseline_cancellation_scaled_rms": 0.0003337464752154089,
+        "candidate_cancellation_scaled_rms": 0.00017162146754323533
+      }
+    ],
+    "rms_absolute_error_reduction_fraction": 0.3554975981394132,
+    "rms_scaled_error_reduction_fraction": 0.29716479226204795
+  },
+  "candidate_vs_references": {
+    "candidate": {
+      "count": 256,
+      "max_absolute_error": 4.3220853930688275e-05,
+      "rms_absolute_error": 6.408086445856585e-06,
+      "max_cancellation_scaled_error": 0.0030960610510144407,
+      "rms_cancellation_scaled_error": 0.0007150169075690184,
+      "worst_case": {
+        "order": 2,
+        "ring": 0,
+        "component": "south_im",
+        "reference": -0.025301860609525467
+      }
+    },
+    "ducc": {
+      "count": 256,
+      "max_absolute_error": 1.714072776954035e-09,
+      "rms_absolute_error": 2.9647029420652424e-10,
+      "max_cancellation_scaled_error": 5.122074186569244e-08,
+      "rms_cancellation_scaled_error": 2.1962075256976024e-08,
+      "worst_case": {
+        "order": 15,
+        "ring": 5,
+        "component": "north_re",
+        "reference": 0.03904896773441847
+      }
+    },
+    "accumulation_attribution": {
+      "max_accumulation_only_output_delta": 3.4691765904426575e-08,
+      "rms_accumulation_only_output_delta": 9.055299437838055e-09,
+      "max_remaining_recurrence_coefficient_geometry_output_error": 4.321526599523895e-05,
+      "rms_remaining_recurrence_coefficient_geometry_output_error": 6.4077518784509875e-06
+    },
+    "controlled_precision_substitutions": {
+      "quad_recurrence_quad_pairs": {
+        "count": 256,
+        "max_absolute_error": 2.820179979964195e-10,
+        "rms_absolute_error": 5.817155005267209e-11,
+        "max_cancellation_scaled_error": 1.1330909643837414e-08,
+        "rms_cancellation_scaled_error": 3.917961515151562e-09,
+        "worst_case": {
+          "order": 1,
+          "ring": 0,
+          "component": "north_im"
+        }
+      },
+      "quad_recurrence_quad_pairs_quad_cos": {
+        "count": 256,
+        "max_absolute_error": 7.128432484833813e-35,
+        "rms_absolute_error": 1.4876128624117015e-35,
+        "max_cancellation_scaled_error": 7.584161055817789e-32,
+        "rms_cancellation_scaled_error": 1.1998097608458909e-32,
+        "worst_case": {
+          "order": 10,
+          "ring": 360,
+          "component": "north_re"
+        }
+      },
+      "quad_recurrence_rust_pairs": {
+        "count": 256,
+        "max_absolute_error": 1.237015095108763e-07,
+        "rms_absolute_error": 2.6337949606030495e-08,
+        "max_cancellation_scaled_error": 0.0005604430706422615,
+        "rms_cancellation_scaled_error": 5.4702241235600295e-05,
+        "worst_case": {
+          "order": 6,
+          "ring": 360,
+          "component": "north_im"
+        }
+      },
+      "rust_recurrence_quad_pairs": {
+        "count": 256,
+        "max_absolute_error": 4.321725174521685e-05,
+        "rms_absolute_error": 6.408062775786709e-06,
+        "max_cancellation_scaled_error": 0.0030959430077149093,
+        "rms_cancellation_scaled_error": 0.0007294091968500167,
+        "worst_case": {
+          "order": 2,
+          "ring": 0,
+          "component": "south_im"
+        }
+      },
+      "rust_recurrence_rust_pairs": {
+        "count": 256,
+        "max_absolute_error": 4.32166966635661e-05,
+        "rms_absolute_error": 6.407820407741603e-06,
+        "max_cancellation_scaled_error": 0.003096056579684692,
+        "rms_cancellation_scaled_error": 0.0007162977680095979,
+        "worst_case": {
+          "order": 2,
+          "ring": 0,
+          "component": "south_im"
+        }
+      }
+    }
+  },
+  "ordinary_recurrence": {
+    "cases": 64,
+    "total_steps": 22768,
+    "scaled_prefix_pairs_max": 0,
+    "all_full_ieee": true,
+    "first_divergence_rows": [
+      {
+        "order": "1",
+        "ring": "0",
+        "scaled_prefix_pairs": "0",
+        "ordinary_start_degree": "1",
+        "first_differing_stage": "state",
+        "first_differing_degree": "3",
+        "first_csq_difference_degree": "",
+        "first_a_or_b_difference_degree": "",
+        "first_state_difference_degree": "3",
+        "first_leading_fma_difference_degree": "3",
+        "first_state_update_difference_degree": "3",
+        "max_highband_current_ulp": "8038",
+        "max_highband_current_absolute_error": "0.0019163102701078571"
+      },
+      {
+        "order": "2",
+        "ring": "0",
+        "scaled_prefix_pairs": "0",
+        "ordinary_start_degree": "2",
+        "first_differing_stage": "state",
+        "first_differing_degree": "6",
+        "first_csq_difference_degree": "",
+        "first_a_or_b_difference_degree": "",
+        "first_state_difference_degree": "6",
+        "first_leading_fma_difference_degree": "4",
+        "first_state_update_difference_degree": "4",
+        "max_highband_current_ulp": "33107",
+        "max_highband_current_absolute_error": "0.005328219302268344"
+      },
+      {
+        "order": "5",
+        "ring": "5",
+        "scaled_prefix_pairs": "0",
+        "ordinary_start_degree": "5",
+        "first_differing_stage": "state",
+        "first_differing_degree": "7",
+        "first_csq_difference_degree": "",
+        "first_a_or_b_difference_degree": "",
+        "first_state_difference_degree": "7",
+        "first_leading_fma_difference_degree": "9",
+        "first_state_update_difference_degree": "7",
+        "max_highband_current_ulp": "403209",
+        "max_highband_current_absolute_error": "0.0003214859902787026"
+      },
+      {
+        "order": "16",
+        "ring": "5",
+        "scaled_prefix_pairs": "0",
+        "ordinary_start_degree": "16",
+        "first_differing_stage": "state",
+        "first_differing_degree": "18",
+        "first_csq_difference_degree": "",
+        "first_a_or_b_difference_degree": "",
+        "first_state_difference_degree": "18",
+        "first_leading_fma_difference_degree": "22",
+        "first_state_update_difference_degree": "18",
+        "max_highband_current_ulp": "3522",
+        "max_highband_current_absolute_error": "0.00041980390299189985"
+      },
+      {
+        "order": "16",
+        "ring": "360",
+        "scaled_prefix_pairs": "0",
+        "ordinary_start_degree": "16",
+        "first_differing_stage": "state",
+        "first_differing_degree": "18",
+        "first_csq_difference_degree": "",
+        "first_a_or_b_difference_degree": "",
+        "first_state_difference_degree": "18",
+        "first_leading_fma_difference_degree": "",
+        "first_state_update_difference_degree": "18",
+        "max_highband_current_ulp": "2109",
+        "max_highband_current_absolute_error": "0.01895661484786615"
+      }
+    ],
+    "m5_ring5_degree7": {
+      "rust_csq_bits": "3f7fd6e5",
+      "quad_rounded_f32_csq_bits": "3f7fd6e5",
+      "csq_ulp": "0",
+      "rust_a_bits": "41500000",
+      "quad_rounded_f32_a_bits": "41500000",
+      "a_ulp": "0",
+      "rust_b_bits": "c0266666",
+      "quad_rounded_f32_b_bits": "c0266666",
+      "b_ulp": "0",
+      "rust_previous_bits": "00000000",
+      "quad_rounded_f32_previous_bits": "00000000",
+      "previous_ulp": "0",
+      "rust_current_bits": "b19d1beb",
+      "quad_rounded_f32_current_bits": "b19d1bec",
+      "current_ulp": "1",
+      "rust_leading_bits": "41264501",
+      "quad_rounded_f32_leading_bits": "41264501",
+      "leading_ulp": "0",
+      "rust_next_bits": "b34c14e7",
+      "quad_rounded_f32_next_bits": "b34c14e9",
+      "next_ulp": "2",
+      "quad128_current": "-4.57247590314078256860112114252e-9",
+      "quad128_leading": "10.3918464405630172587116404167",
+      "quad128_next": "-4.75164674386137090028429721717e-8"
+    },
+    "m2_ring0_degree4": {
+      "rust_csq_bits": "3f7fff46",
+      "quad_rounded_f32_csq_bits": "3f7fff46",
+      "csq_ulp": "0",
+      "rust_a_bits": "40e00000",
+      "quad_rounded_f32_a_bits": "40e00000",
+      "a_ulp": "0",
+      "rust_b_bits": "c0155555",
+      "quad_rounded_f32_b_bits": "c0155555",
+      "b_ulp": "0",
+      "rust_previous_bits": "00000000",
+      "quad_rounded_f32_previous_bits": "00000000",
+      "previous_ulp": "0",
+      "rust_current_bits": "368ffdf5",
+      "quad_rounded_f32_current_bits": "368ffdf5",
+      "current_ulp": "0",
+      "rust_leading_bits": "409554b3",
+      "quad_rounded_f32_leading_bits": "409554b2",
+      "leading_ulp": "1",
+      "rust_next_bits": "37a7fce7",
+      "quad_rounded_f32_next_bits": "37a7fce6",
+      "next_ulp": "1",
+      "quad128_current": "0.00000429129640673588214791205851181",
+      "quad128_leading": "4.66658890047185009486358058093",
+      "quad128_next": "0.0000200257161803084014797606388959"
+    }
+  },
+  "interpretation": "The plan-time cos^2 control removes the earlier c^2 operand divergence for these selected lanes. Remaining high-band error is dominated by native-f32 sectoral/state initialization and repeated f32 recurrence rounding; f64 recurrence with Rust pairs is far closer to binary128, while f32 recurrence remains far from it even with binary128-rounded coefficient pairs. This is a bounded fixture diagnosis, not a science tolerance pass."
+}

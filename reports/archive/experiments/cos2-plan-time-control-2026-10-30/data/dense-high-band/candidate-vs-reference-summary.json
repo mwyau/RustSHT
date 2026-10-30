@@ -1,0 +1,164 @@
+{
+  "cases": {
+    "orders": 16,
+    "north_representative_rings": [
+      0,
+      1,
+      5,
+      360
+    ],
+    "paired_south_rings": [
+      720,
+      719,
+      715,
+      360
+    ],
+    "outputs": 256
+  },
+  "rust_vs_quad128": {
+    "count": 256,
+    "max_absolute_error": 4.3220853930688275e-05,
+    "rms_absolute_error": 6.408086445856585e-06,
+    "max_cancellation_scaled_error": 0.0030960610510144407,
+    "rms_cancellation_scaled_error": 0.0007150169075690184,
+    "worst_case": {
+      "order": 2,
+      "ring": 0,
+      "component": "south_im",
+      "reference": -0.025301860609525467
+    }
+  },
+  "ducc_vs_quad128": {
+    "count": 256,
+    "max_absolute_error": 1.714072776954035e-09,
+    "rms_absolute_error": 2.9647029420652424e-10,
+    "max_cancellation_scaled_error": 5.122074186569244e-08,
+    "rms_cancellation_scaled_error": 2.1962075256976024e-08,
+    "worst_case": {
+      "order": 15,
+      "ring": 5,
+      "component": "north_re",
+      "reference": 0.03904896773441847
+    }
+  },
+  "rust_ducc_ulp": {
+    "max": 418424,
+    "nonzero": 256
+  },
+  "same_f32_terms_accumulation_attribution": {
+    "max_accumulation_only_output_delta": 3.4691765904426575e-08,
+    "rms_accumulation_only_output_delta": 9.055299437838055e-09,
+    "max_remaining_recurrence_coefficient_geometry_output_error": 4.321526599523895e-05,
+    "rms_remaining_recurrence_coefficient_geometry_output_error": 6.4077518784509875e-06
+  },
+  "controlled_precision_substitutions": {
+    "quad_recurrence_quad_pairs": {
+      "count": 256,
+      "max_absolute_error": 2.820179979964195e-10,
+      "rms_absolute_error": 5.817155005267209e-11,
+      "max_cancellation_scaled_error": 1.1330909643837414e-08,
+      "rms_cancellation_scaled_error": 3.917961515151562e-09,
+      "worst_case": {
+        "order": 1,
+        "ring": 0,
+        "component": "north_im"
+      }
+    },
+    "quad_recurrence_quad_pairs_quad_cos": {
+      "count": 256,
+      "max_absolute_error": 7.128432484833813e-35,
+      "rms_absolute_error": 1.4876128624117015e-35,
+      "max_cancellation_scaled_error": 7.584161055817789e-32,
+      "rms_cancellation_scaled_error": 1.1998097608458909e-32,
+      "worst_case": {
+        "order": 10,
+        "ring": 360,
+        "component": "north_re"
+      }
+    },
+    "quad_recurrence_rust_pairs": {
+      "count": 256,
+      "max_absolute_error": 1.237015095108763e-07,
+      "rms_absolute_error": 2.6337949606030495e-08,
+      "max_cancellation_scaled_error": 0.0005604430706422615,
+      "rms_cancellation_scaled_error": 5.4702241235600295e-05,
+      "worst_case": {
+        "order": 6,
+        "ring": 360,
+        "component": "north_im"
+      }
+    },
+    "rust_recurrence_quad_pairs": {
+      "count": 256,
+      "max_absolute_error": 4.321725174521685e-05,
+      "rms_absolute_error": 6.408062775786709e-06,
+      "max_cancellation_scaled_error": 0.0030959430077149093,
+      "rms_cancellation_scaled_error": 0.0007294091968500167,
+      "worst_case": {
+        "order": 2,
+        "ring": 0,
+        "component": "south_im"
+      }
+    },
+    "rust_recurrence_rust_pairs": {
+      "count": 256,
+      "max_absolute_error": 4.32166966635661e-05,
+      "rms_absolute_error": 6.407820407741603e-06,
+      "max_cancellation_scaled_error": 0.003096056579684692,
+      "rms_cancellation_scaled_error": 0.0007162977680095979,
+      "worst_case": {
+        "order": 2,
+        "ring": 0,
+        "component": "south_im"
+      }
+    }
+  },
+  "native_f32_prefix": {
+    "cases": 64,
+    "max_scaled_prefix_pairs": 0,
+    "all_reach_full_ieee": true,
+    "ordinary_start_degrees": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ]
+  },
+  "recurrence": {
+    "matched_steps": 22768,
+    "first_differing_stage_counts": {
+      "csq": 0,
+      "coefficient": 0,
+      "state": 64,
+      "leading": 0,
+      "next": 0,
+      "": 0
+    },
+    "max_highband_current_ulp": 3805586,
+    "max_highband_current_absolute_error": 0.07408106978638784
+  },
+  "prepared_pairs": {
+    "count": 3936,
+    "nonzero_ulp_to_quad_f32": 1472,
+    "max_ulp_to_quad_f32": 1355,
+    "max_absolute_error": 2.5290482062883355e-10
+  },
+  "f32_accumulation_only": {
+    "count": 256,
+    "max_absolute_error": 5.77600523410382e-07,
+    "rms_absolute_error": 5.242982073387084e-08,
+    "max_condition": 32666.968122365157
+  }
+}

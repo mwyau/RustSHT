@@ -1,0 +1,15 @@
+{
+  "base_git_sha": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+  "candidate_patch_sha256_uncompressed": "87d02ad7262c90123123d48e0ac63909704330e691ccbf7f22473097c57fef8c",
+  "candidate_patch_bytes": 82526,
+  "candidate_modified_source_sha256": {
+    "src/legendre/mod.rs": "04b0d6ea1c151e7f5c42d87af7eab803ec1c6f9aed5bf66d2ca2084f85452aa0",
+    "src/legendre/numeric.rs": "6976607d4ff6560b69ed8bca6105b087d0a6fcaf4888256f0bb4b80fc783344f",
+    "src/legendre/scalar_ordered.rs": "88714e8c3801612d809b6b717e406102cc8fa1427cc5c4e96e733b2be833eda5",
+    "src/legendre/scalar_ordered/kernel.rs": "7d13b0ad0a2e9702458cda591a5fc0fb7f241de426f50878cb6b57300ee01ae3",
+    "src/legendre/scalar_ordered/tests.rs": "329c9d5e70af6365f9d0ba5b3209f42662c22f2be375117dc4fa0769c709073d",
+    "src/plan.rs": "055129e000ecaf509e3254db7e4316aa07e42d2f9fbf39111b5b64b8582ff76b",
+    "src/transform/scalar.rs": "04af4b48cf8aa1c2692dfaa1c5a9ac0ad89f84082cbed6243a8b40f41a267400",
+    "src/transform/tests.rs": "21e7efc790b100327e0ee7c869c1390b2bdc763a7c6ff86bf6cbd5695b0ba3fe"
+  }
+}

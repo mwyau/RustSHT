@@ -1,0 +1,242 @@
+{
+  "purpose": "matched one-change random-field numerical control; no timing claim",
+  "source_base": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+  "candidate_binary_sha256": "33329cde79244c96527263df14a817021bfa09261002afcd139235cef5ada9c8",
+  "original_f32_cos2_binary_sha256": "7ee06f33900a6fec49f1da87c11f575c75d41af75ef2897b1e2bfe1ad26bfb6c",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "acc82387af2c42aed53b25678e3872157ed3fb6e5d5874322badc472a1d35d5d",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "host": "AMD Ryzen 9 5950X, x86-64-v3 AVX2/FMA",
+  "simd": "Rust V3/AVX2, 8 f32 lanes",
+  "phi0": 0.23,
+  "fixture_source": "reports/data/ducc-parity-m6-2026-10-29/f32-io-f64-internal-stage-b/fixtures",
+  "controlled_change": "only replace the cached plan-time f64 cos(theta)^2 rounded to f32 with the original native-f32 stable/direct expression; retain wide f64 plan-time recurrence coefficients, f32 recurrence/accumulation/spectrum/FFT/output, fixture bits, geometry and dispatch",
+  "q1_q8_output_bitwise_equal": true,
+  "results": [
+    {
+      "case_id": "GL-T720-M720-s0-synthesis-q1",
+      "original_f32_cos2_output_sha256": "639c9f266fc1f154f2f394ab5b66b979c7e912569504cbda2dbf7383de6df75b",
+      "ducc_output_sha256": "8b0ebf91d2af1961a2fc66eacb82329b7612f11813f2850daa28c5b28cae77d4",
+      "fixture_sha256": {
+        "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+        "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+      },
+      "original_f32_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "ducc_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "original_f32_cos2_vs_ducc": {
+        "values": 1051218,
+        "max_abs": 0.0005204081535339355,
+        "rms_abs": 4.2138009047670445e-05,
+        "absolute_l2": 0.043203646744307975,
+        "relative_l2": 0.00018321683476875633,
+        "reference_rms": 0.22998983199799372
+      },
+      "plan_time_f64_cos2_output_sha256": "9f48cb40d764dd59f344e76cde6e46d4811a3076d534fa6b9cfb69ba4033dbcb",
+      "plan_time_f64_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "plan_time_f64_cos2_vs_ducc": {
+        "values": 1051218,
+        "max_abs": 0.00028586387634277344,
+        "rms_abs": 3.91685713096422e-05,
+        "absolute_l2": 0.040159114219815537,
+        "relative_l2": 0.0001703056651216819,
+        "reference_rms": 0.22998983199799372
+      },
+      "plan_time_f64_cos2_vs_original_f32_cos2": {
+        "values": 1051218,
+        "max_abs": 0.0005039572715759277,
+        "rms_abs": 1.67450535904077e-05,
+        "absolute_l2": 0.017168523059930264,
+        "relative_l2": 7.280766731382007e-05,
+        "reference_rms": 0.22999024976630747
+      },
+      "pixels_closer_to_ducc": 255806,
+      "pixels_farther_from_ducc": 211761,
+      "pixels_unchanged": 583651
+    },
+    {
+      "case_id": "GL-T720-M720-s0-synthesis-q8",
+      "original_f32_cos2_output_sha256": "639c9f266fc1f154f2f394ab5b66b979c7e912569504cbda2dbf7383de6df75b",
+      "ducc_output_sha256": "8b0ebf91d2af1961a2fc66eacb82329b7612f11813f2850daa28c5b28cae77d4",
+      "fixture_sha256": {
+        "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+        "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+      },
+      "original_f32_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "ducc_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "original_f32_cos2_vs_ducc": {
+        "values": 1051218,
+        "max_abs": 0.0005204081535339355,
+        "rms_abs": 4.2138009047670445e-05,
+        "absolute_l2": 0.043203646744307975,
+        "relative_l2": 0.00018321683476875633,
+        "reference_rms": 0.22998983199799372
+      },
+      "plan_time_f64_cos2_output_sha256": "9f48cb40d764dd59f344e76cde6e46d4811a3076d534fa6b9cfb69ba4033dbcb",
+      "plan_time_f64_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "plan_time_f64_cos2_vs_ducc": {
+        "values": 1051218,
+        "max_abs": 0.00028586387634277344,
+        "rms_abs": 3.91685713096422e-05,
+        "absolute_l2": 0.040159114219815537,
+        "relative_l2": 0.0001703056651216819,
+        "reference_rms": 0.22998983199799372
+      },
+      "plan_time_f64_cos2_vs_original_f32_cos2": {
+        "values": 1051218,
+        "max_abs": 0.0005039572715759277,
+        "rms_abs": 1.67450535904077e-05,
+        "absolute_l2": 0.017168523059930264,
+        "relative_l2": 7.280766731382007e-05,
+        "reference_rms": 0.22999024976630747
+      },
+      "pixels_closer_to_ducc": 255806,
+      "pixels_farther_from_ducc": 211761,
+      "pixels_unchanged": 583651
+    },
+    {
+      "case_id": "GL-T720-M180-s0-synthesis-q1",
+      "original_f32_cos2_output_sha256": "3a051cf3fa3784d14f519dc1d12e00df917be2567059d68bb003c7af058e0468",
+      "ducc_output_sha256": "70adb2695ff3ac5c98167ed1dd66fb6e73f6824d9dc1de4cb6338451b44dd90c",
+      "fixture_sha256": {
+        "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+        "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+      },
+      "original_f32_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "ducc_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "original_f32_cos2_vs_ducc": {
+        "values": 272538,
+        "max_abs": 0.00046837329864501953,
+        "rms_abs": 3.123487492474889e-05,
+        "absolute_l2": 0.016306220227662267,
+        "relative_l2": 0.0001817411696366729,
+        "reference_rms": 0.1718646082623544
+      },
+      "plan_time_f64_cos2_output_sha256": "c2da97128d175d96f65d32bd9a4e94d21be75ce73bda4736bd670da542684bbd",
+      "plan_time_f64_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "plan_time_f64_cos2_vs_ducc": {
+        "values": 272538,
+        "max_abs": 0.0002771317958831787,
+        "rms_abs": 2.7653161756946817e-05,
+        "absolute_l2": 0.014436380702221363,
+        "relative_l2": 0.00016090085117893366,
+        "reference_rms": 0.1718646082623544
+      },
+      "plan_time_f64_cos2_vs_original_f32_cos2": {
+        "values": 272538,
+        "max_abs": 0.0004240274429321289,
+        "rms_abs": 1.537200127132917e-05,
+        "absolute_l2": 0.008024979727759002,
+        "relative_l2": 8.944217050979639e-05,
+        "reference_rms": 0.1718652530871387
+      },
+      "pixels_closer_to_ducc": 74923,
+      "pixels_farther_from_ducc": 46212,
+      "pixels_unchanged": 151403
+    },
+    {
+      "case_id": "GL-T720-M180-s0-synthesis-q8",
+      "original_f32_cos2_output_sha256": "3a051cf3fa3784d14f519dc1d12e00df917be2567059d68bb003c7af058e0468",
+      "ducc_output_sha256": "70adb2695ff3ac5c98167ed1dd66fb6e73f6824d9dc1de4cb6338451b44dd90c",
+      "fixture_sha256": {
+        "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+        "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+      },
+      "original_f32_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "ducc_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "original_f32_cos2_vs_ducc": {
+        "values": 272538,
+        "max_abs": 0.00046837329864501953,
+        "rms_abs": 3.123487492474889e-05,
+        "absolute_l2": 0.016306220227662267,
+        "relative_l2": 0.0001817411696366729,
+        "reference_rms": 0.1718646082623544
+      },
+      "plan_time_f64_cos2_output_sha256": "c2da97128d175d96f65d32bd9a4e94d21be75ce73bda4736bd670da542684bbd",
+      "plan_time_f64_cos2_worker_checks": {
+        "finite_outputs": true,
+        "repeat_consistent": true,
+        "reset_consistent": true
+      },
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "f32_lanes": 8,
+      "plan_time_f64_cos2_vs_ducc": {
+        "values": 272538,
+        "max_abs": 0.0002771317958831787,
+        "rms_abs": 2.7653161756946817e-05,
+        "absolute_l2": 0.014436380702221363,
+        "relative_l2": 0.00016090085117893366,
+        "reference_rms": 0.1718646082623544
+      },
+      "plan_time_f64_cos2_vs_original_f32_cos2": {
+        "values": 272538,
+        "max_abs": 0.0004240274429321289,
+        "rms_abs": 1.537200127132917e-05,
+        "absolute_l2": 0.008024979727759002,
+        "relative_l2": 8.944217050979639e-05,
+        "reference_rms": 0.1718652530871387
+      },
+      "pixels_closer_to_ducc": 74923,
+      "pixels_farther_from_ducc": 46212,
+      "pixels_unchanged": 151403
+    }
+  ],
+  "accuracy_caveat": "DUCC public f32 is a mixed-precision reference with a double Legendre recurrence. No independent high-precision full-map oracle is included; this is a cross-implementation proximity check, not an absolute accuracy bound."
+}
