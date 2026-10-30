@@ -108,6 +108,17 @@ python3 "$PACKAGE/tracers/compare_longdouble_band.py" \
 
 The packaged `data/dense-band/` traces and derived tables are the verified outputs for these commands. They include degree-by-degree recurrence operands/states, the first divergence per order/ring, coefficient pairs, accumulation controls, prefix counts, output error tables and the binary128/long-double cross-check. The independent reference executables are diagnostic only. The dense comparison stops before FFT; the separately archived public-map matrix covers single-mode FFT and final-map propagation. Full/reduced random end-to-end fixtures remain unrun because the direct single-mode stages diverge materially.
 
+## Exact-product seed control and seed/cos² interaction
+
+The seed-only replay uses the saved native-f32 dense trace, the binary128 reference and the archived sparse corrected-seed table. It verifies the actual recurrence replay before changing the seed. The interaction replay additionally reads the saved plan-time f64-cos² candidate trace from `../cos2-plan-time-control-2026-10-30/data/dense-high-band/`. Both retain native-f32 recurrence operands and use high-precision accumulation only as an offline diagnostic projection; neither is a production backend or timing binary.
+
+~~~sh
+python3 tracers/seed_only_replay.py "$SCRATCH_DIR/seed-only"
+python3 tracers/seed_cos2_interaction.py "$SCRATCH_DIR/seed-cos2"
+~~~
+
+Both commands produce compressed CSV tables and JSON summaries. The gzip streams use a fixed timestamp, so outputs are byte-identical across reruns with the same Python/numerical inputs. `tracers/controlled_f32_replay.py` supplies the shared trace parser and scalar `fmaf` replay primitive. The interaction script checks that the saved cos² trace leaves seed, `a`, `b`, sine, cosine, and prepared pairs unchanged and asserts the expected 64-case / 22,752-update coverage.
+
 ## Independent reference and archived comparisons
 
 Compile the independent binary128 tracer:

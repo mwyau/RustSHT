@@ -1,0 +1,71 @@
+{
+  "scope": "diagnostic-only pre-FFT replay; no production source or performance binary changed",
+  "candidate_source_sha": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+  "ducc_reference_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cases": 64,
+  "outputs": 256,
+  "recurrence_updates": 22752,
+  "cos2_candidate_trace_sha256": "e36941c49bbefeebd10e5fe4f5e6e037cb83327dc94eeaef97737e3bedd2f14f",
+  "cos2_candidate_patch_sha256_uncompressed": "87d02ad7262c90123123d48e0ac63909704330e691ccbf7f22473097c57fef8c",
+  "original_rust_trace_sha256": "7241d150d49c07547c9e4caff3ecd6c4df4ee26f0f033667003635df1516e5ad",
+  "binary128_reference_sha256": "17984083ec5f40e2d3710df37a41ccf9df9e27ef1553df54d8431c5200692988",
+  "cos2_changed_cases": 32,
+  "cos2_changed_degree_rows": 11392,
+  "seed_changed_cases": 25,
+  "substitutions": {
+    "baseline": "original Rust f32 seed, f32 cos^2, f32 a/b/FMA recurrence",
+    "seed_only": "exactly rounded f32 sine^m * f32 sectoral norm seed; original f32 cos^2 and a/b",
+    "cos2_only": "saved plan-time f64 cos^2 narrowed to f32; original f32 seed and a/b",
+    "seed_plus_cos2": "both substitutions above; original f32 a/b and FMA recurrence",
+    "all_paths": "same Rust f32 coefficient pairs and cosine; 100-digit Decimal accumulation/reflection isolates recurrence-state changes"
+  },
+  "metrics": {
+    "baseline": {
+      "relative_l2": "0.00081622232797517320150",
+      "rms_absolute": "0.0000099424837367774499193",
+      "max_absolute": "0.000045001606639987012179"
+    },
+    "seed_only": {
+      "relative_l2": "0.00081565927683394464046",
+      "rms_absolute": "0.0000099356251559438106466",
+      "max_absolute": "0.000045176156677121439886"
+    },
+    "cos2_only": {
+      "relative_l2": "0.00052604623039081558617",
+      "rms_absolute": "0.0000064078204077417166108",
+      "max_absolute": "0.000043216696663566098554"
+    },
+    "seed_plus_cos2": {
+      "relative_l2": "0.00052466419394458768841",
+      "rms_absolute": "0.0000063909856870788526461",
+      "max_absolute": "0.000043302822566115978270"
+    }
+  },
+  "seed_plus_cos2_metric_change_vs_cos2_only_percent": {
+    "relative_l2": "-0.262721480810",
+    "rms_absolute": "-0.262721480810",
+    "max_absolute": "0.199288490789"
+  },
+  "outcomes_vs_baseline": {
+    "seed_only": {
+      "improved": 26,
+      "worsened": 30,
+      "unchanged": 200
+    },
+    "cos2_only": {
+      "improved": 62,
+      "worsened": 2,
+      "unchanged": 192
+    },
+    "seed_plus_cos2": {
+      "improved": 78,
+      "worsened": 14,
+      "unchanged": 164
+    }
+  },
+  "seed_plus_cos2_outcomes_vs_cos2_only": {
+    "improved": 40,
+    "worsened": 24,
+    "unchanged": 192
+  }
+}

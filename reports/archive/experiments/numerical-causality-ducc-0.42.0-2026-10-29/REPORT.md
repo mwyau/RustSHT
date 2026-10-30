@@ -64,6 +64,25 @@ Controlled substitutions identify which stages dominate without adding one-chang
 
 All mixed-precision substitutions are offline diagnostic calculations. They are not production backends. They are also not additive: recurrence, rounded factors, sectoral state, and coefficient preparation interact. In particular, the sparse m=8 seed-underflow and m=16 scale-transition cases remain distinct from the dense upper-band controls.
 
+### Exact-product seed replay and interaction with plan-time cos²
+
+The follow-up replay changes only the sectoral seed: it correctly rounds the exact rational product `(-1)^m * f32(sin(theta))^m * f32(sectoral_norm)` to binary32, then advances the captured native-f32 `a`, `b`, `cos²` operands with the same FMA operations. It keeps the Rust f32 coefficient pairs and cosine, while using 100-digit Decimal accumulation and reflection so the comparison isolates recurrence-state changes before FFT. It is not a simulated public-map result or a production implementation.
+
+The seed formula was checked against all 357 archived sparse corrected-seed entries; all bits match. The replay independently rechecks 48 captured sectoral normalization rows, 40 actual seed rows overlapping the sparse and dense traces, and 22,752 original native-f32 recurrence updates. On the dense fixture, the correction changes 25 of 64 seeds and matches the binary128 seed rounded to f32 in 17 cases. At m=8/ring 1, the actual seed `0x22df4000` becomes `0x22df3b40`; the binary128-rounded seed is `0x22df3b44`. For the dense north-real output at this ring, absolute pre-FFT error falls from `2.14937065e-7` to `1.22630264e-7` (42.95%).
+
+That local improvement does not generalize across the 256 dense pre-FFT components: 26 improve, 30 worsen and 200 are unchanged. Relative L2 changes only from `8.16222328e-4` to `8.15659277e-4` (−0.069%); RMS absolute error changes from `9.94248374e-6` to `9.93562516e-6`; maximum absolute error worsens from `4.50016066e-5` to `4.51761567e-5`. Seed restoration alone is therefore not a general numerical remedy.
+
+The same replay was then run on top of the separately captured plan-time f64 `cos²`-to-f32 candidate. The candidate changes only `cos²`: 32 `(m,ring)` cases and 11,392 degree rows; the captured seed, `a`, `b`, sine, cosine and prepared coefficient pairs stay the same. The four paths below use the same binary128 reference, f32 coefficient pairs/cosine and high-precision accumulation:
+
+| Dense pre-FFT path | Relative L2 | RMS absolute | Maximum absolute |
+|---|---:|---:|---:|
+| Original native f32 | `8.16222328e-4` | `9.94248374e-6` | `4.50016066e-5` |
+| Exact-product seed only | `8.15659277e-4` | `9.93562516e-6` | `4.51761567e-5` |
+| Plan-time f64 `cos²`, narrowed to f32 | `5.26046230e-4` | `6.40782041e-6` | `4.32166967e-5` |
+| Both setup changes | `5.24664194e-4` | `6.39098569e-6` | `4.33028226e-5` |
+
+Adding the seed change to the `cos²` route improves relative L2 by a further `0.263%`, but worsens the maximum absolute error by `0.199%`; against the `cos²`-only path, 40 components improve, 24 worsen and 192 are unchanged. These small, mixed changes confirm that the setup deltas are not additive and that the repeated f32 recurrence remains the major error source. Neither result has an application tolerance or runtime measurement, and neither is a numerical acceptance pass. Machine-readable outputs, per-degree states, exact trace hashes and a byte-reproducible replay are in `data/dense-band/seed-only-*` and `data/dense-band/seed-cos2-*`; reproduction is documented in [REPRODUCE.md](REPRODUCE.md).
+
 ## First divergence and final pre-FFT error
 
 All values below are the real north Fourier coefficient before the longitude FFT. The reference column is the binary128 result. Relative error is relative to that value. Ring-scaled error is absolute error divided by the maximum absolute binary128 reference across the seven traced rings for the same order, degree, and component.
@@ -117,6 +136,6 @@ Full and reduced random T720 end-to-end fixtures were not run. Per the steering,
 
 ## Recommended NEXT
 
-Set an independent numerical error budget for the intended scientific workload. Then, in an isolated diagnostic branch, change only the f32 seed normalization so no nonzero intermediate crosses into a subnormal mantissa; replay the existing 357-case pre-FFT set and the single-mode public-map matrix against binary128. Keep recurrence, accumulation, and FFT unchanged for that test. If the seed-only change improves the aggregate without harming polar/subnormal cases, benchmark the whole T720 transform before considering it for production. Separately evaluate plan-time cos² preparation and recurrence compensation; do not combine those changes until the one-variable traces identify their effects.
+The seed-only and seed-plus-cos² controls are complete; neither establishes an accuracy pass, and the combined control has no whole-transform timing. Do not promote either setup correction from these replays. The dense trace, prior plan-time cos² control, and archived twofold/residual screens already establish that recurrence-state error dominates and that broad compensation is expensive. Next return to the cross-family B1–B3 recurrence-versus-accumulation decomposition from the current M6 plan. After that, any scalar-synthesis remedy must target a measured recurrence error source with a separately stated numerical budget and a whole-transform cost measurement; do not repeat the rejected all-order residual or twofold routes unchanged.
 
 No production source, API, workspace, or benchmark binary was changed by this diagnosis. Instrumentation and candidate changes are confined to the archived patches and scratch checkouts.

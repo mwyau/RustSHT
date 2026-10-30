@@ -1,6 +1,6 @@
-6ffc3b4414d94fdec088aeaa0128edd5f481e92a86c988e81e145700eed8a81b  ./DATA_PROVENANCE.md
-20a0ff75b42947b1eccddd99232a00ecdbd832c684265c5fe83ff62f41ab78e3  ./REPORT.md
-b4734a0000feecc8f1a419856740b653fd7a3b7b8a4c34761e8804af09e16b91  ./REPRODUCE.md
+bda44434c60e1a3f8074ec7539c32b3de722784fdf3a10710aa1e19fba0311d3  ./DATA_PROVENANCE.md
+26d9a76ee79e722e88758b33f763a2313ebb4ebd94bd597e3d319339a54cb705  ./REPORT.md
+c5df09ef093e85c9111471fcc141be84c52eae752dd690a354a05301cd7367bd  ./REPRODUCE.md
 0b73c52c5e7e97eb0d54a158d08a1018ea4ad206ff17cf321a387734b03175f2  ./SOURCE_CROSSWALK.md
 6c3b4d2acae7569ac4e6c9d2c1d482c287c6151c27c7115f8608be967fe5e4ca  ./assembly/ducc-double-v4-kernel-fma.snippet.txt
 358742f15bb376495f4248ed332b7b14f56486c03a2f60bd04bc3cbdc973eaa8  ./assembly/rust-f32-v3-ordinary-kernel.snippet.txt
@@ -22,6 +22,13 @@ c07e140f11a369df112e8a32e106f518d7bb2c3e69570a6bb2d3564c7d5b351d  ./data/dense-b
 94b3e63e36f8f34277721dc95a254dc947c351a431a8f30bf974cf7a3e79f8f9  ./data/dense-band/longdouble-reference.csv.gz
 17984083ec5f40e2d3710df37a41ccf9df9e27ef1553df54d8431c5200692988  ./data/dense-band/quad128-reference.csv.gz
 7241d150d49c07547c9e4caff3ecd6c4df4ee26f0f033667003635df1516e5ad  ./data/dense-band/rust-f32-trace.csv.gz
+31a3ac067b128146d73b1838dcb034a72b4e0e93d86fafb0f459d80a0b91416a  ./data/dense-band/seed-cos2-interaction-summary.json
+5e3f03b51f0bd39d9bad4dda1a40ce5e0a3cec6023edf21de7b43bd1923857b5  ./data/dense-band/seed-cos2-interaction.csv.gz
+998346f608726babe017bb64f9c49e689a753cab3bd44add8c1221331b32c144  ./data/dense-band/seed-cos2-recurrence-growth.csv.gz
+7789e222dd6c5976f09a93f9b9e65563f92affc1a99da010016e94befb9ef5fd  ./data/dense-band/seed-only-prefft-comparison.csv.gz
+05b5fe97a67b6aecacb760c6d36e0b2bf297009dbec83d4e8019cd718bd4e535  ./data/dense-band/seed-only-recurrence-growth.csv.gz
+cc6f0d81938e73b7fbd3ac3440082dac3e84b08d5ab6a68366749d6dbab1dde5  ./data/dense-band/seed-only-seed-and-state-summary.csv.gz
+976a6c46b7c69e63b652cec55651271ee9823dddd400c986d69cd66bde9c11ac  ./data/dense-band/seed-only-summary.json
 eb0f338cdb22395502fd2cf867ae9eb3892227dc9edc4ecc132c29f978a31c5b  ./data/ducc-actual.csv.gz
 6dc7ed28c187d5705addc12b7af86766be12a0ad97041e87de1edefdaf85a001  ./data/ducc-modes.csv.gz
 35c9303fe26553d33a9a95d531bbe60a0570d4500ec4a5bb86c5ab38836e32ae  ./data/ducc-public-map.csv.gz
@@ -50,6 +57,7 @@ a6cd8418fbab03d8e82cbe9246cc67ef7bc9dd46986656aa209adc5daa9ef1ac  ./data/rust-zo
 cfba2c29340583aefe60efa8ebd9661f083b6faf54a118797c4fd85ddd9877a1  ./patches/rust-trace-only.patch
 8a91f1b2c436036243ba73ee1f4e6923ff5796999b5ea5843dda519ec58ccfe9  ./tracers/compare_dense_band.py
 19ca56558b63380e57d121d046fadbc1ec858c586e2e1e5185fcdd51b445b7b4  ./tracers/compare_longdouble_band.py
+a4b6040eb3b44848527af551896bb4ee3ed1f5587f64d535fc429cc42fdf3e8a  ./tracers/controlled_f32_replay.py
 c1e91c23ca7466f5ce4cf4e93ba4a2fc2b852bdab77d4a2e885c5859f72a860e  ./tracers/longdouble_band_trace.cpp
 ae3fd153a79b457bec71a362f0402b7801203c926c2383ce4ce99ff494570118  ./tracers/longdouble_reference.cpp
 b6b14d82d0a0990e3066bc8e15a2bc2b1afa54d8661b531c977d5ffa58a6265d  ./tracers/numeric_longdouble_map.cc
@@ -60,3 +68,5 @@ d2db0ba7c767ef0b64900d7cb09f9d6e2be26e0a473b2600b98cf08c8e08af6e  ./tracers/quad
 46d41b18e14fd216f5af3f0bbcfabcd6bb690befd8b1493cbe30c4140d7e09bf  ./tracers/quad_reference.c
 09cbb6448b77c3fa8900b0ccece4e233f5d71b11746702671fed79f2f0875f03  ./tracers/quad_trace.c
 4cda8964a5c36706178951c24f5bc2edcd48731c7f8c51d3fc2e3d26ee835dd7  ./tracers/run_ducc_modes.py
+5b9a96691f3a7a8761dcef3a562d547f069fe25826c38f0b27c29bfe39573566  ./tracers/seed_cos2_interaction.py
+b225c61c9d00b52a3929688466ac6c71eb6ef21a744ec959de45e414b08dc7e7  ./tracers/seed_only_replay.py

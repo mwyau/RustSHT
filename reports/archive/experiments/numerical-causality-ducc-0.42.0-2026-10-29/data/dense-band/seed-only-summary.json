@@ -1,0 +1,148 @@
+{
+  "north_re": {
+    "actual_abs_error": {
+      "max": "0.000045001606639987012179",
+      "rms": "0.000010966376948903993011"
+    },
+    "corrected_abs_error": {
+      "max": "0.000045176156677121439886",
+      "rms": "0.000010968355762541343555"
+    },
+    "actual_envelope_scaled_error": {
+      "max": "0.0047813643148943239673",
+      "rms": "0.00099939953143309647227"
+    },
+    "corrected_envelope_scaled_error": {
+      "max": "0.0047999100376147311027",
+      "rms": "0.0010002581728020831195"
+    },
+    "per_component_outcomes": {
+      "improved": 6,
+      "worsened": 8,
+      "unchanged": 50
+    }
+  },
+  "north_im": {
+    "actual_abs_error": {
+      "max": "0.000042873199291753801504",
+      "rms": "0.0000089144482201659795996"
+    },
+    "corrected_abs_error": {
+      "max": "0.000042903294819888131991",
+      "rms": "0.0000089153112347574287789"
+    },
+    "actual_envelope_scaled_error": {
+      "max": "0.0047448250711358797141",
+      "rms": "0.0010839607608586769544"
+    },
+    "corrected_envelope_scaled_error": {
+      "max": "0.0047448250711358797141",
+      "rms": "0.0010841913977439869632"
+    },
+    "per_component_outcomes": {
+      "improved": 7,
+      "worsened": 7,
+      "unchanged": 50
+    }
+  },
+  "south_re": {
+    "actual_abs_error": {
+      "max": "0.000028257708717314935729",
+      "rms": "0.0000087769655985347638864"
+    },
+    "corrected_abs_error": {
+      "max": "0.000028257708717314935729",
+      "rms": "0.0000087352818922085139116"
+    },
+    "actual_envelope_scaled_error": {
+      "max": "0.0039776532523688878032",
+      "rms": "0.00087130664962739394995"
+    },
+    "corrected_envelope_scaled_error": {
+      "max": "0.0039776532523688878032",
+      "rms": "0.00087045083485781650956"
+    },
+    "per_component_outcomes": {
+      "improved": 6,
+      "worsened": 8,
+      "unchanged": 50
+    }
+  },
+  "south_im": {
+    "actual_abs_error": {
+      "max": "0.000043216696663566098554",
+      "rms": "0.000010892566082012097562"
+    },
+    "corrected_abs_error": {
+      "max": "0.000043302822566115978270",
+      "rms": "0.000010898341005633931065"
+    },
+    "actual_envelope_scaled_error": {
+      "max": "0.0050429047147059830756",
+      "rms": "0.0011019482031049141512"
+    },
+    "corrected_envelope_scaled_error": {
+      "max": "0.0050429047147059830756",
+      "rms": "0.0011020166322064570692"
+    },
+    "per_component_outcomes": {
+      "improved": 7,
+      "worsened": 7,
+      "unchanged": 50
+    }
+  },
+  "all_256_outputs": {
+    "actual": {
+      "relative_l2": "0.00081622232797517320150",
+      "max_abs": "0.000045001606639987012179",
+      "rms_abs": "0.0000099424837367774499193"
+    },
+    "corrected": {
+      "relative_l2": "0.00081565927683394464046",
+      "max_abs": "0.000045176156677121439886",
+      "rms_abs": "0.0000099356251559438106467"
+    },
+    "paired_component_outcomes": {
+      "improved": 26,
+      "worsened": 30,
+      "unchanged": 200
+    },
+    "relative_changes_percent": {
+      "relative_l2": "-0.0689825703035",
+      "max_abs": "0.387875123061",
+      "rms_abs": "-0.0689825703035"
+    }
+  },
+  "fixture": {
+    "source_trace_commit": "1d1986faf9444438879b34904b6538aeecfeb456",
+    "candidate_source_commit": "45380d7e4bd849a33ffef7d91978ee18fd7e4193",
+    "ducc_reference_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "orders": "m=1..16",
+    "rings": "0,1,5,360",
+    "outputs": 256,
+    "seed_correction": "correctly round the exact rational product of the actual f32 sine and f32 sectoral normalization, including (-1)^m; then replay the unchanged native-f32 recurrence operands and FMA state updates; keep Rust f32 coefficient pairs/cosine and accumulate/reconstruct in 100-digit Decimal",
+    "scope": "pre-FFT Fourier coefficients; diagnostic-only; no production source changes",
+    "replayed_recurrence_updates": 22752,
+    "sectoral_norm_plan_rows_validated": 48,
+    "actual_seed_rows_validated_against_sparse_trace": 40,
+    "correctly_rounded_seed_formula_rows_validated_against_archived_sparse_table": 357,
+    "candidate_trace_sha256": "7241d150d49c07547c9e4caff3ecd6c4df4ee26f0f033667003635df1516e5ad",
+    "binary128_trace_sha256": "17984083ec5f40e2d3710df37a41ccf9df9e27ef1553df54d8431c5200692988",
+    "sparse_validation_trace_sha256": "78f540ea5e2e42b576eaf7c7520488587ed810009988326ac4427dc10d3f28b7",
+    "python": "3.14.4"
+  },
+  "seed_change_counts": {
+    "cases": 64,
+    "changed_from_actual": 25,
+    "equal_to_binary128_rounded_f32": 17,
+    "max_ulp_actual_to_corrected": 1216
+  },
+  "selected_m8_ring1_north_real": {
+    "actual_seed_bits": "22df4000",
+    "corrected_seed_bits": "22df3b40",
+    "binary128_rounded_seed_bits": "22df3b44",
+    "actual_absolute_prefft_error": "2.1493706537590248384e-7",
+    "corrected_absolute_prefft_error": "1.2263026386880825491e-7",
+    "relative_error_reduction_percent": "42.9459671582"
+  }
+}
