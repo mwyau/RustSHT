@@ -1,0 +1,1699 @@
+{
+  "candidate_commit": "db93f142",
+  "candidate_binary_sha256": "1d724ce4c015018eebec5111753addbb345aaa829b13bc9f94a21f1a1f536769",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "current_source_one_pair_per_q": [
+    {
+      "threads": 1,
+      "current_f64_ms": 93.40816050000001,
+      "prior_parent_ms": 92.101466,
+      "ratio": 1.0141875537572878,
+      "output_bitwise_equal": true,
+      "current_sha256": [
+        "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+        "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+      ],
+      "parent_sha256": [
+        "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+        "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+      ],
+      "current_binary_sha256": "1d724ce4c015018eebec5111753addbb345aaa829b13bc9f94a21f1a1f536769",
+      "parent_binary_sha256": "8a73a8c0e4fc0c35f15c93e00dad81fdbac06ebb3cc7b033af28a33b128b5f0a"
+    },
+    {
+      "threads": 8,
+      "current_f64_ms": 16.403603,
+      "prior_parent_ms": 16.093383,
+      "ratio": 1.0192762453984971,
+      "output_bitwise_equal": true,
+      "current_sha256": [
+        "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+        "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+      ],
+      "parent_sha256": [
+        "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+        "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+      ],
+      "current_binary_sha256": "1d724ce4c015018eebec5111753addbb345aaa829b13bc9f94a21f1a1f536769",
+      "parent_binary_sha256": "8a73a8c0e4fc0c35f15c93e00dad81fdbac06ebb3cc7b033af28a33b128b5f0a"
+    }
+  ],
+  "historical_15_pair_same_route_control": {
+    "metadata": {
+      "source_base": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+      "candidate_head": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+      "candidate_patch_sha256": "37115d60240f6d378c6a1341b0efeaec06ecc6fd2c81570ec7d8daa9a6b0a5bf",
+      "parent_source": "edb1c7239e74caff59c83e778b1e2e474e3fe1d7",
+      "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+      "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+      "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+      "affinity": {
+        "q1": "0",
+        "q8": "0-7"
+      },
+      "fixture": {
+        "map0": "3396f0ec562f6f913ccaf8f6762f32b07e05226008e3c65c70f8e5444b1d343b",
+        "map1": "3d4b22540003ed94c3491bc6691e6f32343107bf4e5768631f024238a46909ad",
+        "alm0": "da9fc9dcbd2ab813ce2f20d743efb4df8e52bc55386ba229d636e78e7d99b824",
+        "alm1": "b70692f9494db8780251c3f94c9bee5755333ed741cf19e2c72d85ddb676bf59"
+      },
+      "fixture_seed": 255022069,
+      "binary_sha256": {
+        "candidate": "1b621d791f8297b957c1a40bb3144cd59d477cdcfeeaf90f04e73f5379a48928",
+        "parent": "8a73a8c0e4fc0c35f15c93e00dad81fdbac06ebb3cc7b033af28a33b128b5f0a"
+      },
+      "threads": [
+        1,
+        8
+      ],
+      "process_pairs_per_thread_count": 15,
+      "target_ms": 25.0,
+      "method": "15 alternating fresh processes per q; same f32 fixture values widened inside Rust worker to f64; complete GL T1023 spin-1 synthesis; median of calibrated batches per process",
+      "case": {
+        "grid": "GL",
+        "ntheta": 1024,
+        "nphi": 2048,
+        "lmax": 1023,
+        "mmax": 1023,
+        "longitude": "even",
+        "spin": 1,
+        "operation": "synthesis",
+        "threads": 1
+      }
+    },
+    "threads": [
+      {
+        "threads": 1,
+        "candidate_median_ms": 92.562733,
+        "parent_median_ms": 91.26841300000001,
+        "median_paired_ratio": 1.0140072735590833,
+        "paired_ratio_bootstrap_95_ci": [
+          1.0120750627571429,
+          1.0287781814215955
+        ],
+        "candidate_faster_pairs": 1,
+        "output_bitwise_equal": true,
+        "pairs": [
+          {
+            "threads": 1,
+            "pair": 1,
+            "candidate_ms": 92.287836,
+            "parent_ms": 92.141953,
+            "candidate_over_parent": 1.0015832418919968,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.72912,
+              "repetitions": 1,
+              "batch_ms": [
+                92.287836,
+                92.34279,
+                94.006664,
+                91.854362,
+                91.652624
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.287836,
+              "process_elapsed_s": 0.77248819405213
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 107.541539,
+              "repetitions": 1,
+              "batch_ms": [
+                91.24721299999999,
+                90.164791,
+                102.72278999999999,
+                95.76557700000001,
+                92.141953
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.141953,
+              "process_elapsed_s": 0.7921591787599027
+            },
+            "output_sha256": {
+              "candidate": {
+                "map0": "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+                "map1": "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+              },
+              "parent": {
+                "map0": "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+                "map1": "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+              }
+            },
+            "outputs_bitwise_equal": true
+          },
+          {
+            "threads": 1,
+            "pair": 2,
+            "candidate_ms": 92.930464,
+            "parent_ms": 91.646743,
+            "candidate_over_parent": 1.0140072735590833,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 106.057832,
+              "repetitions": 1,
+              "batch_ms": [
+                92.930464,
+                93.16120699999999,
+                92.707515,
+                92.75784900000001,
+                92.933268
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.930464,
+              "process_elapsed_s": 0.7648608321323991
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 101.914122,
+              "repetitions": 1,
+              "batch_ms": [
+                91.646743,
+                90.57232499999999,
+                90.485462,
+                94.03086900000001,
+                95.361017
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 91.646743,
+              "process_elapsed_s": 0.7522534388117492
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 3,
+            "candidate_ms": 93.904022,
+            "parent_ms": 95.302828,
+            "candidate_over_parent": 0.9853225131997132,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 104.428834,
+              "repetitions": 1,
+              "batch_ms": [
+                93.904022,
+                93.527565,
+                93.091255,
+                98.693664,
+                96.202116
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 93.904022,
+              "process_elapsed_s": 0.7741495431400836
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 102.502226,
+              "repetitions": 1,
+              "batch_ms": [
+                92.936445,
+                91.657493,
+                95.302828,
+                101.68143500000001,
+                96.318445
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 95.302828,
+              "process_elapsed_s": 0.7732451749034226
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 4,
+            "candidate_ms": 92.78331700000001,
+            "parent_ms": 90.18787400000001,
+            "candidate_over_parent": 1.0287781814215955,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 113.982532,
+              "repetitions": 1,
+              "batch_ms": [
+                93.24572500000001,
+                92.322131,
+                93.068443,
+                92.78331700000001,
+                91.80462
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.78331700000001,
+              "process_elapsed_s": 0.7806251919828355
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 101.727311,
+              "repetitions": 1,
+              "batch_ms": [
+                90.60083900000001,
+                90.15753699999999,
+                90.18787400000001,
+                93.13686200000001,
+                90.15496200000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 90.18787400000001,
+              "process_elapsed_s": 0.7457151520065963
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 5,
+            "candidate_ms": 92.27234700000001,
+            "parent_ms": 91.33783299999999,
+            "candidate_over_parent": 1.0102314010449538,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.664919,
+              "repetitions": 1,
+              "batch_ms": [
+                92.756637,
+                91.86342,
+                92.621573,
+                92.27234700000001,
+                92.16012699999999
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.27234700000001,
+              "process_elapsed_s": 0.7589171719737351
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 101.312733,
+              "repetitions": 1,
+              "batch_ms": [
+                91.33783299999999,
+                91.06962,
+                92.796662,
+                91.9059,
+                91.093114
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 91.33783299999999,
+              "process_elapsed_s": 0.750387575943023
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 6,
+            "candidate_ms": 92.27779799999999,
+            "parent_ms": 90.316234,
+            "candidate_over_parent": 1.021718841819733,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.549121,
+              "repetitions": 1,
+              "batch_ms": [
+                92.27779799999999,
+                91.97930799999999,
+                92.04683399999999,
+                94.202011,
+                92.87533
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.27779799999999,
+              "process_elapsed_s": 0.7586251841858029
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 105.566951,
+              "repetitions": 1,
+              "batch_ms": [
+                90.316234,
+                90.19707100000001,
+                90.990922,
+                90.353314,
+                90.16958
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 90.316234,
+              "process_elapsed_s": 0.7512788600288332
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 7,
+            "candidate_ms": 92.58774,
+            "parent_ms": 91.479299,
+            "candidate_over_parent": 1.0121168506111968,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 106.64278,
+              "repetitions": 1,
+              "batch_ms": [
+                92.755505,
+                92.58774,
+                92.468035,
+                92.55068,
+                93.599941
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.58774,
+              "process_elapsed_s": 0.763100977987051
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 102.23285,
+              "repetitions": 1,
+              "batch_ms": [
+                91.53515399999999,
+                90.94193,
+                91.509185,
+                91.479299,
+                91.37150700000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 91.479299,
+              "process_elapsed_s": 0.7520135086961091
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 8,
+            "candidate_ms": 93.528065,
+            "parent_ms": 90.622771,
+            "candidate_over_parent": 1.0320592050755102,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 104.263293,
+              "repetitions": 1,
+              "batch_ms": [
+                93.528065,
+                92.841406,
+                96.706975,
+                98.836954,
+                92.415206
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 93.528065,
+              "process_elapsed_s": 0.7790337749756873
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 102.814262,
+              "repetitions": 1,
+              "batch_ms": [
+                98.496515,
+                90.92359499999999,
+                90.23312899999999,
+                90.494069,
+                90.622771
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 90.622771,
+              "process_elapsed_s": 0.7557386830449104
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 9,
+            "candidate_ms": 97.17186699999999,
+            "parent_ms": 92.02288,
+            "candidate_over_parent": 1.055953334648948,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 105.262559,
+              "repetitions": 1,
+              "batch_ms": [
+                91.1925,
+                91.31486,
+                97.17186699999999,
+                98.189819,
+                98.90991000000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 97.17186699999999,
+              "process_elapsed_s": 0.7761518633924425
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.024717,
+              "repetitions": 1,
+              "batch_ms": [
+                92.02288,
+                91.731943,
+                91.324718,
+                106.597205,
+                96.772949
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.02288,
+              "process_elapsed_s": 0.7759676771238446
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 10,
+            "candidate_ms": 93.65839,
+            "parent_ms": 90.49929900000001,
+            "candidate_over_parent": 1.0349073532602722,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 105.441635,
+              "repetitions": 1,
+              "batch_ms": [
+                93.65839,
+                99.081022,
+                96.400469,
+                92.12427,
+                91.87640499999999
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 93.65839,
+              "process_elapsed_s": 0.7735253619030118
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 102.11018,
+              "repetitions": 1,
+              "batch_ms": [
+                90.579679,
+                90.26932599999999,
+                90.184808,
+                92.031515,
+                90.49929900000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 90.49929900000001,
+              "process_elapsed_s": 0.7496311152353883
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 11,
+            "candidate_ms": 92.414795,
+            "parent_ms": 91.26841300000001,
+            "candidate_over_parent": 1.012560555862848,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.741463,
+              "repetitions": 1,
+              "batch_ms": [
+                94.513987,
+                91.894047,
+                91.552125,
+                93.06943500000001,
+                92.414795
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.414795,
+              "process_elapsed_s": 0.7661337316967547
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.008366,
+              "repetitions": 1,
+              "batch_ms": [
+                91.01066900000001,
+                91.534242,
+                92.100335,
+                90.25904799999999,
+                91.26841300000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 91.26841300000001,
+              "process_elapsed_s": 0.7516416111029685
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 12,
+            "candidate_ms": 92.13026,
+            "parent_ms": 90.291068,
+            "candidate_over_parent": 1.0203695896032596,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 104.323446,
+              "repetitions": 1,
+              "batch_ms": [
+                93.26964,
+                92.13026,
+                91.596168,
+                93.345873,
+                91.949281
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.13026,
+              "process_elapsed_s": 0.7597318012267351
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 101.717693,
+              "repetitions": 1,
+              "batch_ms": [
+                90.291068,
+                90.08533200000001,
+                92.041143,
+                90.70765999999999,
+                90.27929499999999
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 90.291068,
+              "process_elapsed_s": 0.7493428341113031
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 13,
+            "candidate_ms": 92.49730000000001,
+            "parent_ms": 90.35067,
+            "candidate_over_parent": 1.0237588719596658,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 104.539261,
+              "repetitions": 1,
+              "batch_ms": [
+                92.71190299999999,
+                92.49730000000001,
+                94.21251,
+                92.408965,
+                92.244065
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.49730000000001,
+              "process_elapsed_s": 0.7662674328312278
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 104.647444,
+              "repetitions": 1,
+              "batch_ms": [
+                91.28738799999999,
+                90.35067,
+                90.321084,
+                90.20357299999999,
+                97.24946299999999
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 90.35067,
+              "process_elapsed_s": 0.7579396860674024
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 14,
+            "candidate_ms": 92.102459,
+            "parent_ms": 91.003585,
+            "candidate_over_parent": 1.0120750627571429,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 114.980987,
+              "repetitions": 1,
+              "batch_ms": [
+                91.19973300000001,
+                96.396711,
+                91.23619199999999,
+                92.102459,
+                92.725499
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.102459,
+              "process_elapsed_s": 0.7704696841537952
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 101.742239,
+              "repetitions": 1,
+              "batch_ms": [
+                91.003585,
+                89.953935,
+                91.084337,
+                91.462136,
+                89.981837
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 91.003585,
+              "process_elapsed_s": 0.7473548911511898
+            }
+          },
+          {
+            "threads": 1,
+            "pair": 15,
+            "candidate_ms": 92.562733,
+            "parent_ms": 91.76480400000001,
+            "candidate_over_parent": 1.0086953708308468,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 103.754848,
+              "repetitions": 1,
+              "batch_ms": [
+                92.562733,
+                91.636293,
+                97.453035,
+                96.025014,
+                91.945374
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 92.562733,
+              "process_elapsed_s": 0.7671088431961834
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 1,
+              "first_ms": 104.087112,
+              "repetitions": 1,
+              "batch_ms": [
+                92.26181799999999,
+                91.396793,
+                91.11832,
+                91.76480400000001,
+                92.368759
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 91.76480400000001,
+              "process_elapsed_s": 0.7541969590820372
+            }
+          }
+        ]
+      },
+      {
+        "threads": 8,
+        "candidate_median_ms": 15.705162000000001,
+        "parent_median_ms": 15.547929,
+        "median_paired_ratio": 1.0012043147816456,
+        "paired_ratio_bootstrap_95_ci": [
+          0.9896210982559369,
+          1.0202000459164995
+        ],
+        "candidate_faster_pairs": 7,
+        "output_bitwise_equal": true,
+        "pairs": [
+          {
+            "threads": 8,
+            "pair": 1,
+            "candidate_ms": 15.6341135,
+            "parent_ms": 15.32455675,
+            "candidate_over_parent": 1.0202000459164995,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.516676,
+              "repetitions": 2,
+              "batch_ms": [
+                15.6929065,
+                16.5921,
+                15.768573000000002,
+                15.5753205,
+                15.227768,
+                15.379197000000001,
+                15.489163999999999,
+                16.56579,
+                15.793304500000001,
+                15.4632
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.6341135,
+              "process_elapsed_s": 0.5109731131233275
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.804361,
+              "repetitions": 2,
+              "batch_ms": [
+                15.382338,
+                15.326588000000001,
+                15.2248975,
+                15.0752715,
+                15.2453405,
+                15.6985465,
+                15.661207,
+                16.3416645,
+                15.1233015,
+                15.3225255
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.32455675,
+              "process_elapsed_s": 0.5030246386304498
+            },
+            "output_sha256": {
+              "candidate": {
+                "map0": "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+                "map1": "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+              },
+              "parent": {
+                "map0": "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+                "map1": "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+              }
+            },
+            "outputs_bitwise_equal": true
+          },
+          {
+            "threads": 8,
+            "pair": 2,
+            "candidate_ms": 15.5751525,
+            "parent_ms": 17.050307500000002,
+            "candidate_over_parent": 0.9134822055262052,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.766706,
+              "repetitions": 2,
+              "batch_ms": [
+                15.7838675,
+                15.583751,
+                16.717495,
+                15.566554,
+                15.1689875,
+                15.4028165,
+                15.673820500000001,
+                15.4145485,
+                16.3668065,
+                15.5238285
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.5751525,
+              "process_elapsed_s": 0.4898054366931319
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.17028,
+              "repetitions": 2,
+              "batch_ms": [
+                16.653685000000003,
+                16.513567,
+                17.0808375,
+                17.375355499999998,
+                15.557522,
+                17.850943,
+                17.9356925,
+                18.552721000000002,
+                17.0197775,
+                16.83202
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 17.050307500000002,
+              "process_elapsed_s": 0.5121655822731555
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 3,
+            "candidate_ms": 15.49216425,
+            "parent_ms": 15.47352925,
+            "candidate_over_parent": 1.0012043147816456,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 16.623434,
+              "repetitions": 2,
+              "batch_ms": [
+                15.4794605,
+                16.2692835,
+                15.279851,
+                15.342683500000001,
+                15.538827,
+                15.22089,
+                15.245110500000001,
+                15.504868,
+                15.866778000000002,
+                15.969525500000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.49216425,
+              "process_elapsed_s": 0.4837962631136179
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.373732,
+              "repetitions": 2,
+              "batch_ms": [
+                15.213576499999999,
+                15.4449655,
+                15.519145,
+                16.7272085,
+                15.516996,
+                15.475132,
+                15.371012,
+                15.558128,
+                15.356229,
+                15.4719265
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.47352925,
+              "process_elapsed_s": 0.48599121486768126
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 4,
+            "candidate_ms": 15.67859925,
+            "parent_ms": 15.27076375,
+            "candidate_over_parent": 1.0267069484327527,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.906833,
+              "repetitions": 2,
+              "batch_ms": [
+                16.334416,
+                18.215638,
+                15.483889000000001,
+                15.3714475,
+                15.688808499999999,
+                15.783130499999999,
+                15.560967999999999,
+                15.66839,
+                15.358679,
+                17.1175515
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.67859925,
+              "process_elapsed_s": 0.4900210411287844
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.75625,
+              "repetitions": 2,
+              "batch_ms": [
+                15.2884915,
+                15.951527,
+                15.137709,
+                15.184812,
+                15.277782,
+                15.2637455,
+                15.667233,
+                15.154089500000001,
+                15.233819500000001,
+                15.326277500000002
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.27076375,
+              "process_elapsed_s": 0.48225270584225655
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 5,
+            "candidate_ms": 17.165446250000002,
+            "parent_ms": 15.44866275,
+            "candidate_over_parent": 1.1111282916704233,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.612626,
+              "repetitions": 2,
+              "batch_ms": [
+                17.256402,
+                16.7287815,
+                17.6000375,
+                17.0744905,
+                16.390957,
+                17.3492715,
+                15.7463965,
+                16.427275,
+                18.3573495,
+                18.4785115
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 17.165446250000002,
+              "process_elapsed_s": 0.5128923170268536
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 18.875131,
+              "repetitions": 2,
+              "batch_ms": [
+                16.305055499999998,
+                15.5817675,
+                15.365582,
+                15.811032999999998,
+                15.531743500000001,
+                15.195132000000001,
+                15.1882135,
+                15.186415,
+                15.252404,
+                15.5658425
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.44866275,
+              "process_elapsed_s": 0.48124494310468435
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 6,
+            "candidate_ms": 16.30530375,
+            "parent_ms": 16.47630975,
+            "candidate_over_parent": 0.9896210982559369,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.544017,
+              "repetitions": 2,
+              "batch_ms": [
+                16.0439005,
+                16.3684045,
+                16.392670000000003,
+                15.6020705,
+                16.242203,
+                18.1977645,
+                16.9131225,
+                16.8839525,
+                15.4122345,
+                16.232955
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.30530375,
+              "process_elapsed_s": 0.4928736174479127
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 18.031397,
+              "repetitions": 2,
+              "batch_ms": [
+                15.5235585,
+                16.1770855,
+                15.0661845,
+                17.13286,
+                17.823036000000002,
+                17.1449875,
+                16.775534,
+                15.53805,
+                17.343605500000002,
+                15.9258435
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.47630975,
+              "process_elapsed_s": 0.4992719511501491
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 7,
+            "candidate_ms": 16.157526,
+            "parent_ms": 16.13625875,
+            "candidate_over_parent": 1.0013179789893987,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.61471,
+              "repetitions": 2,
+              "batch_ms": [
+                17.0852355,
+                16.135898,
+                16.662181500000003,
+                15.399335,
+                15.739543500000002,
+                16.7049365,
+                20.5928415,
+                15.967276499999999,
+                15.6029275,
+                16.179154
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.157526,
+              "process_elapsed_s": 0.5083733811043203
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.022368,
+              "repetitions": 2,
+              "batch_ms": [
+                16.025696,
+                15.601029,
+                15.0538115,
+                16.3380775,
+                16.3759385,
+                16.158611,
+                16.1139065,
+                17.126954,
+                15.393915,
+                16.964464
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.13625875,
+              "process_elapsed_s": 0.49227533442899585
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 8,
+            "candidate_ms": 15.705162000000001,
+            "parent_ms": 15.44976475,
+            "candidate_over_parent": 1.0165308180501584,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.424643,
+              "repetitions": 2,
+              "batch_ms": [
+                16.384970499999998,
+                16.035569499999998,
+                15.478539,
+                15.5295945,
+                15.871807500000001,
+                14.7248585,
+                16.181979499999997,
+                15.5385165,
+                16.489576999999997,
+                15.491738999999999
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.705162000000001,
+              "process_elapsed_s": 0.48455821396782994
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 16.288364,
+              "repetitions": 2,
+              "batch_ms": [
+                15.455145,
+                16.193802,
+                15.2222325,
+                15.4443845,
+                15.4213965,
+                16.552315,
+                16.056043,
+                15.690366000000001,
+                15.21813,
+                15.3525525
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.44976475,
+              "process_elapsed_s": 0.48309836303815246
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 9,
+            "candidate_ms": 15.56631125,
+            "parent_ms": 16.128216000000002,
+            "candidate_over_parent": 0.9651601423244827,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.22337,
+              "repetitions": 2,
+              "batch_ms": [
+                17.2730785,
+                15.7717045,
+                14.733945499999999,
+                15.131246500000001,
+                16.484983500000002,
+                15.2015035,
+                14.986159,
+                16.1489375,
+                17.2039235,
+                15.360918
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.56631125,
+              "process_elapsed_s": 0.4890966061502695
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.506997,
+              "repetitions": 2,
+              "batch_ms": [
+                16.948017999999998,
+                15.9449945,
+                15.8489745,
+                17.2054815,
+                17.3032395,
+                17.335926500000003,
+                16.3114375,
+                15.5550825,
+                15.455494999999999,
+                15.406884
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.128216000000002,
+              "process_elapsed_s": 0.4923264910466969
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 10,
+            "candidate_ms": 15.77986675,
+            "parent_ms": 15.44375325,
+            "candidate_over_parent": 1.021763718609011,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 16.624295,
+              "repetitions": 2,
+              "batch_ms": [
+                17.3897875,
+                15.488237,
+                15.918814999999999,
+                17.410065499999998,
+                16.0681355,
+                15.6409185,
+                15.380024,
+                15.5562245,
+                16.515250499999997,
+                15.334208
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.77986675,
+              "process_elapsed_s": 0.490895623806864
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.62828,
+              "repetitions": 2,
+              "batch_ms": [
+                15.2892035,
+                16.5490885,
+                15.220319,
+                15.5713475,
+                15.186811,
+                15.816558,
+                16.0775335,
+                15.316158999999999,
+                15.3049525,
+                17.67615
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.44375325,
+              "process_elapsed_s": 0.4814087599515915
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 11,
+            "candidate_ms": 15.45202625,
+            "parent_ms": 15.547929,
+            "candidate_over_parent": 0.9938317990775491,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.142077,
+              "repetitions": 2,
+              "batch_ms": [
+                15.4204395,
+                15.595643500000001,
+                15.336371999999999,
+                15.3203615,
+                15.831827,
+                15.823516499999998,
+                16.157794499999998,
+                15.362971499999999,
+                15.483613,
+                15.275107
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.45202625,
+              "process_elapsed_s": 0.4780762433074415
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.680038,
+              "repetitions": 2,
+              "batch_ms": [
+                14.995466500000001,
+                15.073447999999999,
+                15.634772000000002,
+                16.9338265,
+                18.1486775,
+                17.184036,
+                15.220955,
+                16.7161075,
+                15.461086,
+                15.256491500000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.547929,
+              "process_elapsed_s": 0.4881976372562349
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 12,
+            "candidate_ms": 15.96806775,
+            "parent_ms": 15.499185,
+            "candidate_over_parent": 1.030252090674445,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.337494,
+              "repetitions": 2,
+              "batch_ms": [
+                16.116186000000003,
+                15.422764,
+                15.406203,
+                15.358839000000001,
+                15.877216999999998,
+                16.1350815,
+                16.0589185,
+                15.871501499999999,
+                17.040271,
+                16.719904500000002
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.96806775,
+              "process_elapsed_s": 0.49089124612510204
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.794923,
+              "repetitions": 2,
+              "batch_ms": [
+                16.564237,
+                16.9952915,
+                15.17568,
+                15.1216835,
+                15.5512955,
+                15.4470745,
+                15.1065805,
+                15.746507,
+                16.239117,
+                15.413341
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.499185,
+              "process_elapsed_s": 0.4847869430668652
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 13,
+            "candidate_ms": 16.132391499999997,
+            "parent_ms": 16.29962025,
+            "candidate_over_parent": 0.9897403284594926,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 21.502965,
+              "repetitions": 2,
+              "batch_ms": [
+                17.783467,
+                17.319255,
+                15.719476499999999,
+                16.5453065,
+                15.4685045,
+                15.6663265,
+                17.381422,
+                15.4337645,
+                17.2321515,
+                15.3842165
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.132391499999997,
+              "process_elapsed_s": 0.5054893959313631
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 19.483413,
+              "repetitions": 2,
+              "batch_ms": [
+                15.438503500000001,
+                15.4969685,
+                14.811135499999999,
+                15.6093945,
+                16.184514,
+                16.4147265,
+                17.2419645,
+                16.501704999999998,
+                16.486727,
+                16.7159625
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.29962025,
+              "process_elapsed_s": 0.49250954389572144
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 14,
+            "candidate_ms": 15.76328075,
+            "parent_ms": 16.1904805,
+            "candidate_over_parent": 0.9736141401115304,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.313098,
+              "repetitions": 2,
+              "batch_ms": [
+                17.199811,
+                16.0717925,
+                15.442145,
+                15.345614000000001,
+                15.5950625,
+                16.0338015,
+                16.338368499999998,
+                15.7011365,
+                15.153468499999999,
+                15.825425000000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.76328075,
+              "process_elapsed_s": 0.48669571802020073
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.355338,
+              "repetitions": 2,
+              "batch_ms": [
+                16.2298995,
+                17.734655,
+                17.5342335,
+                16.830176499999997,
+                16.1510615,
+                16.048879499999998,
+                15.270989,
+                16.2326095,
+                15.7177425,
+                15.756511000000001
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.1904805,
+              "process_elapsed_s": 0.49386242404580116
+            }
+          },
+          {
+            "threads": 8,
+            "pair": 15,
+            "candidate_ms": 15.398022749999999,
+            "parent_ms": 16.52754325,
+            "candidate_over_parent": 0.9316582941024825,
+            "candidate": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.807216,
+              "repetitions": 2,
+              "batch_ms": [
+                16.566195999999998,
+                15.3771585,
+                15.659203,
+                16.390085499999998,
+                15.309241,
+                15.418887,
+                15.320532,
+                15.522962499999998,
+                15.3137445,
+                15.265809
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 15.398022749999999,
+              "process_elapsed_s": 0.48082164814695716
+            },
+            "parent": {
+              "op": "synthesis",
+              "spin": 1,
+              "threads": 8,
+              "first_ms": 17.870785,
+              "repetitions": 2,
+              "batch_ms": [
+                17.1394425,
+                16.111347000000002,
+                16.2644695,
+                17.25798,
+                15.4848105,
+                16.5222985,
+                15.735441499999999,
+                16.532788,
+                16.8974985,
+                16.887344
+              ],
+              "finite": true,
+              "stable": true,
+              "checksum": 2.2060188472306037,
+              "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "median_ms": 16.52754325,
+              "process_elapsed_s": 0.5055486666969955
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "interpretation": "Current source f64 maps match parent bitwise at q1/q8. Current one-pair ratios (1.014x, 1.019x) are only a sanity check; the earlier 15-pair evidence remains source-predecessor context."
+}

@@ -1,0 +1,416 @@
+{
+  "source_base": "f8307cc02a85d1a66124bd3932dcc5a827ba39e1",
+  "candidate_head": "f8307cc02a85d1a66124bd3932dcc5a827ba39e1",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": {
+    "q1": "0",
+    "q8": "0-7"
+  },
+  "process_pairs": 3,
+  "target_ms": 25.0,
+  "input_precision": "f32 fixture widened component-wise to f64 only for the matched f64 diagnostic worker",
+  "binary_sha256": {
+    "rust_f32": "92262258bc39f87ad37495d4d85ec2b6cb98a4ec039d428715c5de9ce0b4f2d8",
+    "rust_f64": "1d724ce4c015018eebec5111753addbb345aaa829b13bc9f94a21f1a1f536769",
+    "ducc_f32": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d"
+  },
+  "fixture_sha256": {
+    "GL-T720-M720-even-s1-synthesis-q1": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M720-even-s1-synthesis-q8": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M180-even-s1-synthesis-q1": {
+      "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+      "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+      "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+      "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+    },
+    "GL-T720-M180-even-s1-synthesis-q8": {
+      "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+      "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+      "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+      "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+    }
+  },
+  "results_sha256": {
+    "GL-T720-M180-even-s1-synthesis-q1/summary.json": "650b1ea4d70eafd10d01df580022a2c3ec3dc624b8e94376215281460410aaab",
+    "GL-T720-M180-even-s1-synthesis-q8/summary.json": "2196fed59e064d4a201e33efa96b23057dc87b82193c4befb3ca2dfcb7d9963f",
+    "GL-T720-M720-even-s1-synthesis-q1/summary.json": "900da7410c78bc68354fe5b3b5d5faf0e1edc8118eeac536f451feada025662f",
+    "GL-T720-M720-even-s1-synthesis-q8/summary.json": "20197ba851b1c04b30456c3296d8703d4a3bdbc805ac67fbee225e097c367e79"
+  },
+  "candidate_source_patch_base": "f8307cc02a85d1a66124bd3932dcc5a827ba39e1",
+  "cells": {
+    "GL-T720-M180-even-s1-synthesis-q1": {
+      "f32_ms": 27.913518500000002,
+      "f64_ms": 16.68741125,
+      "ducc_ms": 18.54547375,
+      "f32_over_f64": 1.6658307273745203,
+      "f32_over_f64_95_ci": [
+        1.6012373291033721,
+        1.6745011602683428
+      ],
+      "f32_over_ducc": 1.5067336578554646,
+      "f32_over_ducc_95_ci": [
+        1.5018786855047348,
+        1.527362596121227
+      ],
+      "ducc_comparison_only_not_independent_accuracy": {
+        "max_relative_l2": 0.0002695004773752973,
+        "max_absolute": 0.0013469159603118896,
+        "all_finite": true,
+        "per_pair": [
+          {
+            "output_values": 545076,
+            "relative_l2": 0.0002695004773752973,
+            "absolute_l2": 0.034188384441513786,
+            "max_absolute": 0.0013469159603118896,
+            "reference_rms": 0.1718266448380884,
+            "finite": true
+          },
+          {
+            "output_values": 545076,
+            "relative_l2": 0.0002695004773752973,
+            "absolute_l2": 0.034188384441513786,
+            "max_absolute": 0.0013469159603118896,
+            "reference_rms": 0.1718266448380884,
+            "finite": true
+          },
+          {
+            "output_values": 545076,
+            "relative_l2": 0.0002695004773752973,
+            "absolute_l2": 0.034188384441513786,
+            "max_absolute": 0.0013469159603118896,
+            "reference_rms": 0.1718266448380884,
+            "finite": true
+          }
+        ]
+      },
+      "dispatch": {
+        "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+        "f32_lanes": 8
+      },
+      "paired_samples": [
+        {
+          "pair": 1,
+          "f32_ms": 27.913518500000002,
+          "f64_ms": 17.432468,
+          "ducc_ms": 18.5857345,
+          "f32_over_f64": 1.6012373291033721,
+          "f32_over_ducc": 1.5018786855047348
+        },
+        {
+          "pair": 2,
+          "f32_ms": 27.9430895,
+          "f64_ms": 16.68741125,
+          "ducc_ms": 18.54547375,
+          "f32_over_f64": 1.6745011602683428,
+          "f32_over_ducc": 1.5067336578554646
+        },
+        {
+          "pair": 3,
+          "f32_ms": 27.7027575,
+          "f64_ms": 16.6299955,
+          "ducc_ms": 18.137643,
+          "f32_over_f64": 1.6658307273745203,
+          "f32_over_ducc": 1.527362596121227
+        }
+      ],
+      "performance_status": "INTERIM PASS (3-pair current-source screen); 15-pair prior kernel screen also passed"
+    },
+    "GL-T720-M180-even-s1-synthesis-q8": {
+      "f32_ms": 4.5452028,
+      "f64_ms": 2.88590225,
+      "ducc_ms": 2.6910935499999997,
+      "f32_over_f64": 1.574088224921686,
+      "f32_over_f64_95_ci": [
+        1.4634143034545368,
+        1.6130773031917234
+      ],
+      "f32_over_ducc": 1.721715294548976,
+      "f32_over_ducc_95_ci": [
+        1.6880367276715447,
+        1.7367989859928519
+      ],
+      "ducc_comparison_only_not_independent_accuracy": {
+        "max_relative_l2": 0.0002695004773752973,
+        "max_absolute": 0.0013469159603118896,
+        "all_finite": true,
+        "per_pair": [
+          {
+            "output_values": 545076,
+            "relative_l2": 0.0002695004773752973,
+            "absolute_l2": 0.034188384441513786,
+            "max_absolute": 0.0013469159603118896,
+            "reference_rms": 0.1718266448380884,
+            "finite": true
+          },
+          {
+            "output_values": 545076,
+            "relative_l2": 0.0002695004773752973,
+            "absolute_l2": 0.034188384441513786,
+            "max_absolute": 0.0013469159603118896,
+            "reference_rms": 0.1718266448380884,
+            "finite": true
+          },
+          {
+            "output_values": 545076,
+            "relative_l2": 0.0002695004773752973,
+            "absolute_l2": 0.034188384441513786,
+            "max_absolute": 0.0013469159603118896,
+            "reference_rms": 0.1718266448380884,
+            "finite": true
+          }
+        ]
+      },
+      "dispatch": {
+        "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+        "f32_lanes": 8
+      },
+      "paired_samples": [
+        {
+          "pair": 1,
+          "f32_ms": 4.54266475,
+          "f64_ms": 2.88590225,
+          "ducc_ms": 2.6910935499999997,
+          "f32_over_f64": 1.574088224921686,
+          "f32_over_ducc": 1.6880367276715447
+        },
+        {
+          "pair": 2,
+          "f32_ms": 4.69514775,
+          "f64_ms": 3.2083516875,
+          "ducc_ms": 2.703334,
+          "f32_over_f64": 1.4634143034545368,
+          "f32_over_ducc": 1.7367989859928519
+        },
+        {
+          "pair": 3,
+          "f32_ms": 4.5452028,
+          "f64_ms": 2.817721625,
+          "ducc_ms": 2.6399270625,
+          "f32_over_f64": 1.6130773031917234,
+          "f32_over_ducc": 1.721715294548976
+        }
+      ],
+      "performance_status": "INTERIM PASS (3-pair current-source screen); 15-pair prior kernel screen also passed"
+    },
+    "GL-T720-M720-even-s1-synthesis-q1": {
+      "f32_ms": 73.784582,
+      "f64_ms": 41.1410815,
+      "ducc_ms": 45.321006999999994,
+      "f32_over_f64": 1.732883905835096,
+      "f32_over_f64_95_ci": [
+        1.7261865444464612,
+        1.8443655803736907
+      ],
+      "f32_over_ducc": 1.6280437458064427,
+      "f32_over_ducc_95_ci": [
+        1.5520379981192953,
+        1.6726453459442496
+      ],
+      "ducc_comparison_only_not_independent_accuracy": {
+        "max_relative_l2": 0.0002805656187991245,
+        "max_absolute": 0.0015663951635360718,
+        "all_finite": true,
+        "per_pair": [
+          {
+            "output_values": 2102436,
+            "relative_l2": 0.0002805656187991245,
+            "absolute_l2": 0.09364043806148252,
+            "max_absolute": 0.0015663951635360718,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          {
+            "output_values": 2102436,
+            "relative_l2": 0.0002805656187991245,
+            "absolute_l2": 0.09364043806148252,
+            "max_absolute": 0.0015663951635360718,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          {
+            "output_values": 2102436,
+            "relative_l2": 0.0002805656187991245,
+            "absolute_l2": 0.09364043806148252,
+            "max_absolute": 0.0015663951635360718,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          }
+        ]
+      },
+      "dispatch": {
+        "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+        "f32_lanes": 8
+      },
+      "paired_samples": [
+        {
+          "pair": 1,
+          "f32_ms": 73.784582,
+          "f64_ms": 42.744269,
+          "ducc_ms": 45.321006999999994,
+          "f32_over_f64": 1.7261865444464612,
+          "f32_over_ducc": 1.6280437458064427
+        },
+        {
+          "pair": 2,
+          "f32_ms": 71.29271800000001,
+          "f64_ms": 41.1410815,
+          "ducc_ms": 45.934905,
+          "f32_over_f64": 1.732883905835096,
+          "f32_over_ducc": 1.5520379981192953
+        },
+        {
+          "pair": 3,
+          "f32_ms": 73.9277655,
+          "f64_ms": 40.0830325,
+          "ducc_ms": 44.198111499999996,
+          "f32_over_f64": 1.8443655803736907,
+          "f32_over_ducc": 1.6726453459442496
+        }
+      ],
+      "performance_status": "INTERIM PASS (3-pair current-source screen); 15-pair prior kernel screen also passed"
+    },
+    "GL-T720-M720-even-s1-synthesis-q8": {
+      "f32_ms": 12.068005750000001,
+      "f64_ms": 8.098123,
+      "ducc_ms": 6.352366699999999,
+      "f32_over_f64": 1.5521087417417594,
+      "f32_over_f64_95_ci": [
+        1.415433904821733,
+        1.687478151786285
+      ],
+      "f32_over_ducc": 1.8997652874793898,
+      "f32_over_ducc_95_ci": [
+        1.7192401566300897,
+        1.9968810369884753
+      ],
+      "ducc_comparison_only_not_independent_accuracy": {
+        "max_relative_l2": 0.0002805656187991245,
+        "max_absolute": 0.0015663951635360718,
+        "all_finite": true,
+        "per_pair": [
+          {
+            "output_values": 2102436,
+            "relative_l2": 0.0002805656187991245,
+            "absolute_l2": 0.09364043806148252,
+            "max_absolute": 0.0015663951635360718,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          {
+            "output_values": 2102436,
+            "relative_l2": 0.0002805656187991245,
+            "absolute_l2": 0.09364043806148252,
+            "max_absolute": 0.0015663951635360718,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          {
+            "output_values": 2102436,
+            "relative_l2": 0.0002805656187991245,
+            "absolute_l2": 0.09364043806148252,
+            "max_absolute": 0.0015663951635360718,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          }
+        ]
+      },
+      "dispatch": {
+        "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+        "f32_lanes": 8
+      },
+      "paired_samples": [
+        {
+          "pair": 1,
+          "f32_ms": 12.5691675,
+          "f64_ms": 8.098123,
+          "ducc_ms": 6.29439975,
+          "f32_over_f64": 1.5521087417417594,
+          "f32_over_ducc": 1.9968810369884753
+        },
+        {
+          "pair": 2,
+          "f32_ms": 12.068005750000001,
+          "f64_ms": 8.5260115,
+          "ducc_ms": 6.352366699999999,
+          "f32_over_f64": 1.415433904821733,
+          "f32_over_ducc": 1.8997652874793898
+        },
+        {
+          "pair": 3,
+          "f32_ms": 11.251578666666667,
+          "f64_ms": 6.667688500000001,
+          "ducc_ms": 6.544506666666667,
+          "f32_over_f64": 1.687478151786285,
+          "f32_over_ducc": 1.7192401566300897
+        }
+      ],
+      "performance_status": "INTERIM PASS (3-pair current-source screen); 15-pair prior kernel screen also passed"
+    }
+  },
+  "accuracy_status": "DUCC distance recorded as context only; independent T720 high-degree accuracy remains open.",
+  "candidate_commit": "db93f14268e0320cc10d5e0e800f0143f41d657a",
+  "source_revision": "db93f14268e0320cc10d5e0e800f0143f41d657a",
+  "candidate_source_patch_sha256": "6499010b93f8231377f495f9685bf6e9ee0824b0b7600a988db8f1eb88357cc6",
+  "implementation": "shared compile-time generic reflected order-major spin-1 synthesis; native f32 recurrence, SIMD accumulation, spectra, FFT and maps; no f32-to-f64 transform promotion",
+  "tests": {
+    "cargo test --release --features parallel --lib spin1": "51 passed, 5 ignored",
+    "cargo test --release --features parallel --lib scalar_ordered": "21 passed, 2 ignored",
+    "cargo test --release --features parallel --test f32": "14 passed, 1 ignored",
+    "cargo fmt --all --check": "passed",
+    "cargo clippy --release --features parallel --lib -- -D warnings": "passed"
+  },
+  "f64_t1023_control": {
+    "reference_parent_source": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+    "method": "one matched process per thread count; same widened f32 fixture values; bitwise output hashes compared",
+    "results": [
+      {
+        "threads": 1,
+        "current_f64_ms": 93.40816050000001,
+        "prior_parent_ms": 92.101466,
+        "ratio": 1.0141875537572878,
+        "output_bitwise_equal": true,
+        "current_sha256": [
+          "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+          "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+        ],
+        "parent_sha256": [
+          "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+          "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+        ],
+        "current_binary_sha256": "1d724ce4c015018eebec5111753addbb345aaa829b13bc9f94a21f1a1f536769",
+        "parent_binary_sha256": "8a73a8c0e4fc0c35f15c93e00dad81fdbac06ebb3cc7b033af28a33b128b5f0a"
+      },
+      {
+        "threads": 8,
+        "current_f64_ms": 16.403603,
+        "prior_parent_ms": 16.093383,
+        "ratio": 1.0192762453984971,
+        "output_bitwise_equal": true,
+        "current_sha256": [
+          "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+          "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+        ],
+        "parent_sha256": [
+          "a46addce7f1e1efff3334a03f125f5c36e3b8c027762555d7e7e23cea54e4771",
+          "6fbb1bc9cbbc094198a9d64e9dcd7a39c1ab7c511435c5490f35252b4c8f5452"
+        ],
+        "current_binary_sha256": "1d724ce4c015018eebec5111753addbb345aaa829b13bc9f94a21f1a1f536769",
+        "parent_binary_sha256": "8a73a8c0e4fc0c35f15c93e00dad81fdbac06ebb3cc7b033af28a33b128b5f0a"
+      }
+    ],
+    "status": "current-source outputs bitwise equal; one-pair timing is a sanity screen, not a performance claim"
+  }
+}
