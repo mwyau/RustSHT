@@ -1,0 +1,403 @@
+{
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "grid": "GL T720; 721 latitude rings; phi0=0.23; full mmax=720 nphi=1458; reduced mmax=180 nphi=378",
+  "affinity": {
+    "q1": "CPU 0",
+    "q8": "CPUs 0-7"
+  },
+  "process_pairs": 3,
+  "families": {
+    "scalar-analysis": {
+      "base_source": "8fb2e1fd7475f99f2b53c9688756afd58705194c",
+      "patch_sha256": "a7c617785c3e312bd6bdf18c66f7b545e66f18fbcbdedc8a1b93f20cb8776c3a",
+      "f32_binary_sha256": "afa6d93848e849e5d6aef714818cf84a494a42179a24e830cc35b035357e0e2c",
+      "f64_binary_sha256": "4161cdc9a5287a8a651a70a17a5ce1ca727d898dab2ee9eab811889af681b391",
+      "ducc_f32_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+      "precision_execution": "Native f32 and matched f64 binaries from the same candidate source, x86-64-v3. The f64 worker reads and widens exact f32 fixture components. Pulp V3 AVX2/FMA; f32 width 8.",
+      "tests": "cargo test --lib f32_ (28 passed, 2 ignored); cargo test --test f32 (14 passed, 1 ignored).",
+      "cells": [
+        {
+          "cell_id": "GL-T720-M720-even-s0-analysis-q1",
+          "mmax": 720,
+          "threads": 1,
+          "f64_ms": 19.612047750000002,
+          "f32_over_f64": 23.537046150624427,
+          "ducc_f32_ms": 14.55015,
+          "f32_over_ducc": 31.771217066223542,
+          "relative_l2_vs_ducc": 1.830113249717306e-05,
+          "max_abs_vs_ducc": 3.512832336127758e-07,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            19.612047750000002,
+            19.741730000000004,
+            19.5932805
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+            "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 461.609673,
+          "matched_f32_ms": 461.609673,
+          "f32_ms": 461.609673
+        },
+        {
+          "cell_id": "GL-T720-M720-even-s0-analysis-q8",
+          "mmax": 720,
+          "threads": 8,
+          "f64_ms": 3.023350857142858,
+          "f32_over_f64": 20.990358710789007,
+          "ducc_f32_ms": 2.2316857916666666,
+          "f32_over_ducc": 28.210430758257694,
+          "relative_l2_vs_ducc": 1.830113249717306e-05,
+          "max_abs_vs_ducc": 3.512832336127758e-07,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            3.023350857142858,
+            2.9582100000000002,
+            3.1880160714285717
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+            "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 63.461219,
+          "matched_f32_ms": 63.461219,
+          "f32_ms": 63.461219
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s0-analysis-q1",
+          "mmax": 180,
+          "threads": 1,
+          "f64_ms": 8.209558333333334,
+          "f32_over_f64": 16.87496554321335,
+          "ducc_f32_ms": 5.927367125,
+          "f32_over_ducc": 23.412304510866864,
+          "relative_l2_vs_ducc": 2.206189227427127e-05,
+          "max_abs_vs_ducc": 1.005362719297409e-06,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            8.209558333333334,
+            8.187667333333334,
+            8.237440333333332
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+            "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 138.53601400000002,
+          "matched_f32_ms": 138.53601400000002,
+          "f32_ms": 138.53601400000002
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s0-analysis-q8",
+          "mmax": 180,
+          "threads": 8,
+          "f64_ms": 1.2204960909090907,
+          "f32_over_f64": 16.25740930085285,
+          "ducc_f32_ms": 0.9748707307692308,
+          "f32_over_ducc": 20.31653065399696,
+          "relative_l2_vs_ducc": 2.206189227427127e-05,
+          "max_abs_vs_ducc": 1.005362719297409e-06,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            1.2204960909090907,
+            1.2049837777777777,
+            1.3208947045454544
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+            "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 19.842104499999998,
+          "matched_f32_ms": 19.842104499999998,
+          "f32_ms": 19.842104499999998
+        }
+      ],
+      "status": "all four cells exceed 2.0x matching Rust f64; prototype not promoted; independent accuracy remains UNMEASURED"
+    },
+    "spin1-synthesis": {
+      "base_source": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+      "patch_sha256": "a2823bfe2818bc6a1782872f1a46bc481cd86680c96e4c64b4725f1d437f3520",
+      "f32_binary_sha256": "397d848a558512ff75821e89418b492a66cf51e1b4e1ca9859d13fcf0059a7e8",
+      "f64_binary_sha256": "6e916e74766f9bb53f9abe031640fd5ad1853755df8c9e573dc486704a65987b",
+      "ducc_f32_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+      "precision_execution": "Native f32/f64 matched from the same source and x86-64-v3 flags; f64 worker widens exact f32 fixture components. Pulp V3 AVX2/FMA; f32 width 8.",
+      "tests": "Focused SIMD scaled-transition test; cargo test --test f32 (14 passed, 1 ignored); cargo check --lib --features parallel; fmt and diff checks passed.",
+      "cells": [
+        {
+          "cell_id": "GL-T720-M720-even-s1-synthesis-q1",
+          "mmax": 720,
+          "threads": 1,
+          "f64_ms": 39.304729,
+          "f32_over_f64": 29.52669216978954,
+          "ducc_f32_ms": 42.377317500000004,
+          "f32_over_ducc": 26.112820709455832,
+          "relative_l2_vs_ducc": 0.0002138321273593174,
+          "max_abs_vs_ducc": 0.0015663951635360718,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            39.9821755,
+            39.304729,
+            39.2653405
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 1112.3831369999998,
+          "matched_f32_ms": 1160.538634,
+          "f32_ms": 1160.538634
+        },
+        {
+          "cell_id": "GL-T720-M720-even-s1-synthesis-q8",
+          "mmax": 720,
+          "threads": 8,
+          "f64_ms": 8.112335,
+          "f32_over_f64": 27.318688392429554,
+          "ducc_f32_ms": 6.009741099999999,
+          "f32_over_ducc": 35.367563227256596,
+          "relative_l2_vs_ducc": 0.000213800780316897,
+          "max_abs_vs_ducc": 0.0015663951635360718,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            8.112335,
+            8.332511666666667,
+            7.699608666666666
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 212.339717,
+          "matched_f32_ms": 221.618352,
+          "f32_ms": 221.618352
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-synthesis-q1",
+          "mmax": 180,
+          "threads": 1,
+          "f64_ms": 39.908632999999995,
+          "f32_over_f64": 13.643944532001386,
+          "ducc_f32_ms": 18.114753,
+          "f32_over_ducc": 29.25323782498471,
+          "relative_l2_vs_ducc": 0.0001952420333107457,
+          "max_abs_vs_ducc": 0.0013469159603118896,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            39.908632999999995,
+            40.175163,
+            39.2736855
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 529.2448029999999,
+          "matched_f32_ms": 544.511175,
+          "f32_ms": 544.511175
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-synthesis-q8",
+          "mmax": 180,
+          "threads": 8,
+          "f64_ms": 3.0590417142857143,
+          "f32_over_f64": 28.02244984096794,
+          "ducc_f32_ms": 2.6715013125000002,
+          "f32_over_ducc": 28.220297574630905,
+          "relative_l2_vs_ducc": 0.0001952420333107457,
+          "max_abs_vs_ducc": 0.0013469159603118896,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            3.170083875,
+            3.0590417142857143,
+            3.0086165
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 75.6109505,
+          "matched_f32_ms": 85.721843,
+          "f32_ms": 85.721843
+        }
+      ],
+      "status": "all four cells exceed 2.0x matching Rust f64; prototype not promoted; independent accuracy remains UNMEASURED"
+    },
+    "spin1-analysis": {
+      "base_source": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+      "patch_sha256": "49dbfffcf9ec78dff368edcd89462bbdeb6033f3af51dd2694adb15ff5b43874",
+      "f32_binary_sha256": "ef7a11cb9a99c60f1c7353e8381a66ee17e579f69651f2e094e6fafb49e53294",
+      "f64_binary_sha256": "21b4b3e2a69140ae8d450d8ba527b521960384d2a3258de4495f8c582fc36a32",
+      "ducc_f32_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+      "precision_execution": "Native f32 and matched f64 binaries from the same candidate source, x86-64-v3. The f64 worker widens exact f32 fixture components. Pulp V3 AVX2/FMA; f32 width 8.",
+      "tests": "Focused seed materialization test; cargo test --test f32 spin (2 passed); cargo test --lib spin1_ (49 passed, 4 ignored).",
+      "cells": [
+        {
+          "cell_id": "GL-T720-M720-even-s1-analysis-q1",
+          "mmax": 720,
+          "threads": 1,
+          "f64_ms": 37.52833150000001,
+          "f32_over_f64": 24.176127920848273,
+          "ducc_f32_ms": 30.0844385,
+          "f32_over_ducc": 30.4176131193342,
+          "relative_l2_vs_ducc": 1.8469589690630075e-05,
+          "max_abs_vs_ducc": 3.5134144127368927e-07,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            39.238364,
+            37.52833150000001,
+            36.7346125
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 907.2897429999999,
+          "matched_f32_ms": 907.2897429999999,
+          "f32_ms": 907.2897429999999
+        },
+        {
+          "cell_id": "GL-T720-M720-even-s1-analysis-q8",
+          "mmax": 720,
+          "threads": 8,
+          "f64_ms": 5.832415900000001,
+          "f32_over_f64": 21.121578109681785,
+          "ducc_f32_ms": 4.477850416666667,
+          "f32_over_ducc": 27.33060546945053,
+          "relative_l2_vs_ducc": 1.8469589690630075e-05,
+          "max_abs_vs_ducc": 3.5134144127368927e-07,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            5.975006875,
+            5.832415900000001,
+            5.5515564
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 123.189828,
+          "matched_f32_ms": 123.189828,
+          "f32_ms": 123.189828
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-analysis-q1",
+          "mmax": 180,
+          "threads": 1,
+          "f64_ms": 15.056636000000001,
+          "f32_over_f64": 17.84620694821871,
+          "ducc_f32_ms": 12.1789155,
+          "f32_over_ducc": 22.089968863492796,
+          "relative_l2_vs_ducc": 2.1713787335393446e-05,
+          "max_abs_vs_ducc": 9.844079613685608e-07,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            15.223429500000002,
+            15.056636000000001,
+            15.050048499999999
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 268.703842,
+          "matched_f32_ms": 268.703842,
+          "f32_ms": 268.703842
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-analysis-q8",
+          "mmax": 180,
+          "threads": 8,
+          "f64_ms": 2.5352543888888888,
+          "f32_over_f64": 15.1886517458614,
+          "ducc_f32_ms": 1.904781,
+          "f32_over_ducc": 20.385886093991903,
+          "relative_l2_vs_ducc": 2.1713787335393446e-05,
+          "max_abs_vs_ducc": 9.844079613685608e-07,
+          "independent_accuracy": "UNMEASURED",
+          "status_interim": "GAP",
+          "f32_process_pairs": 3,
+          "f64_pair_medians_ms": [
+            2.5352543888888888,
+            2.5531977777777777,
+            2.521627333333333
+          ],
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "simd": "Pulp V3 AVX2/FMA; native f32 width 8",
+          "f32_ducc_screen_ms": 38.507096,
+          "matched_f32_ms": 38.507096,
+          "f32_ms": 38.507096
+        }
+      ],
+      "status": "all four cells exceed 2.0x matching Rust f64; prototype not promoted; independent accuracy remains UNMEASURED"
+    }
+  },
+  "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_driver_flags": "-O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+  "target_ms": 25,
+  "timing_pairs": 3,
+  "measurement": "Warm whole transforms, fresh-process interleaved pairs; same deterministic f32 fixture, reused plan/workspace, affinity pinned per q1/q8."
+}

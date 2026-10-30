@@ -1,0 +1,753 @@
+{
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "process_pairs": 3,
+  "families": {
+    "scalar-analysis": {
+      "source": "8fb2e1fd7475f99f2b53c9688756afd58705194c",
+      "patch_sha256": "a7c617785c3e312bd6bdf18c66f7b545e66f18fbcbdedc8a1b93f20cb8776c3a",
+      "f32_binary_sha256": "afa6d93848e849e5d6aef714818cf84a494a42179a24e830cc35b035357e0e2c",
+      "f64_binary_sha256": "4161cdc9a5287a8a651a70a17a5ce1ca727d898dab2ee9eab811889af681b391",
+      "ducc_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+      "cells": [
+        {
+          "cell_id": "GL-T720-M720-even-s0-analysis-q1",
+          "fixture_sha256": {
+            "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+            "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 461.086547,
+              "f64_ms": 19.612047750000002,
+              "ratio": 23.510372444407288
+            },
+            {
+              "pair": 2,
+              "f32_ms": 464.237849,
+              "f64_ms": 19.741730000000004,
+              "ratio": 23.515560642355048
+            },
+            {
+              "pair": 3,
+              "f32_ms": 459.52408099999997,
+              "f64_ms": 19.5932805,
+              "ratio": 23.45314665402764
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 461.086547,
+              "ducc_ms": 14.51271275,
+              "ratio": 31.771217066223542,
+              "relative_l2": 1.830113249717306e-05,
+              "max_abs": 3.512832336127758e-07,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 464.237849,
+              "ducc_ms": 14.60978875,
+              "ratio": 31.775808462665143,
+              "relative_l2": 1.830113249717306e-05,
+              "max_abs": 3.512832336127758e-07,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 459.52408099999997,
+              "ducc_ms": 14.533233500000001,
+              "ratio": 31.61884662487532,
+              "relative_l2": 1.830113249717306e-05,
+              "max_abs": 3.512832336127758e-07,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M720-even-s0-analysis-q8",
+          "fixture_sha256": {
+            "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5",
+            "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 62.958395,
+              "f64_ms": 3.023350857142858,
+              "ratio": 20.82404523155386
+            },
+            {
+              "pair": 2,
+              "f32_ms": 62.9568175,
+              "f64_ms": 2.9582100000000002,
+              "ratio": 21.282064998766145
+            },
+            {
+              "pair": 3,
+              "f32_ms": 63.8442185,
+              "f64_ms": 3.1880160714285717,
+              "ratio": 20.026316389111226
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 62.958395,
+              "ducc_ms": 2.2700023636363635,
+              "ratio": 27.734946891925546,
+              "relative_l2": 1.830113249717306e-05,
+              "max_abs": 3.512832336127758e-07,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 62.9568175,
+              "ducc_ms": 2.2316857916666666,
+              "ratio": 28.210430758257694,
+              "relative_l2": 1.830113249717306e-05,
+              "max_abs": 3.512832336127758e-07,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 63.8442185,
+              "ducc_ms": 2.213268041666667,
+              "ratio": 28.846130381895865,
+              "relative_l2": 1.830113249717306e-05,
+              "max_abs": 3.512832336127758e-07,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s0-analysis-q1",
+          "fixture_sha256": {
+            "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+            "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 139.152244,
+              "f64_ms": 8.209558333333334,
+              "ratio": 16.950028046575788
+            },
+            {
+              "pair": 2,
+              "f32_ms": 138.53601400000002,
+              "f64_ms": 8.187667333333334,
+              "ratio": 16.920083383944686
+            },
+            {
+              "pair": 3,
+              "f32_ms": 137.973805,
+              "f64_ms": 8.237440333333332,
+              "ratio": 16.749596891364437
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 139.152244,
+              "ducc_ms": 5.97811675,
+              "ratio": 23.276936503456543,
+              "relative_l2": 2.206189227427127e-05,
+              "max_abs": 1.005362719297409e-06,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 138.53601400000002,
+              "ducc_ms": 5.906788625000001,
+              "ratio": 23.453694180566686,
+              "relative_l2": 2.206189227427127e-05,
+              "max_abs": 1.005362719297409e-06,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 137.973805,
+              "ducc_ms": 5.8932176,
+              "ratio": 23.412304510866864,
+              "relative_l2": 2.206189227427127e-05,
+              "max_abs": 1.005362719297409e-06,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s0-analysis-q8",
+          "fixture_sha256": {
+            "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec",
+            "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 19.0614125,
+              "f64_ms": 1.2204960909090907,
+              "ratio": 15.617757928091388
+            },
+            {
+              "pair": 2,
+              "f32_ms": 20.36314725,
+              "f64_ms": 1.2049837777777777,
+              "ratio": 16.899104888825615
+            },
+            {
+              "pair": 3,
+              "f32_ms": 19.842104499999998,
+              "f64_ms": 1.3208947045454544,
+              "ratio": 15.021715532448933
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 19.0614125,
+              "ducc_ms": 0.9771636538461539,
+              "ratio": 19.506878325829604,
+              "relative_l2": 2.206189227427127e-05,
+              "max_abs": 1.005362719297409e-06,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 20.36314725,
+              "ducc_ms": 0.9668892884615385,
+              "ratio": 21.06047454760899,
+              "relative_l2": 2.206189227427127e-05,
+              "max_abs": 1.005362719297409e-06,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 19.842104499999998,
+              "ducc_ms": 0.9766482692307692,
+              "ratio": 20.31653065399696,
+              "relative_l2": 2.206189227427127e-05,
+              "max_abs": 1.005362719297409e-06,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        }
+      ]
+    },
+    "spin1-synthesis": {
+      "source": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+      "patch_sha256": "a2823bfe2818bc6a1782872f1a46bc481cd86680c96e4c64b4725f1d437f3520",
+      "f32_binary_sha256": "397d848a558512ff75821e89418b492a66cf51e1b4e1ca9859d13fcf0059a7e8",
+      "f64_binary_sha256": "6e916e74766f9bb53f9abe031640fd5ad1853755df8c9e573dc486704a65987b",
+      "ducc_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+      "cells": [
+        {
+          "cell_id": "GL-T720-M720-even-s1-synthesis-q1",
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 1160.538634,
+              "f64_ms": 39.9821755,
+              "ratio": 29.026400376837927
+            },
+            {
+              "pair": 2,
+              "f32_ms": 1142.344885,
+              "f64_ms": 39.304729,
+              "ratio": 29.06380260248073
+            },
+            {
+              "pair": 3,
+              "f32_ms": 1161.926649,
+              "f64_ms": 39.2653405,
+              "ratio": 29.591661098673015
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 1109.375913,
+              "ducc_ms": 42.4839555,
+              "ratio": 26.112820709455832,
+              "relative_l2": 0.0002138321273593174,
+              "max_abs": 0.0015663951635360718,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 1128.678064,
+              "ducc_ms": 41.41131,
+              "ratio": 27.255309334575504,
+              "relative_l2": 0.0002138321273593174,
+              "max_abs": 0.0015663951635360718,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 1110.6899660000001,
+              "ducc_ms": 42.555118500000006,
+              "ratio": 26.100032267563773,
+              "relative_l2": 0.0002138321273593174,
+              "max_abs": 0.0015663951635360718,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M720-even-s1-synthesis-q8",
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 218.409519,
+              "f64_ms": 8.112335,
+              "ratio": 26.92313852916577
+            },
+            {
+              "pair": 2,
+              "f32_ms": 221.618352,
+              "f64_ms": 8.332511666666667,
+              "ratio": 26.59682468691413
+            },
+            {
+              "pair": 3,
+              "f32_ms": 235.409288,
+              "f64_ms": 7.699608666666666,
+              "ratio": 30.574188662228984
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 212.08886800000002,
+              "ducc_ms": 5.9967057,
+              "ratio": 35.367563227256596,
+              "relative_l2": 0.000213800780316897,
+              "max_abs": 0.0015663951635360718,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 212.360025,
+              "ducc_ms": 6.0837412,
+              "ratio": 34.90615692199398,
+              "relative_l2": 0.000213800780316897,
+              "max_abs": 0.0015663951635360718,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 212.276639,
+              "ducc_ms": 5.9727009,
+              "ratio": 35.54114671973612,
+              "relative_l2": 0.000213800780316897,
+              "max_abs": 0.0015663951635360718,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-synthesis-q1",
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 542.134063,
+              "f64_ms": 39.908632999999995,
+              "ratio": 13.584380677734565
+            },
+            {
+              "pair": 2,
+              "f32_ms": 544.511175,
+              "f64_ms": 40.175163,
+              "ratio": 13.553427897728755
+            },
+            {
+              "pair": 3,
+              "f32_ms": 550.4893950000001,
+              "f64_ms": 39.2736855,
+              "ratio": 14.016749077445255
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 531.1495080000001,
+              "ducc_ms": 18.096967749999997,
+              "ratio": 29.35019365329864,
+              "relative_l2": 0.0001952420333107457,
+              "max_abs": 0.0013469159603118896,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 528.023283,
+              "ducc_ms": 18.05008,
+              "ratio": 29.25323782498471,
+              "relative_l2": 0.0001952420333107457,
+              "max_abs": 0.0013469159603118896,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 529.2448029999999,
+              "ducc_ms": 18.1745825,
+              "ratio": 29.120052854033922,
+              "relative_l2": 0.0001952420333107457,
+              "max_abs": 0.0013469159603118896,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-synthesis-q8",
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 84.9773305,
+              "f64_ms": 3.170083875,
+              "ratio": 26.80601960413429
+            },
+            {
+              "pair": 2,
+              "f32_ms": 86.106931,
+              "f64_ms": 3.0590417142857143,
+              "ratio": 28.148335015466095
+            },
+            {
+              "pair": 3,
+              "f32_ms": 85.721843,
+              "f64_ms": 3.0086165,
+              "ratio": 28.49211356781431
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 75.748262,
+              "ducc_ms": 2.7543094,
+              "ratio": 27.501725840967612,
+              "relative_l2": 0.0001952420333107457,
+              "max_abs": 0.0013469159603118896,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 75.8968295,
+              "ducc_ms": 2.64484005,
+              "ratio": 28.696188830020173,
+              "relative_l2": 0.0001952420333107457,
+              "max_abs": 0.0013469159603118896,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 75.365453,
+              "ducc_ms": 2.6706115625,
+              "ratio": 28.220297574630905,
+              "relative_l2": 0.0001952420333107457,
+              "max_abs": 0.0013469159603118896,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        }
+      ]
+    },
+    "spin1-analysis": {
+      "source": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+      "patch_sha256": "49dbfffcf9ec78dff368edcd89462bbdeb6033f3af51dd2694adb15ff5b43874",
+      "f32_binary_sha256": "ef7a11cb9a99c60f1c7353e8381a66ee17e579f69651f2e094e6fafb49e53294",
+      "f64_binary_sha256": "21b4b3e2a69140ae8d450d8ba527b521960384d2a3258de4495f8c582fc36a32",
+      "ducc_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+      "cells": [
+        {
+          "cell_id": "GL-T720-M720-even-s1-analysis-q1",
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 904.467904,
+              "f64_ms": 39.238364,
+              "ratio": 23.050601803887645
+            },
+            {
+              "pair": 2,
+              "f32_ms": 912.13882,
+              "f64_ms": 37.52833150000001,
+              "ratio": 24.3053390210007
+            },
+            {
+              "pair": 3,
+              "f32_ms": 909.785806,
+              "f64_ms": 36.7346125,
+              "ratio": 24.76644625011357
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 904.467904,
+              "ducc_ms": 30.3442775,
+              "ratio": 29.806868988724478,
+              "relative_l2": 1.8469589690630075e-05,
+              "max_abs": 3.5134144127368927e-07,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 912.13882,
+              "ducc_ms": 29.9871925,
+              "ratio": 30.4176131193342,
+              "relative_l2": 1.8469589690630075e-05,
+              "max_abs": 3.5134144127368927e-07,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 909.785806,
+              "ducc_ms": 29.8409645,
+              "ratio": 30.4878150302414,
+              "relative_l2": 1.8469589690630075e-05,
+              "max_abs": 3.5134144127368927e-07,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M720-even-s1-analysis-q8",
+          "fixture_sha256": {
+            "alm0.f32": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+            "alm1.f32": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+            "map0.f32": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+            "map1.f32": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 125.03598899999999,
+              "f64_ms": 5.975006875,
+              "ratio": 20.926501277038277
+            },
+            {
+              "pair": 2,
+              "f32_ms": 122.36321799999999,
+              "f64_ms": 5.832415900000001,
+              "ratio": 20.979851248262314
+            },
+            {
+              "pair": 3,
+              "f32_ms": 121.77748600000001,
+              "f64_ms": 5.5515564,
+              "ratio": 21.935737877039312
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 125.03598899999999,
+              "ducc_ms": 4.46439025,
+              "ratio": 28.007405714587783,
+              "relative_l2": 1.8469589690630075e-05,
+              "max_abs": 3.5134144127368927e-07,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 122.36321799999999,
+              "ducc_ms": 4.477149916666667,
+              "ratio": 27.33060546945053,
+              "relative_l2": 1.8469589690630075e-05,
+              "max_abs": 3.5134144127368927e-07,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 121.77748600000001,
+              "ducc_ms": 4.520607583333334,
+              "ratio": 26.938300605646834,
+              "relative_l2": 1.8469589690630075e-05,
+              "max_abs": 3.5134144127368927e-07,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-analysis-q1",
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 268.703842,
+              "f64_ms": 15.223429500000002,
+              "ratio": 17.65067733259447
+            },
+            {
+              "pair": 2,
+              "f32_ms": 270.646663,
+              "f64_ms": 15.056636000000001,
+              "ratio": 17.975241149483853
+            },
+            {
+              "pair": 3,
+              "f32_ms": 267.540244,
+              "f64_ms": 15.050048499999999,
+              "ratio": 17.776703111621202
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 268.703842,
+              "ducc_ms": 12.179504,
+              "ratio": 22.06196919020676,
+              "relative_l2": 2.1713787335393446e-05,
+              "max_abs": 9.844079613685608e-07,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 270.646663,
+              "ducc_ms": 12.2520165,
+              "ratio": 22.089968863492796,
+              "relative_l2": 2.1713787335393446e-05,
+              "max_abs": 9.844079613685608e-07,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 267.540244,
+              "ducc_ms": 12.05910475,
+              "ratio": 22.18574674873771,
+              "relative_l2": 2.1713787335393446e-05,
+              "max_abs": 9.844079613685608e-07,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        },
+        {
+          "cell_id": "GL-T720-M180-even-s1-analysis-q8",
+          "fixture_sha256": {
+            "alm0.f32": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+            "alm1.f32": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+            "map0.f32": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+            "map1.f32": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+          },
+          "f32_f64_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 38.830648499999995,
+              "f64_ms": 2.5352543888888888,
+              "ratio": 15.316273061267859
+            },
+            {
+              "pair": 2,
+              "f32_ms": 40.198949,
+              "f64_ms": 2.5531977777777777,
+              "ratio": 15.74454958009085
+            },
+            {
+              "pair": 3,
+              "f32_ms": 38.2345075,
+              "f64_ms": 2.521627333333333,
+              "ratio": 15.162632080711901
+            }
+          ],
+          "f32_ducc_pairs": [
+            {
+              "pair": 1,
+              "f32_ms": 38.830648499999995,
+              "ducc_ms": 1.904781,
+              "ratio": 20.385886093991903,
+              "relative_l2": 2.1713787335393446e-05,
+              "max_abs": 9.844079613685608e-07,
+              "finite": true
+            },
+            {
+              "pair": 2,
+              "f32_ms": 40.198949,
+              "ducc_ms": 1.8999632692307693,
+              "ratio": 21.157750600239336,
+              "relative_l2": 2.1713787335393446e-05,
+              "max_abs": 9.844079613685608e-07,
+              "finite": true
+            },
+            {
+              "pair": 3,
+              "f32_ms": 38.2345075,
+              "ducc_ms": 1.9123329285714286,
+              "ratio": 19.993645943524253,
+              "relative_l2": 2.1713787335393446e-05,
+              "max_abs": 9.844079613685608e-07,
+              "finite": true
+            }
+          ],
+          "interim_status": "GAP",
+          "independent_accuracy": "UNMEASURED"
+        }
+      ]
+    }
+  }
+}
