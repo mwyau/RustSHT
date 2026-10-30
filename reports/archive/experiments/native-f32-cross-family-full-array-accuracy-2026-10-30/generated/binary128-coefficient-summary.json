@@ -1,0 +1,101 @@
+{
+  "source_sha": "dc1aa4f65109fc93fef8a0595998df464a70a639",
+  "grid": {
+    "kind": "GaussLegendre",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.0,
+    "orders": "m=0..720",
+    "degrees": "l=m..720"
+  },
+  "reference": "GCC __float128 normalized scalar-harmonic recurrence, weighted ring projection and independent spin E/B transpose; actual Rust spectrum promoted exactly to binary128; no science tolerance assigned",
+  "q1_q8": "all captured map, spectrum, coefficient and B2 synthesis fixture hashes are equal; see fft-stage-comparison.json",
+  "metrics": {
+    "scalar_analysis": {
+      "f32_vs_binary128_using_native_f32_spectrum": {
+        "relative_l2": "1.8647926341467781662120743796488552e-5",
+        "max_abs": "4.72055493000153405304629663228329574e-7",
+        "max_abs_at_m_l": [4, 693],
+        "max_envelope_scaled": "1.15626495376174743922750909462492195e-5",
+        "max_envelope_scaled_at_m_l": [4, 693]
+      },
+      "f64_control_vs_binary128_using_native_f64_spectrum": {
+        "relative_l2": "5.19190711893885464772789643456025049e-14",
+        "max_abs": "8.10153620650184729041914089527667781e-16",
+        "max_abs_at_m_l": [100, 712],
+        "max_envelope_scaled": "1.86178737107849987418556515167532052e-14",
+        "max_envelope_scaled_at_m_l": [100, 712]
+      },
+      "f32_output_vs_binary128_using_f64_spectrum": {
+        "relative_l2": "1.86495227175645577219687963238355977e-5",
+        "max_abs": "4.71985465789145086525244414093228517e-7",
+        "max_envelope_scaled": "1.15609335918886439263741035537912491e-5"
+      },
+      "reference_projection_change_f32_to_f64_spectrum": {
+        "relative_l2": "1.33781515438177173356044847970350043e-7",
+        "max_abs": "1.38856981521769912778444300402495232e-9",
+        "max_abs_at_m_l": [518, 543],
+        "max_envelope_scaled": "8.59878406351342929855982296007635978e-8",
+        "max_envelope_scaled_at_m_l": [705, 707]
+      }
+    },
+    "spin_analysis_e": {
+      "f32_vs_binary128_using_native_f32_spectrum": {
+        "relative_l2": "1.84249292288056970253367256914059076e-5",
+        "max_abs": "3.553164994718469279581681636088348958e-7",
+        "max_abs_at_m_l": [1, 717],
+        "max_envelope_scaled": "4.41798324294848416277102010595895184e-6",
+        "max_envelope_scaled_at_m_l": [10, 720]
+      },
+      "f64_control_vs_binary128_using_native_f64_spectrum": {
+        "relative_l2": "5.24759225579061253451094186923621302e-14",
+        "max_abs": "8.25531206380840271199036087493244601e-16",
+        "max_abs_at_m_l": [9, 640],
+        "max_envelope_scaled": "1.07913038292156668216650745567658422e-14",
+        "max_envelope_scaled_at_m_l": [686, 693]
+      },
+      "f32_output_vs_binary128_using_f64_spectrum": {
+        "relative_l2": "1.84264646641073640014837676073650871e-5",
+        "max_abs": "3.55060461423063531758581358761300777e-7",
+        "max_envelope_scaled": "4.41571071938426098471452024795189943e-6"
+      },
+      "reference_projection_change_f32_to_f64_spectrum": {
+        "relative_l2": "1.33963491480080352305393059911182621e-7",
+        "max_abs": "1.50247837597855696833784254447012083e-9",
+        "max_abs_at_m_l": [676, 713],
+        "max_envelope_scaled": "7.42891154663498829197017487394724727e-8",
+        "max_envelope_scaled_at_m_l": [433, 433]
+      }
+    },
+    "spin_analysis_b": {
+      "f32_vs_binary128_using_native_f32_spectrum": {
+        "relative_l2": "1.86401313722109351456085347896618886e-5",
+        "max_abs": "4.48232500957883173692354582684693545e-7",
+        "max_abs_at_m_l": [0, 682],
+        "max_envelope_scaled": "5.82029549972123066974486654373943684e-6",
+        "max_envelope_scaled_at_m_l": [0, 682]
+      },
+      "f64_control_vs_binary128_using_native_f64_spectrum": {
+        "relative_l2": "5.22753175262918818529014942440797259e-14",
+        "max_abs": "8.95920765010972378990987253072562213e-16",
+        "max_abs_at_m_l": [9, 638],
+        "max_envelope_scaled": "1.25410788213009422171941274002654471e-14",
+        "max_envelope_scaled_at_m_l": [0, 719]
+      },
+      "f32_output_vs_binary128_using_f64_spectrum": {
+        "relative_l2": "1.86421554639872423327561430155560718e-5",
+        "max_abs": "4.48232500957883173692354582684693545e-7",
+        "max_envelope_scaled": "5.82029549972123066974486654373943684e-6"
+      },
+      "reference_projection_change_f32_to_f64_spectrum": {
+        "relative_l2": "1.33672282022648172163849158995586491e-7",
+        "max_abs": "1.45223281554864308116241216015149366e-9",
+        "max_abs_at_m_l": [544, 564],
+        "max_envelope_scaled": "8.3212414395144461114747533935150241e-8",
+        "max_envelope_scaled_at_m_l": [670, 670]
+      }
+    }
+  }
+}

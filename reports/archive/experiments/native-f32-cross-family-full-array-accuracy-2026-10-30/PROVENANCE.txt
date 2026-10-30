@@ -1,0 +1,32 @@
+Rust production source: dc1aa4f65109fc93fef8a0595998df464a70a639
+Pinned DUCC reference source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+Production source changes: none; diagnostic Rust patch adds only an ignored spectrum capture test
+
+Fixture: GL T720, lmax=mmax=720, ntheta=721, nphi=1458, phi0=0
+Map seeds: scalar=11, Q=23, U=47
+Thread settings: Rayon q1 and q8; captured inputs and outputs are hash-identical
+Rust: 1.99.1 (58cf8f9c3 2026-10-13), --release --features parallel
+Rust flags: -C target-cpu=x86-64-v3
+Reference: GCC 15.2.0, -std=c++20 -O2 -march=x86-64-v3 -lquadmath
+FFT oracle: NumPy 2.3.5 pocketfft, float64 rfft of exact f32 maps widened to f64
+Host: AMD Ryzen 9 5950X, x86-64 Linux
+
+Diagnostic C++ source SHA-256:
+0f840eed0a5e14679e7d1426324e7fc2b839ee7c83b9a7ce9771396f0d884a98
+Diagnostic C++ executable SHA-256 (not retained):
+77782ba34234bbe13738a646e28d1fb22b69e5cf3a28911448e354d4976b94b2
+Rust capture patch SHA-256, compressed:
+90ff2379471c065e0c8fca82f3a7b2f6b6e0d8536111d09e0270cce2894d3479
+Rust capture patch SHA-256, uncompressed:
+f2bad8748b6add5b91b9ce59bedbae43e8507bb89fbf291e00efafc6cf1475ef
+Deterministic Rust dump example SHA-256:
+c2e5a92072e2929d4e03ef09a64be8ca661b352b730d2f52ee0557cfbae921ea
+
+Validation on this source:
+- Ignored spectrum-capture test passed for q1 and q8.
+- cargo test --release --features parallel --test f32: 14 passed, 0 failed, 1 ignored.
+- cargo test --release --features parallel --lib spin1_: 51 passed, 0 failed, 5 ignored.
+- Python syntax and both generated JSON files validated.
+- The C++ binary compiled and completed the full-array projections.
+
+The q1/q8 binary maps and intermediate outputs were kept outside the repository in the isolated worktree. The committed per-order CSVs, summaries, source and deterministic recipe are sufficient to inspect and reproduce the results.
