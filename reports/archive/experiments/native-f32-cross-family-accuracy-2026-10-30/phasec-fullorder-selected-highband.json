@@ -1,0 +1,306 @@
+{
+  "objective": "Independent selected high-band accuracy screen for native-f32 scalar and spin-1 analysis",
+  "status": "MEASURED; no scientific tolerance declared and no accuracy acceptance assigned",
+  "rust_source_head": "d0e80d5e20ec73168cb4d0949d8ed18311257374",
+  "rust_src_tree": "e0b241a4c91420900e076427cecab7e8f5136954",
+  "candidate_source": "current source plus isolated tile32 schedule patch; only scalar-analysis tile size changes from 256 to 32 for f32; f64 remains 256",
+  "candidate_patch_uncompressed_sha256": "471f15a6f57a5d47ff9569dcc554def7a6b5886ccc6d157374e4b58df8b240ef",
+  "grid": {
+    "kind": "Gauss-Legendre",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0.0,
+    "orders": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      16,
+      64,
+      180,
+      360,
+      719,
+      720
+    ],
+    "degrees": [
+      600,
+      720
+    ]
+  },
+  "fixtures": {
+    "scalar_map_seed": 11,
+    "spin_q_map_seed": 23,
+    "spin_u_map_seed": 47,
+    "map_values": "deterministic f32; f64 workers receive exact componentwise f32-to-f64 widening"
+  },
+  "reference": {
+    "arithmetic": "GCC binary128 (__float128/libquadmath)",
+    "method": "direct Fourier projection of the actual f32 maps followed by independent normalized scalar-harmonic projection; spin E/B reference uses independent spin transpose",
+    "source_sha256": "3a26d8fd8089aaafc591568943f8a1d26a7a277c937fe14aa5cd3fe7693a8fd3",
+    "compared_stage": "analysis coefficient output; reference includes direct Fourier summation, so this screen does not separate FFT and Legendre error"
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "cxx": "Ubuntu c++ 15.2.0",
+    "rust_threads": [
+      1,
+      8
+    ],
+    "performance_timing": "not measured"
+  },
+  "results": {
+    "scalar-analysis_alm": {
+      "modes": 11,
+      "degree_range": [
+        600,
+        720
+      ],
+      "rows": 1092,
+      "q1_q8_outputs_identical": true,
+      "f32_relative_l2": "4.90787924716477443E-5",
+      "f64_relative_l2": "8.75672049187379869E-14",
+      "max_f32_absolute": "3.82984661491500472E-7",
+      "max_f32_absolute_at": {
+        "m": 0,
+        "l": 676
+      },
+      "max_f32_envelope_scaled": "1.08462257224918953E-5",
+      "max_f32_envelope_scaled_at": {
+        "m": 0,
+        "l": 703
+      },
+      "max_f64_absolute": "5.55695845139196447E-16",
+      "max_f64_absolute_at": {
+        "m": 0,
+        "l": 711
+      },
+      "four_worst_orders": [
+        {
+          "m": 0,
+          "f32_relative_l2": "9.52143413676005214E-5",
+          "f64_relative_l2": "1.00488920137819858E-13",
+          "max_f32_absolute": "3.82984661491500472E-7",
+          "max_f32_absolute_at_l": 676
+        },
+        {
+          "m": 1,
+          "f32_relative_l2": "6.49589147011255836E-5",
+          "f64_relative_l2": "8.32558248596942491E-14",
+          "max_f32_absolute": "2.55997966686472747E-7",
+          "max_f32_absolute_at_l": 621
+        },
+        {
+          "m": 2,
+          "f32_relative_l2": "6.19794837537304523E-5",
+          "f64_relative_l2": "9.96766843731667072E-14",
+          "max_f32_absolute": "2.22833460250901469E-7",
+          "max_f32_absolute_at_l": 714
+        },
+        {
+          "m": 8,
+          "f32_relative_l2": "4.59495464341543304E-5",
+          "f64_relative_l2": "1.03764373513166834E-13",
+          "max_f32_absolute": "1.74741396138075171E-7",
+          "max_f32_absolute_at_l": 641
+        }
+      ],
+      "q1_csv_sha256": "5266b4168c137e50b45896dbedd6668ba6f667c1f6b37b1b999629dbd4854fa1",
+      "q8_csv_sha256": "5266b4168c137e50b45896dbedd6668ba6f667c1f6b37b1b999629dbd4854fa1"
+    },
+    "spin-analysis_E": {
+      "modes": 11,
+      "degree_range": [
+        600,
+        720
+      ],
+      "rows": 1092,
+      "q1_q8_outputs_identical": true,
+      "f32_relative_l2": "4.83091015026356562E-5",
+      "f64_relative_l2": "1.01920695181718727E-13",
+      "max_f32_absolute": "3.55060461420637228E-7",
+      "max_f32_absolute_at": {
+        "m": 1,
+        "l": 717
+      },
+      "max_f32_envelope_scaled": "4.23357526291164187E-6",
+      "max_f32_envelope_scaled_at": {
+        "m": 0,
+        "l": 668
+      },
+      "max_f64_absolute": "6.26957585834477421E-16",
+      "max_f64_absolute_at": {
+        "m": 16,
+        "l": 697
+      },
+      "four_worst_orders": [
+        {
+          "m": 0,
+          "f32_relative_l2": "7.86620316575403958E-5",
+          "f64_relative_l2": "1.16177304139999174E-13",
+          "max_f32_absolute": "3.37231414513900810E-7",
+          "max_f32_absolute_at_l": 668
+        },
+        {
+          "m": 1,
+          "f32_relative_l2": "7.70856962547217799E-5",
+          "f64_relative_l2": "1.23610805569758692E-13",
+          "max_f32_absolute": "3.55060461420637228E-7",
+          "max_f32_absolute_at_l": 717
+        },
+        {
+          "m": 2,
+          "f32_relative_l2": "6.31369867121672632E-5",
+          "f64_relative_l2": "1.00769584773384064E-13",
+          "max_f32_absolute": "2.40047697852930288E-7",
+          "max_f32_absolute_at_l": 690
+        },
+        {
+          "m": 5,
+          "f32_relative_l2": "4.93432522460343350E-5",
+          "f64_relative_l2": "1.05549317581216867E-13",
+          "max_f32_absolute": "1.83567134168859181E-7",
+          "max_f32_absolute_at_l": 666
+        }
+      ],
+      "q1_csv_sha256": "ecf17d09baf7e43d36ebdadf89ae3f7b3890355dd104d70a27aa4b94508e5e74",
+      "q8_csv_sha256": "ecf17d09baf7e43d36ebdadf89ae3f7b3890355dd104d70a27aa4b94508e5e74"
+    },
+    "spin-analysis_B": {
+      "modes": 11,
+      "degree_range": [
+        600,
+        720
+      ],
+      "rows": 1092,
+      "q1_q8_outputs_identical": true,
+      "f32_relative_l2": "5.33125435038321340E-5",
+      "f64_relative_l2": "1.01242638600513505E-13",
+      "max_f32_absolute": "4.48232500957883174E-7",
+      "max_f32_absolute_at": {
+        "m": 0,
+        "l": 682
+      },
+      "max_f32_envelope_scaled": "5.82029549972123067E-6",
+      "max_f32_envelope_scaled_at": {
+        "m": 0,
+        "l": 682
+      },
+      "max_f64_absolute": "7.84649036553653850E-16",
+      "max_f64_absolute_at": {
+        "m": 0,
+        "l": 719
+      },
+      "four_worst_orders": [
+        {
+          "m": 5,
+          "f32_relative_l2": "9.92914954376267423E-5",
+          "f64_relative_l2": "1.31081128096373307E-13",
+          "max_f32_absolute": "2.89565383859775594E-7",
+          "max_f32_absolute_at_l": 640
+        },
+        {
+          "m": 0,
+          "f32_relative_l2": "8.30000618207388428E-5",
+          "f64_relative_l2": "1.15086965832320363E-13",
+          "max_f32_absolute": "4.48232500957883174E-7",
+          "max_f32_absolute_at_l": 682
+        },
+        {
+          "m": 1,
+          "f32_relative_l2": "6.20024026035341577E-5",
+          "f64_relative_l2": "1.47314402424035762E-13",
+          "max_f32_absolute": "2.60391292442467467E-7",
+          "max_f32_absolute_at_l": 612
+        },
+        {
+          "m": 2,
+          "f32_relative_l2": "4.55944300534992527E-5",
+          "f64_relative_l2": "9.65119570175438087E-14",
+          "max_f32_absolute": "2.08739998772716887E-7",
+          "max_f32_absolute_at_l": 669
+        }
+      ],
+      "q1_csv_sha256": "175d6fec2ce4265b7552b4f850758247713f4a4f461684ed809750157f95c837",
+      "q8_csv_sha256": "175d6fec2ce4265b7552b4f850758247713f4a4f461684ed809750157f95c837"
+    }
+  },
+  "fixture_and_output_hashes": {
+    "geometry.csv": {
+      "size_bytes": 27324,
+      "sha256": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+      "q1_q8_identical": true
+    },
+    "scalar-map.f32": {
+      "size_bytes": 4204872,
+      "sha256": "ce871c8fd381a44ccfe41d6525caffd19b45d4d83dcd2bc9390a7208f9e76c51",
+      "q1_q8_identical": true
+    },
+    "q-map.f32": {
+      "size_bytes": 4204872,
+      "sha256": "bb517521306e5cc0b45c1ceb1535d3ab60e48928be05bc1b247ba1bb99465eb3",
+      "q1_q8_identical": true
+    },
+    "u-map.f32": {
+      "size_bytes": 4204872,
+      "sha256": "8d9f479983c5b972a45291b49a61525d9f352d95e7010bcf5b32b701d1c5d26a",
+      "q1_q8_identical": true
+    },
+    "scalar-analysis.f32": {
+      "size_bytes": 2082248,
+      "sha256": "37ee413d9a78fd04b793b12983b6b85ce4c6e72616c948a96c45425412914eca",
+      "q1_q8_identical": true
+    },
+    "scalar-analysis.f64": {
+      "size_bytes": 4164496,
+      "sha256": "134a1a7e46c1c65f298f66b53ce7bedb77f23f4d56252b040d6913882c0d5858",
+      "q1_q8_identical": true
+    },
+    "spin-analysis-e.f32": {
+      "size_bytes": 2082248,
+      "sha256": "951c868cfd363384e2ce4a2e64daca935c1a1d3e42bb97fd946e9b6ac474b9ef",
+      "q1_q8_identical": true
+    },
+    "spin-analysis-e.f64": {
+      "size_bytes": 4164496,
+      "sha256": "315ad2636d9499eb606430a374c19681ceed14ebe1bc942d2f52a4148fabd3d2",
+      "q1_q8_identical": true
+    },
+    "spin-analysis-b.f32": {
+      "size_bytes": 2082248,
+      "sha256": "0145ee6ad765bfe85476270452124734190aea82e3a1bae7b182c1461485761d",
+      "q1_q8_identical": true
+    },
+    "spin-analysis-b.f64": {
+      "size_bytes": 4164496,
+      "sha256": "849ca4e179408fc5ff833248bbc239e8272694b4c4b954e0c0516a5f7346e167",
+      "q1_q8_identical": true
+    }
+  },
+  "artifact_hashes": {
+    "rust_harness_sha256": "c2e5a92072e2929d4e03ef09a64be8ca661b352b730d2f52ee0557cfbae921ea",
+    "binary128_reference_source_sha256": "3a26d8fd8089aaafc591568943f8a1d26a7a277c937fe14aa5cd3fe7693a8fd3",
+    "rust_example_binary_sha256": "a9f5b7b553eb99facc3da997a60e9e312be86fed948e5d15155604bf0497c6ea",
+    "binary128_reference_binary_sha256": "abaaa049c17c3fefbc17d99f83675f2690ac3952392b5c9f8b6005c79fb93bfd",
+    "tile32_patch_compressed_sha256": "4c23e204f02cb7216b95f9450fbc87bf17d006d6d63aab5ff59a3a325ae09704"
+  },
+  "limitations": [
+    "Only 11 selected orders and l=600..720 are reported, not all coefficients.",
+    "The f32/f64 error ratio is diagnostic; no science tolerance or acceptance threshold is declared.",
+    "The direct Fourier reference means FFT and recurrence contributions are not separated here.",
+    "No adjoint or exceptional-magnitude validation is included.",
+    "The spin-1 synthesis outputs generated by the Rust harness are not evaluated in this extension."
+  ],
+  "b1_schedule_comparison": {
+    "scalar_analysis_tile256_relative_l2": "4.90832168436231006E-5",
+    "scalar_analysis_tile32_relative_l2": "4.90787924716477443E-5",
+    "relative_change_percent": "-9.0140220219E-3",
+    "tile256_scalar_f32_output_sha256": "3b53957430eff8d187487d698bea81c9790ed51251cf98fcdf87da44905471b9",
+    "tile32_scalar_f32_output_sha256": "37ee413d9a78fd04b793b12983b6b85ce4c6e72616c948a96c45425412914eca",
+    "same_fixture_and_binary128_reference": true
+  }
+}
