@@ -1,0 +1,156 @@
+{
+  "purpose": "Independent binary128 full-order high-band spin-1 synthesis spectrum and selected-map check for integrated native-f32 source",
+  "source": {
+    "tested_source_commit": "f01fb9b161769173397e50dae6c76aae97351c7f",
+    "b2_integration_commit": "db93f14268e0320cc10d5e0e800f0143f41d657a",
+    "source_code_identical_to_b2_integration": true,
+    "ducc_revision": "not used by this independent numerical diagnostic"
+  },
+  "reference": {
+    "method": "GCC __float128 normalized scalar-harmonic recurrence; direct spin-1 coefficient-to-scalar channel conversion; direct per-order pre-inverse-FFT synthesis spectrum; direct inverse Fourier evaluation at selected pixels",
+    "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "cpp_compiler": "g++ 15.2.0",
+    "cpp_flags": "-std=c++20 -O2 -march=x86-64-v3 -lquadmath",
+    "rust_fixture_harness_sha256": "da3b48d5d1bc1c40a1281732f6137de230639963104404afd8f34b7b7c0b5c22",
+    "rust_test_only_capture_patch_sha256_compressed": "e9deaad6fb710785ba6f05f06d996b88a5c41c243652a9f97d47ebeb86fa31a6",
+    "rust_test_only_capture_patch_sha256_uncompressed": "15ca055c92ae189db45524802b10ad810740fcea71f5a7ef7540d9b73b781cd6",
+    "cpp_reference_source_sha256": "e4ab95cb223d8fdc6c021883d950f027e3c2991afb4c8cd04e2e800bf8e8e716",
+    "rust_fixture_binary_sha256": "c1951a2cc2bde941534ffd5ed6b525bcf51d540a47c02d936d8039e4e95f2172",
+    "rust_test_binary_sha256": "d38460864cf33927b63a99837517f35976d7416f49b9c8bf7d3d7d627f5d42a8",
+    "cpp_reference_binary_sha256": "c412381fa7070676c5989d844d2c51f2cde51e8d34598d8fd6abf608a607909c"
+  },
+  "fixture": {
+    "grid": "Gauss-Legendre GL T720",
+    "lmax": 720,
+    "mmax": 720,
+    "ntheta": 721,
+    "nphi": 1458,
+    "phi0": 0,
+    "nonzero_input_band": "m=0..720,l=max(600,m)..720",
+    "threads": [
+      1,
+      8
+    ],
+    "precision": "native f32 candidate and native f64 control both consume the same f32 coefficients; f64 control widens each component exactly",
+    "geometry_sha256": "ea86e404ec625fe456259376ac0ab0af0278dbbf03dc84b80ced18c5f968cd11",
+    "spin_synthesis_e_input_f32_sha256": "82d6c8441767dfc1ff73948b7bb763487cc6c194ef8b39c2a70875ec2b0621f0",
+    "spin_synthesis_b_input_f32_sha256": "4e036200f2baf0a7b8bd726ac9a81663e36a330a24c9578e31e115b80dac0ff1"
+  },
+  "dispatch": {
+    "q1": {
+      "execution_capacity": 1,
+      "ring_group_size": 768,
+      "cached_scalar_coefficients": 0,
+      "cached_finite_orders": 0,
+      "recurrence_workers": 1
+    },
+    "q8": {
+      "execution_capacity": 8,
+      "ring_group_size": 64,
+      "cached_scalar_coefficients": 0,
+      "cached_finite_orders": 0,
+      "recurrence_workers": 12
+    },
+    "q1_q8_all_fixture_arrays_byte_identical": {
+      "geometry": true,
+      "spin_e_input_f32": true,
+      "spin_b_input_f32": true,
+      "q_spectrum_f32": true,
+      "u_spectrum_f32": true,
+      "q_spectrum_f64": true,
+      "u_spectrum_f64": true,
+      "q_map_f32": true,
+      "u_map_f32": true,
+      "q_map_f64": true,
+      "u_map_f64": true
+    },
+    "spectrum_and_map_hashes": {
+      "q_spectrum_f32": "398cabb4c33badd3657610557ad57e570e6d82e2976e93875e3d908ade2929b4",
+      "u_spectrum_f32": "ab40568922bf64616c2c852ee373c75feb72e3117bb679849110d7ed4e547c1b",
+      "q_spectrum_f64": "c36101164d8e572ea6ebb57496fbffc37c31ca9bbc519ba03689202ae656a912",
+      "u_spectrum_f64": "3c8bf85ff491b17bd4b424dc1d28e03c4dfe81e248b783ea8d8c363683b83996",
+      "q_map_f32": "cd5aeaf60ce0e6600b8681726e7abb30e207c22571d6da0a895fed5b47e710b2",
+      "u_map_f32": "0e8b7dd8792f3c5a6ef014abf7a3ceb42b95c94398710ccb665bfbfb723aecf2",
+      "q_map_f64": "259ca904d9228a9e1dcf34c745d1ca701fbd4c48707b51659038dbb0d59d66d0",
+      "u_map_f64": "42f2b4d00a2890b89e0ff61280d39b7df4689a28129362973ab112e9e681e972"
+    }
+  },
+  "measurements": {
+    "all_order_high_band_spectrum_relative_l2": {
+      "q_f32": "+0.000146703256303102451949575092715484136",
+      "u_f32": "+0.000138654013929729844139691238056418528",
+      "q_f64": "+1.36525591449802126743206994456634604e-13",
+      "u_f64": "+1.33404547013879754349731122124428881e-13",
+      "q_f32_vs_f64": "+0.000146703256267206725936523529875859305",
+      "u_f32_vs_f64": "+0.000138654013895163794976017261525713886"
+    },
+    "spectrum_max_absolute_and_envelope_scaled": {
+      "q_f32_max_absolute": "+0.0239566427347141101769366684277614104",
+      "q_f32_max_absolute_ring": 0,
+      "q_f32_max_envelope_scaled": "+1.33867272727610363219081264371924872",
+      "q_f32_max_scaled_ring": 482,
+      "u_f32_max_absolute": "+0.0251249163315133157065128459238978067",
+      "u_f32_max_absolute_ring": 0,
+      "u_f32_max_envelope_scaled": "+0.988241038398920007615549770687124026",
+      "u_f32_max_scaled_ring": 239
+    },
+    "selected_orders_relative_l2": {
+      "m1_q_f32": "+0.000892866055384162413928691928560837241",
+      "m1_q_f64": "+1.8347421028174396554641247069264921e-12",
+      "m1_u_f32": "+0.00089084909249784121000317158842803126",
+      "m1_u_f64": "+1.79379146922422974615193338601548336e-12",
+      "m719_q_f32": "+1.13895729251269415421771009278854785e-05",
+      "m719_q_f64": "+2.11855503999536966683718182935873615e-14",
+      "m719_u_f32": "+1.12747595423973517301526794259109777e-05",
+      "m719_u_f64": "+2.15409020278229308863912320122933229e-14"
+    },
+    "channel_preparation_relative_l2": {
+      "m1_first": "+5.76075107566174357597406685785117581e-08",
+      "m1_second": "+6.27137172904772168875966132534644503e-08",
+      "m16_first": "+6.04975182879542940598223571612337513e-08",
+      "m16_second": "+6.11101177519158691816983846502385423e-08",
+      "m719_first": "+5.56649569196853730890613813332728401e-08",
+      "m719_second": "+1.6129708988272076331228248484616525e-08"
+    },
+    "channel_rounding_control": {
+      "m1_ring0_q_channel_preparation_error": "+0.000285845622196388234709161887878426045",
+      "m1_ring0_q_remaining_error_after_rounded_channels": "+0.0240554066448866301598208111083194337",
+      "m1_ring0_u_channel_preparation_error": "+0.000122036667425982807513258470731221685",
+      "m1_ring0_u_remaining_error_after_rounded_channels": "+0.0251702488048970152099551668161756385",
+      "m719_ring482_q_channel_preparation_error": "+4.73292873604943978534394911245973858e-53",
+      "m719_ring482_q_remaining_error_after_rounded_channels": "+1.56032721898313003204538740793108443e-45"
+    },
+    "subnormal_example": {
+      "ring": 482,
+      "m": 719,
+      "q_binary128_reference_re": "1.16022982782151905536557992548731954e-46",
+      "q_binary128_reference_im": "5.16601960066353463788066702498573558e-46",
+      "q_f32_re": "1.40129846432481707092372958328991613e-45",
+      "q_f32_im": "1.40129846432481707092372958328991613e-45",
+      "q_channel_prep_error": "4.73292873604943978534394911245973858e-53",
+      "q_error_after_rounded_channel_reference": "1.56032721898313003204538740793108443e-45"
+    },
+    "selected_final_map_example": {
+      "ring": 0,
+      "longitude": 0,
+      "q_reference": "-7.26844502543503667731946398611402804",
+      "q_f32_map": "-7.3531017303466796875",
+      "q_f32_absolute_error": "0.084656704911643010180536013885971961",
+      "q_f32_inverse_spectrum_residual": "8.79423336184701452694462705639622687e-7",
+      "q_f64_absolute_error": "1.74969705202068955495593009005386593e-10",
+      "u_reference": "18.1136550720719410969423311173092632",
+      "u_f32_map": "18.17646026611328125",
+      "u_f32_absolute_error": "0.0628051940413401530576688826907367874",
+      "u_f32_inverse_spectrum_residual": "1.22893263722470522156818124023428037e-6",
+      "u_f64_absolute_error": "1.4424177609266416475958539730774469e-10"
+    }
+  },
+  "caveats": [
+    "The fixture activates the high-degree band across all m but is not a random full-field or complete coefficient-support accuracy contract.",
+    "The direct reference covers every m spectrum on all 721 rings; final-map binary128 checks cover selected pixels only.",
+    "No scientific tolerance was supplied; no numerical acceptance PASS is claimed.",
+    "The aggregate difference is localized to native-f32 work after coefficient preparation and before the inverse FFT, but the first recurrence FMA/state-update divergence is not yet traced.",
+    "This diagnostic does not exercise DUCC; the separate existing T720 timing matrix reports f32/DUCC independently."
+  ]
+}

@@ -1,0 +1,5 @@
+execution_capacity=8
+ring_group_size=64
+cached_scalar_coefficients=0
+cached_finite_orders=0
+workers=12
