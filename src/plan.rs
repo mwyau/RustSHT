@@ -228,7 +228,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                         quantity: "paired scalar coefficient scratch count",
                     })?
             }
-            1 if T::supports_spin1_analysis_pairs() && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => {
+            1 if (T::supports_spin1_analysis_pairs() || T::supports_spin1_synthesis())
+                && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX =>
+            {
                 harmonics
                     .lmax()
                     .checked_add(2)
@@ -553,7 +555,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     quantity: "analysis order count",
                 })?;
         let spin_pair_fast_coefficient_count =
-            if self.harmonics.spin() == 1 && T::supports_paired_spin() {
+            if self.harmonics.spin() == 1 && T::supports_spin1_synthesis() {
                 self.spin_fast_coefficient_count
             } else {
                 0
@@ -682,7 +684,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 required_worker_count = required_worker_count.max(hemisphere_workers);
             }
             let spin_pair_fast_coefficient_count =
-                if self.harmonics.spin() == 1 && T::supports_paired_spin() {
+                if self.harmonics.spin() == 1 && T::supports_spin1_synthesis() {
                     self.spin_fast_coefficient_count
                 } else {
                     0

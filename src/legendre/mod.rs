@@ -12,8 +12,8 @@ mod spin_factors;
 mod spin_fast;
 
 pub(crate) use numeric::{
-    LegendrePrecision, ScaledValue, define_f64_scaled_arithmetic, define_scale_binary,
-    define_scale_complex_normal_binary, scalar_recurrence_step,
+    LegendrePrecision, OrderedSimdPrecision, ScaledValue, define_f64_scaled_arithmetic,
+    define_scale_binary, define_scale_complex_normal_binary, scalar_recurrence_step,
 };
 
 #[cfg(all(test, rustsht_profile_spin32_normalizer))]
@@ -68,6 +68,17 @@ impl pulp::WithSimd for F64LaneCount {
     #[inline(always)]
     fn with_simd<S: pulp::Simd>(self, _: S) -> Self::Output {
         S::F64_LANES
+    }
+}
+
+struct F32LaneCount;
+
+impl pulp::WithSimd for F32LaneCount {
+    type Output = usize;
+
+    #[inline(always)]
+    fn with_simd<S: pulp::Simd>(self, _: S) -> Self::Output {
+        S::F32_LANES
     }
 }
 
@@ -143,7 +154,7 @@ pub(crate) trait ShtScalar:
         _sin_theta: &'a [Self],
         _cos_theta: &'a [Self],
         _ring_order_limits: &'a [usize],
-    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a>> {
+    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a, Self>> {
         None
     }
 
@@ -161,8 +172,20 @@ pub(crate) trait ShtScalar:
         Self::supports_paired_spin()
     }
 
+    /// Whether spin-1 synthesis may use the prepared dual-scalar SIMD route.
+    /// Spin analysis has separate eligibility and remains controlled by
+    /// `supports_paired_spin`.
+    fn supports_spin1_synthesis() -> bool {
+        Self::supports_paired_spin()
+    }
+
     #[inline(always)]
     fn scalar_paired_analysis_lane_width(_arch: Arch) -> usize {
+        1
+    }
+
+    #[inline(always)]
+    fn scalar_ordered_lane_count(_arch: Arch) -> usize {
         1
     }
 
@@ -434,7 +457,7 @@ pub(crate) trait ShtScalar:
         _spectrum_len: usize,
         _phi0: f64,
         _sectoral_norms: &[Self],
-        _geometry: &scalar_ordered::ValidatedReflectedGeometry<'_>,
+        _geometry: &scalar_ordered::ValidatedReflectedGeometry<'_, Self>,
         _output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         _scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
@@ -995,7 +1018,7 @@ impl ShtScalar for f64 {
         sin_theta: &'a [Self],
         cos_theta: &'a [Self],
         ring_order_limits: &'a [usize],
-    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a>> {
+    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a, Self>> {
         scalar_ordered::validate_reflected_geometry(sin_theta, cos_theta, ring_order_limits)
     }
 
@@ -1009,6 +1032,11 @@ impl ShtScalar for f64 {
 
     #[inline(always)]
     fn scalar_paired_analysis_lane_width(arch: Arch) -> usize {
+        arch.dispatch(F64LaneCount).max(1)
+    }
+
+    #[inline(always)]
+    fn scalar_ordered_lane_count(arch: Arch) -> usize {
         arch.dispatch(F64LaneCount).max(1)
     }
 
@@ -1221,7 +1249,7 @@ impl ShtScalar for f64 {
         spectrum_len: usize,
         phi0: f64,
         sectoral_norms: &[Self],
-        geometry: &scalar_ordered::ValidatedReflectedGeometry<'_>,
+        geometry: &scalar_ordered::ValidatedReflectedGeometry<'_, Self>,
         output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
@@ -2060,15 +2088,120 @@ impl ShtScalar for f64 {
 }
 
 impl ShtScalar for f32 {
-    const F32_INTERNAL_SCALAR_SYNTHESIS: bool = true;
-
     type SpinInitial = spin_factors::SpinInitial<f32>;
+
+    #[inline(always)]
+    fn scalar_ordered_lane_count(arch: Arch) -> usize {
+        arch.dispatch(F32LaneCount).max(1)
+    }
+
+    #[cfg(feature = "parallel")]
+    fn validate_scalar_ordered_geometry_dispatched<'a>(
+        sin_theta: &'a [Self],
+        cos_theta: &'a [Self],
+        ring_order_limits: &'a [usize],
+    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a, Self>> {
+        scalar_ordered::validate_reflected_geometry(sin_theta, cos_theta, ring_order_limits)
+    }
+
+    fn synthesize_scalar_ordered_dispatched(
+        arch: Arch,
+        alm: &[Complex<Self>],
+        lmax: usize,
+        mmax: usize,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        sectoral_norms: &[Self],
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        ring_order_limits: &[usize],
+        spectra: &mut [Complex<Self>],
+        scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
+    ) -> bool {
+        scalar_ordered::synthesize_dispatched(
+            arch,
+            alm,
+            lmax,
+            mmax,
+            nphi,
+            spectrum_len,
+            phi0,
+            sectoral_norms,
+            sin_theta,
+            cos_theta,
+            ring_order_limits,
+            spectra,
+            scratch,
+        )
+    }
+
+    fn synthesize_prepared_scalar_component_batch_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sectoral_norm: Self,
+        sin_theta: &[Self],
+        vector_lanes: usize,
+        scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
+    ) -> bool {
+        scalar_ordered::synthesize_prepared_component_batch_dispatched(
+            arch,
+            m,
+            lmax,
+            sectoral_norm,
+            sin_theta,
+            vector_lanes,
+            scratch,
+        )
+    }
+
+    #[cfg(feature = "parallel")]
+    unsafe fn synthesize_scalar_ordered_output_dispatched(
+        arch: Arch,
+        alm: &[Complex<Self>],
+        lmax: usize,
+        mmax: usize,
+        order_start: usize,
+        order_end: usize,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        sectoral_norms: &[Self],
+        geometry: &scalar_ordered::ValidatedReflectedGeometry<'_, Self>,
+        output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
+        scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
+    ) -> bool {
+        // SAFETY: the caller schedules each order range exactly once, and the
+        // scalar kernel emits at most one value per physical ring and order.
+        unsafe {
+            scalar_ordered::synthesize_order_output_dispatched(
+                arch,
+                alm,
+                lmax,
+                mmax,
+                order_start,
+                order_end,
+                nphi,
+                spectrum_len,
+                phi0,
+                sectoral_norms,
+                geometry,
+                output,
+                scratch,
+            )
+        }
+    }
 
     fn supports_paired_scalar() -> bool {
         true
     }
 
     fn supports_spin1_analysis_pairs() -> bool {
+        true
+    }
+
+    fn supports_spin1_synthesis() -> bool {
         true
     }
 
@@ -2243,6 +2376,62 @@ impl ShtScalar for f32 {
             compact_theta_sin,
             compact_theta_cos,
             compact_ring_indices,
+        )
+    }
+
+    fn synthesize_prepared_scalar_pair_block_dispatched(
+        arch: Arch,
+        m: usize,
+        output_order: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        first_even: &[Complex<Self>],
+        first_odd: &[Complex<Self>],
+        second_even: &[Complex<Self>],
+        second_odd: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        first_spectra: &mut [Complex<Self>],
+        second_spectra: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        first_sum_re: &mut [Self],
+        first_sum_im: &mut [Self],
+        second_sum_re: &mut [Self],
+        second_sum_im: &mut [Self],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::synthesize_prepared_order_pair_block_dispatched::<f32>(
+            arch,
+            m,
+            output_order,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            ring_order_limits,
+            spectrum_len,
+            first_spectra,
+            second_spectra,
+            previous,
+            current,
+            next,
+            exponents,
+            first_sum_re,
+            first_sum_im,
+            second_sum_re,
+            second_sum_im,
         )
     }
 

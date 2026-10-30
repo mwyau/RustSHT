@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use super::*;
-use num_complex::Complex64;
+use num_complex::{Complex32, Complex64};
 
 use crate::plan::LegendreReuseEstimate;
 use crate::{GridKind, GridSpec, HarmonicSpec};
@@ -1217,6 +1217,231 @@ fn spin_one_gl_matches_ducc_0410_and_weighted_analysis() {
     {
         assert_complex_close(actual_e, expected_e, 8e-13);
         assert_complex_close(actual_b, expected_b, 8e-13);
+    }
+}
+
+#[test]
+fn native_f32_spin1_reflected_order_matches_general_recurrence() {
+    let lmax = 31;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let plan: ShtPlan<f32> = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.23).unwrap(),
+        HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+    )
+    .unwrap();
+    let mut e = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b = e.clone();
+    for order in 0..=lmax {
+        for degree in order.max(1)..=lmax {
+            let index = plan.harmonics().index(degree, order).unwrap();
+            let re = ((degree * 17 + order * 7) % 97) as f32 / 970.0;
+            let im = if order == 0 {
+                0.0
+            } else {
+                ((degree * 11 + order * 13) % 89) as f32 / 890.0
+            };
+            e[index] = Complex32::new(re, im);
+            b[index] = Complex32::new(-im, re * 0.75);
+        }
+    }
+    let zero = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    let cases = [
+        ("E-only", e.as_slice(), zero.as_slice()),
+        ("B-only", zero.as_slice(), b.as_slice()),
+        ("mixed", e.as_slice(), b.as_slice()),
+    ];
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let spectrum_len = plan.fft.spectrum_len();
+
+    for (name, e_alm, b_alm) in cases {
+        workspace.spectra.fill(Complex32::new(0.0, 0.0));
+        workspace.spin_spectra.fill(Complex32::new(0.0, 0.0));
+        in_single_thread_pool(|| {
+            plan.synthesize_spin_ring_group(
+                e_alm,
+                Some(b_alm),
+                1,
+                false,
+                true,
+                false,
+                None,
+                None,
+                nphi,
+                spectrum_len,
+                plan.grid.phi0(),
+                0,
+                ntheta,
+                &mut workspace.spectra,
+                &mut workspace.spin_spectra,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                pulp::Arch::new(),
+                &mut workspace.recurrence_workers[0],
+            )
+        })
+        .unwrap();
+        let fast_q = workspace.spectra.clone();
+        let fast_u = workspace.spin_spectra.clone();
+
+        workspace.spectra.fill(Complex32::new(0.0, 0.0));
+        workspace.spin_spectra.fill(Complex32::new(0.0, 0.0));
+        in_single_thread_pool(|| {
+            plan.synthesize_spin_ring_group(
+                e_alm,
+                Some(b_alm),
+                1,
+                false,
+                false,
+                false,
+                None,
+                None,
+                nphi,
+                spectrum_len,
+                plan.grid.phi0(),
+                0,
+                ntheta,
+                &mut workspace.spectra,
+                &mut workspace.spin_spectra,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                pulp::Arch::new(),
+                &mut workspace.recurrence_workers[0],
+            )
+        })
+        .unwrap();
+
+        let (error, reference) = fast_q
+            .iter()
+            .zip(&workspace.spectra)
+            .chain(fast_u.iter().zip(&workspace.spin_spectra))
+            .fold((0.0_f64, 0.0_f64), |(error, reference), (fast, general)| {
+                (
+                    error + f64::from((*fast - *general).norm_sqr()),
+                    reference + f64::from(general.norm_sqr()),
+                )
+            });
+        let relative_l2 = (error / reference).sqrt();
+        assert!(
+            relative_l2 <= 3.0e-5,
+            "{name}: reflected order-major f32 route relative-L2 error {relative_l2:.3e}"
+        );
+    }
+}
+
+#[test]
+fn native_f32_spin1_reduced_q1_order_major_matches_general_recurrence() {
+    let lmax = 31;
+    let mmax = 15;
+    let ntheta = lmax + 1;
+    let nphi = 2 * mmax + 7;
+    let plan: ShtPlan<f32> = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.23).unwrap(),
+        HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+    )
+    .unwrap();
+    let mut e = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b = e.clone();
+    for order in 0..=mmax {
+        for degree in order.max(1)..=lmax {
+            let index = plan.harmonics().index(degree, order).unwrap();
+            let re = ((degree * 17 + order * 7) % 97) as f32 / 970.0;
+            let im = if order == 0 {
+                0.0
+            } else {
+                ((degree * 11 + order * 13) % 89) as f32 / 890.0
+            };
+            e[index] = Complex32::new(re, im);
+            b[index] = Complex32::new(-im, re * 0.75);
+        }
+    }
+    let zero = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    let cases = [
+        ("E-only", e.as_slice(), zero.as_slice()),
+        ("B-only", zero.as_slice(), b.as_slice()),
+        ("mixed", e.as_slice(), b.as_slice()),
+    ];
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let spectrum_len = plan.fft.spectrum_len();
+
+    for (name, e_alm, b_alm) in cases {
+        workspace.spectra.fill(Complex32::new(0.0, 0.0));
+        workspace.spin_spectra.fill(Complex32::new(0.0, 0.0));
+        in_single_thread_pool(|| {
+            plan.synthesize_spin_ring_group(
+                e_alm,
+                Some(b_alm),
+                1,
+                false,
+                true,
+                false,
+                None,
+                None,
+                nphi,
+                spectrum_len,
+                plan.grid.phi0(),
+                0,
+                ntheta,
+                &mut workspace.spectra,
+                &mut workspace.spin_spectra,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                pulp::Arch::new(),
+                &mut workspace.recurrence_workers[0],
+            )
+        })
+        .unwrap();
+        let fast_q = workspace.spectra.clone();
+        let fast_u = workspace.spin_spectra.clone();
+
+        workspace.spectra.fill(Complex32::new(0.0, 0.0));
+        workspace.spin_spectra.fill(Complex32::new(0.0, 0.0));
+        in_single_thread_pool(|| {
+            plan.synthesize_spin_ring_group(
+                e_alm,
+                Some(b_alm),
+                1,
+                false,
+                false,
+                false,
+                None,
+                None,
+                nphi,
+                spectrum_len,
+                plan.grid.phi0(),
+                0,
+                ntheta,
+                &mut workspace.spectra,
+                &mut workspace.spin_spectra,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                pulp::Arch::new(),
+                &mut workspace.recurrence_workers[0],
+            )
+        })
+        .unwrap();
+
+        let (error, reference) = fast_q
+            .iter()
+            .zip(&workspace.spectra)
+            .chain(fast_u.iter().zip(&workspace.spin_spectra))
+            .fold((0.0_f64, 0.0_f64), |(error, reference), (fast, general)| {
+                (
+                    error + f64::from((*fast - *general).norm_sqr()),
+                    reference + f64::from(general.norm_sqr()),
+                )
+            });
+        let relative_l2 = (error / reference).sqrt();
+        assert!(
+            relative_l2 <= 3.0e-5,
+            "{name}: reflected order-major f32 route relative-L2 error {relative_l2:.3e}"
+        );
     }
 }
 
@@ -6304,7 +6529,12 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
         .zip(&one_first)
         .chain(eight_second.iter().zip(&one_second))
     {
-        assert!((actual - expected).abs() <= 1.0e-9 * expected.abs().max(1.0));
+        let difference = (actual - expected).abs();
+        let tolerance = 1.0e-9 * expected.abs().max(1.0);
+        assert!(
+            difference <= tolerance,
+            "actual={actual:.17e} expected={expected:.17e} difference={difference:.3e} tolerance={tolerance:.3e}"
+        );
     }
 
     eight_first.fill(f64::NAN);
@@ -10485,6 +10715,137 @@ fn profile_spin1_standard_synthesis_phases() {
             observation.phase,
             observation.elapsed_ns as f64 / 1.0e6,
         );
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "test-only native-f32 route counters; run with RUSTSHT_PROFILE_* variables"]
+fn profile_native_f32_spin1_synthesis_routes() {
+    use std::time::Instant;
+
+    let lmax = std::env::var("RUSTSHT_PROFILE_LMAX")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(720_usize);
+    let mmax = std::env::var("RUSTSHT_PROFILE_MMAX")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(lmax);
+    let ntheta = std::env::var("RUSTSHT_PROFILE_NTHETA")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(lmax + 1);
+    let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(2 * (mmax + 1));
+    let threads = std::env::var("RUSTSHT_PROFILE_THREADS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8_usize);
+    let repetitions = std::env::var("RUSTSHT_PROFILE_REPETITIONS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(1_usize);
+    let plan: ShtPlan<f32> = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.23).unwrap(),
+        HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+    )
+    .unwrap();
+    let mut state = 0x7a31_9d42_8b6c_05e1_u64;
+    let mut next_value = || {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut value = state;
+        value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        value ^= value >> 31;
+        (((value >> 40) as u32) as f32) * (1.0 / ((1_u32 << 24) as f32)) * 2.0 - 1.0
+    };
+    let mut e_alm = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut b_alm = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+    for order in 0..=mmax {
+        for degree in 1.max(order)..=lmax {
+            let index = plan.harmonics.index(degree, order).unwrap();
+            e_alm[index] =
+                Complex32::new(next_value(), if order == 0 { 0.0 } else { next_value() });
+            b_alm[index] =
+                Complex32::new(next_value(), if order == 0 { 0.0 } else { next_value() });
+        }
+    }
+    let mut first = vec![0.0_f32; ntheta * nphi];
+    let mut second = vec![0.0_f32; ntheta * nphi];
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build()
+        .unwrap();
+    let mut workspace = pool.install(|| plan.workspace()).unwrap();
+    plan.prepare_workspace(&mut workspace, threads).unwrap();
+    for _ in 0..2 {
+        pool.install(|| {
+            plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        })
+        .unwrap();
+    }
+    for worker in &mut workspace.recurrence_workers {
+        worker.spin1_profile_enabled = true;
+        worker.spin1_profile_factor_ns = 0;
+        worker.spin1_profile_pair_prepare_ns = 0;
+        worker.spin1_profile_recurrence_ns = 0;
+        worker.spin1_profile_fallback_ns = 0;
+        worker.spin1_profile_pair_eligible_blocks = 0;
+        worker.spin1_profile_pair_success_blocks = 0;
+        worker.spin1_profile_fallback_blocks = 0;
+        worker.spin1_profile_route_bins =
+            [crate::workspace::Spin1SynthesisProfileBin::default(); 3];
+    }
+    for repetition in 0..repetitions {
+        crate::legendre::scalar_ordered::reset_work_counters();
+        let started = Instant::now();
+        pool.install(|| {
+            plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        })
+        .unwrap();
+        eprintln!(
+            "F32_SPIN1_PROFILE,{lmax},{mmax},{nphi},{threads},{repetition},{:.6}",
+            started.elapsed().as_secs_f64() * 1.0e3,
+        );
+        let ordered = crate::legendre::scalar_ordered::work_counter_snapshot();
+        eprintln!(
+            "F32_SPIN1_ORDERED_WORK,{repetition},ring_batches={},ring_writes={},initial_scaled_lanes={},scaled_pair_updates={},ordinary_pair_updates={},shared_basis_updates={},shared_basis_fallback_updates={},route_successes={},route_declines={}",
+            ordered.ring_batches,
+            ordered.output_ring_writes,
+            ordered.initial_scaled_lanes,
+            ordered.scaled_pair_updates,
+            ordered.ordinary_pair_updates,
+            ordered.shared_basis_pair_updates,
+            ordered.shared_basis_fallback_pair_updates,
+            ordered.ordered_route_successes,
+            ordered.ordered_route_declines,
+        );
+        for (index, worker) in workspace.recurrence_workers.iter().enumerate() {
+            eprintln!(
+                "F32_SPIN1_WORKER,{index},eligible={},success={},fallback={},ordinary_work={},generic_work={},transition={}",
+                worker.spin1_profile_pair_eligible_blocks,
+                worker.spin1_profile_pair_success_blocks,
+                worker.spin1_profile_fallback_blocks,
+                worker
+                    .spin1_profile_route_bins
+                    .iter()
+                    .map(|bin| bin.ordinary_fused_lane_pair_work)
+                    .sum::<u128>(),
+                worker
+                    .spin1_profile_route_bins
+                    .iter()
+                    .map(|bin| bin.generic_lane_pair_work)
+                    .sum::<u128>(),
+                worker
+                    .spin1_profile_route_bins
+                    .iter()
+                    .map(|bin| bin.transition_successes)
+                    .sum::<usize>(),
+            );
+        }
     }
 }
 

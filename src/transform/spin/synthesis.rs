@@ -204,7 +204,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && allow_fast_scalar
                     && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX
                     && self.harmonics.lmax() <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX
-                    && T::supports_paired_spin()
+                    && T::supports_spin1_synthesis()
                     && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
                 // For exact CC cache-enabled synthesis, use the existing
@@ -824,27 +824,28 @@ impl<T: ShtScalar> ShtPlan<T> {
             && (!derivative_norm || (spin == 1 && self.harmonics.spin() == 0))
             && (spin == 1 || b_alm.is_some())
             && self.harmonics.lmax() >= fast_scalar_min_lmax
-            && T::supports_paired_spin()
+            && ((spin == 1 && T::supports_spin1_synthesis())
+                || (spin == 2 && T::supports_paired_spin()))
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (spin != 2 || self.spin2_fast_f1.len() > self.harmonics.lmax());
-        let reflected_q1_full_order = spin == 1
+        let reflected_q1_order_major = spin == 1
             && fast_scalar_enabled
             && !derivative_norm
             && !allow_spin1_table
             && b_alm.is_some()
             && self.harmonics.spin() == 1
-            && self.harmonics.mmax() == self.harmonics.lmax()
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && self.grid.ntheta() == self.harmonics.lmax() + 1
             && spectrum_len == self.fft.spectrum_len()
             && ring_start == 0
             && ring_end == self.grid.ntheta()
+            && T::supports_spin1_synthesis()
             && order_start == 0
             && order_end == self.harmonics.mmax() + 1
             && q_spectra.len() == theta_sin.len() * spectrum_len
             && u_spectra.len() == q_spectra.len()
             && single_threaded_execution();
-        if reflected_q1_full_order {
+        if reflected_q1_order_major {
             return self.synthesize_spin_ring_group_mode_orders(
                 e_alm,
                 b_alm,
@@ -1200,7 +1201,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && spin1_scalar_coefficients.is_none()
                     && spin1_scalar_coefficient_finite_orders.is_none()
                     && !allow_spin1_table
-                    && T::supports_paired_spin()
+                    && T::supports_spin1_synthesis()
                     && fused_local_preparation_eligible
                     && ring_start + ring_end == self.grid.ntheta()
                     && order_start == m
@@ -1343,7 +1344,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         && !derivative_norm
                         && b_alm.is_some()
                         && !allow_spin1_table
-                        && T::supports_paired_spin();
+                        && T::supports_spin1_synthesis();
                     let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
                     let pair_scratch_ready = coefficient_pair_count
                         <= recurrence.fast_spin_first.len()
@@ -1359,11 +1360,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 .iter()
                                 .all(|&limit| limit >= m)
                     };
-                    let q1_full_spectrum_component = spin == 1
+                    let q1_order_major_component = spin == 1
                         && self.harmonics.spin() == 1
-                        && self.harmonics.mmax() == lmax
+                        && self.grid.kind() == crate::grid::GridKind::GaussLegendre
                         && order_start == 0
                         && order_end == self.harmonics.mmax() + 1
+                        && T::supports_spin1_synthesis()
                         && output_order == m
                         && spectrum_len == self.fft.spectrum_len()
                         && ring_start == 0
@@ -1382,7 +1384,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         && paired_factors_ready
                         && !allow_spin1_table
                         && ring_start + ring_end == self.grid.ntheta()
-                        && (q1_full_spectrum_component
+                        && (q1_order_major_component
                             || (contiguous_component_order
                                 && (self.harmonics.mmax() == lmax
                                     || self.grid.kind() == crate::grid::GridKind::GaussLegendre)))
@@ -1893,7 +1895,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
 
         if !has_excluded_ring {
-            let paired_channels_eligible = T::supports_paired_spin()
+            let paired_channels_eligible = T::supports_spin1_synthesis()
                 && recurrence.fast_spin_first.len() >= (scalar_lmax - m + 2) / 2
                 && recurrence.fast_spin_pair_first.len() >= (scalar_lmax - m + 2) / 2
                 && theta_sin.iter().all(|&sine| sine >= pair_min_sine);
@@ -2285,7 +2287,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         // Polar synthesis falls back to one scalar recurrence per degree.
         // For the paired f64 route, cache each lane's inverse sine once
         // instead of recomputing the same division for every degree.
-        let inverse_sines = if T::supports_paired_spin() {
+        let inverse_sines = if T::supports_spin1_synthesis() {
             for (inverse_sine, &sine) in recurrence.analysis_same_real[..fallback_len]
                 .iter_mut()
                 .zip(fallback_sin)
@@ -2459,7 +2461,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 return None;
             }
         }
-        let simd_lanes = crate::legendre::scalar_ordered::f64_lane_count(arch);
+        let simd_lanes = T::scalar_ordered_lane_count(arch);
         if simd_lanes == 0 {
             return None;
         }

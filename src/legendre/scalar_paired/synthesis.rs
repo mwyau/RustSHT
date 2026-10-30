@@ -1011,32 +1011,32 @@ pub(crate) fn synthesize_order_pair_block_dispatched(
     clippy::too_many_arguments,
     reason = "The prepared dual-channel block receives both spectra and caller-owned recurrence scratch."
 )]
-pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+pub(crate) fn synthesize_prepared_order_pair_block_dispatched<T: FusedSynthesisPrecision>(
     arch: Arch,
     m: usize,
     output_order: usize,
     lmax: usize,
-    sin_theta: &[f64],
-    cos_theta: &[f64],
-    sectoral_norm: f64,
-    coefficient_a: &[f64],
-    coefficient_b: &[f64],
-    first_even: &[Complex64],
-    first_odd: &[Complex64],
-    second_even: &[Complex64],
-    second_odd: &[Complex64],
+    sin_theta: &[T],
+    cos_theta: &[T],
+    sectoral_norm: T,
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    first_even: &[Complex<T>],
+    first_odd: &[Complex<T>],
+    second_even: &[Complex<T>],
+    second_odd: &[Complex<T>],
     ring_order_limits: &[usize],
     spectrum_len: usize,
-    first_spectra: &mut [Complex64],
-    second_spectra: &mut [Complex64],
-    previous: &mut [f64],
-    current: &mut [f64],
-    next: &mut [f64],
+    first_spectra: &mut [Complex<T>],
+    second_spectra: &mut [Complex<T>],
+    previous: &mut [T],
+    current: &mut [T],
+    next: &mut [T],
     exponents: &mut [i64],
-    first_sum_re: &mut [f64],
-    first_sum_im: &mut [f64],
-    second_sum_re: &mut [f64],
-    second_sum_im: &mut [f64],
+    first_sum_re: &mut [T],
+    first_sum_im: &mut [T],
+    second_sum_re: &mut [T],
+    second_sum_im: &mut [T],
 ) -> Result<bool, ShtError> {
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
     debug_assert_eq!(sin_theta.len(), ring_order_limits.len());
@@ -1069,39 +1069,77 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
         return Ok(false);
     }
 
-    for ring in 0..sin_theta.len() {
-        let (value, exponent) = scalar::sectoral_value(sin_theta[ring], m, sectoral_norm)?;
-        previous[ring] = 0.0;
-        current[ring] = value;
-        exponents[ring] = exponent;
-    }
-    if !scalar::normalize_pair_lanes(
+    T::initialize_pair_state(
+        m,
+        sin_theta,
+        sectoral_norm,
         &mut previous[..sin_theta.len()],
         &mut current[..sin_theta.len()],
         &mut exponents[..sin_theta.len()],
-    )? {
+    )?;
+    let ordinary_range = T::normalize_pair_state(
+        &mut previous[..sin_theta.len()],
+        &mut current[..sin_theta.len()],
+        &mut exponents[..sin_theta.len()],
+    )?;
+    let exponents_are_zero = exponents[..sin_theta.len()]
+        .iter()
+        .all(|&exponent| exponent == 0);
+    let mut completed = ordinary_range && exponents_are_zero;
+    if completed {
+        completed = arch.dispatch(FusedPreparedSynthesisPairBlock {
+            pair_count,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            previous: &previous[..sin_theta.len()],
+            current: &current[..sin_theta.len()],
+            first_sum_re: &mut first_sum_re[..sin_theta.len()],
+            first_sum_im: &mut first_sum_im[..sin_theta.len()],
+            second_sum_re: &mut second_sum_re[..sin_theta.len()],
+            second_sum_im: &mut second_sum_im[..sin_theta.len()],
+        });
+    }
+    if !completed {
+        completed = synthesize_prepared_order_pair_transition_typed::<T>(
+            arch,
+            pair_count,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            &previous[..sin_theta.len()],
+            &current[..sin_theta.len()],
+            &exponents[..sin_theta.len()],
+            &mut first_sum_re[..sin_theta.len()],
+            &mut first_sum_im[..sin_theta.len()],
+            &mut second_sum_re[..sin_theta.len()],
+            &mut second_sum_im[..sin_theta.len()],
+        )?;
+    }
+    if !completed
+        || first_sum_re[..sin_theta.len()]
+            .iter()
+            .chain(&first_sum_im[..sin_theta.len()])
+            .chain(&second_sum_re[..sin_theta.len()])
+            .chain(&second_sum_im[..sin_theta.len()])
+            .any(|value| !value.is_finite())
+    {
         return Ok(false);
     }
-
-    arch.dispatch(FusedPreparedSynthesisPairBlock {
-        pair_count,
-        cos_theta,
-        coefficient_a,
-        coefficient_b,
-        first_even,
-        first_odd,
-        second_even,
-        second_odd,
-        current: &current[..sin_theta.len()],
-        first_sum_re: &mut first_sum_re[..sin_theta.len()],
-        first_sum_im: &mut first_sum_im[..sin_theta.len()],
-        second_sum_re: &mut second_sum_re[..sin_theta.len()],
-        second_sum_im: &mut second_sum_im[..sin_theta.len()],
-    });
     for ring in 0..sin_theta.len() {
         let spectrum_index = ring * spectrum_len + output_order;
-        first_spectra[spectrum_index] += Complex64::new(first_sum_re[ring], first_sum_im[ring]);
-        second_spectra[spectrum_index] += Complex64::new(second_sum_re[ring], second_sum_im[ring]);
+        first_spectra[spectrum_index] =
+            first_spectra[spectrum_index] + Complex::new(first_sum_re[ring], first_sum_im[ring]);
+        second_spectra[spectrum_index] =
+            second_spectra[spectrum_index] + Complex::new(second_sum_re[ring], second_sum_im[ring]);
     }
     Ok(true)
 }
@@ -1827,12 +1865,30 @@ impl<C: SynthesisPairCoefficientSource> WithSimd for StagedSynthesisPairTransiti
     }
 }
 
-trait FusedSynthesisPrecision: PairedScalarRecurrencePrecision {
+pub(crate) trait FusedSynthesisPrecision: PairedScalarRecurrencePrecision {
+    const CHECK_RANGE: bool;
     type Vector<S: Simd>: Copy;
 
+    fn lane_count<S: Simd>() -> usize;
     fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]);
     fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]);
+    #[inline(always)]
+    fn load_vector<S: Simd>(values: &[Self]) -> Option<Self::Vector<S>> {
+        let (vectors, tail) = Self::as_simd::<S>(values);
+        (vectors.len() == 1 && tail.is_empty()).then(|| vectors[0])
+    }
+    #[inline(always)]
+    fn store_vector<S: Simd>(values: &mut [Self], vector: Self::Vector<S>) -> bool {
+        let (vectors, tail) = Self::as_mut_simd::<S>(values);
+        if vectors.len() != 1 || !tail.is_empty() {
+            return false;
+        }
+        vectors[0] = vector;
+        true
+    }
     fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S>;
+    fn simd_add<S: Simd>(simd: S, left: Self::Vector<S>, right: Self::Vector<S>)
+    -> Self::Vector<S>;
     fn simd_mul<S: Simd>(simd: S, left: Self::Vector<S>, right: Self::Vector<S>)
     -> Self::Vector<S>;
     fn simd_mul_add<S: Simd>(
@@ -1847,10 +1903,18 @@ trait FusedSynthesisPrecision: PairedScalarRecurrencePrecision {
         current: Self::Vector<S>,
     ) -> bool;
     fn value_in_normal_range(value: Self) -> bool;
+    fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self>;
+    fn scale_normal_product(value: Self, exponent: i64) -> Option<Self>;
 }
 
 impl FusedSynthesisPrecision for f32 {
+    const CHECK_RANGE: bool = true;
     type Vector<S: Simd> = S::f32s;
+
+    #[inline(always)]
+    fn lane_count<S: Simd>() -> usize {
+        S::F32_LANES
+    }
 
     #[inline(always)]
     fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]) {
@@ -1865,6 +1929,15 @@ impl FusedSynthesisPrecision for f32 {
     #[inline(always)]
     fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S> {
         simd.splat_f32s(value)
+    }
+
+    #[inline(always)]
+    fn simd_add<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+    ) -> Self::Vector<S> {
+        simd.add_f32s(left, right)
     }
 
     #[inline(always)]
@@ -1919,10 +1992,26 @@ impl FusedSynthesisPrecision for f32 {
     fn value_in_normal_range(value: Self) -> bool {
         value == 0.0 || (value.is_finite() && (Self::SMALL..=Self::BIG).contains(&value.abs()))
     }
+
+    #[inline(always)]
+    fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
+        scalar::multiply_complex_scaled_f32(value, factor, exponent)
+    }
+
+    #[inline(always)]
+    fn scale_normal_product(value: Self, exponent: i64) -> Option<Self> {
+        scale_normal_prefix_product_f32(value, exponent)
+    }
 }
 
 impl FusedSynthesisPrecision for f64 {
+    const CHECK_RANGE: bool = false;
     type Vector<S: Simd> = S::f64s;
+
+    #[inline(always)]
+    fn lane_count<S: Simd>() -> usize {
+        S::F64_LANES
+    }
 
     #[inline(always)]
     fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]) {
@@ -1937,6 +2026,15 @@ impl FusedSynthesisPrecision for f64 {
     #[inline(always)]
     fn splat<S: Simd>(simd: S, value: Self) -> Self::Vector<S> {
         simd.splat_f64s(value)
+    }
+
+    #[inline(always)]
+    fn simd_add<S: Simd>(
+        simd: S,
+        left: Self::Vector<S>,
+        right: Self::Vector<S>,
+    ) -> Self::Vector<S> {
+        simd.add_f64s(left, right)
     }
 
     #[inline(always)]
@@ -1991,6 +2089,36 @@ impl FusedSynthesisPrecision for f64 {
     fn value_in_normal_range(value: Self) -> bool {
         value == 0.0 || (value.is_finite() && (Self::SMALL..=Self::BIG).contains(&value.abs()))
     }
+
+    #[inline(always)]
+    fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
+        scalar::multiply_complex_scaled(value, factor, exponent)
+    }
+
+    #[inline(always)]
+    fn scale_normal_product(value: Self, exponent: i64) -> Option<Self> {
+        super::scale_normal_prefix_product(value, exponent)
+    }
+}
+
+#[inline(always)]
+fn scale_normal_prefix_product_f32(product: f32, exponent: i64) -> Option<f32> {
+    if product == 0.0 {
+        return Some(product);
+    }
+    if !product.is_normal() || !(-4096..=4096).contains(&exponent) {
+        return None;
+    }
+    let bits = product.to_bits();
+    let raw_exponent = ((bits >> 23) & 0xff) as i64;
+    let scaled_exponent = raw_exponent + exponent;
+    if !(1..0xff).contains(&scaled_exponent) {
+        return None;
+    }
+    let exponent_mask = 0xff_u32 << 23;
+    Some(f32::from_bits(
+        (bits & !exponent_mask) | ((scaled_exponent as u32) << 23),
+    ))
 }
 
 struct FusedSynthesisBlock<'a, T, const CHECK_RANGE: bool, const INITIALIZE_SUMS: bool>
@@ -2148,27 +2276,28 @@ fn finite_prefix_sums(
         .all(|value| value.is_finite() && value.abs() <= limit)
 }
 
-struct FusedPreparedSynthesisPairBlock<'a> {
+struct FusedPreparedSynthesisPairBlock<'a, T> {
     pair_count: usize,
-    cos_theta: &'a [f64],
-    coefficient_a: &'a [f64],
-    coefficient_b: &'a [f64],
-    first_even: &'a [Complex64],
-    first_odd: &'a [Complex64],
-    second_even: &'a [Complex64],
-    second_odd: &'a [Complex64],
-    current: &'a [f64],
-    first_sum_re: &'a mut [f64],
-    first_sum_im: &'a mut [f64],
-    second_sum_re: &'a mut [f64],
-    second_sum_im: &'a mut [f64],
+    cos_theta: &'a [T],
+    coefficient_a: &'a [T],
+    coefficient_b: &'a [T],
+    first_even: &'a [Complex<T>],
+    first_odd: &'a [Complex<T>],
+    second_even: &'a [Complex<T>],
+    second_odd: &'a [Complex<T>],
+    previous: &'a [T],
+    current: &'a [T],
+    first_sum_re: &'a mut [T],
+    first_sum_im: &'a mut [T],
+    second_sum_re: &'a mut [T],
+    second_sum_im: &'a mut [T],
 }
 
-impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
-    type Output = ();
+impl<T: FusedSynthesisPrecision> WithSimd for FusedPreparedSynthesisPairBlock<'_, T> {
+    type Output = bool;
 
     #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) {
+    fn with_simd<S: Simd>(self, simd: S) -> bool {
         let FusedPreparedSynthesisPairBlock {
             pair_count,
             cos_theta,
@@ -2178,75 +2307,74 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
             first_odd,
             second_even,
             second_odd,
+            previous,
             current,
             first_sum_re,
             first_sum_im,
             second_sum_re,
             second_sum_im,
         } = self;
-        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
-        let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
-        let (first_sum_re_vectors, first_sum_re_tail) = S::as_mut_simd_f64s(first_sum_re);
-        let (first_sum_im_vectors, first_sum_im_tail) = S::as_mut_simd_f64s(first_sum_im);
-        let (second_sum_re_vectors, second_sum_re_tail) = S::as_mut_simd_f64s(second_sum_re);
-        let (second_sum_im_vectors, second_sum_im_tail) = S::as_mut_simd_f64s(second_sum_im);
-        let coefficient_pairs = coefficient_a
-            .iter()
-            .zip(coefficient_b)
-            .zip(first_even)
-            .zip(first_odd)
-            .zip(second_even)
-            .zip(second_odd)
-            .enumerate();
-        for lane_block in 0..cosine_vectors.len() {
+        let (cosine_vectors, cosine_tail) = T::as_simd::<S>(cos_theta);
+        let (previous_vectors, previous_tail) = T::as_simd::<S>(previous);
+        let (initial_vectors, initial_tail) = T::as_simd::<S>(current);
+        let (first_sum_re_vectors, first_sum_re_tail) = T::as_mut_simd::<S>(first_sum_re);
+        let (first_sum_im_vectors, first_sum_im_tail) = T::as_mut_simd::<S>(first_sum_im);
+        let (second_sum_re_vectors, second_sum_re_tail) = T::as_mut_simd::<S>(second_sum_re);
+        let (second_sum_im_vectors, second_sum_im_tail) = T::as_mut_simd::<S>(second_sum_im);
+        let vector_count = cosine_vectors.len();
+        for lane_block in 0..vector_count {
             let cosine = cosine_vectors[lane_block];
-            let mut previous = simd.splat_f64s(0.0);
+            let mut previous = previous_vectors[lane_block];
             let mut current = initial_vectors[lane_block];
-            let mut first_re = simd.splat_f64s(0.0);
-            let mut first_im = simd.splat_f64s(0.0);
-            let mut second_re = simd.splat_f64s(0.0);
-            let mut second_im = simd.splat_f64s(0.0);
-            for (
-                pair,
-                (
-                    ((((coefficient_a, coefficient_b), first_even), first_odd), second_even),
-                    second_odd,
-                ),
-            ) in coefficient_pairs.clone()
-            {
-                let first_coefficient_re = simd.mul_add_f64s(
-                    simd.splat_f64s(first_odd.re),
+            let mut first_re = T::splat(simd, T::zero());
+            let mut first_im = T::splat(simd, T::zero());
+            let mut second_re = T::splat(simd, T::zero());
+            let mut second_im = T::splat(simd, T::zero());
+            for pair in 0..pair_count {
+                let first_e = first_even[pair];
+                let first_o = first_odd[pair];
+                let second_e = second_even[pair];
+                let second_o = second_odd[pair];
+                let first_coefficient_re = T::simd_mul_add(
+                    simd,
+                    T::splat(simd, first_o.re),
                     cosine,
-                    simd.splat_f64s(first_even.re),
+                    T::splat(simd, first_e.re),
                 );
-                let first_coefficient_im = simd.mul_add_f64s(
-                    simd.splat_f64s(first_odd.im),
+                let first_coefficient_im = T::simd_mul_add(
+                    simd,
+                    T::splat(simd, first_o.im),
                     cosine,
-                    simd.splat_f64s(first_even.im),
+                    T::splat(simd, first_e.im),
                 );
-                let second_coefficient_re = simd.mul_add_f64s(
-                    simd.splat_f64s(second_odd.re),
+                let second_coefficient_re = T::simd_mul_add(
+                    simd,
+                    T::splat(simd, second_o.re),
                     cosine,
-                    simd.splat_f64s(second_even.re),
+                    T::splat(simd, second_e.re),
                 );
-                let second_coefficient_im = simd.mul_add_f64s(
-                    simd.splat_f64s(second_odd.im),
+                let second_coefficient_im = T::simd_mul_add(
+                    simd,
+                    T::splat(simd, second_o.im),
                     cosine,
-                    simd.splat_f64s(second_even.im),
+                    T::splat(simd, second_e.im),
                 );
-                first_re = simd.mul_add_f64s(current, first_coefficient_re, first_re);
-                first_im = simd.mul_add_f64s(current, first_coefficient_im, first_im);
-                second_re = simd.mul_add_f64s(current, second_coefficient_re, second_re);
-                second_im = simd.mul_add_f64s(current, second_coefficient_im, second_im);
-
+                first_re = T::simd_mul_add(simd, current, first_coefficient_re, first_re);
+                first_im = T::simd_mul_add(simd, current, first_coefficient_im, first_im);
+                second_re = T::simd_mul_add(simd, current, second_coefficient_re, second_re);
+                second_im = T::simd_mul_add(simd, current, second_coefficient_im, second_im);
                 if pair + 1 < pair_count {
-                    let cosine_squared = simd.mul_f64s(cosine, cosine);
-                    let leading = simd.mul_add_f64s(
-                        simd.splat_f64s(*coefficient_a),
+                    let cosine_squared = T::simd_mul(simd, cosine, cosine);
+                    let leading = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, coefficient_a[pair]),
                         cosine_squared,
-                        simd.splat_f64s(*coefficient_b),
+                        T::splat(simd, coefficient_b[pair]),
                     );
-                    let next = simd.mul_add_f64s(leading, current, previous);
+                    let next = T::simd_mul_add(simd, leading, current, previous);
+                    if T::CHECK_RANGE && T::vector_pair_needs_scaling(simd, current, next) {
+                        return false;
+                    }
                     previous = current;
                     current = next;
                 }
@@ -2259,30 +2387,29 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
 
         for lane in 0..cosine_tail.len() {
             let cosine = cosine_tail[lane];
-            let mut previous = 0.0;
+            let mut previous = previous_tail[lane];
             let mut current = initial_tail[lane];
-            let mut first_re = 0.0;
-            let mut first_im = 0.0;
-            let mut second_re = 0.0;
-            let mut second_im = 0.0;
-            for (
-                pair,
-                (
-                    ((((coefficient_a, coefficient_b), first_even), first_odd), second_even),
-                    second_odd,
-                ),
-            ) in coefficient_pairs.clone()
-            {
-                first_re = current.mul_add(first_odd.re.mul_add(cosine, first_even.re), first_re);
-                first_im = current.mul_add(first_odd.im.mul_add(cosine, first_even.im), first_im);
-                second_re =
-                    current.mul_add(second_odd.re.mul_add(cosine, second_even.re), second_re);
-                second_im =
-                    current.mul_add(second_odd.im.mul_add(cosine, second_even.im), second_im);
-
+            let mut first_re = T::zero();
+            let mut first_im = T::zero();
+            let mut second_re = T::zero();
+            let mut second_im = T::zero();
+            for pair in 0..pair_count {
+                let first_e = first_even[pair];
+                let first_o = first_odd[pair];
+                let second_e = second_even[pair];
+                let second_o = second_odd[pair];
+                first_re = current.mul_add(first_o.re.mul_add(cosine, first_e.re), first_re);
+                first_im = current.mul_add(first_o.im.mul_add(cosine, first_e.im), first_im);
+                second_re = current.mul_add(second_o.re.mul_add(cosine, second_e.re), second_re);
+                second_im = current.mul_add(second_o.im.mul_add(cosine, second_e.im), second_im);
                 if pair + 1 < pair_count {
-                    let leading = coefficient_a.mul_add(cosine * cosine, *coefficient_b);
+                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
                     let next = leading.mul_add(current, previous);
+                    if T::CHECK_RANGE
+                        && (!T::value_in_normal_range(current) || !T::value_in_normal_range(next))
+                    {
+                        return false;
+                    }
                     previous = current;
                     current = next;
                 }
@@ -2292,6 +2419,534 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
             second_sum_re_tail[lane] = second_re;
             second_sum_im_tail[lane] = second_im;
         }
+        true
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scaled prepared-pair block receives dual coefficients, recurrence state and output sums explicitly."
+)]
+fn synthesize_prepared_order_pair_transition_typed<T: FusedSynthesisPrecision>(
+    arch: Arch,
+    pair_count: usize,
+    cos_theta: &[T],
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    first_even: &[Complex<T>],
+    first_odd: &[Complex<T>],
+    second_even: &[Complex<T>],
+    second_odd: &[Complex<T>],
+    previous: &[T],
+    current: &[T],
+    exponents: &[i64],
+    first_sum_re: &mut [T],
+    first_sum_im: &mut [T],
+    second_sum_re: &mut [T],
+    second_sum_im: &mut [T],
+) -> Result<bool, ShtError> {
+    arch.dispatch(FusedPreparedSynthesisPairTransition {
+        pair_count,
+        cos_theta,
+        coefficient_a,
+        coefficient_b,
+        first_even,
+        first_odd,
+        second_even,
+        second_odd,
+        previous,
+        current,
+        exponents,
+        first_sum_re,
+        first_sum_im,
+        second_sum_re,
+        second_sum_im,
+    })
+}
+
+struct FusedPreparedSynthesisPairTransition<'a, T> {
+    pair_count: usize,
+    cos_theta: &'a [T],
+    coefficient_a: &'a [T],
+    coefficient_b: &'a [T],
+    first_even: &'a [Complex<T>],
+    first_odd: &'a [Complex<T>],
+    second_even: &'a [Complex<T>],
+    second_odd: &'a [Complex<T>],
+    previous: &'a [T],
+    current: &'a [T],
+    exponents: &'a [i64],
+    first_sum_re: &'a mut [T],
+    first_sum_im: &'a mut [T],
+    second_sum_re: &'a mut [T],
+    second_sum_im: &'a mut [T],
+}
+
+impl<T: FusedSynthesisPrecision> WithSimd for FusedPreparedSynthesisPairTransition<'_, T> {
+    type Output = Result<bool, ShtError>;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        const MAX_LANES: usize = 64;
+        let FusedPreparedSynthesisPairTransition {
+            pair_count,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            previous,
+            current,
+            exponents,
+            first_sum_re,
+            first_sum_im,
+            second_sum_re,
+            second_sum_im,
+        } = self;
+        let width = T::lane_count::<S>();
+        if width == 0
+            || width > MAX_LANES
+            || cos_theta.len() != previous.len()
+            || current.len() != previous.len()
+            || exponents.len() != previous.len()
+            || first_sum_re.len() != previous.len()
+            || first_sum_im.len() != previous.len()
+            || second_sum_re.len() != previous.len()
+            || second_sum_im.len() != previous.len()
+        {
+            return Ok(false);
+        }
+        let (cosine_vectors, cosine_tail) = T::as_simd::<S>(cos_theta);
+        let (previous_vectors, previous_tail) = T::as_simd::<S>(previous);
+        let (current_vectors, current_tail) = T::as_simd::<S>(current);
+        if cosine_vectors.len() != previous_vectors.len()
+            || cosine_vectors.len() != current_vectors.len()
+            || cosine_tail.len() != previous_tail.len()
+            || cosine_tail.len() != current_tail.len()
+        {
+            return Ok(false);
+        }
+
+        for vector_index in 0..cosine_vectors.len() {
+            let lane_start = vector_index * width;
+            let lane_end = lane_start + width;
+            let mut previous_lanes = [T::zero(); MAX_LANES];
+            let mut current_lanes = [T::zero(); MAX_LANES];
+            let mut next_lanes = [T::zero(); MAX_LANES];
+            let mut cosine_lanes = [T::zero(); MAX_LANES];
+            let mut lane_exponents = [0_i64; MAX_LANES];
+            let mut first_re_lanes = [T::zero(); MAX_LANES];
+            let mut first_im_lanes = [T::zero(); MAX_LANES];
+            let mut second_re_lanes = [T::zero(); MAX_LANES];
+            let mut second_im_lanes = [T::zero(); MAX_LANES];
+            if !T::store_vector::<S>(&mut previous_lanes[..width], previous_vectors[vector_index])
+                || !T::store_vector::<S>(&mut current_lanes[..width], current_vectors[vector_index])
+                || !T::store_vector::<S>(&mut cosine_lanes[..width], cosine_vectors[vector_index])
+            {
+                return Ok(false);
+            }
+            lane_exponents[..width].copy_from_slice(&exponents[lane_start..lane_end]);
+
+            let mut scaled_pair_start = 0;
+            let mut entered_scaled = lane_exponents[..width]
+                .iter()
+                .any(|&exponent| exponent != 0);
+            if !entered_scaled {
+                let cosine = cosine_vectors[vector_index];
+                let mut previous_value = previous_vectors[vector_index];
+                let mut current_value = current_vectors[vector_index];
+                let mut first_re = T::splat(simd, T::zero());
+                let mut first_im = T::splat(simd, T::zero());
+                let mut second_re = T::splat(simd, T::zero());
+                let mut second_im = T::splat(simd, T::zero());
+                let mut transition = false;
+
+                for pair in 0..pair_count {
+                    let first_e = first_even[pair];
+                    let first_o = first_odd[pair];
+                    let second_e = second_even[pair];
+                    let second_o = second_odd[pair];
+                    let first_coefficient_re = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, first_o.re),
+                        cosine,
+                        T::splat(simd, first_e.re),
+                    );
+                    let first_coefficient_im = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, first_o.im),
+                        cosine,
+                        T::splat(simd, first_e.im),
+                    );
+                    let second_coefficient_re = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, second_o.re),
+                        cosine,
+                        T::splat(simd, second_e.re),
+                    );
+                    let second_coefficient_im = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, second_o.im),
+                        cosine,
+                        T::splat(simd, second_e.im),
+                    );
+                    first_re = T::simd_mul_add(simd, current_value, first_coefficient_re, first_re);
+                    first_im = T::simd_mul_add(simd, current_value, first_coefficient_im, first_im);
+                    second_re =
+                        T::simd_mul_add(simd, current_value, second_coefficient_re, second_re);
+                    second_im =
+                        T::simd_mul_add(simd, current_value, second_coefficient_im, second_im);
+
+                    if pair + 1 == pair_count {
+                        break;
+                    }
+                    let cosine_squared = T::simd_mul(simd, cosine, cosine);
+                    let leading = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, coefficient_a[pair]),
+                        cosine_squared,
+                        T::splat(simd, coefficient_b[pair]),
+                    );
+                    let next_value = T::simd_mul_add(simd, leading, current_value, previous_value);
+                    if T::CHECK_RANGE
+                        && T::vector_pair_needs_scaling(simd, current_value, next_value)
+                    {
+                        if !T::store_vector::<S>(&mut first_re_lanes[..width], first_re)
+                            || !T::store_vector::<S>(&mut first_im_lanes[..width], first_im)
+                            || !T::store_vector::<S>(&mut second_re_lanes[..width], second_re)
+                            || !T::store_vector::<S>(&mut second_im_lanes[..width], second_im)
+                        {
+                            return Ok(false);
+                        }
+                        if !T::store_vector::<S>(&mut previous_lanes[..width], current_value)
+                            || !T::store_vector::<S>(&mut current_lanes[..width], next_value)
+                        {
+                            return Ok(false);
+                        }
+                        let _ = T::normalize_pair_state(
+                            &mut previous_lanes[..width],
+                            &mut current_lanes[..width],
+                            &mut lane_exponents[..width],
+                        )?;
+                        scaled_pair_start = pair + 1;
+                        transition = true;
+                        entered_scaled = true;
+                        break;
+                    }
+                    previous_value = current_value;
+                    current_value = next_value;
+                }
+
+                if !transition {
+                    if !T::store_vector::<S>(&mut first_sum_re[lane_start..lane_end], first_re)
+                        || !T::store_vector::<S>(&mut first_sum_im[lane_start..lane_end], first_im)
+                        || !T::store_vector::<S>(
+                            &mut second_sum_re[lane_start..lane_end],
+                            second_re,
+                        )
+                        || !T::store_vector::<S>(
+                            &mut second_sum_im[lane_start..lane_end],
+                            second_im,
+                        )
+                    {
+                        return Ok(false);
+                    }
+                    continue;
+                }
+            }
+
+            if entered_scaled {
+                let Some(mut first_re) = T::load_vector::<S>(&first_re_lanes[..width]) else {
+                    return Ok(false);
+                };
+                let Some(mut first_im) = T::load_vector::<S>(&first_im_lanes[..width]) else {
+                    return Ok(false);
+                };
+                let Some(mut second_re) = T::load_vector::<S>(&second_re_lanes[..width]) else {
+                    return Ok(false);
+                };
+                let Some(mut second_im) = T::load_vector::<S>(&second_im_lanes[..width]) else {
+                    return Ok(false);
+                };
+                let cosine = cosine_vectors[vector_index];
+                let mut scalar_suffix = false;
+                let mut scalar_suffix_start = pair_count;
+                for pair in scaled_pair_start..pair_count {
+                    let first_e = first_even[pair];
+                    let first_o = first_odd[pair];
+                    let second_e = second_even[pair];
+                    let second_o = second_odd[pair];
+                    let Some(current) = T::load_vector::<S>(&current_lanes[..width]) else {
+                        return Ok(false);
+                    };
+                    let first_factor_re = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, first_o.re),
+                        cosine,
+                        T::splat(simd, first_e.re),
+                    );
+                    let first_factor_im = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, first_o.im),
+                        cosine,
+                        T::splat(simd, first_e.im),
+                    );
+                    let second_factor_re = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, second_o.re),
+                        cosine,
+                        T::splat(simd, second_e.re),
+                    );
+                    let second_factor_im = T::simd_mul_add(
+                        simd,
+                        T::splat(simd, second_o.im),
+                        cosine,
+                        T::splat(simd, second_e.im),
+                    );
+                    let mut products = [
+                        T::simd_mul(simd, first_factor_re, current),
+                        T::simd_mul(simd, first_factor_im, current),
+                        T::simd_mul(simd, second_factor_re, current),
+                        T::simd_mul(simd, second_factor_im, current),
+                    ];
+                    let mut factors = [T::zero(); 4 * MAX_LANES];
+                    if !T::store_vector::<S>(&mut factors[0..width], first_factor_re)
+                        || !T::store_vector::<S>(
+                            &mut factors[MAX_LANES..MAX_LANES + width],
+                            first_factor_im,
+                        )
+                        || !T::store_vector::<S>(
+                            &mut factors[2 * MAX_LANES..2 * MAX_LANES + width],
+                            second_factor_re,
+                        )
+                        || !T::store_vector::<S>(
+                            &mut factors[3 * MAX_LANES..3 * MAX_LANES + width],
+                            second_factor_im,
+                        )
+                    {
+                        return Ok(false);
+                    }
+                    let mut product_lanes = [T::zero(); 4 * MAX_LANES];
+                    for component in 0..4 {
+                        if !T::store_vector::<S>(
+                            &mut product_lanes
+                                [component * MAX_LANES..component * MAX_LANES + width],
+                            products[component],
+                        ) {
+                            return Ok(false);
+                        }
+                    }
+                    let mut scale_ok = true;
+                    for component in 0..4 {
+                        for lane in 0..width {
+                            let product = product_lanes[component * MAX_LANES + lane];
+                            let factor = factors[component * MAX_LANES + lane];
+                            if product == T::zero()
+                                && factor != T::zero()
+                                && current_lanes[lane] != T::zero()
+                            {
+                                scale_ok = false;
+                                break;
+                            }
+                            let Some(scaled) =
+                                T::scale_normal_product(product, lane_exponents[lane])
+                            else {
+                                scale_ok = false;
+                                break;
+                            };
+                            product_lanes[component * MAX_LANES + lane] = scaled;
+                        }
+                        if !scale_ok {
+                            break;
+                        }
+                    }
+                    if !scale_ok {
+                        scalar_suffix = true;
+                        scalar_suffix_start = pair;
+                        break;
+                    }
+                    for component in 0..4 {
+                        let Some(scaled) = T::load_vector::<S>(
+                            &product_lanes[component * MAX_LANES..component * MAX_LANES + width],
+                        ) else {
+                            return Ok(false);
+                        };
+                        products[component] = scaled;
+                    }
+                    first_re = T::simd_add(simd, first_re, products[0]);
+                    first_im = T::simd_add(simd, first_im, products[1]);
+                    second_re = T::simd_add(simd, second_re, products[2]);
+                    second_im = T::simd_add(simd, second_im, products[3]);
+
+                    if pair + 1 < pair_count {
+                        T::step_pair(
+                            simd,
+                            coefficient_a[pair],
+                            coefficient_b[pair],
+                            &cosine_lanes[..width],
+                            &previous_lanes[..width],
+                            &current_lanes[..width],
+                            &mut next_lanes[..width],
+                        );
+                        std::mem::swap(&mut previous_lanes, &mut current_lanes);
+                        std::mem::swap(&mut current_lanes, &mut next_lanes);
+                        if T::pair_state_needs_scaling(
+                            simd,
+                            &previous_lanes[..width],
+                            &current_lanes[..width],
+                        ) {
+                            let _ = T::normalize_pair_state(
+                                &mut previous_lanes[..width],
+                                &mut current_lanes[..width],
+                                &mut lane_exponents[..width],
+                            )?;
+                        }
+                    }
+                }
+
+                if scalar_suffix {
+                    if !T::store_vector::<S>(&mut first_re_lanes[..width], first_re)
+                        || !T::store_vector::<S>(&mut first_im_lanes[..width], first_im)
+                        || !T::store_vector::<S>(&mut second_re_lanes[..width], second_re)
+                        || !T::store_vector::<S>(&mut second_im_lanes[..width], second_im)
+                    {
+                        return Ok(false);
+                    }
+                    for pair in scalar_suffix_start..pair_count {
+                        let first_e = first_even[pair];
+                        let first_o = first_odd[pair];
+                        let second_e = second_even[pair];
+                        let second_o = second_odd[pair];
+                        for lane in 0..width {
+                            let cosine = cosine_lanes[lane];
+                            let first_factor = Complex::new(
+                                first_o.re.mul_add(cosine, first_e.re),
+                                first_o.im.mul_add(cosine, first_e.im),
+                            );
+                            let second_factor = Complex::new(
+                                second_o.re.mul_add(cosine, second_e.re),
+                                second_o.im.mul_add(cosine, second_e.im),
+                            );
+                            let first = T::multiply_complex_scaled(
+                                first_factor,
+                                current_lanes[lane],
+                                lane_exponents[lane],
+                            );
+                            let second = T::multiply_complex_scaled(
+                                second_factor,
+                                current_lanes[lane],
+                                lane_exponents[lane],
+                            );
+                            first_re_lanes[lane] = first_re_lanes[lane] + first.re;
+                            first_im_lanes[lane] = first_im_lanes[lane] + first.im;
+                            second_re_lanes[lane] = second_re_lanes[lane] + second.re;
+                            second_im_lanes[lane] = second_im_lanes[lane] + second.im;
+                        }
+                        if pair + 1 < pair_count {
+                            T::step_pair(
+                                simd,
+                                coefficient_a[pair],
+                                coefficient_b[pair],
+                                &cosine_lanes[..width],
+                                &previous_lanes[..width],
+                                &current_lanes[..width],
+                                &mut next_lanes[..width],
+                            );
+                            std::mem::swap(&mut previous_lanes, &mut current_lanes);
+                            std::mem::swap(&mut current_lanes, &mut next_lanes);
+                            if T::pair_state_needs_scaling(
+                                simd,
+                                &previous_lanes[..width],
+                                &current_lanes[..width],
+                            ) {
+                                let _ = T::normalize_pair_state(
+                                    &mut previous_lanes[..width],
+                                    &mut current_lanes[..width],
+                                    &mut lane_exponents[..width],
+                                )?;
+                            }
+                        }
+                    }
+                } else {
+                    if !T::store_vector::<S>(&mut first_re_lanes[..width], first_re)
+                        || !T::store_vector::<S>(&mut first_im_lanes[..width], first_im)
+                        || !T::store_vector::<S>(&mut second_re_lanes[..width], second_re)
+                        || !T::store_vector::<S>(&mut second_im_lanes[..width], second_im)
+                    {
+                        return Ok(false);
+                    }
+                }
+                first_sum_re[lane_start..lane_end].copy_from_slice(&first_re_lanes[..width]);
+                first_sum_im[lane_start..lane_end].copy_from_slice(&first_im_lanes[..width]);
+                second_sum_re[lane_start..lane_end].copy_from_slice(&second_re_lanes[..width]);
+                second_sum_im[lane_start..lane_end].copy_from_slice(&second_im_lanes[..width]);
+            }
+        }
+
+        for lane in 0..cosine_tail.len() {
+            let index = cosine_vectors.len() * width + lane;
+            let mut previous_value = previous_tail[lane];
+            let mut current_value = current_tail[lane];
+            let mut exponent = exponents[index];
+            let cosine = cosine_tail[lane];
+            let mut first_re = T::zero();
+            let mut first_im = T::zero();
+            let mut second_re = T::zero();
+            let mut second_im = T::zero();
+            for pair in 0..pair_count {
+                let first_factor = Complex::new(
+                    first_odd[pair].re.mul_add(cosine, first_even[pair].re),
+                    first_odd[pair].im.mul_add(cosine, first_even[pair].im),
+                );
+                let second_factor = Complex::new(
+                    second_odd[pair].re.mul_add(cosine, second_even[pair].re),
+                    second_odd[pair].im.mul_add(cosine, second_even[pair].im),
+                );
+                let first = T::multiply_complex_scaled(first_factor, current_value, exponent);
+                let second = T::multiply_complex_scaled(second_factor, current_value, exponent);
+                first_re = first_re + first.re;
+                first_im = first_im + first.im;
+                second_re = second_re + second.re;
+                second_im = second_im + second.im;
+                if !first_re.is_finite()
+                    || !first_im.is_finite()
+                    || !second_re.is_finite()
+                    || !second_im.is_finite()
+                {
+                    return Ok(false);
+                }
+
+                if pair + 1 < pair_count {
+                    let cosine_squared = cosine * cosine;
+                    let leading = coefficient_a[pair].mul_add(cosine_squared, coefficient_b[pair]);
+                    let next_value = leading.mul_add(current_value, previous_value);
+                    previous_value = current_value;
+                    current_value = next_value;
+                    if !T::value_in_normal_range(previous_value)
+                        || !T::value_in_normal_range(current_value)
+                    {
+                        let mut previous_lane = [previous_value];
+                        let mut current_lane = [current_value];
+                        let mut exponent_lane = [exponent];
+                        let _ = T::normalize_pair_state(
+                            &mut previous_lane,
+                            &mut current_lane,
+                            &mut exponent_lane,
+                        )?;
+                        previous_value = previous_lane[0];
+                        current_value = current_lane[0];
+                        exponent = exponent_lane[0];
+                    }
+                }
+            }
+            first_sum_re[index] = first_re;
+            first_sum_im[index] = first_im;
+            second_sum_re[index] = second_re;
+            second_sum_im[index] = second_im;
+        }
+        Ok(true)
     }
 }
 

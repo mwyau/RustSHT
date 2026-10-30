@@ -15,15 +15,268 @@
  * Author: Martin Reinecke
  */
 
-use num_complex::Complex64;
+use num_complex::Complex;
 use pulp::{Arch, Simd, WithSimd};
 use std::{cell::Cell, marker::PhantomData, ptr::NonNull};
 
-use crate::legendre::{SCALAR_ORDER_BATCH_SIZE, longitude_phase, scalar, scalar_paired};
+use crate::legendre::{
+    LegendrePrecision, OrderedSimdPrecision, SCALAR_ORDER_BATCH_SIZE, longitude_phase,
+    scalar_paired,
+};
 
 mod kernel;
 
+#[cfg(test)]
+pub(crate) use kernel::WorkCounters as ScalarOrderedWorkCounters;
 pub(crate) use kernel::synthesize_prepared_component_batch_dispatched;
+
+pub(super) fn initialize_sectoral_batch_f32<S: Simd>(
+    simd: S,
+    sine: &[f32],
+    values: &mut [f32],
+    scales: &mut [i64],
+    exponent: usize,
+    lower_limit: f32,
+    factor_value: f32,
+) -> bool {
+    kernel::initialize_sectoral_batch_native::<f32, S>(
+        simd,
+        sine,
+        values,
+        scales,
+        exponent,
+        lower_limit,
+        factor_value,
+    )
+}
+
+pub(super) fn initialize_sectoral_batch_f64<S: Simd>(
+    simd: S,
+    sine: &[f64],
+    values: &mut [f64],
+    scales: &mut [i64],
+    exponent: usize,
+    lower_limit: f64,
+    factor_value: f64,
+) -> bool {
+    kernel::initialize_sectoral_batch_f64(
+        simd,
+        sine,
+        values,
+        scales,
+        exponent,
+        lower_limit,
+        factor_value,
+    )
+}
+
+#[inline(always)]
+pub(super) fn rescale_ordered_batch_f32<
+    S: Simd,
+    const TRACK_ANY_RESCALED: bool,
+    const TRACK_PREFIX_EPOCH: bool,
+>(
+    simd: S,
+    previous: &mut [f32],
+    current: &mut [f32],
+    scale: &mut [i64],
+) -> Option<(bool, bool)> {
+    if previous.len() != current.len() || current.len() != scale.len() {
+        return None;
+    }
+
+    let lanes = S::F32_LANES;
+    if lanes <= 1 || lanes > 16 || S::I32_LANES != lanes {
+        return kernel::rescale_batch_inner_scalar::<f32, S, TRACK_ANY_RESCALED, TRACK_PREFIX_EPOCH>(
+            simd, previous, current, scale,
+        );
+    }
+
+    let mut lane_flags = [0_i32; 16];
+    let flag_storage_supported = {
+        let (flag_vectors, flag_tail) = S::as_mut_simd_i32s(&mut lane_flags[..lanes]);
+        flag_vectors.len() == 1 && flag_tail.is_empty()
+    };
+    if !flag_storage_supported {
+        return kernel::rescale_batch_inner_scalar::<f32, S, TRACK_ANY_RESCALED, TRACK_PREFIX_EPOCH>(
+            simd, previous, current, scale,
+        );
+    }
+
+    let (previous_vectors, previous_tail) = S::as_mut_simd_f32s(previous);
+    let (current_vectors, current_tail) = S::as_mut_simd_f32s(current);
+    if previous_vectors.len() != current_vectors.len() || previous_tail.len() != current_tail.len()
+    {
+        return None;
+    }
+
+    let mut any_rescaled = false;
+    let mut all_below_one = true;
+    let ftol = simd.splat_f32s(<f32 as OrderedSimdPrecision>::SCALE_FTOL);
+    let scale_down = simd.splat_f32s(<f32 as LegendrePrecision>::SCALE_DOWN);
+    let zero = simd.splat_f32s(0.0);
+
+    for vector_index in 0..current_vectors.len() {
+        let start = vector_index * lanes;
+        let scale_group = &mut scale[start..start + lanes];
+        let previous_vector = previous_vectors[vector_index];
+        let current_vector = current_vectors[vector_index];
+        let rescale_mask = simd.greater_than_f32s(simd.abs_f32s(current_vector), ftol);
+
+        if simd.first_true_m32s(rescale_mask) == lanes {
+            if TRACK_PREFIX_EPOCH {
+                all_below_one &= scale_group.iter().all(|&value| value < 1);
+            }
+            continue;
+        }
+
+        let scaled_previous = simd.mul_f32s(previous_vector, scale_down);
+        let scaled_current = simd.mul_f32s(current_vector, scale_down);
+        let previous_underflow = simd.and_m32s(
+            simd.not_m32s(simd.equal_f32s(previous_vector, zero)),
+            simd.equal_f32s(scaled_previous, zero),
+        );
+        let current_underflow = simd.and_m32s(
+            simd.not_m32s(simd.equal_f32s(current_vector, zero)),
+            simd.equal_f32s(scaled_current, zero),
+        );
+        let underflow = simd.or_m32s(previous_underflow, current_underflow);
+        let safe_rescale = simd.and_m32s(rescale_mask, simd.not_m32s(underflow));
+        let next_previous = simd.select_f32s(safe_rescale, scaled_previous, previous_vector);
+        let next_current = simd.select_f32s(safe_rescale, scaled_current, current_vector);
+        let stored_flags = {
+            let (flag_vectors, flag_tail) = S::as_mut_simd_i32s(&mut lane_flags[..lanes]);
+            if flag_vectors.len() != 1 || !flag_tail.is_empty() {
+                false
+            } else {
+                flag_vectors[0] =
+                    simd.select_i32s(safe_rescale, simd.splat_i32s(1), simd.splat_i32s(0));
+                true
+            }
+        };
+        if !stored_flags {
+            return None;
+        }
+
+        for (lane, &update) in scale_group.iter().zip(&lane_flags[..lanes]) {
+            if update != 0 {
+                lane.checked_add(1)?;
+            }
+        }
+        for (lane, &update) in scale_group.iter_mut().zip(&lane_flags[..lanes]) {
+            if update != 0 {
+                *lane += 1;
+                if TRACK_ANY_RESCALED {
+                    any_rescaled = true;
+                }
+            }
+            if TRACK_PREFIX_EPOCH {
+                all_below_one &= *lane < 1;
+            }
+        }
+        previous_vectors[vector_index] = next_previous;
+        current_vectors[vector_index] = next_current;
+    }
+
+    let tail_offset = previous_vectors.len() * lanes;
+    for lane in 0..current_tail.len() {
+        let index = tail_offset + lane;
+        if current_tail[lane].abs() > <f32 as OrderedSimdPrecision>::SCALE_FTOL {
+            let next_scale = scale[index].checked_add(1)?;
+            let next_previous = previous_tail[lane] * <f32 as LegendrePrecision>::SCALE_DOWN;
+            let next_current = current_tail[lane] * <f32 as LegendrePrecision>::SCALE_DOWN;
+            if (previous_tail[lane] == 0.0 || next_previous != 0.0)
+                && (current_tail[lane] == 0.0 || next_current != 0.0)
+            {
+                previous_tail[lane] = next_previous;
+                current_tail[lane] = next_current;
+                scale[index] = next_scale;
+                if TRACK_ANY_RESCALED {
+                    any_rescaled = true;
+                }
+            }
+        }
+        if TRACK_PREFIX_EPOCH {
+            all_below_one &= scale[index] < 1;
+        }
+    }
+
+    Some((any_rescaled, all_below_one))
+}
+
+pub(super) fn rescale_ordered_batch_f64<
+    S: Simd,
+    const TRACK_ANY_RESCALED: bool,
+    const TRACK_PREFIX_EPOCH: bool,
+>(
+    simd: S,
+    previous: &mut [f64],
+    current: &mut [f64],
+    scale: &mut [i64],
+) -> Option<(bool, bool)> {
+    kernel::rescale_batch_inner_scalar::<f64, S, TRACK_ANY_RESCALED, TRACK_PREFIX_EPOCH>(
+        simd, previous, current, scale,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "This typed precision leaf mirrors the shared SIMD recurrence state interface."
+)]
+pub(super) fn no_scaled_prefix_skip<S: Simd>(
+    _simd: S,
+    _m: usize,
+    _lmax: usize,
+    _pair_count: usize,
+    _csq: &[f32],
+    _coefficient_a: &[f32],
+    _coefficient_b: &[f32],
+    _previous: &mut [f32],
+    _current: &mut [f32],
+    _scale: &mut [i64],
+) -> Option<(usize, usize, bool)> {
+    None
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "This typed precision leaf mirrors the shared SIMD recurrence state interface."
+)]
+pub(super) fn skip_scaled_prefix_f64<S: Simd>(
+    simd: S,
+    m: usize,
+    lmax: usize,
+    pair_count: usize,
+    csq: &[f64],
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    scale: &mut [i64],
+) -> Option<(usize, usize, bool)> {
+    kernel::skip_negligible_scaled_prefix_f64(
+        simd,
+        m,
+        lmax,
+        pair_count,
+        csq,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        scale,
+    )
+}
+
+#[cfg(test)]
+pub(crate) fn reset_work_counters() {
+    kernel::reset_work_counters();
+}
+
+#[cfg(test)]
+pub(crate) fn work_counter_snapshot() -> ScalarOrderedWorkCounters {
+    kernel::work_counter_snapshot()
+}
 #[cfg(test)]
 use kernel::{
     FTOL, SCALE_DOWN, SCALE_UP, all_scale_nonnegative, initialize_sectoral_batch, mypow,
@@ -48,21 +301,6 @@ pub(crate) struct ScalarOrderedScratch<'a, T> {
     pub(crate) sum_even_im: &'a mut [T],
     pub(crate) sum_odd_re: &'a mut [T],
     pub(crate) sum_odd_im: &'a mut [T],
-}
-
-struct ScalarF64LaneCount;
-
-impl WithSimd for ScalarF64LaneCount {
-    type Output = usize;
-
-    #[inline(always)]
-    fn with_simd<S: Simd>(self, _simd: S) -> Self::Output {
-        S::F64_LANES
-    }
-}
-
-pub(crate) fn f64_lane_count(arch: Arch) -> usize {
-    arch.dispatch(ScalarF64LaneCount)
 }
 
 /// Shared destination for parallel jobs that each own a contiguous Fourier-order range.
@@ -157,25 +395,25 @@ pub(crate) struct DisjointSpectrumWriter<'a, T> {
 
 /// Immutable geometry whose north/south reflection and polar-order limits
 /// were checked once before the synthesis call entered its per-order workers.
-pub(crate) struct ValidatedReflectedGeometry<'a> {
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
+pub(crate) struct ValidatedReflectedGeometry<'a, T> {
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
     ring_order_limits: &'a [usize],
 }
 
-pub(crate) fn validate_reflected_geometry<'a>(
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
+pub(crate) fn validate_reflected_geometry<'a, T: OrderedSimdPrecision>(
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
     ring_order_limits: &'a [usize],
-) -> Option<ValidatedReflectedGeometry<'a>> {
+) -> Option<ValidatedReflectedGeometry<'a, T>> {
     let ntheta = sin_theta.len();
     if ntheta == 0 || cos_theta.len() != ntheta || ring_order_limits.len() != ntheta {
         return None;
     }
     for north in 0..ntheta.div_ceil(2) {
         let south = ntheta - 1 - north;
-        if (sin_theta[north] - sin_theta[south]).abs() > 5.0e-15
-            || (cos_theta[north] + cos_theta[south]).abs() > 5.0e-15
+        if (sin_theta[north] - sin_theta[south]).abs() > T::REFLECTION_TOLERANCE
+            || (cos_theta[north] + cos_theta[south]).abs() > T::REFLECTION_TOLERANCE
             || (north > 0 && ring_order_limits[north] < ring_order_limits[north - 1])
         {
             return None;
@@ -195,7 +433,7 @@ pub(crate) fn initialize_inactive_spectrum_tails<T: Copy>(
     spectra: &mut [num_complex::Complex<T>],
     spectrum_len: usize,
     mmax: usize,
-    geometry: &ValidatedReflectedGeometry<'_>,
+    geometry: &ValidatedReflectedGeometry<'_, T>,
     zero: num_complex::Complex<T>,
 ) -> bool {
     let Some(required_len) = geometry.ring_order_limits.len().checked_mul(spectrum_len) else {
@@ -244,20 +482,20 @@ impl<T: Copy> DisjointSpectrumWriter<'_, T> {
     clippy::too_many_arguments,
     reason = "The private dispatch receives validated plan data and reusable workspace scratch."
 )]
-pub(crate) fn synthesize_dispatched<'a>(
+pub(crate) fn synthesize_dispatched<'a, T: OrderedSimdPrecision>(
     arch: Arch,
-    alm: &'a [Complex64],
+    alm: &'a [Complex<T>],
     lmax: usize,
     mmax: usize,
     nphi: usize,
     spectrum_len: usize,
     phi0: f64,
-    sectoral_norms: &'a [f64],
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
+    sectoral_norms: &'a [T],
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
     ring_order_limits: &'a [usize],
-    spectra: &'a mut [Complex64],
-    scratch: &'a mut ScalarOrderedScratch<'_, f64>,
+    spectra: &'a mut [Complex<T>],
+    scratch: &'a mut ScalarOrderedScratch<'_, T>,
 ) -> bool {
     let Some(order_end) = mmax.checked_add(1) else {
         return false;
@@ -271,9 +509,9 @@ pub(crate) fn synthesize_dispatched<'a>(
         spectrum_len,
         mmax,
         &geometry,
-        Complex64::new(0.0, 0.0),
+        Complex::new(T::zero(), T::zero()),
     ) {
-        spectra.fill(Complex64::new(0.0, 0.0));
+        spectra.fill(Complex::new(T::zero(), T::zero()));
         return false;
     }
     synthesize_range_dispatched(
@@ -307,9 +545,12 @@ pub(crate) fn synthesize_dispatched<'a>(
     clippy::too_many_arguments,
     reason = "The private order-range dispatch receives validated plan data and disjoint output columns."
 )]
-pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
+pub(crate) unsafe fn synthesize_order_output_dispatched<
+    'a,
+    T: OrderedSimdPrecision + Send + Sync,
+>(
     arch: Arch,
-    alm: &'a [Complex64],
+    alm: &'a [Complex<T>],
     lmax: usize,
     mmax: usize,
     order_start: usize,
@@ -317,10 +558,10 @@ pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
     nphi: usize,
     spectrum_len: usize,
     phi0: f64,
-    sectoral_norms: &'a [f64],
-    geometry: &ValidatedReflectedGeometry<'a>,
-    output: &DisjointSpectrumOutput<'a, f64>,
-    scratch: &'a mut ScalarOrderedScratch<'_, f64>,
+    sectoral_norms: &'a [T],
+    geometry: &ValidatedReflectedGeometry<'a, T>,
+    output: &DisjointSpectrumOutput<'a, T>,
+    scratch: &'a mut ScalarOrderedScratch<'_, T>,
 ) -> bool {
     if output.ntheta != geometry.sin_theta.len() || output.spectrum_len != spectrum_len {
         return false;
@@ -354,9 +595,9 @@ pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
     clippy::too_many_arguments,
     reason = "The private scalar dispatch receives validated plan data and reusable workspace scratch."
 )]
-fn synthesize_range_dispatched<'a>(
+fn synthesize_range_dispatched<'a, T: OrderedSimdPrecision>(
     arch: Arch,
-    alm: &'a [Complex64],
+    alm: &'a [Complex<T>],
     lmax: usize,
     mmax: usize,
     order_start: usize,
@@ -364,11 +605,11 @@ fn synthesize_range_dispatched<'a>(
     nphi: usize,
     spectrum_len: usize,
     phi0: f64,
-    sectoral_norms: &'a [f64],
-    geometry: &ValidatedReflectedGeometry<'a>,
-    spectra: &'a mut [Complex64],
-    disjoint_output: Option<DisjointSpectrumWriter<'a, f64>>,
-    scratch: &'a mut ScalarOrderedScratch<'_, f64>,
+    sectoral_norms: &'a [T],
+    geometry: &ValidatedReflectedGeometry<'a, T>,
+    spectra: &'a mut [Complex<T>],
+    disjoint_output: Option<DisjointSpectrumWriter<'a, T>>,
+    scratch: &'a mut ScalarOrderedScratch<'_, T>,
 ) -> bool {
     let sin_theta = geometry.sin_theta;
     let cos_theta = geometry.cos_theta;
@@ -433,30 +674,32 @@ fn synthesize_range_dispatched<'a>(
         spectra,
         scratch,
     });
+    #[cfg(test)]
+    kernel::record_route_result(succeeded);
     if !succeeded && !output_is_disjoint {
-        spectra.fill(Complex64::new(0.0, 0.0));
+        spectra.fill(Complex::new(T::zero(), T::zero()));
     }
     succeeded
 }
 
-struct ScalarOrderedSynthesis<'a, 's> {
-    alm: &'a [Complex64],
+struct ScalarOrderedSynthesis<'a, 's, T> {
+    alm: &'a [Complex<T>],
     lmax: usize,
     order_start: usize,
     order_end: usize,
     nphi: usize,
     spectrum_len: usize,
-    disjoint_output: Option<DisjointSpectrumWriter<'a, f64>>,
+    disjoint_output: Option<DisjointSpectrumWriter<'a, T>>,
     phi0: f64,
-    sectoral_norms: &'a [f64],
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
+    sectoral_norms: &'a [T],
+    sin_theta: &'a [T],
+    cos_theta: &'a [T],
     ring_order_limits: &'a [usize],
-    spectra: &'a mut [Complex64],
-    scratch: &'a mut ScalarOrderedScratch<'s, f64>,
+    spectra: &'a mut [Complex<T>],
+    scratch: &'a mut ScalarOrderedScratch<'s, T>,
 }
 
-impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
+impl<T: OrderedSimdPrecision> WithSimd for ScalarOrderedSynthesis<'_, '_, T> {
     type Output = bool;
 
     #[inline(always)]
@@ -490,7 +733,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
             // DUCC's scaled sectoral route is selected by a per-order lower
             // bound. Compute that bound once and reuse it for every ring
             // batch belonging to this order.
-            let power_lower_limit = kernel::power_lower_limit(m);
+            let power_lower_limit = kernel::power_lower_limit::<T>(m);
             let Some(order_offset) = packed_order_offset(m, lmax) else {
                 return false;
             };
@@ -515,7 +758,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                 return false;
             }
 
-            let phase = longitude_phase::<f64>(m, phi0, false);
+            let phase = longitude_phase::<T>(m, phi0, false);
             if !phase.re.is_finite() || !phase.im.is_finite() {
                 return false;
             }
@@ -534,8 +777,8 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                     let north = ring_cursor + lane;
                     let sine = sin_theta[north];
                     let cosine = cos_theta[north];
-                    scratch.packed_csq[lane] = if cosine.abs() > 0.99 {
-                        (1.0 - sine) * (1.0 + sine)
+                    scratch.packed_csq[lane] = if cosine.abs() > T::from_f64(0.99).unwrap() {
+                        (T::one() - sine) * (T::one() + sine)
                     } else {
                         cosine * cosine
                     };
@@ -546,7 +789,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                 // Repeating its recurrence inputs lets the ordinary and
                 // scaled paths stay vectorized; reconstruction still writes
                 // only the active lanes below.
-                let simd_lanes = S::F64_LANES;
+                let simd_lanes = T::lane_count::<S>();
                 if simd_lanes == 0 {
                     return false;
                 }
@@ -564,7 +807,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                     }
                 }
 
-                if !kernel::synthesize_batch(
+                if !kernel::synthesize_batch::<T, S>(
                     simd,
                     scratch,
                     m,
@@ -579,6 +822,14 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                 ) {
                     return false;
                 }
+                #[cfg(test)]
+                {
+                    let center_writes = usize::from(
+                        !ntheta.is_multiple_of(2)
+                            && (ring_cursor..ring_cursor + active_count).contains(&(ntheta / 2)),
+                    );
+                    kernel::record_output_ring_batch(2 * active_count - center_writes);
+                }
                 for lane in 0..active_count {
                     let north = ring_cursor + lane;
                     let south = ntheta - 1 - north;
@@ -587,14 +838,15 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                     let odd_re = scratch.sum_odd_re[lane] * cos_theta[north];
                     let odd_im = scratch.sum_odd_im[lane] * cos_theta[north];
                     let (mut north_value, mut south_value) = (
-                        Complex64::new(even_re + odd_re, even_im + odd_im),
-                        Complex64::new(even_re - odd_re, even_im - odd_im),
+                        Complex::new(even_re + odd_re, even_im + odd_im),
+                        Complex::new(even_re - odd_re, even_im - odd_im),
                     );
-                    north_value *= phase;
-                    south_value *= phase;
+                    north_value = north_value * phase;
+                    south_value = south_value * phase;
                     if nphi.is_multiple_of(2) && m == nphi / 2 {
-                        north_value = Complex64::new(2.0 * north_value.re, 0.0);
-                        south_value = Complex64::new(2.0 * south_value.re, 0.0);
+                        let two = T::one() + T::one();
+                        north_value = Complex::new(two * north_value.re, T::zero());
+                        south_value = Complex::new(two * south_value.re, T::zero());
                     }
                     if !north_value.re.is_finite()
                         || !north_value.im.is_finite()
@@ -630,13 +882,13 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
 }
 
 #[inline]
-fn scratch_output(
-    spectra: &mut [Complex64],
+fn scratch_output<T: Copy>(
+    spectra: &mut [Complex<T>],
     spectrum_len: usize,
-    disjoint_output: &mut Option<DisjointSpectrumWriter<'_, f64>>,
+    disjoint_output: &mut Option<DisjointSpectrumWriter<'_, T>>,
     order: usize,
     ring: usize,
-    value: Complex64,
+    value: Complex<T>,
 ) {
     if let Some(output) = disjoint_output {
         output.write_order(ring, order, value);
@@ -651,15 +903,15 @@ fn packed_order_offset(m: usize, lmax: usize) -> Option<usize> {
     row_start.checked_sub(preceding)
 }
 
-fn is_subnormal(value: f64) -> bool {
-    value != 0.0 && value.abs() < f64::MIN_POSITIVE
+fn is_subnormal<T: OrderedSimdPrecision>(value: T) -> bool {
+    value != T::zero() && value.abs() < T::MIN_POSITIVE
 }
 
-fn prepare_order(
-    scratch: &mut ScalarOrderedScratch<'_, f64>,
+fn prepare_order<T: OrderedSimdPrecision>(
+    scratch: &mut ScalarOrderedScratch<'_, T>,
     m: usize,
     lmax: usize,
-    coefficients: &[Complex64],
+    coefficients: &[Complex<T>],
 ) -> bool {
     let Some(required_epsilon_len) = lmax.checked_add(3) else {
         return false;
@@ -680,14 +932,18 @@ fn prepare_order(
     {
         return false;
     }
-    scalar::fill_epsilon(m, lmax, scratch.epsilon);
-    if !scalar_paired::fill_factors(
+    if T::PREPARE_ORDER_CONSTANTS_IN_F64 {
+        return prepare_order_with_wide_constants(scratch, m, lmax, coefficients, pair_count);
+    }
+    crate::legendre::numeric::fill_epsilon(m, lmax, scratch.epsilon);
+    if !scalar_paired::fill_factors_typed(
         m,
         lmax,
         scratch.epsilon,
         scratch.alpha,
         scratch.coefficient_a,
         scratch.coefficient_b,
+        T::SYNTHESIS_FACTOR_LIMIT,
     ) {
         return false;
     }
@@ -701,6 +957,118 @@ fn prepare_order(
         &mut scratch.coefficient_odd[..pair_count],
     ) {
         return false;
+    }
+    !scratch.coefficient_even[..pair_count]
+        .iter()
+        .chain(&scratch.coefficient_odd[..pair_count])
+        .any(|coefficient| is_subnormal(coefficient.re) || is_subnormal(coefficient.im))
+}
+
+/// Prepares native-f32 recurrence tables from f64 order constants while
+/// keeping the runtime spectrum coefficients and transformed coefficient
+/// arrays in f32. The paired recurrence is ill-conditioned near polar roots;
+/// rounding each recursively generated alpha factor to f32 before its next
+/// use can materially shift high-degree values.
+fn prepare_order_with_wide_constants<T: OrderedSimdPrecision>(
+    scratch: &mut ScalarOrderedScratch<'_, T>,
+    m: usize,
+    lmax: usize,
+    coefficients: &[Complex<T>],
+    pair_count: usize,
+) -> bool {
+    let epsilon64 = |degree: usize| {
+        if degree == m {
+            return 0.0_f64;
+        }
+        let degree = degree as f64;
+        let order = m as f64;
+        (((degree - order) * (degree + order)) / ((2.0 * degree + 1.0) * (2.0 * degree - 1.0)))
+            .sqrt()
+    };
+
+    for (degree, epsilon) in scratch
+        .epsilon
+        .iter_mut()
+        .enumerate()
+        .take(lmax + 4)
+        .skip(m)
+    {
+        *epsilon = T::from_f64(epsilon64(degree)).expect("epsilon is representable in f32");
+    }
+
+    let mut alpha64 = 1.0 / epsilon64(m + 1);
+    let alpha1 = epsilon64(m + 1) / (epsilon64(m + 2) * epsilon64(m + 3));
+    for pair in 0..pair_count {
+        if pair == 1 {
+            alpha64 = alpha1;
+        } else if pair >= 2 {
+            let degree = m + pair * 2;
+            let sign = if (pair - 1).is_multiple_of(2) {
+                1.0_f64
+            } else {
+                -1.0_f64
+            };
+            alpha64 = sign / (epsilon64(degree) * epsilon64(degree + 1) * alpha64);
+        }
+        let degree = m + pair * 2;
+        let alpha = T::from_f64(alpha64).expect("order normalization is representable in f32");
+        let sign = if pair.is_multiple_of(2) {
+            1.0_f64
+        } else {
+            -1.0_f64
+        };
+        let coefficient_a64 = sign * alpha64 * alpha64;
+        let coefficient_b64 =
+            -coefficient_a64 * (epsilon64(degree + 2).powi(2) + epsilon64(degree + 1).powi(2));
+        let coefficient_a = T::from_f64(coefficient_a64).expect("factor is representable in f32");
+        let coefficient_b = T::from_f64(coefficient_b64).expect("factor is representable in f32");
+        if !alpha.is_finite()
+            || !coefficient_a.is_finite()
+            || !coefficient_b.is_finite()
+            || alpha.abs() > T::SYNTHESIS_FACTOR_LIMIT
+            || coefficient_a.abs() > T::SYNTHESIS_FACTOR_LIMIT
+            || coefficient_b.abs() > T::SYNTHESIS_FACTOR_LIMIT
+        {
+            return false;
+        }
+        scratch.alpha[pair] = alpha;
+        scratch.coefficient_a[pair] = coefficient_a;
+        scratch.coefficient_b[pair] = coefficient_b;
+
+        let offset = pair * 2;
+        let Some(&coefficient) = coefficients.get(offset) else {
+            return false;
+        };
+        let next_even = if degree + 2 <= lmax {
+            let Some(&next_even) = coefficients.get(offset + 2) else {
+                return false;
+            };
+            next_even
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        let even_first = T::from_f64(epsilon64(degree + 1) * alpha64)
+            .expect("paired coefficient factor is representable in f32");
+        let even_second = T::from_f64(epsilon64(degree + 2) * alpha64)
+            .expect("paired coefficient factor is representable in f32");
+        let even = coefficient * even_first + next_even * even_second;
+        let odd = if degree < lmax {
+            let Some(&coefficient) = coefficients.get(offset + 1) else {
+                return false;
+            };
+            coefficient * alpha
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        if !even.re.is_finite()
+            || !even.im.is_finite()
+            || !odd.re.is_finite()
+            || !odd.im.is_finite()
+        {
+            return false;
+        }
+        scratch.coefficient_even[pair] = even;
+        scratch.coefficient_odd[pair] = odd;
     }
     !scratch.coefficient_even[..pair_count]
         .iter()
