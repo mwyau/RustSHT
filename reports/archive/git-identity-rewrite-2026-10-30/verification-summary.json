@@ -1,0 +1,11 @@
+{
+  "pre_rewrite_reachable_commits": 1995,
+  "direct_map_rows": 1995,
+  "changed_shas": 51,
+  "identity_fields_corrected": 80,
+  "detached_heads_retargeted": 24,
+  "affected_local_branches_verified": 21,
+  "worktrees_verified": 105,
+  "dirty_worktrees_preserved": 88,
+  "origin_dev_unchanged": "97400e691c519b2d559e0ae91af4855c1127b503"
+}
