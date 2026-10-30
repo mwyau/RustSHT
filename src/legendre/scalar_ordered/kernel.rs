@@ -25,7 +25,9 @@ pub(super) const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
 #[cfg(test)]
 pub(super) const FTOL: f64 = f64::from_bits((1023_u64 - 60) << 52);
 
+// Opt-in diagnostic probes intentionally inspect only selected counters.
 #[cfg(test)]
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct WorkCounters {
     pub(crate) ring_batches: u64,
