@@ -1,0 +1,12 @@
+Rust source: 8f73c67f01531efe13cdb3eb7c4ccc84f986013e
+Rust: rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Target flags: RUSTFLAGS=-C target-cpu=x86-64-v3
+Features: parallel
+CPU: AMD Ryzen 9 5950X 16-Core Processor
+Runtime SIMD: pulp::x86::v3::V3 (AVX2/FMA), 8 f32 lanes
+Trace capture q1/q8: RAYON_NUM_THREADS=1/8
+Reference compiler: c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Reference build: c++ -std=c++20 -O2 -march=x86-64-v3 phasec_accuracy_reference.cpp -lquadmath
+Reference executable SHA-256: 5e21741eab8a32bcfbafe1850a1362626f4c324a9f17d3ba5e7d50bb0b6607a2
+AVX2-inspection test binary SHA-256: f2fcca6dd13a28ad81d98d18ecf38cc98f55995c6e36aa5d4a9018e4ad00a3f9
+No instrumented trace binary was used for performance measurements.

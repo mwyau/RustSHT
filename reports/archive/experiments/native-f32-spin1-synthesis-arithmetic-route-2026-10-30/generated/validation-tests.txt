@@ -1,0 +1,11 @@
+Source: 8f73c67f01531efe13cdb3eb7c4ccc84f986013e
+
+Command: cargo test --release --features parallel --test f32
+Result: 14 passed, 0 failed, 1 ignored (opt-in T1023 pinned-DUCC comparison)
+Notable coverage: scalar/spin analytic modes, all-grid spin operations and adjoints, T720 scalar synthesis/analysis adjoints and workspace reset, T511 spin analysis, large finite longitude phase.
+
+Command: cargo test --release --features parallel --lib spin1_
+Result: 51 passed, 0 failed, 5 ignored (diagnostic/benchmark helpers)
+Notable coverage: spin-1 adjoints, GL/CC/F1, polar cutoffs, q1/q8 and general-route agreement, cached workspace reuse, poisoned scratch reset, nonfinite conversion, large finite coefficients, and T720 adjoint identities.
+
+These are existing public-contract tests, not an independent scientific accuracy tolerance. No production numerical source was changed for this trace.

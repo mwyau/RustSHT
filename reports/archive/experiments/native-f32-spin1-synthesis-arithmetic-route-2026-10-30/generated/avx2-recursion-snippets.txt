@@ -1,0 +1,122 @@
+binary=<release test binary>
+sha256=f2fcca6dd13a28ad81d98d18ecf38cc98f55995c6e36aa5d4a9018e4ad00a3f9
+Build: cargo test --release --features parallel, RUSTFLAGS=-C target-cpu=x86-64-v3
+CPU: AMD Ryzen 9 5950X; runtime-selected pulp::x86::v3::V3 (AVX2/FMA)
+
+## B2 q8 generic f32 recurrence loop (V3/YMM, separate mul/sub/div)
+
+<release test binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+000000000065e590 <_RINvNtNtCs1mtnvNSEw2f_7rustsht8legendre6scalar24for_each_y_lm_dispatchedfNCNvMNtNtNtB6_9transform4spin9synthesisINtNtB6_4plan7ShtPlanfE38synthesize_spin1_scalar_block_to_ordersa_0EB6_+0x840>:
+  65e590:	c5 fc 10 44 0b e0    	vmovups ymm0,YMMWORD PTR [rbx+rcx*1-0x20]
+  65e596:	c4 c1 7c 59 44 0d e0 	vmulps ymm0,ymm0,YMMWORD PTR [r13+rcx*1-0x20]
+  65e59d:	c5 ec 59 4c 0f e0    	vmulps ymm1,ymm2,YMMWORD PTR [rdi+rcx*1-0x20]
+  65e5a3:	c5 fc 5c c1          	vsubps ymm0,ymm0,ymm1
+  65e5a7:	c5 fc 5e c3          	vdivps ymm0,ymm0,ymm3
+  65e5ab:	c5 fc 11 44 0e e0    	vmovups YMMWORD PTR [rsi+rcx*1-0x20],ymm0
+  65e5b1:	48 83 c0 02          	add    rax,0x2
+  65e5b5:	c5 fc 10 04 0b       	vmovups ymm0,YMMWORD PTR [rbx+rcx*1]
+  65e5ba:	c4 c1 7c 59 44 0d 00 	vmulps ymm0,ymm0,YMMWORD PTR [r13+rcx*1+0x0]
+  65e5c1:	c5 ec 59 0c 0f       	vmulps ymm1,ymm2,YMMWORD PTR [rdi+rcx*1]
+  65e5c6:	c5 fc 5c c1          	vsubps ymm0,ymm0,ymm1
+  65e5ca:	c5 fc 5e c3          	vdivps ymm0,ymm0,ymm3
+  65e5ce:	c5 fc 11 04 0e       	vmovups YMMWORD PTR [rsi+rcx*1],ymm0
+  65e5d3:	48                   	rex.W
+
+## B2 q8 generic f32 recurrence fallback loop (V3/YMM, separate mul/sub/div)
+
+<release test binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+000000000065f060 <_RINvNtNtCs1mtnvNSEw2f_7rustsht8legendre6scalar24for_each_y_lm_dispatchedfNCNvMNtNtNtB6_9transform4spin9synthesisINtNtB6_4plan7ShtPlanfE38synthesize_spin1_scalar_block_to_ordersa_0EB6_+0x1310>:
+  65f060:	c5 fc 10 14 83       	vmovups ymm2,YMMWORD PTR [rbx+rax*4]
+  65f065:	c5 ec 59 14 86       	vmulps ymm2,ymm2,YMMWORD PTR [rsi+rax*4]
+  65f06a:	c4 c1 7c 59 1c 80    	vmulps ymm3,ymm0,YMMWORD PTR [r8+rax*4]
+  65f070:	c5 ec 5c d3          	vsubps ymm2,ymm2,ymm3
+  65f074:	c5 ec 5e d1          	vdivps ymm2,ymm2,ymm1
+  65f078:	c4 c1 7c 11 14 81    	vmovups YMMWORD PTR [r9+rax*4],ymm2
+  65f07e:	48                   	rex.W
+  65f07f:	83                   	.byte 0x83
+
+## B2 q1 f32 reflected ordinary suffix recurrence/accumulation (V3/YMM FMA)
+
+<release test binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000446238 <_RINvNtNtNtCs1mtnvNSEw2f_7rustsht8legendre14scalar_ordered6kernel33synthesize_ordinary_suffix_vectorfNtNtNtCs6aRYI14iRvw_4pulp3x862v32V3EB8_+0x418>:
+  446238:	c4 e2 7d a8 a4 24 10 	vfmadd213ps ymm4,ymm0,YMMWORD PTR [rsp+0x210]
+  44623f:	02 00 00
+  446242:	c5 fc 11 a4 24 98 03 	vmovups YMMWORD PTR [rsp+0x398],ymm4
+  446249:	00 00
+  44624b:	c5 fc 10 84 24 b0 00 	vmovups ymm0,YMMWORD PTR [rsp+0xb0]
+  446252:	00 00
+  446254:	c4 e2 7d 98 a4 24 90 	vfmadd132ps ymm4,ymm0,YMMWORD PTR [rsp+0x90]
+  44625b:	00 00 00
+  44625e:	c5 fc 10 ac 24 50 01 	vmovups ymm5,YMMWORD PTR [rsp+0x150]
+  446265:	00 00
+  446267:	c5 fc 11 ac 24 58 04 	vmovups YMMWORD PTR [rsp+0x458],ymm5
+  44626e:	00 00
+  446270:	c5 fc 10 b4 24 30 01 	vmovups ymm6,YMMWORD PTR [rsp+0x130]
+  446277:	00 00
+  446279:	c5 fc 11 b4 24 78 04 	vmovups YMMWORD PTR [rsp+0x478],ymm6
+  446280:	00 00
+  446282:	c5 fc 10 bc 24 10 01 	vmovups ymm7,YMMWORD PTR [rsp+0x110]
+  446289:	00 00
+  44628b:	c5 fc 11 bc 24 98 04 	vmovups YMMWORD PTR [rsp+0x498],ymm7
+  446292:	00 00
+  446294:	c5 7c 10 84 24 f0 00 	vmovups ymm8,YMMWORD PTR [rsp+0xf0]
+  44629b:	00 00
+  44629d:	c5 7c 11 84 24 b8 04 	vmovups YMMWORD PTR [rsp+0x4b8],ymm8
+  4462a4:	00 00
+  4462a6:	c5 fc 10 84 24 50 03 	vmovups ymm0,YMMWORD PTR [rsp+0x350]
+  4462ad:	00 00
+  4462af:	c4 e2 5d b8 e8       	vfmadd231ps ymm5,ymm4,ymm0
+  4462b4:	c5 fc 11 ac 24 50 01 	vmovups YMMWORD PTR [rsp+0x150],ymm5
+  4462bb:	00 00
+  4462bd:	c5 fc 10 8c 24 30 03 	vmovups ymm1,YMMWORD PTR [rsp+0x330]
+  4462c4:	00 00
+  4462c6:	c4 e2 5d b8 f1       	vfmadd231ps ymm6,ymm4,ymm1
+  4462cb:	c5 fc 11 b4 24 30 01 	vmovups YMMWORD PTR [rsp+0x130],ymm6
+  4462d2:	00 00
+  4462d4:	c5 fc 10 94 24 10 03 	vmovups ymm2,YMMWORD PTR [rsp+0x310]
+  4462db:	00 00
+  4462dd:	c4 e2 5d b8 fa       	vfmadd231ps ymm7,ymm4,ymm2
+  4462e2:	c5 fc 11 bc 24 10 01 	vmovups YMMWORD PTR [rsp+0x110],ymm7
+  4462e9:	00 00
+  4462eb:	c5 fc 10 9c 24 f0 02 	vmovups ymm3,YMMWORD PTR [rsp+0x2f0]
+  4462f2:	00 00
+  4462f4:	c4 62 5d b8 c3       	vfmadd231ps ymm8,ymm4,ymm3
+  4462f9:	c5                   	.byte 0xc5
+  4462fa:	7c 11                	jl     44630d <_RINvNtNtNtCs1mtnvNSEw2f_7rustsht8legendre14scalar_ordered6kernel33synthesize_ordinary_suffix_vectorfNtNtNtCs6aRYI14iRvw_4pulp3x862v32V3EB8_+0x4ed>
+  4462fc:	84 24 f0             	test   BYTE PTR [rax+rsi*8],ah
+	...
+
+## B2 q1 f32 reflected ordinary suffix recurrence (V3/YMM FMA)
+
+<release test binary>:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000446565 <_RINvNtNtNtCs1mtnvNSEw2f_7rustsht8legendre14scalar_ordered6kernel33synthesize_ordinary_suffix_vectorfNtNtNtCs6aRYI14iRvw_4pulp3x862v32V3EB8_+0x745>:
+  446565:	c4 e2 7d 18 24 c1    	vbroadcastss ymm4,DWORD PTR [rcx+rax*8]
+  44656b:	c4 e2 7d 18 6c c1 04 	vbroadcastss ymm5,DWORD PTR [rcx+rax*8+0x4]
+  446572:	c4 62 35 b8 d2       	vfmadd231ps ymm10,ymm9,ymm2
+  446577:	c4 62 35 b8 db       	vfmadd231ps ymm11,ymm9,ymm3
+  44657c:	c4 62 35 b8 e4       	vfmadd231ps ymm12,ymm9,ymm4
+  446581:	c4 62 35 b8 ed       	vfmadd231ps ymm13,ymm9,ymm5
+  446586:	c4 e2 7d a8 f1       	vfmadd213ps ymm6,ymm0,ymm1
+  44658b:	c4 c2 35 a8 f0       	vfmadd213ps ymm6,ymm9,ymm8
+  446590:	c4 41 7c 28 c1       	vmovaps ymm8,ymm9
+  446595:	c5 7c 28 ce          	vmovaps ymm9,ymm6
+  446599:	b0 01                	mov    al,0x1
+  44659b:	48                   	rex.W
+  44659c:	8b                   	.byte 0x8b
+  44659d:	8c 24 10             	mov    WORD PTR [rax+rdx*1],fs
