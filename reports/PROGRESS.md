@@ -1,12 +1,13 @@
 # Recent substantive checkpoints
 
-- **2026-10-29 — all-order residual integration rejected.** The native-f32
-  first-order correction lowered a selected widened recurrence replay to
-  `1.49e-6` relative RMS, but cost `2.22–2.53x` DUCC across full/reduced q1/q8
-  and left random-transform error near `1.9e-4`. The remaining error tracks
-  f32-rounded geometry, recurrence factors and sectoral setup. No production
-  dispatch changed. Next screen: high/low constant leaves for `m=1–16` only.
-  See the [integration record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md)
+- **2026-10-29 — split setup narrowed to a low-order trial.** The full split
+  residual loop costs `5.15x` ordinary in the pinned AVX2 microkernel. A
+  plan-time precombined high/low factor reduces that to `2.44x`; raw pair
+  counts project `0.80%` extra recurrence work for `m=1–2`. The selected
+  setup replay error falls from `4.56e-4` to `3.09e-4` with that cutoff.
+  No whole-transform or production result exists. Next, test `m=1–2` using
+  cached constants in the isolated generic route. See the [split-setup
+  screen](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-low-split-screen/README.md)
   and [live ledger](DUCC_PARITY_M6.md).
 - **2026-10-29 — current scalar-synthesis sidecar timing.** The f32-I/O/f64
   route passes four GL T720 spin-0 synthesis cells, with Rust/DUCC `0.775–0.961`.

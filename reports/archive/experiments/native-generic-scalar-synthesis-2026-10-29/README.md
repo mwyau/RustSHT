@@ -345,3 +345,18 @@ rejection and should not be repeated unchanged.
 `SHA256SUMS` covers all archived patches, result JSON, runners, profile files,
 and the disassembly excerpt. No benchmark binaries or duplicate fixture files
 are included.
+
+## Split-setup low-order follow-up
+
+The full high/low setup residual callback emits 120 AVX2 instructions per
+degree pair and costs `5.15x` ordinary recurrence. Precombining the leading
+high/low recurrence factor outside the degree loop cuts this to 28 instructions
+per pair, with no stack access in the inner loop, and `2.44x` ordinary cost.
+The selected widened replay drops from `4.56e-4` error with high-only setup to
+`3.09e-4` when split correction is limited to `m=1–2`; the all-order
+precombined replay is `1.99e-6`. These are test-only vector/recurrence
+diagnostics, not whole-transform accuracy or performance. A rough pair-count
+model projects less than 1% additional recurrence work for `m=1–2`, so the
+next isolated test is a plan-cached `m=1–2` native-f32 transform route. Full
+details, exact source snapshots, binaries, logs and disassembly are in the
+[split-setup screen](setup-low-split-screen/README.md).

@@ -1,0 +1,201 @@
+{
+  "status": "diagnostic_only_no_production_change",
+  "source_parent_sha": "b6a96aa7161a64f678b614d73478496f50f0551e",
+  "prior_candidate_source_diff_sha": "704666bca0b5fb71adc3cc7346c1f36dbc5d49bb98c99d17c4ea66d0fea5c6ba",
+  "test_source_snapshot_sha256": "b3565f04ce2b310e1f0924da2c63ac2c35fd2d978b7a530b0b71810b376a1fc8",
+  "accuracy_source_update_patch": "accuracy-source-update.patch.gz",
+  "accuracy_source_snapshot_sha256": "9fb030db30ace769572f1f3fd8808b81a47f36d8456f5ed0bd5512eaeefd2a92",
+  "test_binary_sha256": "739b14d210b8fdabaa97018d75a33f77ae35402edbc586060d520f24b671ed31",
+  "accuracy_test_binary_sha256": "81b3cf6d5d42770a0f0e9070f27f0727a8c39b8c89186be28e038eca82508014",
+  "precombined_test_binary_sha256": "81b3cf6d5d42770a0f0e9070f27f0727a8c39b8c89186be28e038eca82508014",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "target_cpu": "x86-64-v3 AVX2/FMA",
+  "host": "AMD Ryzen 9 5950X",
+  "affinity": "one allowed CPU; pinned",
+  "features": [
+    "parallel"
+  ],
+  "profile": "release",
+  "microkernel": {
+    "lanes": 8,
+    "orders": "m=1..16",
+    "degree_pairs_per_order": "353..360",
+    "rings": "one GL T720 equatorial ring broadcast across eight SIMD lanes",
+    "paired_runs": 15,
+    "repetitions_per_run": 16,
+    "rotated_order": true,
+    "median_sweep_ms": {
+      "ordinary_f32": 0.098,
+      "residual_f32_setup": 0.254,
+      "residual_split_setup": 0.508
+    },
+    "median_ratio_to_ordinary": {
+      "residual_f32_setup": 2.5834556126192223,
+      "residual_split_setup": 5.210025114038235
+    },
+    "paired_residual_over_ordinary": [
+      2.4340738882025943,
+      2.47971388253613,
+      2.505817708488588,
+      2.5149070849579824,
+      2.5724867510411706,
+      2.5725475797074844,
+      2.5831431598679653,
+      2.5834556126192223,
+      2.5852903490338783,
+      2.588834601359107,
+      2.589386950602483,
+      2.591846527678516,
+      2.6360509749731307,
+      2.6435476446217585,
+      2.657085111161015
+    ],
+    "paired_split_setup_over_ordinary": [
+      4.864461087090797,
+      5.007859619836846,
+      5.026053913543868,
+      5.135271460014674,
+      5.15189108961564,
+      5.17559204132781,
+      5.178008281826898,
+      5.210025114038235,
+      5.334826268910799,
+      5.422188701279743,
+      5.555760967830406,
+      5.576816496189739,
+      5.580243025216914,
+      5.636108445787314,
+      5.803585649235293
+    ]
+  },
+  "precombined_screen": {
+    "source_snapshot": "scalar_ordered-tests.snapshot.rs plus accuracy-source-update.patch.gz",
+    "lanes": 8,
+    "orders": "m=1..16",
+    "degree_pairs_per_order": "353..360",
+    "rings": "one GL T720 equatorial ring broadcast across eight SIMD lanes",
+    "paired_runs": 15,
+    "repetitions_per_run": 16,
+    "rotated_order": true,
+    "median_sweep_ms": {
+      "ordinary_f32": 0.103,
+      "residual_f32_setup": 0.264,
+      "residual_split_setup": 0.53,
+      "residual_precombined_setup": 0.249
+    },
+    "median_ratio_to_ordinary": {
+      "residual_f32_setup": 2.550926556089214,
+      "residual_split_setup": 5.149954223485761,
+      "residual_precombined_setup": 2.439041475730422
+    },
+    "paired_precombined_over_ordinary": [
+      2.0308293131173905,
+      2.3093021894391756,
+      2.329849044808502,
+      2.370556159279671,
+      2.378723193991501,
+      2.415754499486603,
+      2.43540358177611,
+      2.439041475730422,
+      2.4409571701057744,
+      2.442403507926565,
+      2.4428133649663897,
+      2.448797399357696,
+      2.4506076474656653,
+      2.4533245139767628,
+      2.54727524478291
+    ],
+    "codegen_summary": "codegen-summary.txt",
+    "disassembly": "precombined-v3-avx2.asm",
+    "disassembly_sha256": "f929ff451faaa353b2894db3a8e15763f5ae4ff1997ce4b964a13aace9551406",
+    "split_setup_codegen_binary_sha256": "f4520ba7232fbc0bd61fb1409125ad68bc9c8f7c3dade75add759c1cfb290c4d",
+    "split_setup_disassembly": "split-setup-v3-avx2.asm",
+    "split_setup_disassembly_sha256": "8cf46e8370b44a799f7d94d9430dc829156fe784758ae20f31ddc9ef85eeef05"
+  },
+  "accuracy_replay": {
+    "observations": 208,
+    "orders": "m=1..16",
+    "rings": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      360,
+      715,
+      716,
+      717,
+      718,
+      719,
+      720
+    ],
+    "native_f32_state_vs_same_f32_setup_widened_reference_relative_rms": 0.0001644841959,
+    "high_only_f32_setup_vs_full_widened_reference_relative_rms": 0.0004559081914,
+    "high_low_setup_replay_vs_full_widened_reference_relative_rms": 2.716115012e-07,
+    "precombined_setup_replay_vs_full_widened_reference_relative_rms": 1.992154e-06,
+    "hybrid_setup_replay_relative_rms_by_split_correction_cutoff": {
+      "m_le_1": 0.000411822,
+      "m_le_2": 0.0003087599,
+      "m_le_3": 0.0003075389,
+      "m_le_4": 0.0002683322,
+      "m_le_5": 0.0002358945,
+      "m_le_6": 0.0002238596,
+      "m_le_7": 0.0001724487,
+      "m_le_8": 0.0001718909,
+      "m_le_9": 0.0001587081,
+      "m_le_10": 0.0001424653,
+      "m_le_11": 0.0001414874,
+      "m_le_12": 0.0001326093,
+      "m_le_13": 9.41334e-05,
+      "m_le_14": 9.036666e-05,
+      "m_le_15": 6.729793e-05,
+      "m_le_16": 2.716115012e-07
+    },
+    "hybrid_precombined_setup_replay_relative_rms_by_cutoff": {
+      "m_le_1": 0.0004118224,
+      "m_le_2": 0.0003087607,
+      "m_le_3": 0.0003075402,
+      "m_le_4": 0.0002683342,
+      "m_le_5": 0.000235897,
+      "m_le_6": 0.0002238622,
+      "m_le_7": 0.0001724526,
+      "m_le_8": 0.0001718951,
+      "m_le_9": 0.0001587128,
+      "m_le_10": 0.0001424714,
+      "m_le_11": 0.0001414935,
+      "m_le_12": 0.0001326165,
+      "m_le_13": 9.415031e-05,
+      "m_le_14": 9.038429e-05,
+      "m_le_15": 6.732358e-05,
+      "m_le_16": 1.992154e-06
+    },
+    "max_high_low_setup_absolute_error": 6.929755742e-09,
+    "ordinary_f32_setup_components_vs_full_widened_reference_relative_rms": {
+      "recurrence_factor_setup": 0.0001507137184,
+      "geometry_setup": 0.0009002924037,
+      "sectoral_setup": 2.178564634e-05,
+      "coefficient_setup": 1.946281625e-06
+    },
+    "caveat": "Widened replay is a diagnostic decomposition, not an independent full-transform correctness test or production implementation."
+  },
+  "work_fraction_estimate": {
+    "model": "raw recurrence degree-pair updates per ring, using lmax=720 and pair_count=floor((lmax-m+2)/2); excludes polar order skips, FFT, packing, and scheduling",
+    "m_1_to_2_share": 0.0055248195,
+    "m_1_to_13_share": 0.0356350857,
+    "projected_extra_recurrence_cost_at_5_21x": {
+      "m_1_to_2": 0.02325949,
+      "m_1_to_13": 0.15002371
+    },
+    "projected_extra_recurrence_cost_at_2_439x_precombined": {
+      "m_1_to_2": 0.00795044,
+      "m_1_to_13": 0.05128037
+    },
+    "status": "rough operation-count extrapolation only; not a whole-transform measurement"
+  },
+  "commands": [
+    "taskset -c <one-allowed-cpu> env RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo test --release --features parallel --lib native_f32_vector_residual_recurrence_cost_probe -- --ignored --nocapture",
+    "taskset -c <one-allowed-cpu> env RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo test --release --features parallel --lib native_f32_ordered_recurrence_vs_accumulation_error_probe -- --ignored --nocapture"
+  ],
+  "fixture_generation": "Deterministic GL T720 geometry; f32 coefficients are generated from integer m/l hashes in the test source; no external fixture files."
+}

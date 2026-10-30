@@ -76,11 +76,14 @@ in the [residual integration record](../reports/archive/experiments/native-gener
 The original twofold callback remains rejected at `17.24x` ordinary-loop cost;
 see the [compensated recurrence record](../reports/archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md).
 
-**NEXT:** in a bounded `m=1–16,l=600–720` replay, isolate rounding in `cos²`,
-recurrence factors and the sectoral seed against DUCC's double constants. Test
-high/low native-f32 constant leaves with residual propagation limited to those
-low orders; require a material accuracy gain at a feasible AVX2 cost before
-another whole-transform run. Keep production dispatch unchanged.
+**NEXT:** prototype a test-only low-order (`m=1–2`) generic f32 suffix using
+plan-cached precombined high/low leading factors and sectoral seeds. The
+precombined AVX2 replay measured `2.439x` ordinary-loop cost; raw pair counts
+project `0.80%` extra recurrence work for `m=1–2`, while the selected replay
+error falls from `4.56e-4` (high-only setup) to `3.09e-4`. These are not
+whole-transform results. Measure full/reduced q1/q8 and independent output
+error before deciding whether the extra plan storage and low-order route are
+worth keeping. Do not change production dispatch.
 
 ## Milestone 0 — Bound and archive documentation (completed in `8e888e9a`)
 

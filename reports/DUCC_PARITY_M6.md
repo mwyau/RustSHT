@@ -216,12 +216,12 @@ and its exact patch/results.
   f32 shapes, grids, adjoints and the broader f64 parity matrix remain
   **UNMEASURED** or **GAP**. M6 is open.
 
-**NEXT:** in a bounded `m=1–16,l=600–720` replay, isolate f32 rounding in
-`cos²`, recurrence factors, and the sectoral seed against DUCC's double
-constants. Test high/low native-f32 constant leaves with residual propagation
-limited to the affected low orders; screen numerical gain and AVX2 cost before
-another whole-transform run. Do not repeat all-order residual propagation:
-it is more than 2.2x DUCC and did not improve full-transform error. Keep
+**NEXT:** prototype a test-only `m=1–2` generic f32 suffix using plan-cached
+precombined high/low leading factors and sectoral seeds. Its test microkernel
+was `2.439x` the ordinary loop; raw pair counts project `0.80%` extra
+recurrence work, and the selected widened replay error falls to `3.09e-4`.
+Run a whole-transform screen after implementing that bounded route, then
+record actual full/reduced q1/q8 cost and independent numerical error. Keep
 production dispatch unchanged. See the [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md),
-[compensated replay record](archive/experiments/native-generic-scalar-synthesis-2026-10-29/compensated-recurrence-probe/README.md),
-and [integration screen](archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md).
+[split-setup screen](archive/experiments/native-generic-scalar-synthesis-2026-10-29/setup-low-split-screen/README.md),
+and [rejected all-order integration](archive/experiments/native-generic-scalar-synthesis-2026-10-29/residual-recurrence-integration/README.md).

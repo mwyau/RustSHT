@@ -1,0 +1,20 @@
+AVX2 V3 path inspection
+
+Target CPU: x86-64-v3; runtime dispatch on CPU 0 selected Pulp V3 (AVX2/FMA).
+
+Precombined path test binary SHA256:
+81b3cf6d5d42770a0f0e9070f27f0727a8c39b8c89186be28e038eca82508014
+Precombined disassembly SHA256:
+f929ff451faaa353b2894db3a8e15763f5ae4ff1997ce4b964a13aace9551406
+
+The precombined residual recurrence loop is at 0x4aee18..0x4aee98. It emits
+28 instructions per degree pair including the loop branch, four scalar
+broadcasts, seven packed FMA/FMSUB instructions, and the high/low state
+update. No stack memory access appears inside this loop. The separate setup
+split path was built as binary
+`f4520ba7232fbc0bd61fb1409125ad68bc9c8f7c3dade75add759c1cfb290c4d`; its
+disassembly SHA256 is
+`8cf46e8370b44a799f7d94d9430dc829156fe784758ae20f31ddc9ef85eeef05`. Its
+loop emits 120 instructions per degree pair and reads a YMM value from the
+stack inside its loop. These counts describe this test callback only; they are
+not whole-transform instruction counts or cycle counts.
