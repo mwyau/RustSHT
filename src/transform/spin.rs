@@ -597,7 +597,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let theta_sin = &workspace.theta_sin[..analysis_ntheta];
         let theta_cos = &workspace.theta_cos[..analysis_ntheta];
         let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
-        let analysis_ring_scales = if T::supports_paired_spin()
+        let analysis_ring_scales = if T::supports_spin1_analysis_pairs()
             && recurrence_spin == 1
             && !derivative_norm
             && (analysis_ring_weights.is_some() || analysis_spectra_preweighted)

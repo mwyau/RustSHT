@@ -63,7 +63,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             && !derivative_norm
             && (recurrence_spin == 1 || b_alm.is_some())
             && lmax >= fast_scalar_min_lmax
-            && T::supports_paired_spin()
+            && match recurrence_spin {
+                1 => T::supports_spin1_analysis_pairs(),
+                2 => T::supports_paired_spin(),
+                _ => false,
+            }
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (recurrence_spin != 2 || self.spin2_fast_f1.len() > lmax)
             && recurrence.fast_spin_first.len() > lmax;
@@ -502,6 +506,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     )]
     pub(super) fn try_fused_spin_scalar_analysis_pair_block(
         arch: pulp::Arch,
+        recurrence_spin: usize,
         sequential_channels: bool,
         opposite_preweighted: bool,
         shared_recurrence_sequential_accumulation: bool,
@@ -528,7 +533,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         next: &mut [T],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
-        if !T::supports_paired_spin() || !products_safe[0] || !products_safe[1] || m > scalar_lmax {
+        let pair_kernel_supported = match recurrence_spin {
+            1 => T::supports_spin1_analysis_pairs(),
+            2 => T::supports_paired_spin(),
+            _ => false,
+        };
+        if !pair_kernel_supported || !products_safe[0] || !products_safe[1] || m > scalar_lmax {
             return Ok(false);
         }
 
@@ -602,7 +612,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         mut b_coefficients: Option<&mut [Complex<T>]>,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<bool, ShtError> {
-        if !T::supports_paired_spin() {
+        if !T::supports_spin1_analysis_pairs() {
             return Ok(false);
         }
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
@@ -794,8 +804,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             let mut block_range_status = (false, false);
             let mut range_check_was_exercised = false;
             let fused_block = fused_analysis_enabled
+                && T::supports_spin1_analysis_pairs()
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
+                    1,
                     sequential_channels,
                     opposite_preweighted,
                     shared_recurrence_sequential_accumulation,
@@ -1315,8 +1327,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
             let mut range_check_was_exercised = false;
             let fused_block = fused_analysis_enabled
+                && T::supports_paired_spin()
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
+                    2,
                     false,
                     false,
                     false,

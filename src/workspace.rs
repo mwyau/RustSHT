@@ -967,7 +967,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             })?;
         let spin1_analysis_pair_range_block_count =
             latitude_count.div_ceil(2).div_ceil(LATITUDE_BLOCK_SIZE);
-        let spin1_analysis_pair_range_cache_len = if T::supports_paired_spin() {
+        let spin1_analysis_pair_range_cache_len = if T::supports_spin1_analysis_pairs() {
             analysis_order_count
                 .checked_mul(spin1_analysis_pair_range_block_count)
                 .ok_or(ShtError::IntegerOverflow {

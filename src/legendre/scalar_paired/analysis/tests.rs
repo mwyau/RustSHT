@@ -1254,12 +1254,12 @@ fn fused_two_channel_analysis_block_matches_paired_reference_with_simd_tails() {
 
 #[test]
 fn fused_two_channel_analysis_preserves_opposite_product_range() {
-    let lane_count = 9;
-    let basis = vec![2.0_f64.powi(-1022); lane_count];
-    let cosine = vec![2.0_f64.powi(-54); lane_count];
-    let opposite_real: [Vec<f64>; 2] = std::array::from_fn(|_| vec![2.0_f64.powi(500); lane_count]);
-    let zeros: [Vec<f64>; 2] = std::array::from_fn(|_| vec![0.0; lane_count]);
-    let exponents = vec![0; lane_count];
+    const LANE_COUNT: usize = 9;
+    let basis = vec![2.0_f64.powi(-1022); LANE_COUNT];
+    let cosine = vec![2.0_f64.powi(-54); LANE_COUNT];
+    let opposite_real: [Vec<f64>; 2] = std::array::from_fn(|_| vec![2.0_f64.powi(500); LANE_COUNT]);
+    let zeros: [Vec<f64>; 2] = std::array::from_fn(|_| vec![0.0; LANE_COUNT]);
+    let exponents = vec![0; LANE_COUNT];
 
     let sums = accumulate_analysis_pair_channels_dispatched(
         Arch::new(),
@@ -1274,7 +1274,7 @@ fn fused_two_channel_analysis_preserves_opposite_product_range() {
         &cosine,
     );
 
-    let expected = lane_count as f64 * 2.0_f64.powi(-576);
+    let expected = LANE_COUNT as f64 * 2.0_f64.powi(-576);
     assert_eq!(sums[0].1.re, expected);
     assert_eq!(sums[1].1.re, expected);
 }
@@ -2837,3 +2837,191 @@ fn prepared_order_pair_transition_promotes_scaled_simd_vector() {
 }
 
 mod kernel_bench;
+
+#[test]
+fn materialize_scaled_native_analysis_seed_preserves_normal_bits_and_rejects_range_loss() {
+    let positive = <f32 as FusedAnalysisPrecision>::materialize_scaled_seed(0.75, 4).unwrap();
+    let negative = <f32 as FusedAnalysisPrecision>::materialize_scaled_seed(-0.75, 4).unwrap();
+    assert_eq!(positive.to_bits(), 12.0_f32.to_bits());
+    assert_eq!(negative.to_bits(), (-12.0_f32).to_bits());
+    assert_eq!(
+        <f32 as FusedAnalysisPrecision>::materialize_scaled_seed(0.0, i64::MAX)
+            .unwrap()
+            .to_bits(),
+        0.0_f32.to_bits()
+    );
+    assert!(
+        <f32 as FusedAnalysisPrecision>::materialize_scaled_seed(f32::MIN_POSITIVE, -1).is_none()
+    );
+    assert!(<f32 as FusedAnalysisPrecision>::materialize_scaled_seed(f32::MAX, 1).is_none());
+}
+
+#[test]
+fn native_f32_spin_analysis_fused_scaled_seed_matches_checked_recurrence() {
+    let m = 40;
+    let lmax = 48;
+    let pair_count = (lmax - m + 2) / 2;
+    const LANE_COUNT: usize = 9;
+    let sin_theta = [
+        0.050, 0.061, 0.073, 0.084, 0.092, 0.104, 0.113, 0.121, 0.130,
+    ];
+    let cos_theta = sin_theta.map(|sine| (1.0_f32 - sine * sine).sqrt());
+    let coefficient_a = vec![0.07_f32; pair_count];
+    let coefficient_b = vec![0.35_f32; pair_count];
+    let mut seed_previous = [0.0_f32; LANE_COUNT];
+    let mut seed_current = [0.0_f32; LANE_COUNT];
+    let mut seed_exponents = [0_i64; LANE_COUNT];
+    <f32 as PairedScalarRecurrencePrecision>::initialize_pair_state(
+        m,
+        &sin_theta,
+        0.75,
+        &mut seed_previous,
+        &mut seed_current,
+        &mut seed_exponents,
+    )
+    .unwrap();
+    assert!(seed_exponents.iter().any(|&exponent| exponent != 0));
+    let same_real = [
+        [
+            0.25_f32, -0.5, 0.75, 0.125, -0.375, 0.625, -0.875, 0.45, -0.2,
+        ],
+        [
+            -0.125_f32, 0.375, -0.625, 0.875, 0.25, -0.5, 0.75, -0.3, 0.55,
+        ],
+    ];
+    let same_imag = [
+        [-0.45_f32, 0.2, -0.35, 0.6, -0.15, 0.4, -0.7, 0.25, 0.5],
+        [0.6_f32, -0.25, 0.5, -0.15, 0.35, -0.45, 0.2, -0.55, 0.3],
+    ];
+    let opposite_real = [
+        [0.4_f32, -0.15, 0.3, -0.55, 0.7, -0.25, 0.5, -0.65, 0.1],
+        [-0.35_f32, 0.65, -0.2, 0.45, -0.6, 0.15, -0.5, 0.75, -0.1],
+    ];
+    let opposite_imag = [
+        [0.15_f32, -0.4, 0.55, -0.2, 0.35, -0.6, 0.25, -0.5, 0.7],
+        [-0.55_f32, 0.3, -0.1, 0.65, -0.45, 0.2, -0.75, 0.4, -0.15],
+    ];
+    let mut staged_first = vec![Complex::new(0.0_f32, 0.0); lmax - m + 1];
+    let mut staged_second = vec![Complex::new(0.0_f32, 0.0); lmax - m + 1];
+    let mut previous = [0.0_f32; LANE_COUNT];
+    let mut current = [0.0_f32; LANE_COUNT];
+    let mut next = [0.0_f32; LANE_COUNT];
+    let mut exponents = [0_i64; LANE_COUNT];
+    let mut range_check_was_exercised = false;
+    let success = fused_scalar_analysis_pair_channels_block_native::<f32>(
+        Arch::new(),
+        false,
+        &mut range_check_was_exercised,
+        m,
+        lmax,
+        &sin_theta,
+        &cos_theta,
+        0.75,
+        &coefficient_a,
+        &coefficient_b,
+        [&same_real[0], &same_real[1]],
+        [&same_imag[0], &same_imag[1]],
+        [&opposite_real[0], &opposite_real[1]],
+        [&opposite_imag[0], &opposite_imag[1]],
+        &mut staged_first,
+        &mut staged_second,
+        &mut previous,
+        &mut current,
+        &mut next,
+        &mut exponents,
+    )
+    .unwrap();
+    assert!(
+        success,
+        "scaled seed fixture should use the native fused route"
+    );
+
+    let mut expected_first = vec![Complex::new(0.0_f32, 0.0); lmax - m + 1];
+    let mut expected_second = vec![Complex::new(0.0_f32, 0.0); lmax - m + 1];
+    crate::legendre::scalar_paired::for_each_y_lm_paired_status_dispatched_typed::<f32, _>(
+        Arch::new(),
+        m,
+        lmax,
+        &sin_theta,
+        &cos_theta,
+        0.75,
+        &coefficient_a,
+        &coefficient_b,
+        &mut previous,
+        &mut current,
+        &mut next,
+        &mut exponents,
+        |degree: usize, _: usize, basis: &[f32], exponents: &[i64], _: bool| {
+            let offset = degree - m;
+            for lane in 0..LANE_COUNT {
+                let odd_basis = basis[lane] * cos_theta[lane];
+                let channels = [
+                    (
+                        &same_real[0],
+                        &same_imag[0],
+                        &opposite_real[0],
+                        &opposite_imag[0],
+                    ),
+                    (
+                        &same_real[1],
+                        &same_imag[1],
+                        &opposite_real[1],
+                        &opposite_imag[1],
+                    ),
+                ];
+                for (channel, (same_re, same_im, opposite_re, opposite_im)) in
+                    channels.into_iter().enumerate()
+                {
+                    let even = Complex::new(
+                        scalar::multiply_complex_scaled_f32(
+                            Complex::new(same_re[lane], 0.0),
+                            basis[lane],
+                            exponents[lane],
+                        )
+                        .re,
+                        scalar::multiply_complex_scaled_f32(
+                            Complex::new(same_im[lane], 0.0),
+                            basis[lane],
+                            exponents[lane],
+                        )
+                        .re,
+                    );
+                    let odd = Complex::new(
+                        scalar::multiply_complex_scaled_f32(
+                            Complex::new(opposite_re[lane], 0.0),
+                            odd_basis,
+                            exponents[lane],
+                        )
+                        .re,
+                        scalar::multiply_complex_scaled_f32(
+                            Complex::new(opposite_im[lane], 0.0),
+                            odd_basis,
+                            exponents[lane],
+                        )
+                        .re,
+                    );
+                    let target = if channel == 0 {
+                        &mut expected_first
+                    } else {
+                        &mut expected_second
+                    };
+                    target[offset] += even;
+                    if degree < lmax {
+                        target[offset + 1] += odd;
+                    }
+                }
+            }
+            Ok(())
+        },
+    )
+    .unwrap();
+
+    for (actual, expected) in staged_first.iter().zip(expected_first) {
+        assert!((actual.re - expected.re).abs() <= 3.0e-6);
+        assert!((actual.im - expected.im).abs() <= 3.0e-6);
+    }
+    for (actual, expected) in staged_second.iter().zip(expected_second) {
+        assert!((actual.re - expected.re).abs() <= 3.0e-6);
+        assert!((actual.im - expected.im).abs() <= 3.0e-6);
+    }
+}

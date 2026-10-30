@@ -170,6 +170,102 @@ fn f32_pair_normalization_matches_float_magnitude_reference() {
     }
 }
 
+struct NormalizeF32PairWithSimd<'a> {
+    previous: &'a mut [f32],
+    current: &'a mut [f32],
+    exponents: &'a mut [i64],
+}
+
+impl pulp::WithSimd for NormalizeF32PairWithSimd<'_> {
+    type Output = Result<bool, ShtError>;
+
+    #[inline(always)]
+    fn with_simd<S: pulp::Simd>(self, simd: S) -> Self::Output {
+        super::super::normalize_pair_lanes_with_state_f32_simd(
+            simd,
+            self.previous,
+            self.current,
+            self.exponents,
+        )
+    }
+}
+
+#[test]
+fn f32_simd_pair_normalization_matches_scalar_epochs_and_bits() {
+    let initial_previous = [
+        0.0,
+        f32::from_bits(1),
+        f32::from_bits(SMALL.to_bits() - 1),
+        -f32::from_bits(BIG.to_bits() + 1),
+        f32::MAX,
+        f32::MIN_POSITIVE,
+        -0.5,
+        0.0,
+        1.0,
+        -f32::MAX,
+        0.0,
+        f32::from_bits(1),
+        SMALL,
+        BIG,
+        -3.0,
+        0.0,
+        f32::from_bits(1),
+    ];
+    let initial_current = [
+        -0.0,
+        0.0,
+        0.0,
+        BIG,
+        f32::MIN_POSITIVE,
+        -f32::from_bits(1),
+        0.25,
+        SMALL,
+        -2.0,
+        0.0,
+        f32::MAX,
+        -f32::MAX,
+        f32::from_bits(1),
+        SMALL,
+        0.0,
+        0.0,
+        0.0,
+    ];
+
+    for arch in [Arch::Scalar, Arch::new()] {
+        let mut actual_previous = initial_previous;
+        let mut actual_current = initial_current;
+        let mut actual_exponents = [0; 17];
+        let mut expected_previous = initial_previous;
+        let mut expected_current = initial_current;
+        let mut expected_exponents = [0; 17];
+
+        let actual_normal = arch
+            .dispatch(NormalizeF32PairWithSimd {
+                previous: &mut actual_previous,
+                current: &mut actual_current,
+                exponents: &mut actual_exponents,
+            })
+            .unwrap();
+        let expected_normal = normalize_pair_lanes_with_state(
+            &mut expected_previous,
+            &mut expected_current,
+            &mut expected_exponents,
+        )
+        .unwrap();
+
+        assert_eq!(actual_normal, expected_normal);
+        assert_eq!(actual_exponents, expected_exponents);
+        assert_eq!(
+            actual_previous.map(f32::to_bits),
+            expected_previous.map(f32::to_bits)
+        );
+        assert_eq!(
+            actual_current.map(f32::to_bits),
+            expected_current.map(f32::to_bits)
+        );
+    }
+}
+
 #[test]
 fn f32_normal_range_check_covers_simd_lanes_and_tail() {
     for (previous_value, current_value) in [

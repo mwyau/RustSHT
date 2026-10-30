@@ -1,0 +1,158 @@
+{
+  "source_base": "b2648901580196d7e3af76db7d549354f994346c",
+  "candidate_branch": "candidate/m6-native-f32-spin1-analysis-scaled-current",
+  "candidate_head": "b2648901580196d7e3af76db7d549354f994346c",
+  "candidate_patch_sha256": "94d6a64c8602b8ae0dab9b76ba9e5f5c05da0ef221c15966e5750e5bea6cbbd5",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": {
+    "q1": "0",
+    "q8": "0-7"
+  },
+  "process_pairs": 3,
+  "target_ms": 25.0,
+  "input_precision": "native f32 fixture for f32 and DUCC; same fixture widened component-wise to f64 for matched Rust diagnostic",
+  "binary_sha256": {
+    "rust_f32": "797e43ff14ba291ad4533b78fafeb0331d6fbcb89fa66fb4f348af394eb93490",
+    "rust_f64": "38393d523a1c829c6859ce38d747d2c94fe34a0d6a76a6986f08117d3403f59f",
+    "ducc_f32": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d"
+  },
+  "fixture_sha256": {
+    "GL-T720-M720-even-s1-analysis-q1": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M720-even-s1-analysis-q8": {
+      "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+      "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+      "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+      "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+    },
+    "GL-T720-M180-even-s1-analysis-q1": {
+      "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+      "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+      "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+      "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+    },
+    "GL-T720-M180-even-s1-analysis-q8": {
+      "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+      "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+      "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+      "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+    }
+  },
+  "cases": [
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 1,
+      "operation": "analysis",
+      "threads": 1,
+      "case_id": "GL-T720-M720-even-s1-analysis-q1",
+      "f32_median_ms": 170.26147899999998,
+      "f64_median_ms": 38.390705,
+      "ducc_median_ms": 30.920257,
+      "f32_over_f64_median_ratio": 4.571209371450881,
+      "f32_over_f64_ratio_range": [
+        4.420768620946139,
+        4.595922545814532
+      ],
+      "f32_over_ducc_median_ratio": 5.54263775244443,
+      "f32_over_ducc_ratio_range": [
+        5.488842605674333,
+        5.624057531779469
+      ],
+      "max_relative_l2_vs_ducc": 1.8469543264717624e-05,
+      "max_absolute_error_vs_ducc": 3.5134144127368927e-07
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 1,
+      "operation": "analysis",
+      "threads": 8,
+      "case_id": "GL-T720-M720-even-s1-analysis-q8",
+      "f32_median_ms": 25.0507995,
+      "f64_median_ms": 6.273650375,
+      "ducc_median_ms": 4.548861583333333,
+      "f32_over_f64_median_ratio": 3.969277455950038,
+      "f32_over_f64_ratio_range": [
+        3.9440728698253604,
+        3.9942579391913164
+      ],
+      "f32_over_ducc_median_ratio": 5.507048091281593,
+      "f32_over_ducc_ratio_range": [
+        5.492759052087724,
+        5.524772576810053
+      ],
+      "max_relative_l2_vs_ducc": 1.8469543264717624e-05,
+      "max_absolute_error_vs_ducc": 3.5134144127368927e-07
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 1,
+      "operation": "analysis",
+      "threads": 1,
+      "case_id": "GL-T720-M180-even-s1-analysis-q1",
+      "f32_median_ms": 79.4385545,
+      "f64_median_ms": 15.603257500000002,
+      "ducc_median_ms": 12.297060250000001,
+      "f32_over_f64_median_ratio": 5.12629765085323,
+      "f32_over_f64_ratio_range": [
+        5.065745779715855,
+        5.1389170178086205
+      ],
+      "f32_over_ducc_median_ratio": 6.484497660668164,
+      "f32_over_ducc_ratio_range": [
+        6.459963022463031,
+        6.501474630028963
+      ],
+      "max_relative_l2_vs_ducc": 2.1713749184955264e-05,
+      "max_absolute_error_vs_ducc": 9.844079613685608e-07
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 1,
+      "operation": "analysis",
+      "threads": 8,
+      "case_id": "GL-T720-M180-even-s1-analysis-q8",
+      "f32_median_ms": 11.566682333333333,
+      "f64_median_ms": 2.428912944444445,
+      "ducc_median_ms": 1.9373362916666665,
+      "f32_over_f64_median_ratio": 4.762081885145098,
+      "f32_over_f64_ratio_range": [
+        4.512461500172109,
+        4.89870396241824
+      ],
+      "f32_over_ducc_median_ratio": 6.034219765956945,
+      "f32_over_ducc_ratio_range": [
+        5.844517830334524,
+        6.160598624735086
+      ],
+      "max_relative_l2_vs_ducc": 2.1713749184955264e-05,
+      "max_absolute_error_vs_ducc": 9.844079613685608e-07
+    }
+  ]
+}

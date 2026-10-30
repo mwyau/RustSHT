@@ -55,6 +55,12 @@ pub(crate) struct ScalarAnalysisRouteCounts {
     pub(crate) prefix_initialization_declines: usize,
     pub(crate) prefix_recurrence_declines: usize,
     pub(crate) checked_scaled_recurrence_declines: usize,
+    pub(crate) typed_ordinary_attempts: usize,
+    pub(crate) typed_ordinary_successes: usize,
+    pub(crate) typed_seed_declines: usize,
+    pub(crate) typed_recurrence_declines: usize,
+    pub(crate) typed_normal_pair_accumulations: usize,
+    pub(crate) typed_scaled_pair_accumulations: usize,
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -79,6 +85,24 @@ static SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsiz
 static SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 #[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_TYPED_ORDINARY_ATTEMPTS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_TYPED_ORDINARY_SUCCESSES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_TYPED_SEED_DECLINES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_TYPED_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
 pub(crate) fn begin_scalar_analysis_route_profile() {
     use std::sync::atomic::Ordering;
 
@@ -89,6 +113,12 @@ pub(crate) fn begin_scalar_analysis_route_profile() {
     SCALAR_ANALYSIS_PREFIX_INITIALIZATION_DECLINES.store(0, Ordering::Relaxed);
     SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES.store(0, Ordering::Relaxed);
     SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_TYPED_ORDINARY_ATTEMPTS.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_TYPED_ORDINARY_SUCCESSES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_TYPED_SEED_DECLINES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_TYPED_RECURRENCE_DECLINES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS.store(0, Ordering::Relaxed);
     SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.store(true, Ordering::Release);
 }
 
@@ -108,6 +138,57 @@ pub(crate) fn finish_scalar_analysis_route_profile() -> ScalarAnalysisRouteCount
             .load(Ordering::Relaxed),
         checked_scaled_recurrence_declines: SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES
             .load(Ordering::Relaxed),
+        typed_ordinary_attempts: SCALAR_ANALYSIS_TYPED_ORDINARY_ATTEMPTS.load(Ordering::Relaxed),
+        typed_ordinary_successes: SCALAR_ANALYSIS_TYPED_ORDINARY_SUCCESSES.load(Ordering::Relaxed),
+        typed_seed_declines: SCALAR_ANALYSIS_TYPED_SEED_DECLINES.load(Ordering::Relaxed),
+        typed_recurrence_declines: SCALAR_ANALYSIS_TYPED_RECURRENCE_DECLINES
+            .load(Ordering::Relaxed),
+        typed_normal_pair_accumulations: SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS
+            .load(Ordering::Relaxed),
+        typed_scaled_pair_accumulations: SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS
+            .load(Ordering::Relaxed),
+    }
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[inline(always)]
+pub(crate) fn record_typed_scalar_analysis_pair_accumulation(normal_range: bool) {
+    use std::sync::atomic::Ordering;
+
+    if !SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.load(Ordering::Acquire) {
+        return;
+    }
+    let counter = if normal_range {
+        &SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS
+    } else {
+        &SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS
+    };
+    counter.fetch_add(1, Ordering::Relaxed);
+}
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn record_typed_scalar_analysis_block(
+    attempt: bool,
+    seed_decline: bool,
+    recurrence_decline: bool,
+    success: bool,
+) {
+    use std::sync::atomic::Ordering;
+
+    if !SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.load(Ordering::Acquire) {
+        return;
+    }
+    if attempt {
+        SCALAR_ANALYSIS_TYPED_ORDINARY_ATTEMPTS.fetch_add(1, Ordering::Relaxed);
+    }
+    if seed_decline {
+        SCALAR_ANALYSIS_TYPED_SEED_DECLINES.fetch_add(1, Ordering::Relaxed);
+    }
+    if success {
+        SCALAR_ANALYSIS_TYPED_ORDINARY_SUCCESSES.fetch_add(1, Ordering::Relaxed);
+    }
+    if recurrence_decline {
+        SCALAR_ANALYSIS_TYPED_RECURRENCE_DECLINES.fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -854,8 +935,10 @@ use analysis::analysis_mask_all;
 pub(crate) use analysis::{
     accumulate_analysis_pair_channels_dispatched, accumulate_analysis_pair_dispatched,
     analysis_products_safe, fused_scalar_analysis_pair_block_preweighted_dispatched,
+    fused_scalar_analysis_pair_block_preweighted_typed,
+    fused_scalar_analysis_pair_channels_block_native,
     fused_scalar_analysis_pair_channels_block_with_range_proof, prepare_analysis_opposite,
-    prepare_analysis_products_and_opposite,
+    prepare_analysis_products_and_opposite, prepare_analysis_products_and_opposite_typed,
 };
 
 /// Precision leaves used by the shared paired scalar traversal.
@@ -888,6 +971,17 @@ pub(crate) trait PairedScalarRecurrencePrecision: LegendrePrecision {
         current: &mut [Self],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError>;
+
+    #[inline(always)]
+    fn normalize_pair_state_simd<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        let _ = simd;
+        Self::normalize_pair_state(previous, current, exponents)
+    }
 
     fn pair_state_needs_scaling<S: Simd>(simd: S, previous: &[Self], current: &[Self]) -> bool;
 }
@@ -1193,7 +1287,7 @@ where
         let mut next = next;
 
         T::initialize_pair_state(m, sin_theta, sectoral_norm, previous, current, exponents)?;
-        let mut normal_range = T::normalize_pair_state(previous, current, exponents)?;
+        let mut normal_range = T::normalize_pair_state_simd(simd, previous, current, exponents)?;
 
         for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
             visit.visit(degree, ring_start, current, exponents, normal_range, simd)?;
@@ -1214,7 +1308,7 @@ where
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
             if !normal_range || T::pair_state_needs_scaling(simd, previous, current) {
-                normal_range = T::normalize_pair_state(previous, current, exponents)?;
+                normal_range = T::normalize_pair_state_simd(simd, previous, current, exponents)?;
             }
         }
         Ok(())

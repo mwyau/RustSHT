@@ -3629,6 +3629,7 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
     let mut range_check_was_exercised = false;
     let fused = ShtPlan::<f64>::try_fused_spin_scalar_analysis_pair_block(
         pulp::Arch::new(),
+        1,
         true,
         false,
         false,

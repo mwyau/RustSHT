@@ -155,6 +155,12 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    /// Whether spin-1 analysis may use the reflected shared-recurrence route.
+    /// The fused paired-spin block has separate precision eligibility.
+    fn supports_spin1_analysis_pairs() -> bool {
+        Self::supports_paired_spin()
+    }
+
     #[inline(always)]
     fn scalar_paired_analysis_lane_width(_arch: Arch) -> usize {
         1
@@ -1795,6 +1801,30 @@ impl ShtScalar for f64 {
         analysis_scale_corrections: &mut [Self],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
+        if scalar_paired::fused_scalar_analysis_pair_block_preweighted_typed(
+            arch,
+            m,
+            lmax,
+            range_check_is_proven_safe,
+            range_check_was_exercised,
+            sin_theta,
+            cos_theta,
+            cos_theta_squared,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+            exponents,
+        )? {
+            return Ok(true);
+        }
         scalar_paired::fused_scalar_analysis_pair_block_preweighted_dispatched(
             arch,
             m,
@@ -1847,6 +1877,31 @@ impl ShtScalar for f64 {
         next: &mut [Self],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
+        if sequential_channels && !opposite_preweighted && shared_recurrence_sequential_accumulation
+        {
+            return scalar_paired::fused_scalar_analysis_pair_channels_block_native::<f64>(
+                arch,
+                range_check_is_proven_safe,
+                range_check_was_exercised,
+                m,
+                lmax,
+                sin_theta,
+                cos_theta,
+                sectoral_norm,
+                coefficient_a,
+                coefficient_b,
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                staged_first,
+                staged_second,
+                previous,
+                current,
+                next,
+                exponents,
+            );
+        }
         scalar_paired::fused_scalar_analysis_pair_channels_block_with_range_proof(
             arch,
             sequential_channels,
@@ -2010,6 +2065,10 @@ impl ShtScalar for f32 {
     type SpinInitial = spin_factors::SpinInitial<f32>;
 
     fn supports_paired_scalar() -> bool {
+        true
+    }
+
+    fn supports_spin1_analysis_pairs() -> bool {
         true
     }
 
@@ -2316,6 +2375,71 @@ impl ShtScalar for f32 {
         )
     }
 
+    fn prepare_scalar_analysis_pair_inputs(
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &mut [Self],
+        opposite_imag: &mut [Self],
+        cos_theta: &[Self],
+    ) -> Option<(bool, bool)> {
+        Some(scalar_paired::prepare_analysis_products_and_opposite_typed(
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cos_theta,
+        ))
+    }
+
+    fn fused_scalar_analysis_pair_block_preweighted(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        _allow_insignificant_prefix: bool,
+        range_check_is_proven_safe: bool,
+        range_check_was_exercised: &mut bool,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        cos_theta_squared: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        staged_coefficients: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        _analysis_scale_epochs: &mut [Self],
+        _analysis_scale_corrections: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::fused_scalar_analysis_pair_block_preweighted_typed(
+            arch,
+            m,
+            lmax,
+            range_check_is_proven_safe,
+            range_check_was_exercised,
+            sin_theta,
+            cos_theta,
+            cos_theta_squared,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+            exponents,
+        )
+    }
+
     fn accumulate_scalar_analysis_pair_normal(
         arch: Arch,
         same_real: &[Self],
@@ -2334,6 +2458,61 @@ impl ShtScalar for f32 {
             basis,
             cos_theta,
         ))
+    }
+
+    fn fused_scalar_analysis_pair_channels_block(
+        arch: Arch,
+        sequential_channels: bool,
+        opposite_preweighted: bool,
+        shared_recurrence_sequential_accumulation: bool,
+        range_check_is_proven_safe: bool,
+        range_check_was_exercised: &mut bool,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        same_real: [&[Self]; 2],
+        same_imag: [&[Self]; 2],
+        opposite_real: [&[Self]; 2],
+        opposite_imag: [&[Self]; 2],
+        staged_first: &mut [Complex<Self>],
+        staged_second: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        if !sequential_channels
+            || opposite_preweighted
+            || !shared_recurrence_sequential_accumulation
+        {
+            return Ok(false);
+        }
+        scalar_paired::fused_scalar_analysis_pair_channels_block_native::<f32>(
+            arch,
+            range_check_is_proven_safe,
+            range_check_was_exercised,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_first,
+            staged_second,
+            previous,
+            current,
+            next,
+            exponents,
+        )
     }
 
     fn fill_spin_factors(

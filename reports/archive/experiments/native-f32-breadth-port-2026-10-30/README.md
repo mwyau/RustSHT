@@ -2,7 +2,7 @@
 
 This archive preserves the initial three-family screens and the later current-dev follow-up. `matrix.csv`, `matrix.json`, `followup-matrix.csv`, and `followup-screen.json` are historical three-pair screens. The newer current-dev scalar-analysis source candidate and 15-pair spin-1 synthesis screen are summarized in [`current-dev-followup.json`](current-dev-followup.json); the source-correct B1 patch is [`scalar-analysis-current-dev.patch.gz`](patches/scalar-analysis-current-dev.patch.gz). No candidate transform code was promoted. DUCC distance on random fixtures is not independent accuracy validation.
 
-The current-dev follow-up changes the working decision: B1's typed fused block now executes, but it remains a 7.00–10.55x f64 timing GAP after one bounded SIMD scaling pass. B2 passes the interim f32/f64 <=2x gate in all four T720 cells in 15 interleaved pairs. Its protected f64 T1023 output is bitwise equal to parent, with a small q1 timing regression and inconclusive q8 timing. B3 remains the next implementation.
+The current-dev follow-up records B1 and B2; the later B3 screen is indexed in [`b3-spin1-analysis-current.md`](b3-spin1-analysis-current.md). B1 remains a 7.00–10.55x f64 timing GAP. B2 passes the interim f32/f64 <=2x gate in all four T720 cells in 15 interleaved pairs, with protected f64 T1023 output bitwise equal to parent. B3 now uses the shared scaled SIMD accumulator and improves about 2.5–3x, but remains 3.97–5.13x matched f64 in the four-cell three-pair screen. Its T511 DUCC reference passes; independent T720 spin-1 accuracy remains open.
 
 ## Historical 3-pair follow-up status (superseded)
 

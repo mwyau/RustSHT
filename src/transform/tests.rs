@@ -1946,6 +1946,50 @@ fn report_scalar_analysis_seed_routes_high_degree() {
 
 #[cfg(feature = "parallel")]
 #[test]
+#[ignore = "T720 native-f32 shared-kernel route diagnostic"]
+fn report_f32_scalar_analysis_typed_routes_t720() {
+    use num_complex::Complex32;
+
+    for (mmax, nphi) in [(720, 1458), (180, 378)] {
+        for thread_count in [1, 8] {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(thread_count)
+                .build()
+                .unwrap();
+            let plan = ShtPlan::<f32>::new(
+                GridSpec::new(GridKind::GaussLegendre, 721, nphi, 0.23).unwrap(),
+                HarmonicSpec::scalar(720, mmax).unwrap(),
+            )
+            .unwrap();
+            let mut workspace = pool.install(|| plan.workspace()).unwrap();
+            plan.prepare_workspace(&mut workspace, thread_count)
+                .unwrap();
+            let map = vec![0.0_f32; plan.sample_count];
+            let mut coefficients = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+
+            crate::legendre::begin_scalar_analysis_route_profile();
+            pool.install(|| {
+                plan.analysis_into(&map, &mut coefficients, &mut workspace)
+                    .unwrap();
+            });
+            let routes: crate::legendre::ScalarAnalysisRouteCounts =
+                crate::legendre::finish_scalar_analysis_route_profile();
+            eprintln!(
+                "F32_TYPED_ANALYSIS_ROUTE T720 mmax={mmax} q={thread_count} attempts={} successes={} seed_declines={} recurrence_declines={} normal_pairs={} scaled_pairs={}",
+                routes.typed_ordinary_attempts,
+                routes.typed_ordinary_successes,
+                routes.typed_seed_declines,
+                routes.typed_recurrence_declines,
+                routes.typed_normal_pair_accumulations,
+                routes.typed_scaled_pair_accumulations,
+            );
+            assert!(routes.typed_ordinary_attempts > 0);
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 #[ignore = "M5 current-source analysis phase profile; run this diagnostic in release mode"]
 fn m5_analysis_phase_profile() {
     for (spin, lmax, thread_count) in [

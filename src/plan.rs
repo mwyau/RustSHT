@@ -228,12 +228,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                         quantity: "paired scalar coefficient scratch count",
                     })?
             }
-            1 if T::supports_paired_spin() && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
-                .lmax()
-                .checked_add(2)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "spin-1 fast scalar coefficient count",
-                })?,
+            1 if T::supports_spin1_analysis_pairs() && harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => {
+                harmonics
+                    .lmax()
+                    .checked_add(2)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "spin-1 fast scalar coefficient count",
+                    })?
+            }
             2 if T::supports_paired_spin() && harmonics.lmax() >= 500 => harmonics
                 .lmax()
                 .checked_add(5)
