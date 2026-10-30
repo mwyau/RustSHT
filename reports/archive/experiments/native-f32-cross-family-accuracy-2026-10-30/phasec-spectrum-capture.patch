@@ -1,0 +1,146 @@
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index ee9e8968..b6810f6d 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -37,6 +37,140 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
+     .unwrap()
+ }
+-
++
++#[test]
++#[ignore = "isolated numerical trace only"]
++fn phasec_capture_native_f32_spectra() {
++    use std::io::Write;
++
++    let out = std::path::PathBuf::from(std::env::var("PHASEC_SPECTRA_DIR").unwrap());
++    std::fs::create_dir_all(&out).unwrap();
++    let lmax = 720;
++    let mmax = 16;
++    let ntheta = 721;
++    let nphi = 34;
++    let grid = GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.0).unwrap();
++    let scalar_harmonics = HarmonicSpec::new(lmax, mmax, 0).unwrap();
++    let spin_harmonics = HarmonicSpec::new(lmax, mmax, 1).unwrap();
++    let scalar = ShtPlan::<f32>::new(grid.clone(), scalar_harmonics.clone()).unwrap();
++    let spin = ShtPlan::<f32>::new(grid, spin_harmonics.clone()).unwrap();
++    let sample = |index: usize, seed: u64| {
++        let mut x = (index as u64).wrapping_add(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15));
++        x ^= x >> 30;
++        x = x.wrapping_mul(0xbf58_476d_1ce4_e5b9);
++        x ^= x >> 27;
++        x = x.wrapping_mul(0x94d0_49bb_1331_11eb);
++        x ^= x >> 31;
++        let signed = (x % 65_535) as i32 - 32_767;
++        signed as f32 / 32_768.0
++    };
++    let write = |name: &str, values: &[num_complex::Complex32]| {
++        let mut file = std::io::BufWriter::new(std::fs::File::create(out.join(name)).unwrap());
++        for value in values {
++            file.write_all(&value.re.to_le_bytes()).unwrap();
++            file.write_all(&value.im.to_le_bytes()).unwrap();
++        }
++    };
++    let sample_count = ntheta * nphi;
++    let scalar_map: Vec<f32> = (0..sample_count).map(|i| sample(i, 11)).collect();
++    let q_map: Vec<f32> = (0..sample_count).map(|i| sample(i, 23)).collect();
++    let u_map: Vec<f32> = (0..sample_count).map(|i| sample(i, 47)).collect();
++
++    let mut scalar_alm = vec![Complex32::new(0.0, 0.0); scalar_harmonics.nalm()];
++    let mut scalar_workspace = scalar.workspace().unwrap();
++    scalar
++        .analysis_into(&scalar_map, &mut scalar_alm, &mut scalar_workspace)
++        .unwrap();
++    write("scalar-analysis-spectrum.f32", &scalar_workspace.spectra);
++
++    let mut e_alm = vec![Complex32::new(0.0, 0.0); spin_harmonics.nalm()];
++    let mut b_alm = vec![Complex32::new(0.0, 0.0); spin_harmonics.nalm()];
++    let mut spin_workspace = spin.workspace().unwrap();
++    spin.analysis_spin_into(&q_map, &u_map, &mut e_alm, &mut b_alm, &mut spin_workspace)
++        .unwrap();
++    write("spin-analysis-q-spectrum.f32", &spin_workspace.spectra);
++    write("spin-analysis-u-spectrum.f32", &spin_workspace.spin_spectra);
++
++    let coefficient = |l: usize, m: usize, lane: usize| {
++        let x = (l as u64)
++            .wrapping_mul(0x9e37_79b9)
++            .wrapping_add((m as u64).wrapping_mul(0x85eb_ca6b))
++            .wrapping_add((lane as u64).wrapping_mul(0xc2b2_ae35));
++        let signed = (x % 4_095) as i32 - 2_047;
++        signed as f32 / 4_096.0
++    };
++    let mut e_input = vec![Complex32::new(0.0, 0.0); spin_harmonics.nalm()];
++    let mut b_input = vec![Complex32::new(0.0, 0.0); spin_harmonics.nalm()];
++    for m in 0..=mmax {
++        for l in 600..=lmax {
++            let index = spin_harmonics.index(l, m).unwrap();
++            e_input[index] = Complex32::new(
++                coefficient(l, m, 1),
++                if m == 0 { 0.0 } else { coefficient(l, m, 2) },
++            );
++            b_input[index] = Complex32::new(
++                coefficient(l, m, 3),
++                if m == 0 { 0.0 } else { coefficient(l, m, 4) },
++            );
++        }
++    }
++    let mut q = vec![0.0_f32; sample_count];
++    let mut u = vec![0.0_f32; sample_count];
++    let mut synth_workspace = spin.workspace().unwrap();
++    spin.synthesis_spin_into(&e_input, &b_input, &mut q, &mut u, &mut synth_workspace)
++        .unwrap();
++    let mut dispatch = std::fs::File::create(out.join("spin-synthesis-dispatch.txt")).unwrap();
++    writeln!(
++        dispatch,
++        "execution_capacity={} ring_group_size={} cached_scalar_coefficients={} cached_finite_orders={}",
++        synth_workspace.execution_capacity,
++        synth_workspace.ring_group_size,
++        synth_workspace.spin1_scalar_coefficients.len(),
++        synth_workspace.spin1_scalar_coefficient_finite_orders.len(),
++    )
++    .unwrap();
++    let row_len = lmax + 2;
++    let order_row_start = mmax * row_len * 2;
++    let (first_channel, second_channel) = if synth_workspace.spin1_scalar_coefficients.is_empty() {
++        let recurrence = &synth_workspace.recurrence_workers[0];
++        (
++            &recurrence.fast_scalar_first[..row_len],
++            &recurrence.fast_scalar_second[..row_len],
++        )
++    } else {
++        (
++            &synth_workspace.spin1_scalar_coefficients
++                [order_row_start..order_row_start + row_len],
++            &synth_workspace.spin1_scalar_coefficients
++                [order_row_start + row_len..order_row_start + 2 * row_len],
++        )
++    };
++    write("spin-synthesis-converted-first-m16.f32", first_channel);
++    write("spin-synthesis-converted-second-m16.f32", second_channel);
++    let prepared_pair_count = (lmax + 1 - mmax + 2) / 2;
++    let recurrence = &synth_workspace.recurrence_workers[0];
++    write(
++        "spin-synthesis-pair-first-m16.f32",
++        &recurrence.fast_spin_first[..prepared_pair_count],
++    );
++    write(
++        "spin-synthesis-pair-second-m16.f32",
++        &recurrence.fast_spin_second[..prepared_pair_count],
++    );
++    write(
++        "spin-synthesis-pair-first2-m16.f32",
++        &recurrence.fast_spin_pair_first[..prepared_pair_count],
++    );
++    write(
++        "spin-synthesis-pair-second2-m16.f32",
++        &recurrence.fast_spin_pair_second[..prepared_pair_count],
++    );
++    write("spin-synthesis-q-spectrum.f32", &synth_workspace.spectra);
++    write(
++        "spin-synthesis-u-spectrum.f32",
++        &synth_workspace.spin_spectra,
++    );
++}
++
+ #[test]
+ fn scalar_plans_cache_exact_grid_and_prepared_latitude_geometry() {
+     let lmax = 31;
