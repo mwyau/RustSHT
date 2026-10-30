@@ -6,6 +6,7 @@ current work. Nothing under this directory is an active execution queue.
 
 - [Archived M6 and architecture plans](plans/README.md)
 - [M6 experiment index](M6_EXPERIMENT_INDEX.md)
+- [Detailed pre-breadth-port M6 ledger (2026-10-30)](DUCC_PARITY_M6-2026-10-30-pre-breadth-port.md)
 - [Full pre-generic M6 ledger](DUCC_PARITY_M6-2026-10-29-pre-native-generic.md)
 - [Earlier experiment narratives and reviews](experiments/)
 - [October 23 session context](context-2026-10-23/README.md)
