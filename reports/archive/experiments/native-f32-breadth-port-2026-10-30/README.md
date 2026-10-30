@@ -1,10 +1,12 @@
 # Native-f32 breadth-port candidate checkpoint (2026-10-30)
 
-This archive contains the initial three-family screens and the later exact-source follow-up. The original `matrix.csv` and `matrix.json` remain the initial candidate results. Current isolated candidate results are in [`followup-matrix.csv`](followup-matrix.csv) and [`followup-screen.json`](followup-screen.json). No candidate transform code was promoted. DUCC distance on random fixtures is not independent accuracy validation.
+This archive preserves the initial three-family screens and the later current-dev follow-up. `matrix.csv`, `matrix.json`, `followup-matrix.csv`, and `followup-screen.json` are historical three-pair screens. The newer current-dev scalar-analysis source candidate and 15-pair spin-1 synthesis screen are summarized in [`current-dev-followup.json`](current-dev-followup.json); the source-correct B1 patch is [`scalar-analysis-current-dev.patch.gz`](patches/scalar-analysis-current-dev.patch.gz). No candidate transform code was promoted. DUCC distance on random fixtures is not independent accuracy validation.
 
-## Current follow-up status
+The current-dev follow-up changes the working decision: B1's typed fused block now executes, but it remains a 7.00–10.55x f64 timing GAP after one bounded SIMD scaling pass. B2 passes the interim f32/f64 <=2x gate in all four T720 cells in 15 interleaved pairs. Its protected f64 T1023 output is bitwise equal to parent, with a small q1 timing regression and inconclusive q8 timing. B3 remains the next implementation.
 
-The latest screens use three interleaved process pairs on GL T720. Ratios are shown separately against same-source Rust f64 and native-f32 DUCC. B2 spin-1 synthesis meets the interim <=2.0x f64 gate in all four cells, but misses the <=1.5x stretch. B1 scalar analysis and B3 spin-1 analysis remain far above the interim gate.
+## Historical 3-pair follow-up status (superseded)
+
+These screens used three interleaved process pairs on GL T720. Ratios are shown separately against same-source Rust f64 and native-f32 DUCC. B2 spin-1 synthesis meets the interim <=2.0x f64 gate in all four cells, but misses the <=1.5x stretch. B1 scalar analysis and B3 spin-1 analysis remain far above the interim gate. The current B1/B2 values and B2's 15-pair confidence intervals are in [`current-dev-followup.json`](current-dev-followup.json).
 
 | Family | Cell | Rust f32 ms | Rust f64 ms | f32/f64 | DUCC f32 ms | f32/DUCC | Independent accuracy |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -23,7 +25,7 @@ The latest screens use three interleaved process pairs on GL T720. Ratios are sh
 
 Candidate source diffs are B1 `a7c617785c3e312bd6bdf18c66f7b545e66f18fbcbdedc8a1b93f20cb8776c3a` on base `8fb2e1fd`; B2 `37115d60240f6d378c6a1341b0efeaec06ecc6fd2c81570ec7d8daa9a6b0a5bf` on base `bb5e5c04`; B3 `8a2180a0f26db10c27cfb7199852661c7de0464256e558e8243552e48b081670` on base `bb5e5c04`. Exact binary and fixture hashes, process-pair medians, tests and patch checksums are in `followup-screen.json` and `SHA256SUMS`.
 
-### Measured blockers and implementation status
+### Measured blockers in the historical candidates
 
 - **B1 scalar analysis:** f32 does not override `fused_scalar_analysis_pair_block_preweighted` or the paired-input preparation hooks in `ShtScalar`; `transform/scalar.rs` therefore declines the fused block and uses per-degree recurrence callbacks. The isolated SIMD normalizer change does not port the optimized f64 order block. The next implementation is the shared fused analysis block, with precision-specific SIMD leaves.
 - **B2 spin-1 synthesis:** the isolated GL T720 route uses the generic order-major/reflected scalar kernel with native f32 SIMD, spectrum, FFT and output. It passes only the interim timing screen. Its random-map relative L2 distance to DUCC is about `2.81e-4` full and `2.70e-4` reduced; this does not establish accuracy. The protected f64 T1023 control predates the generic scalar-order integration and must be rerun before promotion.
@@ -53,9 +55,9 @@ All candidate outputs were finite and repeat/reset checks passed in the recorded
 - **Spin-1 synthesis:** the candidate includes prepared dual-channel recurrence and a bounded SIMD scaled-accumulation path. This change did not materially reduce whole-call time: the paired f32/f64 gap is 13.6–29.5x, with reduced q1 best. Measure transition/fallback work before choosing another kernel.
 - **Spin-1 analysis:** safe normal seed materialization enters the fused ordinary block, while scaled seeds and later range declines remain in checked f32 traversal. The 15.2–24.2x gap shows seed handoff alone is insufficient; quantify scaled-prefix and fallback coverage before another attempt.
 
-## Protected f64 control
+## Historical protected f64 control (superseded)
 
-An earlier B2 candidate was compared with clean parent `bb5e5c04` on GL T1023 full spin-1 synthesis, using the same f64 inputs and three interleaved pairs at each thread count. All output hashes were bitwise identical. q1 candidate/parent paired ratios were 1.0024, 1.0037, 1.0015 (median 1.0024); q8 ratios were 0.9654, 1.1272, 1.0068 (median 1.0068), with q8 **INCONCLUSIVE**. This result predates generic scalar-order integration and does not protect the current B2 source. It is a protection screen, not 15-pair performance evidence; rerun before promotion.
+An earlier B2 candidate was compared with clean parent `bb5e5c04` on GL T1023 full spin-1 synthesis, using the same f64 inputs and three interleaved pairs at each thread count. All output hashes were bitwise identical. q1 candidate/parent paired ratios were 1.0024, 1.0037, 1.0015 (median 1.0024); q8 ratios were 0.9654, 1.1272, 1.0068 (median 1.0068), with q8 **INCONCLUSIVE**. This predates generic scalar-order integration and is superseded by the current-source 15-pair control in [`current-dev-followup.json`](current-dev-followup.json).
 
 ## Reproduction and disposition
 

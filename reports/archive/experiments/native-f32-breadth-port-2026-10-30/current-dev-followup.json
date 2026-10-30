@@ -1,0 +1,823 @@
+{
+  "captured_utc_date": "2026-10-30",
+  "b1_scalar_analysis": {
+    "base_source": "edb1c7239e74caff59c83e778b1e2e474e3fe1d7",
+    "candidate_source": "626583ac0043ab964313af3ee87154038355e6fe",
+    "candidate_source_patch_sha256": "8d0d75a2f46d44668da4514864f1b5b3a7c28e1dadf8c5e6886ee7748600a659",
+    "recoverable_patch_gzip_sha256": "6c007f03e99b68650c32771750ec395fae0fbfb87bc99d0d80747cc98b989211",
+    "rust_f32_binary_sha256": "242817043d3034843fcc111af37f4b5106c35194572dde73dd10270a3056f83b",
+    "matched_rust_f64_binary_sha256": "554ddf0b992a972b03f9affc0f6b1418554aacd64cbe97a6aa544d3d6b729300",
+    "ducc_f32_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+    "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "rust_flags": "<unset; Cargo release defaults>",
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "affinity": {
+      "q1": "0",
+      "q8": "0,1,2,3,4,5,6,7"
+    },
+    "simd": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+    "process_method": "Three f32/DUCC fresh-process pairs; three separate same-source f64 worker samples. Same deterministic fixtures; f64 widens fixture components for the diagnostic comparator.",
+    "cases": [
+      {
+        "case_id": "GL-T720-M720-even-s0-analysis-q1",
+        "process_pairs": 3,
+        "rust_f32_median_ms": 208.845337,
+        "rust_f32_pair_samples_ms": [
+          206.50274599999997,
+          208.916361,
+          213.23293800000002
+        ],
+        "matched_source_rust_f64_samples_ms": [
+          19.858096250000003,
+          19.802308250000003,
+          19.77153525
+        ],
+        "rust_f64_median_ms": 19.802308250000003,
+        "f32_over_f64_median_ratio": 10.546514798344278,
+        "native_ducc_f32_median_ms": 14.6188955,
+        "f32_over_ducc_median_ratio": 14.208464041255487,
+        "f32_ducc_relative_l2": 1.8390927432802155e-05,
+        "f32_ducc_max_abs": 3.512832336127758e-07,
+        "fixture_sha256": {
+          "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+          "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+          "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+          "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+        },
+        "timing_gate": "GAP",
+        "independent_high_degree_accuracy": "UNMEASURED"
+      },
+      {
+        "case_id": "GL-T720-M720-even-s0-analysis-q8",
+        "process_pairs": 3,
+        "rust_f32_median_ms": 28.9653815,
+        "rust_f32_pair_samples_ms": [
+          29.052962,
+          28.1769235,
+          29.045503
+        ],
+        "matched_source_rust_f64_samples_ms": [
+          3.19064675,
+          3.1932678333333335,
+          3.238179833333333
+        ],
+        "rust_f64_median_ms": 3.1932678333333335,
+        "f32_over_f64_median_ratio": 9.0707648126603,
+        "native_ducc_f32_median_ms": 2.246248125,
+        "f32_over_ducc_median_ratio": 12.904704806656815,
+        "f32_ducc_relative_l2": 1.8390927432802155e-05,
+        "f32_ducc_max_abs": 3.512832336127758e-07,
+        "fixture_sha256": {
+          "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+          "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+          "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+          "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+        },
+        "timing_gate": "GAP",
+        "independent_high_degree_accuracy": "UNMEASURED"
+      },
+      {
+        "case_id": "GL-T720-M180-even-s0-analysis-q1",
+        "process_pairs": 3,
+        "rust_f32_median_ms": 63.4149285,
+        "rust_f32_pair_samples_ms": [
+          63.820905499999995,
+          63.4675585,
+          63.2201565
+        ],
+        "matched_source_rust_f64_samples_ms": [
+          8.576439666666666,
+          8.422821500000001,
+          8.374455333333334
+        ],
+        "rust_f64_median_ms": 8.422821500000001,
+        "f32_over_f64_median_ratio": 7.52894128173083,
+        "native_ducc_f32_median_ms": 5.9386345,
+        "f32_over_ducc_median_ratio": 10.704421005708667,
+        "f32_ducc_relative_l2": 2.2202859399506984e-05,
+        "f32_ducc_max_abs": 1.005362719297409e-06,
+        "fixture_sha256": {
+          "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+          "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+          "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+          "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+        },
+        "timing_gate": "GAP",
+        "independent_high_degree_accuracy": "UNMEASURED"
+      },
+      {
+        "case_id": "GL-T720-M180-even-s0-analysis-q8",
+        "process_pairs": 3,
+        "rust_f32_median_ms": 9.519929333333334,
+        "rust_f32_pair_samples_ms": [
+          9.307437166666666,
+          9.647944500000001,
+          9.699453
+        ],
+        "matched_source_rust_f64_samples_ms": [
+          1.3609493888888888,
+          1.3831401388888889,
+          1.3501166
+        ],
+        "rust_f64_median_ms": 1.3609493888888888,
+        "f32_over_f64_median_ratio": 6.995064923836461,
+        "native_ducc_f32_median_ms": 0.972022537037037,
+        "f32_over_ducc_median_ratio": 9.89398505289302,
+        "f32_ducc_relative_l2": 2.2202859399506984e-05,
+        "f32_ducc_max_abs": 1.005362719297409e-06,
+        "fixture_sha256": {
+          "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+          "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+          "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+          "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+        },
+        "timing_gate": "GAP",
+        "independent_high_degree_accuracy": "UNMEASURED"
+      }
+    ],
+    "execution_counts": {
+      "full": {
+        "fused_block_attempts": 1139,
+        "fused_block_successes": 1139,
+        "normal_pair_accumulations": 111909,
+        "scaled_pair_accumulations": 125629,
+        "scaled_fraction": 0.528879589791949
+      },
+      "reduced": {
+        "fused_block_attempts": 362,
+        "fused_block_successes": 362,
+        "normal_pair_accumulations": 61843,
+        "scaled_pair_accumulations": 52459,
+        "scaled_fraction": 0.4589508495039457
+      }
+    },
+    "tests": [
+      {
+        "command": "cargo test --release --features parallel --lib scalar_analysis",
+        "result": "17 passed; 8 ignored"
+      },
+      {
+        "command": "cargo test --release --features parallel --test f32 scalar_analysis",
+        "result": "1 passed"
+      },
+      {
+        "command": "test-only fused analysis route counter",
+        "result": "all 1,139 full and 362 reduced fused-block attempts succeeded"
+      }
+    ],
+    "decision": "Functional native-f32 fused analysis path exists, but every T720 cell misses <=2x f64 by 7.00-10.55x. After one bounded direct-basis SIMD cleanup (6-10% improvement), remaining measured work includes 45.9-52.9% scaled pair accumulations. Stop this bounded pass and continue to B3."
+  },
+  "b2_spin1_synthesis": {
+    "source_base": "bb5e5c0427b64ce70cb499c0312ec2cf8b749aae",
+    "source_equivalent_dev": "edb1c7239e74caff59c83e778b1e2e474e3fe1d7; src/ tree diff from bb5e5c0427b64ce70cb499c0312ec2cf8b749aae is empty",
+    "candidate_patch_sha256": "37115d60240f6d378c6a1341b0efeaec06ecc6fd2c81570ec7d8daa9a6b0a5bf",
+    "rust_f32_binary_sha256": "0bcfe2bfb796212766f3d7286a6b1b8b7a0e781114068fd7a823997e7690ee27",
+    "matched_rust_f64_binary_sha256": "1b621d791f8297b957c1a40bb3144cd59d477cdcfeeaf90f04e73f5379a48928",
+    "ducc_f32_binary_sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d",
+    "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "affinity": {
+      "q1": "0",
+      "q8": "0-7"
+    },
+    "process_pairs": 15,
+    "input_precision": "f32 fixture widened component-wise to f64 only for the matched f64 diagnostic worker",
+    "fixture_sha256": {
+      "GL-T720-M720-even-s1-synthesis-q1": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "GL-T720-M720-even-s1-synthesis-q8": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "GL-T720-M180-even-s1-synthesis-q1": {
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+      },
+      "GL-T720-M180-even-s1-synthesis-q8": {
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+      }
+    },
+    "cases": [
+      {
+        "case_id": "GL-T720-M180-even-s1-synthesis-q1",
+        "process_pairs": 15,
+        "rust_f32_median_ms": 27.434200500000003,
+        "matched_source_rust_f64_median_ms": 16.401716750000002,
+        "native_ducc_f32_median_ms": 18.141619,
+        "f32_over_f64_median_ratio": 1.6717624313179507,
+        "f32_over_f64_bootstrap_95_ci": [
+          1.6693408741703277,
+          1.674924117552657
+        ],
+        "f32_over_ducc_median_ratio": 1.512985896296616,
+        "f32_over_ducc_bootstrap_95_ci": [
+          1.483778492509114,
+          1.5273171717171716
+        ],
+        "pair_samples": [
+          {
+            "pair": 1,
+            "rust_f32_ms": 27.2824445,
+            "rust_f64_ms": 16.295413749999998,
+            "ducc_f32_ms": 17.868554500000002,
+            "paired_ratio_f32_f64": 1.6742406740055928,
+            "paired_ratio_f32_ducc": 1.5268411611023152
+          },
+          {
+            "pair": 2,
+            "rust_f32_ms": 27.386225000000003,
+            "rust_f64_ms": 16.36091975,
+            "ducc_f32_ms": 17.874636250000002,
+            "paired_ratio_f32_f64": 1.6738805286298164,
+            "paired_ratio_f32_ducc": 1.5321276817591183
+          },
+          {
+            "pair": 3,
+            "rust_f32_ms": 27.507317999999998,
+            "rust_f64_ms": 16.4346515,
+            "ducc_f32_ms": 18.141619,
+            "paired_ratio_f32_f64": 1.6737390506881145,
+            "paired_ratio_f32_ducc": 1.516254861266792
+          },
+          {
+            "pair": 4,
+            "rust_f32_ms": 27.324298,
+            "rust_f64_ms": 16.401716750000002,
+            "ducc_f32_ms": 18.53591675,
+            "paired_ratio_f32_f64": 1.6659413411708865,
+            "paired_ratio_f32_ducc": 1.4741271429156586
+          },
+          {
+            "pair": 5,
+            "rust_f32_ms": 27.5825545,
+            "rust_f64_ms": 16.71202125,
+            "ducc_f32_ms": 18.67176775,
+            "paired_ratio_f32_f64": 1.6504619092678572,
+            "paired_ratio_f32_ducc": 1.4772331612790117
+          },
+          {
+            "pair": 6,
+            "rust_f32_ms": 27.434200500000003,
+            "rust_f64_ms": 16.262995500000002,
+            "ducc_f32_ms": 18.13248925,
+            "paired_ratio_f32_f64": 1.6869094319063176,
+            "paired_ratio_f32_ducc": 1.512985896296616
+          },
+          {
+            "pair": 7,
+            "rust_f32_ms": 27.3260365,
+            "rust_f64_ms": 16.31479075,
+            "ducc_f32_ms": 18.320949249999998,
+            "paired_ratio_f32_f64": 1.674924117552657,
+            "paired_ratio_f32_ducc": 1.4915185958500488
+          },
+          {
+            "pair": 8,
+            "rust_f32_ms": 27.548219500000002,
+            "rust_f64_ms": 16.387703000000002,
+            "ducc_f32_ms": 18.5662615,
+            "paired_ratio_f32_f64": 1.6810299466618353,
+            "paired_ratio_f32_ducc": 1.483778492509114
+          },
+          {
+            "pair": 9,
+            "rust_f32_ms": 27.4653685,
+            "rust_f64_ms": 16.57365075,
+            "ducc_f32_ms": 17.813187749999997,
+            "paired_ratio_f32_f64": 1.6571707051326638,
+            "paired_ratio_f32_ducc": 1.5418558926938837
+          },
+          {
+            "pair": 10,
+            "rust_f32_ms": 27.4897245,
+            "rust_f64_ms": 16.34572375,
+            "ducc_f32_ms": 17.98117425,
+            "paired_ratio_f32_f64": 1.6817685726519145,
+            "paired_ratio_f32_ducc": 1.5288058564918252
+          },
+          {
+            "pair": 11,
+            "rust_f32_ms": 27.389205,
+            "rust_f64_ms": 16.407197250000003,
+            "ducc_f32_ms": 18.252064750000002,
+            "paired_ratio_f32_f64": 1.6693408741703277,
+            "paired_ratio_f32_ducc": 1.500608581831817
+          },
+          {
+            "pair": 12,
+            "rust_f32_ms": 27.270922,
+            "rust_f64_ms": 16.45169825,
+            "ducc_f32_ms": 18.123898,
+            "paired_ratio_f32_f64": 1.6576356790400042,
+            "paired_ratio_f32_ducc": 1.504694078503421
+          },
+          {
+            "pair": 13,
+            "rust_f32_ms": 27.297212000000002,
+            "rust_f64_ms": 16.350643249999997,
+            "ducc_f32_ms": 18.422378000000002,
+            "paired_ratio_f32_f64": 1.6694885688977408,
+            "paired_ratio_f32_ducc": 1.481742042205409
+          },
+          {
+            "pair": 14,
+            "rust_f32_ms": 27.448798,
+            "rust_f64_ms": 16.4313025,
+            "ducc_f32_ms": 18.01421675,
+            "paired_ratio_f32_f64": 1.6705186944248636,
+            "paired_ratio_f32_ducc": 1.5237297508369327
+          },
+          {
+            "pair": 15,
+            "rust_f32_ms": 27.7838085,
+            "rust_f64_ms": 16.619471750000002,
+            "ducc_f32_ms": 18.19125,
+            "paired_ratio_f32_f64": 1.6717624313179507,
+            "paired_ratio_f32_ducc": 1.5273171717171716
+          }
+        ],
+        "timing_gate": "PASS",
+        "independent_high_degree_accuracy": "PARTIAL: established analytic/adjoint and selected T1023 DUCC-reference tests pass; this T720 timing fixture is not an independent accuracy matrix"
+      },
+      {
+        "case_id": "GL-T720-M180-even-s1-synthesis-q8",
+        "process_pairs": 15,
+        "rust_f32_median_ms": 4.540096666666667,
+        "matched_source_rust_f64_median_ms": 2.82720635,
+        "native_ducc_f32_median_ms": 2.70208065,
+        "f32_over_f64_median_ratio": 1.5908413441417177,
+        "f32_over_f64_bootstrap_95_ci": [
+          1.5565367473611529,
+          1.6162715687923848
+        ],
+        "f32_over_ducc_median_ratio": 1.6607464968088181,
+        "f32_over_ducc_bootstrap_95_ci": [
+          1.5924952930460132,
+          1.6785033518606396
+        ],
+        "pair_samples": [
+          {
+            "pair": 1,
+            "rust_f32_ms": 4.442099666666667,
+            "rust_f64_ms": 2.755989071428571,
+            "ducc_f32_ms": 2.70208065,
+            "paired_ratio_f32_f64": 1.6117987232671056,
+            "paired_ratio_f32_ducc": 1.643955248584703
+          },
+          {
+            "pair": 2,
+            "rust_f32_ms": 4.542362583333333,
+            "rust_f64_ms": 2.7695522500000003,
+            "ducc_f32_ms": 2.693042,
+            "paired_ratio_f32_f64": 1.6401071990367153,
+            "paired_ratio_f32_ducc": 1.6867032089857243
+          },
+          {
+            "pair": 3,
+            "rust_f32_ms": 4.4813845,
+            "rust_f64_ms": 2.82678855,
+            "ducc_f32_ms": 2.67698535,
+            "paired_ratio_f32_f64": 1.5853271020218334,
+            "paired_ratio_f32_ducc": 1.6740414735553186
+          },
+          {
+            "pair": 4,
+            "rust_f32_ms": 4.592131416666667,
+            "rust_f64_ms": 2.6832146875,
+            "ducc_f32_ms": 2.9680595555555556,
+            "paired_ratio_f32_f64": 1.7114289952494406,
+            "paired_ratio_f32_ducc": 1.5471830435717522
+          },
+          {
+            "pair": 5,
+            "rust_f32_ms": 4.76440175,
+            "rust_f64_ms": 3.109411875,
+            "ducc_f32_ms": 2.9704787857142856,
+            "paired_ratio_f32_f64": 1.5322517381200906,
+            "paired_ratio_f32_ducc": 1.603917110235933
+          },
+          {
+            "pair": 6,
+            "rust_f32_ms": 4.775091916666668,
+            "rust_f64_ms": 3.4547440000000003,
+            "ducc_f32_ms": 3.0019695000000004,
+            "paired_ratio_f32_f64": 1.3821840103540717,
+            "paired_ratio_f32_ducc": 1.590653041833592
+          },
+          {
+            "pair": 7,
+            "rust_f32_ms": 4.7296846666666665,
+            "rust_f64_ms": 3.038594928571429,
+            "ducc_f32_ms": 2.9820205,
+            "paired_ratio_f32_f64": 1.5565367473611529,
+            "paired_ratio_f32_ducc": 1.5860671201511414
+          },
+          {
+            "pair": 8,
+            "rust_f32_ms": 4.8771606,
+            "rust_f64_ms": 3.0379027,
+            "ducc_f32_ms": 2.9638221,
+            "paired_ratio_f32_f64": 1.6054367376545666,
+            "paired_ratio_f32_ducc": 1.6455645566581072
+          },
+          {
+            "pair": 9,
+            "rust_f32_ms": 4.480891833333333,
+            "rust_f64_ms": 2.8500144444444446,
+            "ducc_f32_ms": 2.67114285,
+            "paired_ratio_f32_f64": 1.5722347800966308,
+            "paired_ratio_f32_ducc": 1.6775186071884298
+          },
+          {
+            "pair": 10,
+            "rust_f32_ms": 4.396580642857143,
+            "rust_f64_ms": 2.87217505,
+            "ducc_f32_ms": 2.64735205,
+            "paired_ratio_f32_f64": 1.5307495421830724,
+            "paired_ratio_f32_ducc": 1.6607464968088181
+          },
+          {
+            "pair": 11,
+            "rust_f32_ms": 4.49763675,
+            "rust_f64_ms": 2.82720635,
+            "ducc_f32_ms": 2.6559783,
+            "paired_ratio_f32_f64": 1.5908413441417177,
+            "paired_ratio_f32_ducc": 1.6934011659658512
+          },
+          {
+            "pair": 12,
+            "rust_f32_ms": 4.508081416666666,
+            "rust_f64_ms": 2.6853275,
+            "ducc_f32_ms": 2.6857744500000003,
+            "paired_ratio_f32_f64": 1.6787827245156004,
+            "paired_ratio_f32_ducc": 1.6785033518606396
+          },
+          {
+            "pair": 13,
+            "rust_f32_ms": 4.540096666666667,
+            "rust_f64_ms": 2.94803585,
+            "ducc_f32_ms": 2.8509325499999996,
+            "paired_ratio_f32_f64": 1.5400411995215957,
+            "paired_ratio_f32_ducc": 1.5924952930460132
+          },
+          {
+            "pair": 14,
+            "rust_f32_ms": 4.5284380833333335,
+            "rust_f64_ms": 2.80178045,
+            "ducc_f32_ms": 2.6877939375000004,
+            "paired_ratio_f32_f64": 1.6162715687923848,
+            "paired_ratio_f32_ducc": 1.684815945207977
+          },
+          {
+            "pair": 15,
+            "rust_f32_ms": 4.54565975,
+            "rust_f64_ms": 2.8155472777777777,
+            "ducc_f32_ms": 2.720204375,
+            "paired_ratio_f32_f64": 1.614485320803331,
+            "paired_ratio_f32_ducc": 1.6710728766473661
+          }
+        ],
+        "timing_gate": "PASS",
+        "independent_high_degree_accuracy": "PARTIAL: established analytic/adjoint and selected T1023 DUCC-reference tests pass; this T720 timing fixture is not an independent accuracy matrix"
+      },
+      {
+        "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+        "process_pairs": 15,
+        "rust_f32_median_ms": 67.198687,
+        "matched_source_rust_f64_median_ms": 38.608489500000005,
+        "native_ducc_f32_median_ms": 41.894312,
+        "f32_over_f64_median_ratio": 1.746939163873788,
+        "f32_over_f64_bootstrap_95_ci": [
+          1.7310702481639435,
+          1.7709615253080788
+        ],
+        "f32_over_ducc_median_ratio": 1.6065565955463397,
+        "f32_over_ducc_bootstrap_95_ci": [
+          1.604048363812876,
+          1.6295090482957657
+        ],
+        "pair_samples": [
+          {
+            "pair": 1,
+            "rust_f32_ms": 66.83400750000001,
+            "rust_f64_ms": 38.608489500000005,
+            "ducc_f32_ms": 42.7950405,
+            "paired_ratio_f32_f64": 1.7310702481639435,
+            "paired_ratio_f32_ducc": 1.5617231978084005
+          },
+          {
+            "pair": 2,
+            "rust_f32_ms": 68.341964,
+            "rust_f64_ms": 38.5903155,
+            "ducc_f32_ms": 43.15996,
+            "paired_ratio_f32_f64": 1.7709615253080788,
+            "paired_ratio_f32_ducc": 1.5834575379587934
+          },
+          {
+            "pair": 3,
+            "rust_f32_ms": 66.8747135,
+            "rust_f64_ms": 38.662977,
+            "ducc_f32_ms": 42.090486999999996,
+            "paired_ratio_f32_f64": 1.7296835031611768,
+            "paired_ratio_f32_ducc": 1.5888320204040405
+          },
+          {
+            "pair": 4,
+            "rust_f32_ms": 66.37675949999999,
+            "rust_f64_ms": 38.7368455,
+            "ducc_f32_ms": 42.243414,
+            "paired_ratio_f32_f64": 1.7135303260561057,
+            "paired_ratio_f32_ducc": 1.5712924978080605
+          },
+          {
+            "pair": 5,
+            "rust_f32_ms": 68.237558,
+            "rust_f64_ms": 38.490097000000006,
+            "ducc_f32_ms": 41.8761455,
+            "paired_ratio_f32_f64": 1.7728601203577117,
+            "paired_ratio_f32_ducc": 1.6295090482957657
+          },
+          {
+            "pair": 6,
+            "rust_f32_ms": 67.198687,
+            "rust_f64_ms": 38.433506,
+            "ducc_f32_ms": 41.827774500000004,
+            "paired_ratio_f32_f64": 1.7484402021506964,
+            "paired_ratio_f32_ducc": 1.6065565955463397
+          },
+          {
+            "pair": 7,
+            "rust_f32_ms": 66.7002665,
+            "rust_f64_ms": 38.4105075,
+            "ducc_f32_ms": 41.5824535,
+            "paired_ratio_f32_f64": 1.736510940398275,
+            "paired_ratio_f32_ducc": 1.604048363812876
+          },
+          {
+            "pair": 8,
+            "rust_f32_ms": 67.205345,
+            "rust_f64_ms": 38.404852,
+            "ducc_f32_ms": 41.825590000000005,
+            "paired_ratio_f32_f64": 1.749918083267187,
+            "paired_ratio_f32_ducc": 1.6067996888985903
+          },
+          {
+            "pair": 9,
+            "rust_f32_ms": 66.6703855,
+            "rust_f64_ms": 38.038974499999995,
+            "ducc_f32_ms": 41.4393095,
+            "paired_ratio_f32_f64": 1.7526861955755406,
+            "paired_ratio_f32_ducc": 1.608868156936833
+          },
+          {
+            "pair": 10,
+            "rust_f32_ms": 66.93870949999999,
+            "rust_f64_ms": 38.6666135,
+            "ducc_f32_ms": 41.6759845,
+            "paired_ratio_f32_f64": 1.731175901918589,
+            "paired_ratio_f32_ducc": 1.6061698434502487
+          },
+          {
+            "pair": 11,
+            "rust_f32_ms": 67.088421,
+            "rust_f64_ms": 39.473819,
+            "ducc_f32_ms": 41.6426965,
+            "paired_ratio_f32_f64": 1.6995675285434124,
+            "paired_ratio_f32_ducc": 1.6110489146638234
+          },
+          {
+            "pair": 12,
+            "rust_f32_ms": 69.1351935,
+            "rust_f64_ms": 39.707989,
+            "ducc_f32_ms": 42.411861,
+            "paired_ratio_f32_f64": 1.7410902753095858,
+            "paired_ratio_f32_ducc": 1.630091013926505
+          },
+          {
+            "pair": 13,
+            "rust_f32_ms": 69.14517649999999,
+            "rust_f64_ms": 38.9289315,
+            "ducc_f32_ms": 41.894312,
+            "paired_ratio_f32_f64": 1.7761899398651617,
+            "paired_ratio_f32_ducc": 1.6504669297349959
+          },
+          {
+            "pair": 14,
+            "rust_f32_ms": 69.91510650000001,
+            "rust_f64_ms": 38.4945335,
+            "ducc_f32_ms": 42.3395155,
+            "paired_ratio_f32_f64": 1.816234673944029,
+            "paired_ratio_f32_ducc": 1.651296800975439
+          },
+          {
+            "pair": 15,
+            "rust_f32_ms": 68.0697815,
+            "rust_f64_ms": 38.96517,
+            "ducc_f32_ms": 42.379200999999995,
+            "paired_ratio_f32_f64": 1.746939163873788,
+            "paired_ratio_f32_ducc": 1.6062072878627423
+          }
+        ],
+        "timing_gate": "PASS",
+        "independent_high_degree_accuracy": "PARTIAL: established analytic/adjoint and selected T1023 DUCC-reference tests pass; this T720 timing fixture is not an independent accuracy matrix"
+      },
+      {
+        "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+        "process_pairs": 15,
+        "rust_f32_median_ms": 10.397914,
+        "matched_source_rust_f64_median_ms": 6.335526833333333,
+        "native_ducc_f32_median_ms": 6.037877999999999,
+        "f32_over_f64_median_ratio": 1.6498503898818744,
+        "f32_over_f64_bootstrap_95_ci": [
+          1.5874808132967504,
+          1.678325750292272
+        ],
+        "f32_over_ducc_median_ratio": 1.7183123772954674,
+        "f32_over_ducc_bootstrap_95_ci": [
+          1.7099361276667822,
+          1.7824894504547057
+        ],
+        "pair_samples": [
+          {
+            "pair": 1,
+            "rust_f32_ms": 10.5953275,
+            "rust_f64_ms": 6.161854,
+            "ducc_f32_ms": 5.9314315,
+            "paired_ratio_f32_f64": 1.719503172259518,
+            "paired_ratio_f32_ducc": 1.7863019239116222
+          },
+          {
+            "pair": 2,
+            "rust_f32_ms": 10.3749605,
+            "rust_f64_ms": 6.26721125,
+            "ducc_f32_ms": 6.037877999999999,
+            "paired_ratio_f32_f64": 1.6554349432532691,
+            "paired_ratio_f32_ducc": 1.7183123772954674
+          },
+          {
+            "pair": 3,
+            "rust_f32_ms": 10.213383,
+            "rust_f64_ms": 6.1904904,
+            "ducc_f32_ms": 5.9729617,
+            "paired_ratio_f32_f64": 1.6498503898818744,
+            "paired_ratio_f32_ducc": 1.7099361276667822
+          },
+          {
+            "pair": 4,
+            "rust_f32_ms": 10.795524333333333,
+            "rust_f64_ms": 6.286263999999999,
+            "ducc_f32_ms": 6.0173664,
+            "paired_ratio_f32_f64": 1.7173195928986333,
+            "paired_ratio_f32_ducc": 1.7940613244580441
+          },
+          {
+            "pair": 5,
+            "rust_f32_ms": 11.078746166666665,
+            "rust_f64_ms": 6.64276725,
+            "ducc_f32_ms": 6.0504808,
+            "paired_ratio_f32_f64": 1.6677908091189955,
+            "paired_ratio_f32_ducc": 1.831052197813216
+          },
+          {
+            "pair": 6,
+            "rust_f32_ms": 9.867437833333334,
+            "rust_f64_ms": 6.593737999999999,
+            "ducc_f32_ms": 6.0849826,
+            "paired_ratio_f32_f64": 1.4964861863382097,
+            "paired_ratio_f32_ducc": 1.6216049382513162
+          },
+          {
+            "pair": 7,
+            "rust_f32_ms": 10.578433833333332,
+            "rust_f64_ms": 6.3029682000000005,
+            "ducc_f32_ms": 6.0018141,
+            "paired_ratio_f32_f64": 1.678325750292272,
+            "paired_ratio_f32_ducc": 1.762539401767431
+          },
+          {
+            "pair": 8,
+            "rust_f32_ms": 10.397914,
+            "rust_f64_ms": 6.54994625,
+            "ducc_f32_ms": 6.321963,
+            "paired_ratio_f32_f64": 1.5874808132967504,
+            "paired_ratio_f32_ducc": 1.644728702145204
+          },
+          {
+            "pair": 9,
+            "rust_f32_ms": 10.367990833333334,
+            "rust_f64_ms": 6.944013375,
+            "ducc_f32_ms": 6.076344499999999,
+            "paired_ratio_f32_f64": 1.4930833616565915,
+            "paired_ratio_f32_ducc": 1.706287527531287
+          },
+          {
+            "pair": 10,
+            "rust_f32_ms": 10.264875,
+            "rust_f64_ms": 6.251775875,
+            "ducc_f32_ms": 5.9919995,
+            "paired_ratio_f32_f64": 1.6419134667075697,
+            "paired_ratio_f32_ducc": 1.7130967717871137
+          },
+          {
+            "pair": 11,
+            "rust_f32_ms": 10.499046166666666,
+            "rust_f64_ms": 6.4339390000000005,
+            "ducc_f32_ms": 6.0442366666666665,
+            "paired_ratio_f32_f64": 1.6318224600305762,
+            "paired_ratio_f32_ducc": 1.7370342601850468
+          },
+          {
+            "pair": 12,
+            "rust_f32_ms": 10.589077333333334,
+            "rust_f64_ms": 6.25584725,
+            "ducc_f32_ms": 6.0090897000000005,
+            "paired_ratio_f32_f64": 1.6926687801293954,
+            "paired_ratio_f32_ducc": 1.7621766127627172
+          },
+          {
+            "pair": 13,
+            "rust_f32_ms": 10.362435333333334,
+            "rust_f64_ms": 6.475490875,
+            "ducc_f32_ms": 6.0525144,
+            "paired_ratio_f32_f64": 1.6002547966424758,
+            "paired_ratio_f32_ducc": 1.7120876793508057
+          },
+          {
+            "pair": 14,
+            "rust_f32_ms": 10.743439666666667,
+            "rust_f64_ms": 6.335526833333333,
+            "ducc_f32_ms": 6.0272108,
+            "paired_ratio_f32_f64": 1.6957452709602343,
+            "paired_ratio_f32_ducc": 1.7824894504547057
+          },
+          {
+            "pair": 15,
+            "rust_f32_ms": 9.846824166666666,
+            "rust_f64_ms": 6.4059725,
+            "ducc_f32_ms": 6.0571322,
+            "paired_ratio_f32_f64": 1.53713181982387,
+            "paired_ratio_f32_ducc": 1.6256577934136334
+          }
+        ],
+        "timing_gate": "PASS",
+        "independent_high_degree_accuracy": "PARTIAL: established analytic/adjoint and selected T1023 DUCC-reference tests pass; this T720 timing fixture is not an independent accuracy matrix"
+      }
+    ],
+    "protected_f64_t1023": {
+      "candidate_binary_sha256": "1b621d791f8297b957c1a40bb3144cd59d477cdcfeeaf90f04e73f5379a48928",
+      "parent_binary_sha256": "8a73a8c0e4fc0c35f15c93e00dad81fdbac06ebb3cc7b033af28a33b128b5f0a",
+      "process_pairs_per_q": 15,
+      "outputs_bitwise_equal": true,
+      "q1": {
+        "candidate_median_ms": 92.562733,
+        "parent_median_ms": 91.26841300000001,
+        "median_paired_ratio": 1.0140072735590833,
+        "paired_ratio_bootstrap_95_ci": [
+          1.0120750627571429,
+          1.0287781814215955
+        ],
+        "candidate_faster_pairs": 1
+      },
+      "q8": {
+        "candidate_median_ms": 15.705162000000001,
+        "parent_median_ms": 15.547929,
+        "median_paired_ratio": 1.0012043147816456,
+        "paired_ratio_bootstrap_95_ci": [
+          0.9896210982559369,
+          1.0202000459164995
+        ],
+        "candidate_faster_pairs": 7
+      },
+      "interpretation": "q1 has a 1.4% median slowdown with CI above 1; q8 is inconclusive and essentially unchanged. Output is bitwise equal; this small timing change does not erase the established f64 DUCC win."
+    },
+    "tests": [
+      {
+        "command": "cargo test --release --features parallel --lib spin1",
+        "result": "51 passed; 5 ignored"
+      },
+      {
+        "command": "cargo test --release --features parallel --test f32 f32_spin_1_through_4_operations_and_adjoint_identities_hold_on_all_grids",
+        "result": "1 passed"
+      },
+      {
+        "command": "cargo test --release --features parallel --test f32 f32_t1023_scalar_and_spin1_standard_match_ducc_0410 -- --ignored",
+        "result": "1 passed"
+      }
+    ],
+    "decision": "Interim <=2x f64 gate passes in all four T720 cells; final <=1x DUCC and independent T720 high-degree accuracy remain open."
+  }
+}
