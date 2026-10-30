@@ -1,0 +1,588 @@
+{
+  "purpose": "paired same-session source-matched spin-1 analysis fusion screen",
+  "base_head": "9cb2788cd3f18c0f262e24dff6fac58236e5a18d",
+  "candidate_head": "be39b56137f45ac9bfceda4ccc497109c70fd34d",
+  "candidate_patch_sha256": "06f0fa7cb578b1e2ff0a1a784ff476e758894c8126b5207dd764b6525fa8b434",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": {
+    "q1": "0",
+    "q8": "0,1,2,3,4,5,6,7"
+  },
+  "binaries": {
+    "parent_f32": {
+      "role": "parent_f32",
+      "sha256": "92262258bc39f87ad37495d4d85ec2b6cb98a4ec039d428715c5de9ce0b4f2d8"
+    },
+    "candidate_f32": {
+      "role": "candidate_f32",
+      "sha256": "516f4f4710f7773510f6156c4d573d0eeae861f7dcdb1fa431bcf8e03c01c449"
+    },
+    "parent_f64": {
+      "role": "parent_f64",
+      "sha256": "e13816ff9a26746a3fdc797e0836a30a6430e63d3ae0f93a12b64fd2595e105e"
+    },
+    "candidate_f64": {
+      "role": "candidate_f64",
+      "sha256": "846c9482643fc00795148c038dfafe2921c33d7db1b7bdf5293e8670386675e7"
+    },
+    "ducc_f32": {
+      "role": "ducc_f32",
+      "sha256": "1e8412966f7bf306a1fea8141969208f661d5a705f7737e7a8f0dc1cc74cc36d"
+    }
+  },
+  "process_pairs": 3,
+  "target_ms": 25.0,
+  "cases": [
+    {
+      "case_id": "GL-T720-M720-s1-analysis-q1",
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent_f32",
+            "ducc_f32",
+            "parent_f64",
+            "candidate_f32",
+            "candidate_f64"
+          ],
+          "parent_f32_ms": 131.633556,
+          "candidate_f32_ms": 115.059268,
+          "parent_f64_ms": 37.621417,
+          "candidate_f64_ms": 37.5595555,
+          "ducc_f32_ms": 30.74306,
+          "parent_f32_over_parent_f64": 3.4988994699481943,
+          "candidate_f32_over_candidate_f64": 3.0633820466805046,
+          "candidate_f32_over_parent_f32": 0.8740876680411187,
+          "parent_f32_over_ducc": 4.281732397490686,
+          "candidate_f32_over_ducc": 3.7426094864987416,
+          "parent_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate_f64",
+            "candidate_f32",
+            "parent_f64",
+            "ducc_f32",
+            "parent_f32"
+          ],
+          "parent_f32_ms": 132.581254,
+          "candidate_f32_ms": 114.41644199999999,
+          "parent_f64_ms": 36.977239000000004,
+          "candidate_f64_ms": 36.886012,
+          "ducc_f32_ms": 29.836619499999998,
+          "parent_f32_over_parent_f64": 3.585482788479691,
+          "candidate_f32_over_candidate_f64": 3.101892446383198,
+          "candidate_f32_over_parent_f32": 0.8629910982739686,
+          "parent_f32_over_ducc": 4.443574916387562,
+          "candidate_f32_over_ducc": 3.8347655973559607,
+          "parent_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc_f32",
+            "parent_f32",
+            "candidate_f64",
+            "parent_f64",
+            "candidate_f32"
+          ],
+          "parent_f32_ms": 131.525794,
+          "candidate_f32_ms": 115.008433,
+          "parent_f64_ms": 38.3063765,
+          "candidate_f64_ms": 38.533953499999996,
+          "ducc_f32_ms": 30.110458,
+          "parent_f32_over_parent_f64": 3.4335221970159457,
+          "candidate_f32_over_candidate_f64": 2.9845998802069453,
+          "candidate_f32_over_parent_f32": 0.8744173253194731,
+          "parent_f32_over_ducc": 4.368110043361014,
+          "candidate_f32_over_ducc": 3.819551100816865,
+          "parent_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        }
+      ],
+      "median_parent_f32_ms": 131.633556,
+      "median_candidate_f32_ms": 115.008433,
+      "median_parent_f64_ms": 37.621417,
+      "median_candidate_f64_ms": 37.5595555,
+      "median_ducc_f32_ms": 30.110458,
+      "median_parent_f32_over_parent_f64": 3.4988994699481943,
+      "median_candidate_f32_over_candidate_f64": 3.0633820466805046,
+      "median_candidate_f32_over_parent_f32": 0.8740876680411187,
+      "median_parent_f32_over_ducc": 4.368110043361014,
+      "median_candidate_f32_over_ducc": 3.819551100816865,
+      "max_candidate_relative_l2_vs_ducc": 1.8469543264717624e-05,
+      "max_candidate_absolute_vs_ducc": 3.5134144127368927e-07
+    },
+    {
+      "case_id": "GL-T720-M720-s1-analysis-q8",
+      "fixture_sha256": {
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a",
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent_f32",
+            "ducc_f32",
+            "parent_f64",
+            "candidate_f32",
+            "candidate_f64"
+          ],
+          "parent_f32_ms": 18.8477655,
+          "candidate_f32_ms": 17.2449965,
+          "parent_f64_ms": 6.795001750000001,
+          "candidate_f64_ms": 6.0745366249999995,
+          "ducc_f32_ms": 4.508526666666667,
+          "parent_f32_over_parent_f64": 2.7737690428115047,
+          "candidate_f32_over_candidate_f64": 2.8388990905129328,
+          "candidate_f32_over_parent_f32": 0.914962386390047,
+          "parent_f32_over_ducc": 4.180471114732233,
+          "candidate_f32_over_ducc": 3.8249738273700644,
+          "parent_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate_f64",
+            "candidate_f32",
+            "parent_f64",
+            "ducc_f32",
+            "parent_f32"
+          ],
+          "parent_f32_ms": 19.850459,
+          "candidate_f32_ms": 15.766157749999998,
+          "parent_f64_ms": 6.5578816,
+          "candidate_f64_ms": 5.742924625,
+          "ducc_f32_ms": 4.5867474999999995,
+          "parent_f32_over_parent_f64": 3.0269620909288757,
+          "candidate_f32_over_candidate_f64": 2.7453185927892965,
+          "candidate_f32_over_parent_f32": 0.7942465083552979,
+          "parent_f32_over_ducc": 4.327785429653584,
+          "candidate_f32_over_ducc": 3.4373284664132915,
+          "parent_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc_f32",
+            "parent_f32",
+            "candidate_f64",
+            "parent_f64",
+            "candidate_f32"
+          ],
+          "parent_f32_ms": 21.309555500000002,
+          "candidate_f32_ms": 16.93182425,
+          "parent_f64_ms": 6.412870333333334,
+          "candidate_f64_ms": 6.450105166666667,
+          "ducc_f32_ms": 4.518816833333333,
+          "parent_f32_over_parent_f64": 3.3229356578809144,
+          "candidate_f32_over_candidate_f64": 2.625046229866381,
+          "candidate_f32_over_parent_f32": 0.7945648725521279,
+          "parent_f32_over_ducc": 4.7157378327018575,
+          "candidate_f32_over_ducc": 3.746959630029999,
+          "parent_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 1041124,
+            "relative_l2": 1.8469543264717624e-05,
+            "absolute_l2": 2.9508561252804634e-05,
+            "max_absolute": 3.5134144127368927e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        }
+      ],
+      "median_parent_f32_ms": 19.850459,
+      "median_candidate_f32_ms": 16.93182425,
+      "median_parent_f64_ms": 6.5578816,
+      "median_candidate_f64_ms": 6.0745366249999995,
+      "median_ducc_f32_ms": 4.518816833333333,
+      "median_parent_f32_over_parent_f64": 3.0269620909288757,
+      "median_candidate_f32_over_candidate_f64": 2.7453185927892965,
+      "median_candidate_f32_over_parent_f32": 0.7945648725521279,
+      "median_parent_f32_over_ducc": 4.327785429653584,
+      "median_candidate_f32_over_ducc": 3.746959630029999,
+      "max_candidate_relative_l2_vs_ducc": 1.8469543264717624e-05,
+      "max_candidate_absolute_vs_ducc": 3.5134144127368927e-07
+    },
+    {
+      "case_id": "GL-T720-M180-s1-analysis-q1",
+      "fixture_sha256": {
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent_f32",
+            "ducc_f32",
+            "parent_f64",
+            "candidate_f32",
+            "candidate_f64"
+          ],
+          "parent_f32_ms": 58.170065,
+          "candidate_f32_ms": 49.378730000000004,
+          "parent_f64_ms": 15.561952250000001,
+          "candidate_f64_ms": 15.224674499999999,
+          "ducc_f32_ms": 12.363973999999999,
+          "parent_f32_over_parent_f64": 3.737967066439238,
+          "candidate_f32_over_candidate_f64": 3.243335678539466,
+          "candidate_f32_over_parent_f32": 0.848868399923569,
+          "parent_f32_over_ducc": 4.704803245299611,
+          "candidate_f32_over_ducc": 3.993758802792695,
+          "parent_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate_f64",
+            "candidate_f32",
+            "parent_f64",
+            "ducc_f32",
+            "parent_f32"
+          ],
+          "parent_f32_ms": 56.595772,
+          "candidate_f32_ms": 49.928947,
+          "parent_f64_ms": 15.136994999999999,
+          "candidate_f64_ms": 15.798503499999999,
+          "ducc_f32_ms": 12.344955500000001,
+          "parent_f32_over_parent_f64": 3.7389040559239137,
+          "candidate_f32_over_candidate_f64": 3.160359270737257,
+          "candidate_f32_over_parent_f32": 0.8822027730269322,
+          "parent_f32_over_ducc": 4.584526205866031,
+          "candidate_f32_over_ducc": 4.044481731829653,
+          "parent_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc_f32",
+            "parent_f32",
+            "candidate_f64",
+            "parent_f64",
+            "candidate_f32"
+          ],
+          "parent_f32_ms": 57.131607,
+          "candidate_f32_ms": 50.702197999999996,
+          "parent_f64_ms": 15.668554750000002,
+          "candidate_f64_ms": 15.17604575,
+          "ducc_f32_ms": 12.22582225,
+          "parent_f32_over_parent_f64": 3.646258886768098,
+          "candidate_f32_over_candidate_f64": 3.3409360274233486,
+          "candidate_f32_over_parent_f32": 0.8874631865335066,
+          "parent_f32_over_ducc": 4.6730277793790105,
+          "candidate_f32_over_ducc": 4.147140123847294,
+          "parent_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        }
+      ],
+      "median_parent_f32_ms": 57.131607,
+      "median_candidate_f32_ms": 49.928947,
+      "median_parent_f64_ms": 15.561952250000001,
+      "median_candidate_f64_ms": 15.224674499999999,
+      "median_ducc_f32_ms": 12.344955500000001,
+      "median_parent_f32_over_parent_f64": 3.737967066439238,
+      "median_candidate_f32_over_candidate_f64": 3.243335678539466,
+      "median_candidate_f32_over_parent_f32": 0.8822027730269322,
+      "median_parent_f32_over_ducc": 4.6730277793790105,
+      "median_candidate_f32_over_ducc": 4.044481731829653,
+      "max_candidate_relative_l2_vs_ducc": 2.1713749184955264e-05,
+      "max_candidate_absolute_vs_ducc": 9.844079613685608e-07
+    },
+    {
+      "case_id": "GL-T720-M180-s1-analysis-q8",
+      "fixture_sha256": {
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179",
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent_f32",
+            "ducc_f32",
+            "parent_f64",
+            "candidate_f32",
+            "candidate_f64"
+          ],
+          "parent_f32_ms": 8.282919666666666,
+          "candidate_f32_ms": 7.717678625,
+          "parent_f64_ms": 2.515023318181818,
+          "candidate_f64_ms": 2.5411542272727274,
+          "ducc_f32_ms": 1.9647671071428572,
+          "parent_f32_over_parent_f64": 3.2933768871195297,
+          "candidate_f32_over_candidate_f64": 3.037076042914142,
+          "candidate_f32_over_parent_f32": 0.9317582369002814,
+          "parent_f32_over_ducc": 4.215725943575876,
+          "candidate_f32_over_ducc": 3.928037372441034,
+          "parent_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate_f64",
+            "candidate_f32",
+            "parent_f64",
+            "ducc_f32",
+            "parent_f32"
+          ],
+          "parent_f32_ms": 9.536714666666667,
+          "candidate_f32_ms": 8.464407999999999,
+          "parent_f64_ms": 2.8491326,
+          "candidate_f64_ms": 2.79785245,
+          "ducc_f32_ms": 2.108203125,
+          "parent_f32_over_parent_f64": 3.3472344062423303,
+          "candidate_f32_over_candidate_f64": 3.025323226033595,
+          "candidate_f32_over_parent_f32": 0.8875601604801429,
+          "parent_f32_over_ducc": 4.52362229880798,
+          "candidate_f32_over_ducc": 4.014986933481563,
+          "parent_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc_f32",
+            "parent_f32",
+            "candidate_f64",
+            "parent_f64",
+            "candidate_f32"
+          ],
+          "parent_f32_ms": 8.821378000000001,
+          "candidate_f32_ms": 7.812250875,
+          "parent_f64_ms": 2.7753095555555554,
+          "candidate_f64_ms": 2.9628174,
+          "ducc_f32_ms": 2.0783644333333333,
+          "parent_f32_over_parent_f64": 3.1785203860742506,
+          "candidate_f32_over_candidate_f64": 2.636764207946126,
+          "candidate_f32_over_parent_f32": 0.8856043664606594,
+          "parent_f32_over_ducc": 4.244384602873545,
+          "candidate_f32_over_ducc": 3.7588455372432037,
+          "parent_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_vs_ducc": {
+            "output_values": 456844,
+            "relative_l2": 2.1713749184955264e-05,
+            "absolute_l2": 4.269883426599224e-05,
+            "max_absolute": 9.844079613685608e-07,
+            "reference_rms": 0.0029093584935242747,
+            "finite": true
+          },
+          "candidate_f32_simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_f32_lanes": 8
+        }
+      ],
+      "median_parent_f32_ms": 8.821378000000001,
+      "median_candidate_f32_ms": 7.812250875,
+      "median_parent_f64_ms": 2.7753095555555554,
+      "median_candidate_f64_ms": 2.79785245,
+      "median_ducc_f32_ms": 2.0783644333333333,
+      "median_parent_f32_over_parent_f64": 3.2933768871195297,
+      "median_candidate_f32_over_candidate_f64": 3.025323226033595,
+      "median_candidate_f32_over_parent_f32": 0.8875601604801429,
+      "median_parent_f32_over_ducc": 4.244384602873545,
+      "median_candidate_f32_over_ducc": 3.928037372441034,
+      "max_candidate_relative_l2_vs_ducc": 2.1713749184955264e-05,
+      "max_candidate_absolute_vs_ducc": 9.844079613685608e-07
+    }
+  ]
+}

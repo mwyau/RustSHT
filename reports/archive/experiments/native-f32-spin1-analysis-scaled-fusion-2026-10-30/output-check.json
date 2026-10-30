@@ -1,0 +1,35 @@
+{
+  "source_parent": "9cb2788cd3f18c0f262e24dff6fac58236e5a18d",
+  "candidate_base": "be39b56137f45ac9bfceda4ccc497109c70fd34d",
+  "candidate_patch_sha256": "06f0fa7cb578b1e2ff0a1a784ff476e758894c8126b5207dd764b6525fa8b434",
+  "binary_checks": [
+    {
+      "case": "GL-T720-M720-q1",
+      "channel": 0,
+      "parent_sha256": "ab76823d8614252758404a4acda614a75cceb8136cae5ab9c05a8b526e854ee5",
+      "candidate_sha256": "ab76823d8614252758404a4acda614a75cceb8136cae5ab9c05a8b526e854ee5",
+      "byte_identical": true
+    },
+    {
+      "case": "GL-T720-M720-q1",
+      "channel": 1,
+      "parent_sha256": "0b32f05dad0c6d10abcc3b6c5b78171ed03587bc215584e8935e948137af3cfc",
+      "candidate_sha256": "0b32f05dad0c6d10abcc3b6c5b78171ed03587bc215584e8935e948137af3cfc",
+      "byte_identical": true
+    },
+    {
+      "case": "GL-T720-M180-q8",
+      "channel": 0,
+      "parent_sha256": "0d55bd6dbe1e98ca1310715b6102478f40f1a7758efce03a004e9b7b3183a71b",
+      "candidate_sha256": "0d55bd6dbe1e98ca1310715b6102478f40f1a7758efce03a004e9b7b3183a71b",
+      "byte_identical": true
+    },
+    {
+      "case": "GL-T720-M180-q8",
+      "channel": 1,
+      "parent_sha256": "730062fc3cb21773302991320731f1afd6ea3e3e70878400e815b941e9596ffe",
+      "candidate_sha256": "730062fc3cb21773302991320731f1afd6ea3e3e70878400e815b941e9596ffe",
+      "byte_identical": true
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+RustSHT f32 scaled-channel accumulator, runtime V3/AVX2, candidate binary 516f4f4710f7773510f6156c4d573d0eeae861f7dcdb1fa431bcf8e03c01c449
+
+Function: <pulp::x86::v3::V3>::vectorize::imp<...NativeScaledFusedAnalysisPairChannels<f32>>
+Symbol address: 0x27fbe0; size: 0x2a51 bytes.
+The steady vector loop keeps eight accumulators in ymm7..ymm0 and uses 8-lane packed-f32 FMA:
+
+  280c0e: vfmadd231ps (%rdx,%rcx,1),%ymm10,%ymm7
+  280c14: vfmadd231ps (%rdi,%rcx,1),%ymm10,%ymm6
+  280c1a: vfmadd231ps (%r9,%rcx,1),%ymm11,%ymm5
+  280c20: vfmadd231ps (%r11,%rcx,1),%ymm11,%ymm4
+  280c39: vfmadd231ps (%rsi,%rcx,1),%ymm8,%ymm3
+  280c3f: vfmadd231ps (%r8,%rcx,1),%ymm8,%ymm2
+  280c45: vfmadd231ps (%r10,%rcx,1),%ymm9,%ymm1
+  280c4b: vfmadd231ps (%r15,%rcx,1),%ymm9,%ymm0
+
+The V3 function had zero YMM stack references in the inspected disassembly. The count covers this symbol, including cold scalar/tail branches; do not infer that all runtime cost is in the displayed loop. Full disassembly was intentionally not archived.
