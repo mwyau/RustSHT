@@ -1,0 +1,5 @@
+Candidate validation at c921d355 + isolated patch:
+- cargo fmt --all -- --check: PASS
+- cargo test --release --features parallel --lib scalar_analysis: 18 passed, 8 ignored
+- cargo test --release --features parallel --test f32 scalar_analysis: 1 passed (analytic modes, adjoint, workspace reset)
+- f32_analysis_pair_input_preflight_matches_scalar_reference_and_tails: PASS (normal blocks, SIMD tails, subnormal cosine, zero product, unsafe magnitude)

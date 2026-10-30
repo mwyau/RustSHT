@@ -1,0 +1,331 @@
+{
+  "purpose": "fresh current-source matched f64 baseline for native-f32 scalar-analysis work",
+  "source_head": "c921d3550c6a6610f39c54b0798c03d9ad4b47eb",
+  "source_tree": "47282c45824d267c379a0cff0870dd84bd953fa3",
+  "binary_sha256": "700a733871e44ce77bd6382686e81206f1bc986fcc0a67f373fbbbbc191c678c",
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "process_samples": 3,
+  "target_ms": 30.0,
+  "input": "deterministic native-f32 fixtures widened component-wise for f64",
+  "phi0": 0.23,
+  "cases": [
+    {
+      "case_id": "GL-T720-M720-even-s0-analysis-q1",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "threads": 1,
+      "samples": [
+        {
+          "median_ms": 19.756401,
+          "batch_ms": [
+            20.5721825,
+            19.7842755,
+            19.5959535,
+            20.7588865,
+            19.7285265,
+            20.6642795,
+            19.576758,
+            19.5196915,
+            20.5760045,
+            19.5330365
+          ],
+          "first_ms": 28.873601,
+          "warmup_ms": 19.634791,
+          "repetitions_per_batch": 2,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 3.21549390302971
+        },
+        {
+          "median_ms": 19.646726,
+          "batch_ms": [
+            19.547533,
+            19.4283605,
+            19.6108665,
+            19.519471,
+            19.493698,
+            19.6825855,
+            20.6330615,
+            23.2458525,
+            20.3702655,
+            20.0373335
+          ],
+          "first_ms": 26.211428,
+          "warmup_ms": 19.620295,
+          "repetitions_per_batch": 2,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 3.190100491978228
+        },
+        {
+          "median_ms": 19.5860025,
+          "batch_ms": [
+            19.654954,
+            19.592968,
+            19.488693,
+            19.5421935,
+            19.546902,
+            19.608703,
+            19.579037,
+            19.646253,
+            19.6450805,
+            19.5641395
+          ],
+          "first_ms": 26.289523,
+          "warmup_ms": 19.643007,
+          "repetitions_per_batch": 2,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 3.181892618071288
+        }
+      ],
+      "median_f64_ms": 19.646726
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-analysis-q8",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "threads": 8,
+      "samples": [
+        {
+          "median_ms": 3.2807375714999996,
+          "batch_ms": [
+            3.473506286,
+            3.497569857,
+            3.447172857,
+            3.556113571,
+            3.318084429,
+            3.031380286,
+            3.096691,
+            3.243390714,
+            3.053725,
+            3.033324
+          ],
+          "first_ms": 5.132158,
+          "warmup_ms": 4.582501,
+          "repetitions_per_batch": 7,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 2.9965563067235053
+        },
+        {
+          "median_ms": 3.1341175999999997,
+          "batch_ms": [
+            3.0526298,
+            3.0421052,
+            3.2558916,
+            3.3782131,
+            3.257697,
+            3.1660207,
+            3.1524213,
+            3.0823684,
+            3.0435519,
+            3.1158139
+          ],
+          "first_ms": 4.108555,
+          "warmup_ms": 3.317959,
+          "repetitions_per_batch": 10,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 3.065302637871355
+        },
+        {
+          "median_ms": 3.1112027500000003,
+          "batch_ms": [
+            3.1064413,
+            3.07677,
+            3.0509307,
+            3.0733787,
+            3.1159642,
+            3.1815337,
+            3.0592452,
+            3.1300475,
+            3.1291137,
+            3.3268362
+          ],
+          "first_ms": 4.198694,
+          "warmup_ms": 3.242277,
+          "repetitions_per_batch": 10,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 3.0579692479223013
+        }
+      ],
+      "median_f64_ms": 3.1341175999999997
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-analysis-q1",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "threads": 1,
+      "samples": [
+        {
+          "median_ms": 8.375729875,
+          "batch_ms": [
+            8.347179,
+            8.3934205,
+            8.3560005,
+            8.34466175,
+            8.34730175,
+            8.35803925,
+            8.40677275,
+            8.51452675,
+            8.62655825,
+            8.41759325
+          ],
+          "first_ms": 12.47776,
+          "warmup_ms": 8.31316,
+          "repetitions_per_batch": 4,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 1.5658509419299662
+        },
+        {
+          "median_ms": 8.336951125,
+          "batch_ms": [
+            8.3722485,
+            8.305609,
+            8.33605825,
+            8.37056775,
+            8.28382575,
+            8.286884,
+            8.31036025,
+            8.337844,
+            8.3380895,
+            8.3862045
+          ],
+          "first_ms": 12.500643,
+          "warmup_ms": 8.389153,
+          "repetitions_per_batch": 4,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 1.5763744423165917
+        },
+        {
+          "median_ms": 8.324290000000001,
+          "batch_ms": [
+            8.33287975,
+            8.31491625,
+            8.317476,
+            8.32559625,
+            8.34439875,
+            8.322841,
+            8.32614725,
+            8.32298375,
+            8.32945825,
+            8.31766875
+          ],
+          "first_ms": 12.43497,
+          "warmup_ms": 8.422845,
+          "repetitions_per_batch": 4,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 1.5682563758455217
+        }
+      ],
+      "median_f64_ms": 8.336951125
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-analysis-q8",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "threads": 8,
+      "samples": [
+        {
+          "median_ms": 1.436976341,
+          "batch_ms": [
+            1.419326545,
+            1.437289182,
+            1.428190409,
+            1.467628591,
+            1.4366635,
+            1.430160909,
+            1.430899545,
+            1.459203818,
+            1.448022,
+            1.453770864
+          ],
+          "first_ms": 2.578857,
+          "warmup_ms": 3.544992,
+          "repetitions_per_batch": 22,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 1.5516689480282366
+        },
+        {
+          "median_ms": 1.4274216665,
+          "batch_ms": [
+            1.436338889,
+            1.427556944,
+            1.4307735,
+            1.418971444,
+            1.434453167,
+            1.427286389,
+            1.426463778,
+            1.436277667,
+            1.326525944,
+            1.321263889
+          ],
+          "first_ms": 2.403951,
+          "warmup_ms": 1.693554,
+          "repetitions_per_batch": 18,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 1.4771178429946303
+        },
+        {
+          "median_ms": 1.335583929,
+          "batch_ms": [
+            1.413661952,
+            1.396044762,
+            1.334307048,
+            1.341931238,
+            1.358928238,
+            1.332990762,
+            1.302270524,
+            1.323859857,
+            1.33686081,
+            1.321026952
+          ],
+          "first_ms": 2.055259,
+          "warmup_ms": 1.458094,
+          "repetitions_per_batch": 21,
+          "output_checksum": null,
+          "repeat_consistent": null,
+          "reset_consistent": true,
+          "process_elapsed_s": 1.5063378908671439
+        }
+      ],
+      "median_f64_ms": 1.4274216665
+    }
+  ]
+}
