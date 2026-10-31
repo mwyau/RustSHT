@@ -79,6 +79,11 @@ pub(crate) struct F32ScaledAnalysisState {
     common_exponent: i64,
     shift: i64,
     factors: [f32; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+    hard_factors: [f32; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+    hard_scale_exponents: [i64; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+    hard_scalar_lanes: [bool; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+    hard_vector_indices: [u8; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+    hard_vector_count: usize,
     lane_count: usize,
     valid: bool,
 }
@@ -112,6 +117,11 @@ impl FusedAnalysisPrecision for f32 {
             common_exponent: 0,
             shift: 0,
             factors: [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+            hard_factors: [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+            hard_scale_exponents: [0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+            hard_scalar_lanes: [false; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+            hard_vector_indices: [0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+            hard_vector_count: 0,
             lane_count: 0,
             valid: false,
         }
@@ -224,6 +234,11 @@ impl FusedAnalysisPrecision for f32 {
             common_exponent,
             shift,
             factors,
+            hard_factors,
+            hard_scale_exponents,
+            hard_scalar_lanes,
+            hard_vector_indices,
+            hard_vector_count,
             lane_count,
             valid,
         } = state;
@@ -246,6 +261,63 @@ impl FusedAnalysisPrecision for f32 {
                     numeric::scale_binary_f32(1.0, factor_exponent)
                 };
             }
+            hard_factors.fill(0.0);
+            hard_scalar_lanes.fill(false);
+            *hard_vector_count = 0;
+            let vector_width = S::F32_LANES;
+            let vector_count = basis.len() / vector_width;
+            for (vector_index, hard_scale_exponent) in hard_scale_exponents
+                .iter_mut()
+                .take(vector_count)
+                .enumerate()
+            {
+                let lane_start = vector_index * vector_width;
+                let lane_end = lane_start + vector_width;
+                let mut hard_common = None::<i64>;
+                for lane in lane_start..lane_end {
+                    if factors[lane] == 0.0 {
+                        hard_common = Some(
+                            hard_common
+                                .map_or(exponents[lane], |maximum| maximum.max(exponents[lane])),
+                        );
+                    }
+                }
+                let Some(hard_common) = hard_common else {
+                    continue;
+                };
+                *hard_scale_exponent = hard_common.saturating_sub(*shift);
+                let mut grouped_lanes = false;
+                for lane in lane_start..lane_end {
+                    if factors[lane] != 0.0 {
+                        continue;
+                    }
+                    let factor_exponent = exponents[lane]
+                        .saturating_sub(hard_common)
+                        .saturating_add(*shift);
+                    let cosine_is_safe = OPPOSITE_PREWEIGHTED
+                        || cos_theta[lane] == 0.0
+                        || cos_theta[lane].abs() >= f32::from_bits(87_u32 << 23);
+                    let factor_floor = if OPPOSITE_PREWEIGHTED || cos_theta[lane] == 0.0 {
+                        -45
+                    } else {
+                        -5
+                    };
+                    if factor_exponent < factor_floor || !cosine_is_safe {
+                        hard_scalar_lanes[lane] = true;
+                    } else {
+                        hard_factors[lane] = numeric::scale_binary_f32(1.0, factor_exponent);
+                        grouped_lanes = true;
+                    }
+                }
+                if grouped_lanes {
+                    debug_assert!(vector_index <= u8::MAX as usize);
+                    hard_vector_indices[*hard_vector_count] = vector_index as u8;
+                    *hard_vector_count += 1;
+                }
+            }
+            for lane in (vector_count * vector_width)..basis.len() {
+                hard_scalar_lanes[lane] = factors[lane] == 0.0;
+            }
             *lane_count = basis.len();
             *valid = true;
         }
@@ -253,7 +325,7 @@ impl FusedAnalysisPrecision for f32 {
         let mut hard_same = Complex32::new(0.0, 0.0);
         let mut hard_opposite = Complex32::new(0.0, 0.0);
         for lane in 0..basis.len() {
-            if factors[lane] == 0.0 {
+            if hard_scalar_lanes[lane] {
                 let same = scalar::multiply_complex_scaled_f32(
                     Complex32::new(same_real[lane], same_imag[lane]),
                     basis[lane],
@@ -283,12 +355,14 @@ impl FusedAnalysisPrecision for f32 {
         let (basis_vectors, basis_tail) = S::as_simd_f32s(basis);
         let (cosine_vectors, cosine_tail) = S::as_simd_f32s(cos_theta);
         let (factor_vectors, factor_tail) = S::as_simd_f32s(&factors[..basis.len()]);
+        let (hard_factor_vectors, _) = S::as_simd_f32s(&hard_factors[..basis.len()]);
         debug_assert_eq!(same_real_vectors.len(), basis_vectors.len());
         debug_assert_eq!(same_imag_vectors.len(), basis_vectors.len());
         debug_assert_eq!(opposite_real_vectors.len(), basis_vectors.len());
         debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
         debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
         debug_assert_eq!(factor_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(hard_factor_vectors.len(), basis_vectors.len());
         let zero = simd.splat_f32s(0.0);
         let mut same_re = zero;
         let mut same_im = zero;
@@ -333,6 +407,44 @@ impl FusedAnalysisPrecision for f32 {
                 opposite_real_tail[lane].mul_add(aligned_opposite_basis, opposite_re_sum);
             opposite_im_sum =
                 opposite_imag_tail[lane].mul_add(aligned_opposite_basis, opposite_im_sum);
+        }
+        for &vector_index in hard_vector_indices.iter().take(*hard_vector_count) {
+            let vector_index = vector_index as usize;
+            let aligned_basis = simd.mul_f32s(
+                basis_vectors[vector_index],
+                hard_factor_vectors[vector_index],
+            );
+            let hard_same_re =
+                simd.mul_add_f32s(same_real_vectors[vector_index], aligned_basis, zero);
+            let hard_same_im =
+                simd.mul_add_f32s(same_imag_vectors[vector_index], aligned_basis, zero);
+            let aligned_opposite_basis = if OPPOSITE_PREWEIGHTED {
+                aligned_basis
+            } else {
+                simd.mul_f32s(
+                    simd.mul_f32s(basis_vectors[vector_index], cosine_vectors[vector_index]),
+                    hard_factor_vectors[vector_index],
+                )
+            };
+            let hard_opposite_re = simd.mul_add_f32s(
+                opposite_real_vectors[vector_index],
+                aligned_opposite_basis,
+                zero,
+            );
+            let hard_opposite_im = simd.mul_add_f32s(
+                opposite_imag_vectors[vector_index],
+                aligned_opposite_basis,
+                zero,
+            );
+            let scale_exponent = hard_scale_exponents[vector_index];
+            hard_same.re +=
+                numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_same_re), scale_exponent);
+            hard_same.im +=
+                numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_same_im), scale_exponent);
+            hard_opposite.re +=
+                numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_opposite_re), scale_exponent);
+            hard_opposite.im +=
+                numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_opposite_im), scale_exponent);
         }
         (
             Complex32::new(
