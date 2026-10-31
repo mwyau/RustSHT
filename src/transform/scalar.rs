@@ -3,99 +3,6 @@
 
 use super::*;
 
-const F32_INTERNAL_SCALAR_CONVERSION_CHUNK: usize = 8192;
-const F32_INTERNAL_SCALAR_INPUT_MAX: f64 = 1.267_650_600_228_229_4e30;
-
-#[inline]
-fn f32_internal_scalar_input_component_is_safe(value: f64) -> bool {
-    value.is_finite()
-        && (value == 0.0
-            || (value.abs() >= f64::from(f32::MIN_POSITIVE)
-                && value.abs() <= F32_INTERNAL_SCALAR_INPUT_MAX))
-}
-
-#[inline]
-fn f32_internal_scalar_output_component_is_safe(value: f64) -> bool {
-    if value == 0.0 {
-        return true;
-    }
-    let narrowed = value as f32;
-    narrowed.is_finite() && narrowed.abs() >= f32::MIN_POSITIVE
-}
-
-fn promote_f32_internal_scalar_coefficients<T: ShtScalar>(
-    source: &[Complex<T>],
-    target: &mut [Complex<f64>],
-    parallel: bool,
-) -> bool {
-    debug_assert_eq!(source.len(), target.len());
-    #[cfg(feature = "parallel")]
-    if parallel {
-        let safe = AtomicBool::new(true);
-        target
-            .par_chunks_mut(F32_INTERNAL_SCALAR_CONVERSION_CHUNK)
-            .zip(source.par_chunks(F32_INTERNAL_SCALAR_CONVERSION_CHUNK))
-            .for_each(|(target_chunk, source_chunk)| {
-                for (target, source) in target_chunk.iter_mut().zip(source_chunk) {
-                    let re = source.re.to_f64().unwrap_or(f64::NAN);
-                    let im = source.im.to_f64().unwrap_or(f64::NAN);
-                    *target = Complex::new(re, im);
-                    if !f32_internal_scalar_input_component_is_safe(re)
-                        || !f32_internal_scalar_input_component_is_safe(im)
-                    {
-                        safe.store(false, Ordering::Relaxed);
-                    }
-                }
-            });
-        return safe.load(Ordering::Relaxed);
-    }
-    #[cfg(not(feature = "parallel"))]
-    let _ = parallel;
-
-    let mut safe = true;
-    for (target, source) in target.iter_mut().zip(source) {
-        let re = source.re.to_f64().unwrap_or(f64::NAN);
-        let im = source.im.to_f64().unwrap_or(f64::NAN);
-        *target = Complex::new(re, im);
-        safe &= f32_internal_scalar_input_component_is_safe(re)
-            && f32_internal_scalar_input_component_is_safe(im);
-    }
-    safe
-}
-
-fn narrow_f32_internal_scalar_map<T: ShtScalar>(
-    source: &[f64],
-    target: &mut [T],
-    parallel: bool,
-) -> bool {
-    debug_assert_eq!(source.len(), target.len());
-    #[cfg(feature = "parallel")]
-    if parallel {
-        let safe = AtomicBool::new(true);
-        target
-            .par_chunks_mut(F32_INTERNAL_SCALAR_CONVERSION_CHUNK)
-            .zip(source.par_chunks(F32_INTERNAL_SCALAR_CONVERSION_CHUNK))
-            .for_each(|(target_chunk, source_chunk)| {
-                for (target, &source) in target_chunk.iter_mut().zip(source_chunk) {
-                    *target = T::from_f64(source).expect("f64 value converts to f32");
-                    if !f32_internal_scalar_output_component_is_safe(source) {
-                        safe.store(false, Ordering::Relaxed);
-                    }
-                }
-            });
-        return safe.load(Ordering::Relaxed);
-    }
-    #[cfg(not(feature = "parallel"))]
-    let _ = parallel;
-
-    let mut safe = true;
-    for (target, &source) in target.iter_mut().zip(source) {
-        *target = T::from_f64(source).expect("f64 value converts to f32");
-        safe &= f32_internal_scalar_output_component_is_safe(source);
-    }
-    safe
-}
-
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
     #[inline]
@@ -327,64 +234,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
     }
 
-    /// Attempts the bounded reusable f64 backend for measured native-f32 GL
-    /// T720 scalar-synthesis plans. Returns false when the values need native
-    /// f32 range behavior or the narrowed output leaves the normal finite range.
-    pub(crate) fn try_f32_internal_scalar_synthesis(
-        &self,
-        alm: &[Complex<T>],
-        map: &mut [T],
-        workspace: &mut ShtWorkspace<T>,
-    ) -> bool {
-        if !T::F32_INTERNAL_SCALAR_SYNTHESIS {
-            return false;
-        }
-        let Some(plan) = self.f32_internal_scalar_synthesis_plan.as_deref() else {
-            return false;
-        };
-        let Some(adapter) = workspace.f32_internal_scalar_synthesis.as_deref_mut() else {
-            return false;
-        };
-        if adapter.coefficients.len() != self.harmonics.nalm()
-            || adapter.map.len() != self.sample_count
-            || plan.check_workspace(&adapter.workspace).is_err()
-        {
-            return false;
-        }
-        #[cfg(feature = "parallel")]
-        let parallel_conversions =
-            workspace.execution_capacity > 1 && rayon::current_num_threads() > 1;
-        #[cfg(not(feature = "parallel"))]
-        let parallel_conversions = false;
-
-        if !promote_f32_internal_scalar_coefficients(
-            alm,
-            &mut adapter.coefficients,
-            parallel_conversions,
-        ) {
-            return false;
-        }
-        if plan
-            .synthesis_into(
-                &adapter.coefficients,
-                &mut adapter.map,
-                &mut adapter.workspace,
-            )
-            .is_err()
-        {
-            return false;
-        }
-        narrow_f32_internal_scalar_map(&adapter.map, map, parallel_conversions)
-    }
-
     /// Synthesizes one real scalar field into north-to-south row-major samples.
     ///
     /// For even longitude counts, the Nyquist order is allowed and its
     /// positive and negative modes are combined into the real Nyquist bin.
-    /// For the measured f32 GL T720 scalar cells, regular-range inputs may use
-    /// the shared f64 transform internally. Nonfinite, subnormal, extreme, or
-    /// out-of-range values retain the native-f32 path. The internal route can
-    /// change final-bit rounding while keeping the public input and output f32.
     ///
     /// # Errors
     ///
@@ -401,10 +254,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         self.check_synthesis_order()?;
         check_len("map output", self.sample_count, map.len())?;
         self.check_workspace(workspace)?;
-
-        if self.try_f32_internal_scalar_synthesis(alm, map, workspace) {
-            return Ok(());
-        }
 
         #[cfg(all(test, feature = "parallel"))]
         let phase_probe = workspace.transform_phase_probe();

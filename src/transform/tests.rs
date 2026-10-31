@@ -106,7 +106,6 @@ fn f32_t720_scalar_synthesis_uses_native_path_and_resets() {
         let harmonics = HarmonicSpec::scalar(720, mmax).unwrap();
         let plan32 = ShtPlan::<f32>::new(grid.clone(), harmonics.clone()).unwrap();
         let plan64 = ShtPlan::<f64>::new(grid, harmonics.clone()).unwrap();
-        assert!(plan32.f32_internal_scalar_synthesis_plan.is_none());
 
         let mut workspace32 = plan32.workspace().unwrap();
         plan32.prepare_workspace(&mut workspace32, 1).unwrap();
@@ -156,7 +155,6 @@ fn f32_t720_scalar_synthesis_handles_range_edges_on_native_path() {
     let grid = GridSpec::new(GridKind::GaussLegendre, 721, 1458, 0.23).unwrap();
     let harmonics = HarmonicSpec::scalar(720, 720).unwrap();
     let plan = ShtPlan::<f32>::new(grid, harmonics.clone()).unwrap();
-    assert!(plan.f32_internal_scalar_synthesis_plan.is_none());
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_workspace(&mut workspace, 1).unwrap();
     let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
@@ -197,7 +195,6 @@ fn f32_native_scalar_synthesis_monopole_is_correct_across_bandlimits() {
             harmonics.clone(),
         )
         .unwrap();
-        assert!(plan.f32_internal_scalar_synthesis_plan.is_none());
         let mut workspace = plan.workspace().unwrap();
         plan.prepare_workspace(&mut workspace, 1).unwrap();
         let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];

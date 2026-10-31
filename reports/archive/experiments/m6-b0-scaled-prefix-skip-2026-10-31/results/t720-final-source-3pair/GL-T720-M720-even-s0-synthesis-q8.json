@@ -1,0 +1,206 @@
+{
+  "case": "GL-T720-M720-even-s0-synthesis-q8",
+  "medians": {
+    "candidate32_over_parent32": 0.7277782070221129,
+    "candidate32_over_candidate64": 1.157070306889365,
+    "candidate32_over_ducc32": 0.9453401158013451,
+    "candidate64_over_ducc64": 0.8106687326036403
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "ms": {
+        "parent32": 3.9895692499999997,
+        "parent64": 2.3654262729999997,
+        "candidate32": 2.903521555555556,
+        "candidate64": 2.38970145,
+        "ducc32": 2.9430468333333333,
+        "ducc64": 2.9478150000000003
+      },
+      "parent32_over_parent64": 1.6866174589919254,
+      "candidate32_over_candidate64": 1.2150143506652498,
+      "parent32_over_ducc32": 1.355591492739299,
+      "candidate32_over_ducc32": 0.9865699460402366,
+      "candidate64_over_ducc64": 0.8106687326036403,
+      "candidate32_over_parent32": 0.7277782070221129,
+      "output_rel_l2": {
+        "candidate32_vs_parent32": 0.00017447823673033295,
+        "candidate32_vs_ducc32": 0.0001802777376575732,
+        "candidate64_vs_parent64": 0.0,
+        "candidate64_vs_ducc64": 4.3275443498617426e-14
+      },
+      "dispatch": {
+        "parent32": {
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "backend": "rustsht",
+          "output_checksum": -29.185278214281425,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent64": {
+          "backend": "parent64",
+          "reset_consistent": true
+        },
+        "candidate32": {
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "backend": "rustsht",
+          "output_checksum": -29.18400993803516,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate64": {
+          "backend": "candidate64",
+          "reset_consistent": true
+        },
+        "ducc32": {
+          "backend": "ducc",
+          "output_checksum": -29.191114410059527,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc64": {
+          "backend": "ducc64",
+          "reset_consistent": true
+        }
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "pair": 2,
+      "ms": {
+        "parent32": 3.950052583333333,
+        "parent64": 2.3048193885000003,
+        "candidate32": 2.6773002777777775,
+        "candidate64": 2.459525389,
+        "ducc32": 2.8590970555555555,
+        "ducc64": 2.9363
+      },
+      "parent32_over_parent64": 1.7138230453294074,
+      "candidate32_over_candidate64": 1.0885434603569273,
+      "parent32_over_ducc32": 1.3815734501415142,
+      "candidate32_over_ducc32": 0.9364146182360176,
+      "candidate64_over_ducc64": 0.837627418519906,
+      "candidate32_over_parent32": 0.6777885157970436,
+      "output_rel_l2": {
+        "candidate32_vs_parent32": 0.00017447823673033295,
+        "candidate32_vs_ducc32": 0.0001802777376575732,
+        "candidate64_vs_parent64": 0.0,
+        "candidate64_vs_ducc64": 4.3275443498617426e-14
+      },
+      "dispatch": {
+        "ducc64": {
+          "backend": "ducc64",
+          "reset_consistent": true
+        },
+        "ducc32": {
+          "backend": "ducc",
+          "output_checksum": -29.191114410059527,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate64": {
+          "backend": "candidate64",
+          "reset_consistent": true
+        },
+        "candidate32": {
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "backend": "rustsht",
+          "output_checksum": -29.18400993803516,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent64": {
+          "backend": "parent64",
+          "reset_consistent": true
+        },
+        "parent32": {
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "backend": "rustsht",
+          "output_checksum": -29.185278214281425,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    },
+    {
+      "pair": 3,
+      "ms": {
+        "parent32": 3.7626468125,
+        "parent64": 2.4119235,
+        "candidate32": 2.76979985,
+        "candidate64": 2.3938042775,
+        "ducc32": 2.9299506111111113,
+        "ducc64": 2.9587950000000003
+      },
+      "parent32_over_parent64": 1.5600191351425532,
+      "candidate32_over_candidate64": 1.157070306889365,
+      "parent32_over_ducc32": 1.2842014463421652,
+      "candidate32_over_ducc32": 0.9453401158013451,
+      "candidate64_over_ducc64": 0.8090470199861768,
+      "candidate32_over_parent32": 0.7361307048002397,
+      "output_rel_l2": {
+        "candidate32_vs_parent32": 0.00017447823673033295,
+        "candidate32_vs_ducc32": 0.0001802777376575732,
+        "candidate64_vs_parent64": 0.0,
+        "candidate64_vs_ducc64": 4.3275443498617426e-14
+      },
+      "dispatch": {
+        "candidate32": {
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "backend": "rustsht",
+          "output_checksum": -29.18400993803516,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate64": {
+          "backend": "candidate64",
+          "reset_consistent": true
+        },
+        "ducc32": {
+          "backend": "ducc",
+          "output_checksum": -29.191114410059527,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc64": {
+          "backend": "ducc64",
+          "reset_consistent": true
+        },
+        "parent32": {
+          "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "backend": "rustsht",
+          "output_checksum": -29.185278214281425,
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent64": {
+          "backend": "parent64",
+          "reset_consistent": true
+        }
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      }
+    }
+  ]
+}

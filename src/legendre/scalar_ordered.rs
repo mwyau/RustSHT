@@ -221,40 +221,21 @@ pub(super) fn rescale_ordered_batch_f64<
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "This typed precision leaf mirrors the shared SIMD recurrence state interface."
+    reason = "The shared typed prefix routine receives the complete scaled recurrence state."
 )]
-pub(super) fn no_scaled_prefix_skip<S: Simd>(
-    _simd: S,
-    _m: usize,
-    _lmax: usize,
-    _pair_count: usize,
-    _csq: &[f32],
-    _coefficient_a: &[f32],
-    _coefficient_b: &[f32],
-    _previous: &mut [f32],
-    _current: &mut [f32],
-    _scale: &mut [i64],
-) -> Option<(usize, usize, bool)> {
-    None
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "This typed precision leaf mirrors the shared SIMD recurrence state interface."
-)]
-pub(super) fn skip_scaled_prefix_f64<S: Simd>(
+pub(super) fn skip_negligible_scaled_prefix<T: OrderedSimdPrecision, S: Simd>(
     simd: S,
     m: usize,
     lmax: usize,
     pair_count: usize,
-    csq: &[f64],
-    coefficient_a: &[f64],
-    coefficient_b: &[f64],
-    previous: &mut [f64],
-    current: &mut [f64],
+    csq: &[T],
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    previous: &mut [T],
+    current: &mut [T],
     scale: &mut [i64],
 ) -> Option<(usize, usize, bool)> {
-    kernel::skip_negligible_scaled_prefix_f64(
+    kernel::skip_negligible_scaled_prefix::<T, S>(
         simd,
         m,
         lmax,
@@ -265,6 +246,21 @@ pub(super) fn skip_scaled_prefix_f64<S: Simd>(
         previous,
         current,
         scale,
+    )
+}
+
+pub(super) fn rescale_prefix_batch_f64<
+    S: Simd,
+    const TRACK_ANY_RESCALED: bool,
+    const TRACK_PREFIX_EPOCH: bool,
+>(
+    simd: S,
+    previous: &mut [f64],
+    current: &mut [f64],
+    scale: &mut [i64],
+) -> Option<(bool, bool)> {
+    kernel::f64_rescale_batch_inner::<S, TRACK_ANY_RESCALED, TRACK_PREFIX_EPOCH>(
+        simd, previous, current, scale,
     )
 }
 

@@ -101,6 +101,18 @@ pub(crate) trait OrderedSimdPrecision: LegendrePrecision {
         current: &mut [Self],
         scale: &mut [i64],
     ) -> Option<(bool, bool)>;
+    fn rescale_scaled_prefix_initial<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        scale: &mut [i64],
+    ) -> Option<bool>;
+    fn rescale_scaled_prefix_step<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        scale: &mut [i64],
+    ) -> Option<bool>;
     fn initialize_sectoral_batch<S: Simd>(
         simd: S,
         sine: &[Self],
@@ -139,7 +151,7 @@ macro_rules! impl_ordered_simd_precision {
         $as_simd:ident, $as_mut_simd:ident, $splat:ident,
         $mul:ident, $mul_add:ident, $abs:ident, $less_equal:ident,
         $mask_not:ident, $first_true:ident, $scale_binary:ident, $scale_binary_simd:ident,
-        $rescale_batch:ident, $initialize_batch:ident,
+        $rescale_batch:ident, $prefix_rescale_batch:ident, $initialize_batch:ident,
         $scale_binary_uniform:ident,
         $prepare_order_constants_in_f64:expr, $use_shared_scaled_basis_prefix:expr,
         $shared_prefix_batch:expr, $skip_scaled_prefix:expr,
@@ -254,6 +266,31 @@ macro_rules! impl_ordered_simd_precision {
                 )
             }
             #[inline(always)]
+            fn rescale_scaled_prefix_initial<S: Simd>(
+                simd: S,
+                previous: &mut [Self],
+                current: &mut [Self],
+                scale: &mut [i64],
+            ) -> Option<bool> {
+                super::scalar_ordered::$prefix_rescale_batch::<S, false, true>(
+                    simd, previous, current, scale,
+                )
+                .map(|status| status.1)
+            }
+            #[inline(always)]
+            fn rescale_scaled_prefix_step<S: Simd>(
+                simd: S,
+                previous: &mut [Self],
+                current: &mut [Self],
+                scale: &mut [i64],
+            ) -> Option<bool> {
+                let (any_rescaled, all_below_one) =
+                    super::scalar_ordered::$prefix_rescale_batch::<S, true, true>(
+                        simd, previous, current, scale,
+                    )?;
+                Some(!any_rescaled || all_below_one)
+            }
+            #[inline(always)]
             fn initialize_sectoral_batch<S: Simd>(
                 simd: S,
                 sine: &[Self],
@@ -286,7 +323,7 @@ macro_rules! impl_ordered_simd_precision {
                 current: &mut [Self],
                 scale: &mut [i64],
             ) -> Option<(usize, usize, bool)> {
-                super::scalar_ordered::$skip_prefix::<S>(
+                super::scalar_ordered::$skip_prefix::<$scalar, S>(
                     simd,
                     m,
                     lmax,
@@ -320,13 +357,14 @@ impl_ordered_simd_precision!(
     scale_binary_f32,
     scale_binary_f32_simd,
     rescale_ordered_batch_f32,
+    rescale_ordered_batch_f32,
     initialize_sectoral_batch_f32,
     scale_binary_f32_uniform,
     true,
     true,
     false,
-    false,
-    no_scaled_prefix_skip,
+    true,
+    skip_negligible_scaled_prefix,
     -2,
     f32::from_bits(67_u32 << 23),
     f32::MAX,
@@ -352,13 +390,14 @@ impl_ordered_simd_precision!(
     scale_binary_f64,
     scale_binary_f64_simd,
     rescale_ordered_batch_f64,
+    rescale_prefix_batch_f64,
     initialize_sectoral_batch_f64,
     scale_binary_f64_uniform,
     false,
     false,
     true,
     true,
-    skip_scaled_prefix_f64,
+    skip_negligible_scaled_prefix,
     -2,
     f64::from_bits(963_u64 << 52),
     f64::MAX,

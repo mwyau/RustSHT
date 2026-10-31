@@ -1121,37 +1121,8 @@ fn f64_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
     simd.reduce_min_f64s(bits) > 0.0
 }
 
-fn f64_all_scale_below_one<S: Simd>(simd: S, scale: &[i64]) -> bool {
-    let (scale_vectors, scale_tail) = S::as_simd_i64s(scale);
-    let one = simd.splat_i64s(1);
-    scale_vectors
-        .iter()
-        .all(|&value| f64_mask_all(simd, simd.less_than_i64s(value, one)))
-        && scale_tail.iter().all(|&value| value < 1)
-}
-
-fn f64_rescale_prefix_initial<S: Simd>(
-    simd: S,
-    previous: &mut [f64],
-    current: &mut [f64],
-    scale: &mut [i64],
-) -> Option<bool> {
-    f64_rescale_batch_inner::<S, false, true>(simd, previous, current, scale).map(|status| status.1)
-}
-
-fn f64_rescale_prefix_step<S: Simd>(
-    simd: S,
-    previous: &mut [f64],
-    current: &mut [f64],
-    scale: &mut [i64],
-) -> Option<bool> {
-    let (any_rescaled, _) =
-        f64_rescale_batch_inner::<S, true, false>(simd, previous, current, scale)?;
-    Some(!any_rescaled || f64_all_scale_below_one(simd, scale))
-}
-
 #[inline(always)]
-fn f64_rescale_batch_inner<S: Simd, const TRACK_ANY: bool, const TRACK_PREFIX: bool>(
+pub(super) fn f64_rescale_batch_inner<S: Simd, const TRACK_ANY: bool, const TRACK_PREFIX: bool>(
     simd: S,
     previous: &mut [f64],
     current: &mut [f64],
@@ -1226,32 +1197,32 @@ fn f64_rescale_batch_inner<S: Simd, const TRACK_ANY: bool, const TRACK_PREFIX: b
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "The f64 skipped prefix advances two degree pairs across one shared batch."
+    reason = "The shared skipped prefix advances two degree pairs over a SIMD ring batch."
 )]
-fn recurrence_two_pair_step_f64<S: Simd>(
+fn recurrence_two_pair_step<T: OrderedSimdPrecision, S: Simd>(
     simd: S,
-    csq: &[f64],
-    coefficient_a1: f64,
-    coefficient_b1: f64,
-    coefficient_a2: f64,
-    coefficient_b2: f64,
-    previous: &mut [f64],
-    current: &mut [f64],
+    csq: &[T],
+    coefficient_a1: T,
+    coefficient_b1: T,
+    coefficient_a2: T,
+    coefficient_b2: T,
+    previous: &mut [T],
+    current: &mut [T],
 ) {
-    let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
-    let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
-    let (csq_vectors, csq_tail) = S::as_simd_f64s(csq);
-    let a1 = simd.splat_f64s(coefficient_a1);
-    let b1 = simd.splat_f64s(coefficient_b1);
-    let a2 = simd.splat_f64s(coefficient_a2);
-    let b2 = simd.splat_f64s(coefficient_b2);
+    let (previous_vectors, previous_tail) = T::as_mut_simd::<S>(previous);
+    let (current_vectors, current_tail) = T::as_mut_simd::<S>(current);
+    let (csq_vectors, csq_tail) = T::as_simd::<S>(csq);
+    let a1 = T::splat(simd, coefficient_a1);
+    let b1 = T::splat(simd, coefficient_b1);
+    let a2 = T::splat(simd, coefficient_a2);
+    let b2 = T::splat(simd, coefficient_b2);
     for index in 0..current_vectors.len() {
         let old_previous = previous_vectors[index];
         let old_current = current_vectors[index];
-        let leading1 = simd.mul_add_f64s(a1, csq_vectors[index], b1);
-        let next1 = simd.mul_add_f64s(leading1, old_current, old_previous);
-        let leading2 = simd.mul_add_f64s(a2, csq_vectors[index], b2);
-        let next2 = simd.mul_add_f64s(leading2, next1, old_current);
+        let leading1 = T::vmul_add(simd, a1, csq_vectors[index], b1);
+        let next1 = T::vmul_add(simd, leading1, old_current, old_previous);
+        let leading2 = T::vmul_add(simd, a2, csq_vectors[index], b2);
+        let next2 = T::vmul_add(simd, leading2, next1, old_current);
         previous_vectors[index] = next1;
         current_vectors[index] = next2;
     }
@@ -1267,18 +1238,18 @@ fn recurrence_two_pair_step_f64<S: Simd>(
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "The f64 precision leaf mirrors the shared SIMD recurrence state interface."
+    reason = "The shared precision leaf mirrors the order-major scaled recurrence state."
 )]
-pub(super) fn skip_negligible_scaled_prefix_f64<S: Simd>(
+pub(super) fn skip_negligible_scaled_prefix<T: OrderedSimdPrecision, S: Simd>(
     simd: S,
     m: usize,
     lmax: usize,
     pair_count: usize,
-    csq: &[f64],
-    coefficient_a: &[f64],
-    coefficient_b: &[f64],
-    previous: &mut [f64],
-    current: &mut [f64],
+    csq: &[T],
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    previous: &mut [T],
+    current: &mut [T],
     scale: &mut [i64],
 ) -> Option<(usize, usize, bool)> {
     if previous.len() != current.len()
@@ -1289,14 +1260,14 @@ pub(super) fn skip_negligible_scaled_prefix_f64<S: Simd>(
     {
         return None;
     }
-    let mut below_limit = f64_rescale_prefix_initial(simd, previous, current, scale)?;
+    let mut below_limit = T::rescale_scaled_prefix_initial(simd, previous, current, scale)?;
     let mut degree = m;
     let mut pair = 0;
     while below_limit {
         if degree > lmax || lmax.saturating_sub(degree) < 4 || pair + 1 >= pair_count {
             return Some((lmax.saturating_add(1), pair, true));
         }
-        recurrence_two_pair_step_f64(
+        recurrence_two_pair_step::<T, S>(
             simd,
             csq,
             coefficient_a[pair],
@@ -1308,7 +1279,7 @@ pub(super) fn skip_negligible_scaled_prefix_f64<S: Simd>(
         );
         degree += 4;
         pair += 2;
-        below_limit = f64_rescale_prefix_step(simd, previous, current, scale)?;
+        below_limit = T::rescale_scaled_prefix_step(simd, previous, current, scale)?;
     }
     Some((degree, pair, false))
 }

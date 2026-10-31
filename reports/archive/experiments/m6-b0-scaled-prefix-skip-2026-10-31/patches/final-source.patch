@@ -1,0 +1,668 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index d5a6e823..827a24b0 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -143,7 +143,6 @@ pub(crate) trait ShtScalar:
+     + std::ops::SubAssign
+ {
+     const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
+-    const F32_INTERNAL_SCALAR_SYNTHESIS: bool = false;
+ 
+     fn supports_scalar_ordered() -> bool {
+         false
+diff --git a/src/legendre/numeric.rs b/src/legendre/numeric.rs
+index adb4df43..5ef2fda0 100644
+--- a/src/legendre/numeric.rs
++++ b/src/legendre/numeric.rs
+@@ -101,6 +101,18 @@ pub(crate) trait OrderedSimdPrecision: LegendrePrecision {
+         current: &mut [Self],
+         scale: &mut [i64],
+     ) -> Option<(bool, bool)>;
++    fn rescale_scaled_prefix_initial<S: Simd>(
++        simd: S,
++        previous: &mut [Self],
++        current: &mut [Self],
++        scale: &mut [i64],
++    ) -> Option<bool>;
++    fn rescale_scaled_prefix_step<S: Simd>(
++        simd: S,
++        previous: &mut [Self],
++        current: &mut [Self],
++        scale: &mut [i64],
++    ) -> Option<bool>;
+     fn initialize_sectoral_batch<S: Simd>(
+         simd: S,
+         sine: &[Self],
+@@ -139,7 +151,7 @@ macro_rules! impl_ordered_simd_precision {
+         $as_simd:ident, $as_mut_simd:ident, $splat:ident,
+         $mul:ident, $mul_add:ident, $abs:ident, $less_equal:ident,
+         $mask_not:ident, $first_true:ident, $scale_binary:ident, $scale_binary_simd:ident,
+-        $rescale_batch:ident, $initialize_batch:ident,
++        $rescale_batch:ident, $prefix_rescale_batch:ident, $initialize_batch:ident,
+         $scale_binary_uniform:ident,
+         $prepare_order_constants_in_f64:expr, $use_shared_scaled_basis_prefix:expr,
+         $shared_prefix_batch:expr, $skip_scaled_prefix:expr,
+@@ -254,6 +266,31 @@ macro_rules! impl_ordered_simd_precision {
+                 )
+             }
+             #[inline(always)]
++            fn rescale_scaled_prefix_initial<S: Simd>(
++                simd: S,
++                previous: &mut [Self],
++                current: &mut [Self],
++                scale: &mut [i64],
++            ) -> Option<bool> {
++                super::scalar_ordered::$prefix_rescale_batch::<S, false, true>(
++                    simd, previous, current, scale,
++                )
++                .map(|status| status.1)
++            }
++            #[inline(always)]
++            fn rescale_scaled_prefix_step<S: Simd>(
++                simd: S,
++                previous: &mut [Self],
++                current: &mut [Self],
++                scale: &mut [i64],
++            ) -> Option<bool> {
++                let (any_rescaled, all_below_one) =
++                    super::scalar_ordered::$prefix_rescale_batch::<S, true, true>(
++                        simd, previous, current, scale,
++                    )?;
++                Some(!any_rescaled || all_below_one)
++            }
++            #[inline(always)]
+             fn initialize_sectoral_batch<S: Simd>(
+                 simd: S,
+                 sine: &[Self],
+@@ -286,7 +323,7 @@ macro_rules! impl_ordered_simd_precision {
+                 current: &mut [Self],
+                 scale: &mut [i64],
+             ) -> Option<(usize, usize, bool)> {
+-                super::scalar_ordered::$skip_prefix::<S>(
++                super::scalar_ordered::$skip_prefix::<$scalar, S>(
+                     simd,
+                     m,
+                     lmax,
+@@ -320,13 +357,14 @@ impl_ordered_simd_precision!(
+     scale_binary_f32,
+     scale_binary_f32_simd,
+     rescale_ordered_batch_f32,
++    rescale_ordered_batch_f32,
+     initialize_sectoral_batch_f32,
+     scale_binary_f32_uniform,
+     true,
+     true,
+     false,
+-    false,
+-    no_scaled_prefix_skip,
++    true,
++    skip_negligible_scaled_prefix,
+     -2,
+     f32::from_bits(67_u32 << 23),
+     f32::MAX,
+@@ -352,13 +390,14 @@ impl_ordered_simd_precision!(
+     scale_binary_f64,
+     scale_binary_f64_simd,
+     rescale_ordered_batch_f64,
++    rescale_prefix_batch_f64,
+     initialize_sectoral_batch_f64,
+     scale_binary_f64_uniform,
+     false,
+     false,
+     true,
+     true,
+-    skip_scaled_prefix_f64,
++    skip_negligible_scaled_prefix,
+     -2,
+     f64::from_bits(963_u64 << 52),
+     f64::MAX,
+diff --git a/src/legendre/scalar_ordered.rs b/src/legendre/scalar_ordered.rs
+index af2a887c..61066405 100644
+--- a/src/legendre/scalar_ordered.rs
++++ b/src/legendre/scalar_ordered.rs
+@@ -221,40 +221,21 @@ pub(super) fn rescale_ordered_batch_f64<
+ 
+ #[expect(
+     clippy::too_many_arguments,
+-    reason = "This typed precision leaf mirrors the shared SIMD recurrence state interface."
++    reason = "The shared typed prefix routine receives the complete scaled recurrence state."
+ )]
+-pub(super) fn no_scaled_prefix_skip<S: Simd>(
+-    _simd: S,
+-    _m: usize,
+-    _lmax: usize,
+-    _pair_count: usize,
+-    _csq: &[f32],
+-    _coefficient_a: &[f32],
+-    _coefficient_b: &[f32],
+-    _previous: &mut [f32],
+-    _current: &mut [f32],
+-    _scale: &mut [i64],
+-) -> Option<(usize, usize, bool)> {
+-    None
+-}
+-
+-#[expect(
+-    clippy::too_many_arguments,
+-    reason = "This typed precision leaf mirrors the shared SIMD recurrence state interface."
+-)]
+-pub(super) fn skip_scaled_prefix_f64<S: Simd>(
++pub(super) fn skip_negligible_scaled_prefix<T: OrderedSimdPrecision, S: Simd>(
+     simd: S,
+     m: usize,
+     lmax: usize,
+     pair_count: usize,
+-    csq: &[f64],
+-    coefficient_a: &[f64],
+-    coefficient_b: &[f64],
+-    previous: &mut [f64],
+-    current: &mut [f64],
++    csq: &[T],
++    coefficient_a: &[T],
++    coefficient_b: &[T],
++    previous: &mut [T],
++    current: &mut [T],
+     scale: &mut [i64],
+ ) -> Option<(usize, usize, bool)> {
+-    kernel::skip_negligible_scaled_prefix_f64(
++    kernel::skip_negligible_scaled_prefix::<T, S>(
+         simd,
+         m,
+         lmax,
+@@ -268,6 +249,21 @@ pub(super) fn skip_scaled_prefix_f64<S: Simd>(
+     )
+ }
+ 
++pub(super) fn rescale_prefix_batch_f64<
++    S: Simd,
++    const TRACK_ANY_RESCALED: bool,
++    const TRACK_PREFIX_EPOCH: bool,
++>(
++    simd: S,
++    previous: &mut [f64],
++    current: &mut [f64],
++    scale: &mut [i64],
++) -> Option<(bool, bool)> {
++    kernel::f64_rescale_batch_inner::<S, TRACK_ANY_RESCALED, TRACK_PREFIX_EPOCH>(
++        simd, previous, current, scale,
++    )
++}
++
+ #[cfg(test)]
+ pub(crate) fn reset_work_counters() {
+     kernel::reset_work_counters();
+diff --git a/src/legendre/scalar_ordered/kernel.rs b/src/legendre/scalar_ordered/kernel.rs
+index fb4c2d63..8dcb51d4 100644
+--- a/src/legendre/scalar_ordered/kernel.rs
++++ b/src/legendre/scalar_ordered/kernel.rs
+@@ -1121,37 +1121,8 @@ fn f64_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
+     simd.reduce_min_f64s(bits) > 0.0
+ }
+ 
+-fn f64_all_scale_below_one<S: Simd>(simd: S, scale: &[i64]) -> bool {
+-    let (scale_vectors, scale_tail) = S::as_simd_i64s(scale);
+-    let one = simd.splat_i64s(1);
+-    scale_vectors
+-        .iter()
+-        .all(|&value| f64_mask_all(simd, simd.less_than_i64s(value, one)))
+-        && scale_tail.iter().all(|&value| value < 1)
+-}
+-
+-fn f64_rescale_prefix_initial<S: Simd>(
+-    simd: S,
+-    previous: &mut [f64],
+-    current: &mut [f64],
+-    scale: &mut [i64],
+-) -> Option<bool> {
+-    f64_rescale_batch_inner::<S, false, true>(simd, previous, current, scale).map(|status| status.1)
+-}
+-
+-fn f64_rescale_prefix_step<S: Simd>(
+-    simd: S,
+-    previous: &mut [f64],
+-    current: &mut [f64],
+-    scale: &mut [i64],
+-) -> Option<bool> {
+-    let (any_rescaled, _) =
+-        f64_rescale_batch_inner::<S, true, false>(simd, previous, current, scale)?;
+-    Some(!any_rescaled || f64_all_scale_below_one(simd, scale))
+-}
+-
+ #[inline(always)]
+-fn f64_rescale_batch_inner<S: Simd, const TRACK_ANY: bool, const TRACK_PREFIX: bool>(
++pub(super) fn f64_rescale_batch_inner<S: Simd, const TRACK_ANY: bool, const TRACK_PREFIX: bool>(
+     simd: S,
+     previous: &mut [f64],
+     current: &mut [f64],
+@@ -1226,32 +1197,32 @@ fn f64_rescale_batch_inner<S: Simd, const TRACK_ANY: bool, const TRACK_PREFIX: b
+ 
+ #[expect(
+     clippy::too_many_arguments,
+-    reason = "The f64 skipped prefix advances two degree pairs across one shared batch."
++    reason = "The shared skipped prefix advances two degree pairs over a SIMD ring batch."
+ )]
+-fn recurrence_two_pair_step_f64<S: Simd>(
++fn recurrence_two_pair_step<T: OrderedSimdPrecision, S: Simd>(
+     simd: S,
+-    csq: &[f64],
+-    coefficient_a1: f64,
+-    coefficient_b1: f64,
+-    coefficient_a2: f64,
+-    coefficient_b2: f64,
+-    previous: &mut [f64],
+-    current: &mut [f64],
++    csq: &[T],
++    coefficient_a1: T,
++    coefficient_b1: T,
++    coefficient_a2: T,
++    coefficient_b2: T,
++    previous: &mut [T],
++    current: &mut [T],
+ ) {
+-    let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
+-    let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
+-    let (csq_vectors, csq_tail) = S::as_simd_f64s(csq);
+-    let a1 = simd.splat_f64s(coefficient_a1);
+-    let b1 = simd.splat_f64s(coefficient_b1);
+-    let a2 = simd.splat_f64s(coefficient_a2);
+-    let b2 = simd.splat_f64s(coefficient_b2);
++    let (previous_vectors, previous_tail) = T::as_mut_simd::<S>(previous);
++    let (current_vectors, current_tail) = T::as_mut_simd::<S>(current);
++    let (csq_vectors, csq_tail) = T::as_simd::<S>(csq);
++    let a1 = T::splat(simd, coefficient_a1);
++    let b1 = T::splat(simd, coefficient_b1);
++    let a2 = T::splat(simd, coefficient_a2);
++    let b2 = T::splat(simd, coefficient_b2);
+     for index in 0..current_vectors.len() {
+         let old_previous = previous_vectors[index];
+         let old_current = current_vectors[index];
+-        let leading1 = simd.mul_add_f64s(a1, csq_vectors[index], b1);
+-        let next1 = simd.mul_add_f64s(leading1, old_current, old_previous);
+-        let leading2 = simd.mul_add_f64s(a2, csq_vectors[index], b2);
+-        let next2 = simd.mul_add_f64s(leading2, next1, old_current);
++        let leading1 = T::vmul_add(simd, a1, csq_vectors[index], b1);
++        let next1 = T::vmul_add(simd, leading1, old_current, old_previous);
++        let leading2 = T::vmul_add(simd, a2, csq_vectors[index], b2);
++        let next2 = T::vmul_add(simd, leading2, next1, old_current);
+         previous_vectors[index] = next1;
+         current_vectors[index] = next2;
+     }
+@@ -1267,18 +1238,18 @@ fn recurrence_two_pair_step_f64<S: Simd>(
+ 
+ #[expect(
+     clippy::too_many_arguments,
+-    reason = "The f64 precision leaf mirrors the shared SIMD recurrence state interface."
++    reason = "The shared precision leaf mirrors the order-major scaled recurrence state."
+ )]
+-pub(super) fn skip_negligible_scaled_prefix_f64<S: Simd>(
++pub(super) fn skip_negligible_scaled_prefix<T: OrderedSimdPrecision, S: Simd>(
+     simd: S,
+     m: usize,
+     lmax: usize,
+     pair_count: usize,
+-    csq: &[f64],
+-    coefficient_a: &[f64],
+-    coefficient_b: &[f64],
+-    previous: &mut [f64],
+-    current: &mut [f64],
++    csq: &[T],
++    coefficient_a: &[T],
++    coefficient_b: &[T],
++    previous: &mut [T],
++    current: &mut [T],
+     scale: &mut [i64],
+ ) -> Option<(usize, usize, bool)> {
+     if previous.len() != current.len()
+@@ -1289,14 +1260,14 @@ pub(super) fn skip_negligible_scaled_prefix_f64<S: Simd>(
+     {
+         return None;
+     }
+-    let mut below_limit = f64_rescale_prefix_initial(simd, previous, current, scale)?;
++    let mut below_limit = T::rescale_scaled_prefix_initial(simd, previous, current, scale)?;
+     let mut degree = m;
+     let mut pair = 0;
+     while below_limit {
+         if degree > lmax || lmax.saturating_sub(degree) < 4 || pair + 1 >= pair_count {
+             return Some((lmax.saturating_add(1), pair, true));
+         }
+-        recurrence_two_pair_step_f64(
++        recurrence_two_pair_step::<T, S>(
+             simd,
+             csq,
+             coefficient_a[pair],
+@@ -1308,7 +1279,7 @@ pub(super) fn skip_negligible_scaled_prefix_f64<S: Simd>(
+         );
+         degree += 4;
+         pair += 2;
+-        below_limit = f64_rescale_prefix_step(simd, previous, current, scale)?;
++        below_limit = T::rescale_scaled_prefix_step(simd, previous, current, scale)?;
+     }
+     Some((degree, pair, false))
+ }
+diff --git a/src/plan.rs b/src/plan.rs
+index 02c6d631..9936a37a 100644
+--- a/src/plan.rs
++++ b/src/plan.rs
+@@ -137,9 +137,6 @@ pub(crate) fn current_execution_thread_count() -> usize {
+ pub struct ShtPlan<T: ShtScalar = f64> {
+     pub(crate) grid: GridSpec,
+     pub(crate) harmonics: HarmonicSpec,
+-    // Limited f32 policy adapter for the measured GL T720 scalar-synthesis cells.
+-    // The f64 child plan reuses the existing f64 transform implementation.
+-    pub(crate) f32_internal_scalar_synthesis_plan: Option<Box<ShtPlan<f64>>>,
+     pub(crate) cc_resampling: Option<CCResamplingPlan<T>>,
+     pub(crate) scalar_latitude_geometry: Option<ScalarLatitudeGeometry<T>>,
+     pub(crate) prepared_scalar_latitude_geometry: Option<ScalarLatitudeGeometry<T>>,
+@@ -283,20 +280,9 @@ impl<T: ShtScalar> ShtPlan<T> {
+         } else {
+             (None, None)
+         };
+-        let f32_internal_scalar_synthesis_plan = (T::F32_INTERNAL_SCALAR_SYNTHESIS
+-            && grid.kind() == crate::grid::GridKind::GaussLegendre
+-            && harmonics.spin() == 0
+-            && harmonics.lmax() == 720
+-            && grid.ntheta() == 721
+-            && ((harmonics.mmax() == 720 && grid.nphi() == 1458)
+-                || (harmonics.mmax() == 180 && grid.nphi() == 378)))
+-            .then(|| ShtPlan::<f64>::new(grid.clone(), harmonics.clone()).map(Box::new))
+-            .transpose()?;
+-
+         Ok(Self {
+             grid,
+             harmonics,
+-            f32_internal_scalar_synthesis_plan,
+             cc_resampling,
+             scalar_latitude_geometry,
+             prepared_scalar_latitude_geometry,
+@@ -583,16 +569,6 @@ impl<T: ShtScalar> ShtPlan<T> {
+         )?;
+         workspace.analysis_pair_range_cache_id =
+             Some(Arc::clone(&self.analysis_pair_range_cache_id));
+-        if let Some(plan) = &self.f32_internal_scalar_synthesis_plan {
+-            let internal_workspace = plan.workspace()?;
+-            workspace.f32_internal_scalar_synthesis = Some(Box::new(
+-                crate::workspace::F32InternalScalarSynthesisWorkspace::new(
+-                    internal_workspace,
+-                    self.harmonics.nalm(),
+-                    self.sample_count,
+-                )?,
+-            ));
+-        }
+         self.prepare_workspace(&mut workspace, execution_capacity)?;
+         Ok(workspace)
+     }
+@@ -729,13 +705,6 @@ impl<T: ShtScalar> ShtPlan<T> {
+             });
+         }
+ 
+-        if let (Some(plan), Some(adapter)) = (
+-            &self.f32_internal_scalar_synthesis_plan,
+-            &mut workspace.f32_internal_scalar_synthesis,
+-        ) {
+-            plan.prepare_workspace(&mut adapter.workspace, execution_capacity)?;
+-        }
+-
+         workspace.ring_group_size = ring_group_size;
+         workspace.execution_capacity = execution_capacity;
+         Ok(())
+diff --git a/src/transform/scalar.rs b/src/transform/scalar.rs
+index 0d7ad583..1334031f 100644
+--- a/src/transform/scalar.rs
++++ b/src/transform/scalar.rs
+@@ -3,99 +3,6 @@
+ 
+ use super::*;
+ 
+-const F32_INTERNAL_SCALAR_CONVERSION_CHUNK: usize = 8192;
+-const F32_INTERNAL_SCALAR_INPUT_MAX: f64 = 1.267_650_600_228_229_4e30;
+-
+-#[inline]
+-fn f32_internal_scalar_input_component_is_safe(value: f64) -> bool {
+-    value.is_finite()
+-        && (value == 0.0
+-            || (value.abs() >= f64::from(f32::MIN_POSITIVE)
+-                && value.abs() <= F32_INTERNAL_SCALAR_INPUT_MAX))
+-}
+-
+-#[inline]
+-fn f32_internal_scalar_output_component_is_safe(value: f64) -> bool {
+-    if value == 0.0 {
+-        return true;
+-    }
+-    let narrowed = value as f32;
+-    narrowed.is_finite() && narrowed.abs() >= f32::MIN_POSITIVE
+-}
+-
+-fn promote_f32_internal_scalar_coefficients<T: ShtScalar>(
+-    source: &[Complex<T>],
+-    target: &mut [Complex<f64>],
+-    parallel: bool,
+-) -> bool {
+-    debug_assert_eq!(source.len(), target.len());
+-    #[cfg(feature = "parallel")]
+-    if parallel {
+-        let safe = AtomicBool::new(true);
+-        target
+-            .par_chunks_mut(F32_INTERNAL_SCALAR_CONVERSION_CHUNK)
+-            .zip(source.par_chunks(F32_INTERNAL_SCALAR_CONVERSION_CHUNK))
+-            .for_each(|(target_chunk, source_chunk)| {
+-                for (target, source) in target_chunk.iter_mut().zip(source_chunk) {
+-                    let re = source.re.to_f64().unwrap_or(f64::NAN);
+-                    let im = source.im.to_f64().unwrap_or(f64::NAN);
+-                    *target = Complex::new(re, im);
+-                    if !f32_internal_scalar_input_component_is_safe(re)
+-                        || !f32_internal_scalar_input_component_is_safe(im)
+-                    {
+-                        safe.store(false, Ordering::Relaxed);
+-                    }
+-                }
+-            });
+-        return safe.load(Ordering::Relaxed);
+-    }
+-    #[cfg(not(feature = "parallel"))]
+-    let _ = parallel;
+-
+-    let mut safe = true;
+-    for (target, source) in target.iter_mut().zip(source) {
+-        let re = source.re.to_f64().unwrap_or(f64::NAN);
+-        let im = source.im.to_f64().unwrap_or(f64::NAN);
+-        *target = Complex::new(re, im);
+-        safe &= f32_internal_scalar_input_component_is_safe(re)
+-            && f32_internal_scalar_input_component_is_safe(im);
+-    }
+-    safe
+-}
+-
+-fn narrow_f32_internal_scalar_map<T: ShtScalar>(
+-    source: &[f64],
+-    target: &mut [T],
+-    parallel: bool,
+-) -> bool {
+-    debug_assert_eq!(source.len(), target.len());
+-    #[cfg(feature = "parallel")]
+-    if parallel {
+-        let safe = AtomicBool::new(true);
+-        target
+-            .par_chunks_mut(F32_INTERNAL_SCALAR_CONVERSION_CHUNK)
+-            .zip(source.par_chunks(F32_INTERNAL_SCALAR_CONVERSION_CHUNK))
+-            .for_each(|(target_chunk, source_chunk)| {
+-                for (target, &source) in target_chunk.iter_mut().zip(source_chunk) {
+-                    *target = T::from_f64(source).expect("f64 value converts to f32");
+-                    if !f32_internal_scalar_output_component_is_safe(source) {
+-                        safe.store(false, Ordering::Relaxed);
+-                    }
+-                }
+-            });
+-        return safe.load(Ordering::Relaxed);
+-    }
+-    #[cfg(not(feature = "parallel"))]
+-    let _ = parallel;
+-
+-    let mut safe = true;
+-    for (target, &source) in target.iter_mut().zip(source) {
+-        *target = T::from_f64(source).expect("f64 value converts to f32");
+-        safe &= f32_internal_scalar_output_component_is_safe(source);
+-    }
+-    safe
+-}
+-
+ #[allow(private_bounds)]
+ impl<T: ShtScalar> ShtPlan<T> {
+     #[inline]
+@@ -327,64 +234,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+         }
+     }
+ 
+-    /// Attempts the bounded reusable f64 backend for measured native-f32 GL
+-    /// T720 scalar-synthesis plans. Returns false when the values need native
+-    /// f32 range behavior or the narrowed output leaves the normal finite range.
+-    pub(crate) fn try_f32_internal_scalar_synthesis(
+-        &self,
+-        alm: &[Complex<T>],
+-        map: &mut [T],
+-        workspace: &mut ShtWorkspace<T>,
+-    ) -> bool {
+-        if !T::F32_INTERNAL_SCALAR_SYNTHESIS {
+-            return false;
+-        }
+-        let Some(plan) = self.f32_internal_scalar_synthesis_plan.as_deref() else {
+-            return false;
+-        };
+-        let Some(adapter) = workspace.f32_internal_scalar_synthesis.as_deref_mut() else {
+-            return false;
+-        };
+-        if adapter.coefficients.len() != self.harmonics.nalm()
+-            || adapter.map.len() != self.sample_count
+-            || plan.check_workspace(&adapter.workspace).is_err()
+-        {
+-            return false;
+-        }
+-        #[cfg(feature = "parallel")]
+-        let parallel_conversions =
+-            workspace.execution_capacity > 1 && rayon::current_num_threads() > 1;
+-        #[cfg(not(feature = "parallel"))]
+-        let parallel_conversions = false;
+-
+-        if !promote_f32_internal_scalar_coefficients(
+-            alm,
+-            &mut adapter.coefficients,
+-            parallel_conversions,
+-        ) {
+-            return false;
+-        }
+-        if plan
+-            .synthesis_into(
+-                &adapter.coefficients,
+-                &mut adapter.map,
+-                &mut adapter.workspace,
+-            )
+-            .is_err()
+-        {
+-            return false;
+-        }
+-        narrow_f32_internal_scalar_map(&adapter.map, map, parallel_conversions)
+-    }
+-
+     /// Synthesizes one real scalar field into north-to-south row-major samples.
+     ///
+     /// For even longitude counts, the Nyquist order is allowed and its
+     /// positive and negative modes are combined into the real Nyquist bin.
+-    /// For the measured f32 GL T720 scalar cells, regular-range inputs may use
+-    /// the shared f64 transform internally. Nonfinite, subnormal, extreme, or
+-    /// out-of-range values retain the native-f32 path. The internal route can
+-    /// change final-bit rounding while keeping the public input and output f32.
+     ///
+     /// # Errors
+     ///
+@@ -402,10 +255,6 @@ impl<T: ShtScalar> ShtPlan<T> {
+         check_len("map output", self.sample_count, map.len())?;
+         self.check_workspace(workspace)?;
+ 
+-        if self.try_f32_internal_scalar_synthesis(alm, map, workspace) {
+-            return Ok(());
+-        }
+-
+         #[cfg(all(test, feature = "parallel"))]
+         let phase_probe = workspace.transform_phase_probe();
+         #[cfg(all(test, feature = "parallel"))]
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index aea6c10d..db7618b0 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -106,7 +106,6 @@ fn f32_t720_scalar_synthesis_uses_native_path_and_resets() {
+         let harmonics = HarmonicSpec::scalar(720, mmax).unwrap();
+         let plan32 = ShtPlan::<f32>::new(grid.clone(), harmonics.clone()).unwrap();
+         let plan64 = ShtPlan::<f64>::new(grid, harmonics.clone()).unwrap();
+-        assert!(plan32.f32_internal_scalar_synthesis_plan.is_none());
+ 
+         let mut workspace32 = plan32.workspace().unwrap();
+         plan32.prepare_workspace(&mut workspace32, 1).unwrap();
+@@ -156,7 +155,6 @@ fn f32_t720_scalar_synthesis_handles_range_edges_on_native_path() {
+     let grid = GridSpec::new(GridKind::GaussLegendre, 721, 1458, 0.23).unwrap();
+     let harmonics = HarmonicSpec::scalar(720, 720).unwrap();
+     let plan = ShtPlan::<f32>::new(grid, harmonics.clone()).unwrap();
+-    assert!(plan.f32_internal_scalar_synthesis_plan.is_none());
+     let mut workspace = plan.workspace().unwrap();
+     plan.prepare_workspace(&mut workspace, 1).unwrap();
+     let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
+@@ -197,7 +195,6 @@ fn f32_native_scalar_synthesis_monopole_is_correct_across_bandlimits() {
+             harmonics.clone(),
+         )
+         .unwrap();
+-        assert!(plan.f32_internal_scalar_synthesis_plan.is_none());
+         let mut workspace = plan.workspace().unwrap();
+         plan.prepare_workspace(&mut workspace, 1).unwrap();
+         let mut alm = vec![Complex32::new(0.0, 0.0); harmonics.nalm()];
+diff --git a/src/workspace.rs b/src/workspace.rs
+index d8247f1d..d56300b1 100644
+--- a/src/workspace.rs
++++ b/src/workspace.rs
+@@ -68,8 +68,6 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
+     pub(crate) spin1_analysis_pair_range_geometry: Option<(usize, usize, usize)>,
+     pub(crate) ring_group_size: usize,
+     pub(crate) execution_capacity: usize,
+-    // Present only for the guarded measured f32 scalar-synthesis policy.
+-    pub(crate) f32_internal_scalar_synthesis: Option<Box<F32InternalScalarSynthesisWorkspace>>,
+     pub(crate) fft: RealFftWorkspace<T>,
+     #[cfg(feature = "parallel")]
+     pub(crate) spin_order_output_scratch: Vec<SpinOrderOutputScratch<T>>,
+@@ -84,31 +82,6 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
+     pub(crate) spin1_scalar_coefficient_finite_orders: Vec<u8>,
+ }
+ 
+-/// Reusable f64 buffers and transform scratch owned by one f32 workspace.
+-/// The boxed edge from `ShtWorkspace` keeps the recursive workspace types sized.
+-pub(crate) struct F32InternalScalarSynthesisWorkspace {
+-    pub(crate) workspace: ShtWorkspace<f64>,
+-    pub(crate) coefficients: Vec<Complex<f64>>,
+-    pub(crate) map: Vec<f64>,
+-}
+-
+-impl F32InternalScalarSynthesisWorkspace {
+-    pub(crate) fn new(
+-        workspace: ShtWorkspace<f64>,
+-        coefficient_count: usize,
+-        sample_count: usize,
+-    ) -> Result<Self, ShtError> {
+-        Ok(Self {
+-            workspace,
+-            coefficients: allocate_complex(
+-                coefficient_count,
+-                "f32 internal f64 scalar-synthesis coefficients",
+-            )?,
+-            map: allocate_real(sample_count, "f32 internal f64 scalar-synthesis map")?,
+-        })
+-    }
+-}
+-
+ #[cfg(feature = "parallel")]
+ pub(crate) struct SpinOrderOutputScratch<T: ShtScalar> {
+     pub(crate) q: Vec<Complex<T>>,
+@@ -1050,7 +1023,6 @@ impl<T: ShtScalar> ShtWorkspace<T> {
+             spin1_analysis_pair_range_geometry: None,
+             ring_group_size,
+             execution_capacity,
+-            f32_internal_scalar_synthesis: None,
+             fft: fft.workspace()?,
+             #[cfg(feature = "parallel")]
+             spin_order_output_scratch: Vec::new(),

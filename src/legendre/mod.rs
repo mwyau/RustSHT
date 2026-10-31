@@ -143,7 +143,6 @@ pub(crate) trait ShtScalar:
     + std::ops::SubAssign
 {
     const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
-    const F32_INTERNAL_SCALAR_SYNTHESIS: bool = false;
 
     fn supports_scalar_ordered() -> bool {
         false
