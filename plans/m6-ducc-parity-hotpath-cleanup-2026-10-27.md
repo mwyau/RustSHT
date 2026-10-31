@@ -14,9 +14,9 @@ These are separate gates; one cell cannot offset another. Preserve established f
 
 ## Current status and order
 
-The exact-source four-backend baseline is source `afd3df285dcb601371bb5b7ba1ec4fdc56ab1645`, DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, with three interleaved pairs over all 16 GL T720 cells. All f32 parity gates remain open. `47906d09` adds compact hard-scale vectorization for B1/B3; `a3cd8964` caches active scalar-fallback indices. Exact-source 15-pair B1/B3 results show bit-identical outputs and 19–28% lower whole-call time than `47906d09`; absolute ratios remain 2.10–3.70× Rust f64 and 2.86–4.96× DUCC f32. A shared-host contention caveat and complete per-cell intervals are recorded in the [live ledger](../reports/DUCC_PARITY_M6.md) and [candidate package](../reports/archive/experiments/current-source-scaled-analysis-profile-2026-10-30/candidate-sparse-fallback-index-15pair/README.md).
+The original four-backend baseline is source `afd3df285dcb601371bb5b7ba1ec4fdc56ab1645`, pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, three interleaved pairs over all 16 GL T720 cells. All parity gates remain open. `47906d09` adds compact hard-scale vectorization; `a3cd8964` caches sparse fallback indices. B3's one-channel scaled recurrence fusion is integrated at `094d3162`: exact output and 6.3–9.3% whole-call gain versus `95bcbecc` in all four B3 cells, with 15-pair intervals below 1. It still runs 2.64–2.99× DUCC f32. B1 full q8's current-binary control is 1.037 [1.000, 1.112] versus `95bcbecc`, INCONCLUSIVE; the short f64 control is also inconclusive. Details are in the [live ledger](../reports/DUCC_PARITY_M6.md) and [B3 package](../reports/archive/experiments/m6-b3-scaled-recurrence-fusion-2026-10-30/README.md).
 
-1. **B1 scalar analysis and B3 spin-1 analysis:** the sparse fallback lane-list change is integrated. Profile the residual fused recurrence block and identify the actual next instruction/work bottleneck; prefer changes to useful recurrence work or exceptional-lane execution over further bookkeeping. Use 15-pair whole-call confirmation and preserve the profile-based rejection history.
+1. **B1 scalar analysis:** continue with a new measured hypothesis and recheck the full-q8 current-binary control under lower host load. The B1 f32 analysis entrypoints remain unchanged by `094d3162`; do not claim performance non-regression while that interval crosses 1. B3's scaled-path fusion is measured and integrated; its V3 kernel grew substantially, so avoid another fusion without an assembly/code-size hypothesis.
 2. **B2 spin-1 synthesis:** profile the reflected order-major/grouped-ring path and optimize measured recurrence or scheduling cost.
 3. **B0 scalar synthesis:** optimize the isolated generic native-f32 kernel, validate it, then remove the f32-to-f64 production sidecar and obsolete fallback routes as one coherent change.
 
@@ -31,4 +31,4 @@ The exact-source four-backend baseline is source `afd3df285dcb601371bb5b7ba1ec4f
 
 ## Next
 
-Inspect the residual fused B1/B3 recurrence work after `a3cd8964`, then test one materially different measured optimization. The lane-list change is 15-pair verified, bit-identical and integrated; its parity gaps remain open. Continue bounded B1/B3 work, then B2 and B0.
+Profile the remaining B1 recurrence/exceptional-lane work and try a materially different, isolated optimization. Recheck the uncertain B1 full-q8 control under a quieter host. Keep B3's 15-pair gain and open DUCC parity gaps visible; proceed to B2 and B0 after bounded B1 work.

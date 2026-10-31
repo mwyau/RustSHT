@@ -9,6 +9,7 @@ The change fuses one recurrence advance into channel 0's f32 scaled SIMD accumul
 ## Source and build provenance
 
 - Parent source: `95bcbecc862e7e0c08fa7e7769ba30ea7c59f86a`.
+- Integrated implementation commit: `094d3162`.
 - Candidate `analysis.rs` SHA-256: `514932cdb18b6a8ac0f77fc6b12822145249e5ba9497436c48e90447976e7a7a`.
 - Candidate patch SHA-256: `0c7a20981b1f3279a5d9c2208571df329e399487f5562d2f85f32385e9ce6b6f`.
 - DUCC: pinned `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
