@@ -16,9 +16,10 @@ These are separate gates; one cell cannot offset another. Preserve established f
 
 The original four-backend baseline is source `afd3df285dcb601371bb5b7ba1ec4fdc56ab1645`, pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, three interleaved pairs over all 16 GL T720 cells. All parity gates remain open. `47906d09` adds compact hard-scale vectorization; `a3cd8964` caches sparse fallback indices. B3's one-channel scaled recurrence fusion is integrated at `094d3162`: exact output and 6.3–9.3% whole-call gain versus `95bcbecc` in all four B3 cells, with 15-pair intervals below 1. It still runs 2.64–2.99× DUCC f32. B1 full q8's current-binary control is 1.037 [1.000, 1.112] versus `95bcbecc`, INCONCLUSIVE; the short f64 control is also inconclusive. Details are in the [live ledger](../reports/DUCC_PARITY_M6.md) and [B3 package](../reports/archive/experiments/m6-b3-scaled-recurrence-fusion-2026-10-30/README.md).
 
-1. **B1 scalar analysis:** continue with a new measured hypothesis and recheck the full-q8 current-binary control under lower host load. The B1 f32 analysis entrypoints remain unchanged by `094d3162`; do not claim performance non-regression while that interval crosses 1. B3's scaled-path fusion is measured and integrated; its V3 kernel grew substantially, so avoid another fusion without an assembly/code-size hypothesis.
-2. **B2 spin-1 synthesis:** profile the reflected order-major/grouped-ring path and optimize measured recurrence or scheduling cost.
-3. **B0 scalar synthesis:** optimize the isolated generic native-f32 kernel, validate it, then remove the f32-to-f64 production sidecar and obsolete fallback routes as one coherent change.
+1. **B0 scalar synthesis — first, largest observed gap:** the current-source four-backend fixture declines the f64 sidecar and runs an 11.9–19.1x DUCC native-f32 fallback. The archived isolated generic native-f32 candidate measured approximately 1.00–1.26x DUCC on a separate source/fixture. Reproduce both on **identical current-source T720 full/reduced q1/q8 fixtures**; verify executed dispatch and existing numerical, exceptional and reset guards. If validated, integrate the shared native-f32 kernel and benchmark 15+ pairs before retiring the temporary sidecar. Do not mistake an old isolated candidate's timing or accuracy for current production acceptance.
+2. **B1 scalar analysis:** after bounded B0 work, resume a materially different, measured recurrence/exceptional-lane hypothesis. Recheck the full-q8 whole-binary control under lower host load; `1.037 [1.000, 1.112]` versus `95bcbecc` is INCONCLUSIVE, not a confirmed regression or non-regression.
+3. **B3 spin-1 analysis:** retain the verified 6.3–9.3% fused-recurrence gain, but avoid further fusion without an assembly, code-size and memory-traffic hypothesis: the V3 kernel expanded substantially. Close its remaining 2.64–2.99x DUCC f32 gap with new measured approaches.
+4. **B2 spin-1 synthesis:** profile reflected order-major/grouped-ring recurrence and scheduling. It is nearer parity (1.59–1.83x DUCC f32) but still misses all 1:1 gates.
 
 ## Working loop
 
@@ -31,4 +32,4 @@ The original four-backend baseline is source `afd3df285dcb601371bb5b7ba1ec4fdc56
 
 ## Next
 
-Profile the remaining B1 recurrence/exceptional-lane work and try a materially different, isolated optimization. Recheck the uncertain B1 full-q8 control under a quieter host. Keep B3's 15-pair gain and open DUCC parity gaps visible; proceed to B2 and B0 after bounded B1 work.
+First reproduce the current B0 native-f32 fallback and archived generic candidate on the same T720 fixtures, then test and integrate the validated shared native kernel if the expected large performance gain holds; retain the f64 sidecar until full replacement coverage. Next recheck B1 full q8 under a quiet host and pursue new measured B1/B3 bottlenecks, then B2. Keep all three per-cell parity gates open until 15+ matched pairs support a pass.
