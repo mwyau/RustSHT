@@ -1,0 +1,357 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index 1a81e64d..d5a6e823 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -2090,6 +2090,10 @@ impl ShtScalar for f64 {
+ impl ShtScalar for f32 {
+     type SpinInitial = spin_factors::SpinInitial<f32>;
+ 
++    fn supports_scalar_ordered() -> bool {
++        true
++    }
++
+     #[inline(always)]
+     fn scalar_ordered_lane_count(arch: Arch) -> usize {
+         arch.dispatch(F32LaneCount).max(1)
+diff --git a/src/legendre/numeric.rs b/src/legendre/numeric.rs
+index e39cc8d3..adb4df43 100644
+--- a/src/legendre/numeric.rs
++++ b/src/legendre/numeric.rs
+@@ -56,6 +56,9 @@ pub(crate) trait OrderedSimdPrecision: LegendrePrecision {
+     const SCALE_FTOL: Self;
+     const MAX_FINITE: Self;
+     const MIN_POSITIVE: Self;
++    /// Largest negative scale count that always restores a value bounded by
++    /// `SCALE_FTOL` to signed zero in shared-basis accumulation.
++    const SHARED_BASIS_ZERO_SCALE_LIMIT: i64;
+     const REFLECTION_TOLERANCE: Self;
+     const SYNTHESIS_FACTOR_LIMIT: Self;
+ 
+@@ -76,6 +79,12 @@ pub(crate) trait OrderedSimdPrecision: LegendrePrecision {
+     fn mask_not<S: Simd>(simd: S, value: Self::Mask<S>) -> Self::Mask<S>;
+     fn first_true<S: Simd>(simd: S, mask: Self::Mask<S>) -> usize;
+     fn scale_binary(value: Self, exponent: i64) -> Self;
++    fn scale_binary_uniform<S: Simd>(
++        simd: S,
++        values: &[Self],
++        output: &mut [Self],
++        exponent: i64,
++    ) -> bool;
+     fn scale_binary_simd<S: Simd>(
+         simd: S,
+         values: &[Self],
+@@ -131,9 +140,11 @@ macro_rules! impl_ordered_simd_precision {
+         $mul:ident, $mul_add:ident, $abs:ident, $less_equal:ident,
+         $mask_not:ident, $first_true:ident, $scale_binary:ident, $scale_binary_simd:ident,
+         $rescale_batch:ident, $initialize_batch:ident,
++        $scale_binary_uniform:ident,
+         $prepare_order_constants_in_f64:expr, $use_shared_scaled_basis_prefix:expr,
+         $shared_prefix_batch:expr, $skip_scaled_prefix:expr,
+         $skip_prefix:ident,
++        $shared_basis_zero_scale_limit:expr,
+         $ftol:expr, $max_finite:expr, $min_positive:expr,
+         $reflection_tolerance:expr, $synthesis_factor_limit:expr $(,)?
+     ) => {
+@@ -148,6 +159,7 @@ macro_rules! impl_ordered_simd_precision {
+             const SCALE_FTOL: Self = $ftol;
+             const MAX_FINITE: Self = $max_finite;
+             const MIN_POSITIVE: Self = $min_positive;
++            const SHARED_BASIS_ZERO_SCALE_LIMIT: i64 = $shared_basis_zero_scale_limit;
+             const REFLECTION_TOLERANCE: Self = $reflection_tolerance;
+             const SYNTHESIS_FACTOR_LIMIT: Self = $synthesis_factor_limit;
+ 
+@@ -209,6 +221,15 @@ macro_rules! impl_ordered_simd_precision {
+                 $scale_binary(value, exponent)
+             }
+             #[inline(always)]
++            fn scale_binary_uniform<S: Simd>(
++                simd: S,
++                values: &[Self],
++                output: &mut [Self],
++                exponent: i64,
++            ) -> bool {
++                $scale_binary_uniform::<S>(simd, values, output, exponent)
++            }
++            #[inline(always)]
+             fn scale_binary_simd<S: Simd>(
+                 simd: S,
+                 values: &[Self],
+@@ -300,11 +321,13 @@ impl_ordered_simd_precision!(
+     scale_binary_f32_simd,
+     rescale_ordered_batch_f32,
+     initialize_sectoral_batch_f32,
++    scale_binary_f32_uniform,
+     true,
+     true,
+     false,
+     false,
+     no_scaled_prefix_skip,
++    -2,
+     f32::from_bits(67_u32 << 23),
+     f32::MAX,
+     f32::MIN_POSITIVE,
+@@ -330,11 +353,13 @@ impl_ordered_simd_precision!(
+     scale_binary_f64_simd,
+     rescale_ordered_batch_f64,
+     initialize_sectoral_batch_f64,
++    scale_binary_f64_uniform,
+     false,
+     false,
+     true,
+     true,
+     skip_scaled_prefix_f64,
++    -2,
+     f64::from_bits(963_u64 << 52),
+     f64::MAX,
+     f64::MIN_POSITIVE,
+@@ -653,6 +678,92 @@ fn scale_binary_f32_simd<S: Simd>(
+     true
+ }
+ 
++/// Applies the common f32 scale epoch -80 directly to vector exponent fields.
++/// Subnormal outputs use integer round-to-nearest, ties-to-even; non-finite
++/// lanes decline so the caller can use the checked scalar path.
++#[inline(always)]
++fn scale_binary_f32_vector_m80<S: Simd>(simd: S, values: S::f32s) -> Option<S::f32s> {
++    let bits = simd.transmute_u32s_f32s(values);
++    let exponent = simd.and_u32s(
++        simd.wrapping_dyn_shr_u32s(bits, simd.splat_u32s(23)),
++        simd.splat_u32s(0xff),
++    );
++    let non_finite = simd.equal_u32s(exponent, simd.splat_u32s(0xff));
++    if simd.first_true_m32s(non_finite) != S::F32_LANES {
++        return None;
++    }
++
++    let sign = simd.and_u32s(bits, simd.splat_u32s(0x8000_0000));
++    let normal_output = simd.greater_than_u32s(exponent, simd.splat_u32s(80));
++    let subnormal_input = simd.equal_u32s(exponent, simd.splat_u32s(0));
++    let subnormal_field = simd.select_u32s(normal_output, simd.splat_u32s(80), exponent);
++    let unbounded_shift = simd.sub_u32s(simd.splat_u32s(81), subnormal_field);
++    let rounds_to_zero = simd.greater_than_u32s(unbounded_shift, simd.splat_u32s(24));
++    let shift = simd.min_u32s(unbounded_shift, simd.splat_u32s(24));
++    let significand = simd.or_u32s(
++        simd.and_u32s(bits, simd.splat_u32s(0x007f_ffff)),
++        simd.splat_u32s(0x0080_0000),
++    );
++    let quotient = simd.wrapping_dyn_shr_u32s(significand, shift);
++    let divisor = simd.wrapping_dyn_shl_u32s(simd.splat_u32s(1), shift);
++    let remainder = simd.and_u32s(significand, simd.sub_u32s(divisor, simd.splat_u32s(1)));
++    let halfway = simd.wrapping_dyn_shr_u32s(divisor, simd.splat_u32s(1));
++    let above_halfway = simd.greater_than_u32s(remainder, halfway);
++    let tie_with_odd_quotient = simd.and_m32s(
++        simd.equal_u32s(remainder, halfway),
++        simd.not_m32s(simd.equal_u32s(
++            simd.and_u32s(quotient, simd.splat_u32s(1)),
++            simd.splat_u32s(0),
++        )),
++    );
++    let round_up = simd.or_m32s(above_halfway, tie_with_odd_quotient);
++    let rounded = simd.add_u32s(
++        quotient,
++        simd.select_u32s(round_up, simd.splat_u32s(1), simd.splat_u32s(0)),
++    );
++    let rounded = simd.select_u32s(rounds_to_zero, simd.splat_u32s(0), rounded);
++    let subnormal_bits = simd.select_u32s(subnormal_input, sign, simd.or_u32s(sign, rounded));
++    let normal_bits = simd.sub_u32s(bits, simd.splat_u32s(80 << 23));
++    Some(simd.transmute_f32s_u32s(simd.select_u32s(normal_output, normal_bits, subnormal_bits)))
++}
++
++#[inline(always)]
++fn scale_binary_f32_uniform<S: Simd>(
++    simd: S,
++    values: &[f32],
++    output: &mut [f32],
++    exponent: i64,
++) -> bool {
++    if values.len() != output.len() || exponent != -80 {
++        return false;
++    }
++    let (value_vectors, value_tail) = S::as_simd_f32s(values);
++    let (output_vectors, output_tail) = S::as_mut_simd_f32s(output);
++    if value_vectors.len() != output_vectors.len() || value_tail.len() != output_tail.len() {
++        return false;
++    }
++    for (source, destination) in value_vectors.iter().zip(output_vectors.iter_mut()) {
++        let Some(scaled) = scale_binary_f32_vector_m80(simd, *source) else {
++            return false;
++        };
++        *destination = scaled;
++    }
++    for (&source, destination) in value_tail.iter().zip(output_tail.iter_mut()) {
++        *destination = scale_binary_f32(source, exponent);
++    }
++    true
++}
++
++#[inline(always)]
++fn scale_binary_f64_uniform<S: Simd>(
++    _simd: S,
++    _values: &[f64],
++    _output: &mut [f64],
++    _exponent: i64,
++) -> bool {
++    false
++}
++
+ fn scale_binary_f64_simd<S: Simd>(
+     _simd: S,
+     values: &[f64],
+diff --git a/src/legendre/numeric/tests.rs b/src/legendre/numeric/tests.rs
+index 3c71fa6b..fb39bb09 100644
+--- a/src/legendre/numeric/tests.rs
++++ b/src/legendre/numeric/tests.rs
+@@ -15,6 +15,19 @@ impl WithSimd for F32VectorScaling<'_> {
+     }
+ }
+ 
++struct F32UniformVectorScaling<'a> {
++    values: &'a [f32],
++    output: &'a mut [f32],
++}
++
++impl WithSimd for F32UniformVectorScaling<'_> {
++    type Output = bool;
++
++    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
++        scale_binary_f32_uniform(simd, self.values, self.output, -80)
++    }
++}
++
+ fn shared_scaled_arithmetic_preserves_precision<T: LegendrePrecision + std::fmt::Debug>() {
+     let two = T::one() + T::one();
+     let low = T::SMALL / two;
+@@ -295,3 +308,80 @@ fn f32_simd_binary_scaling_matches_exact_lane_scaling() {
+         );
+     }
+ }
++
++#[test]
++fn f32_uniform_minus_80_simd_scaling_matches_exact_scalar_scaling_and_tail() {
++    let mut values = vec![-0.0_f32, 0.0, f32::from_bits(1), -f32::from_bits(1)];
++    for exponent_field in 1..=254_u32 {
++        for fraction in [0, 1, 0x003f_ffff, 0x0040_0000, 0x007f_ffff] {
++            let bits = (exponent_field << 23) | fraction;
++            values.push(f32::from_bits(bits));
++            values.push(f32::from_bits(bits | 0x8000_0000));
++        }
++    }
++    let mut state = 0x9e37_79b9_u32;
++    for _ in 0..513 {
++        state ^= state << 13;
++        state ^= state >> 17;
++        state ^= state << 5;
++        let value = f32::from_bits(state);
++        if value.is_finite() {
++            values.push(value);
++        }
++    }
++    while values.len().is_multiple_of(8) {
++        values.push(1.0);
++    }
++    assert_ne!(values.len() % 8, 0, "exercise the AVX2 scalar tail");
++
++    for arch in [Arch::Scalar, Arch::new()] {
++        let mut output = vec![f32::NAN; values.len()];
++        assert!(arch.dispatch(F32UniformVectorScaling {
++            values: &values,
++            output: &mut output,
++        }));
++        for (lane, (&value, &actual)) in values.iter().zip(&output).enumerate() {
++            assert_eq!(
++                actual.to_bits(),
++                scale_binary_f32(value, -80).to_bits(),
++                "lane {lane}, {value:?}"
++            );
++        }
++    }
++
++    let exceptional = [f32::INFINITY; 8];
++    let mut output = [0.0; 8];
++    assert!(!Arch::new().dispatch(F32UniformVectorScaling {
++        values: &exceptional,
++        output: &mut output,
++    }));
++}
++
++#[test]
++fn f32_shared_basis_zero_scale_limit_covers_the_recurrence_bound() {
++    assert_eq!(
++        <f32 as OrderedSimdPrecision>::SHARED_BASIS_ZERO_SCALE_LIMIT,
++        -2
++    );
++    let bound = <f32 as OrderedSimdPrecision>::SCALE_FTOL;
++    for value in [
++        bound,
++        -bound,
++        f32::from_bits(1),
++        -f32::from_bits(1),
++        0.0,
++        -0.0,
++    ] {
++        assert_eq!(
++            scale_binary_f32(value, -2 * <f32 as LegendrePrecision>::SCALE_EXPONENT).to_bits(),
++            (0.0_f32.copysign(value)).to_bits(),
++            "value={value:?}"
++        );
++    }
++    let next_exponent = -<f32 as LegendrePrecision>::SCALE_EXPONENT;
++    assert_eq!(
++        scale_binary_f32(bound, next_exponent).to_bits(),
++        512,
++        "the less negative epoch remains a nonzero subnormal"
++    );
++}
+diff --git a/src/legendre/scalar_ordered/kernel.rs b/src/legendre/scalar_ordered/kernel.rs
+index 3b13113b..fb4c2d63 100644
+--- a/src/legendre/scalar_ordered/kernel.rs
++++ b/src/legendre/scalar_ordered/kernel.rs
+@@ -1895,7 +1895,47 @@ fn scaled_pair_step<T: OrderedSimdPrecision, S: Simd>(
+     }
+ 
+     let mut use_shared_scaled_basis = shared_scaled_basis_prefix;
+-    if use_shared_scaled_basis {
++    if use_shared_scaled_basis && T::USE_SHARED_SCALED_BASIS_PREFIX {
++        // At the f32 scale epoch -2, even SCALE_FTOL restores below half the
++        // least subnormal. Preserve the recurrence update but skip an exact
++        // scalar restore for this provably signed-zero accumulation basis.
++        let every_lane_restores_to_zero =
++            scale
++                .iter()
++                .zip(current.iter())
++                .all(|(&lane_scale, &value)| {
++                    lane_scale <= T::SHARED_BASIS_ZERO_SCALE_LIMIT
++                        && lane_scale.checked_mul(T::SCALE_EXPONENT).is_some()
++                        && value.is_finite()
++                        && value.abs() <= T::SCALE_FTOL
++                });
++        if every_lane_restores_to_zero {
++            for (basis, &value) in scaled_basis.iter_mut().zip(current.iter()) {
++                *basis = T::zero().copysign(value);
++            }
++        } else {
++            let uniform_scale = scale
++                .first()
++                .is_some_and(|&first| scale.iter().all(|&value| value == first));
++            let vector_scaled = if uniform_scale {
++                let Some(exponent) = scale[0].checked_mul(T::SCALE_EXPONENT) else {
++                    return false;
++                };
++                T::scale_binary_uniform::<S>(simd, current, scaled_basis, exponent)
++            } else {
++                false
++            };
++            if !vector_scaled && !T::scale_binary_simd(simd, current, scale, scaled_basis) {
++                return false;
++            }
++            for basis in scaled_basis.iter().take(current.len()) {
++                if !basis.is_finite() {
++                    use_shared_scaled_basis = false;
++                    break;
++                }
++            }
++        }
++    } else if use_shared_scaled_basis {
+         if !T::scale_binary_simd(simd, current, scale, scaled_basis) {
+             return false;
+         }

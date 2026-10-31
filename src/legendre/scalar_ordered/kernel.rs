@@ -1895,7 +1895,47 @@ fn scaled_pair_step<T: OrderedSimdPrecision, S: Simd>(
     }
 
     let mut use_shared_scaled_basis = shared_scaled_basis_prefix;
-    if use_shared_scaled_basis {
+    if use_shared_scaled_basis && T::USE_SHARED_SCALED_BASIS_PREFIX {
+        // At the f32 scale epoch -2, even SCALE_FTOL restores below half the
+        // least subnormal. Preserve the recurrence update but skip an exact
+        // scalar restore for this provably signed-zero accumulation basis.
+        let every_lane_restores_to_zero =
+            scale
+                .iter()
+                .zip(current.iter())
+                .all(|(&lane_scale, &value)| {
+                    lane_scale <= T::SHARED_BASIS_ZERO_SCALE_LIMIT
+                        && lane_scale.checked_mul(T::SCALE_EXPONENT).is_some()
+                        && value.is_finite()
+                        && value.abs() <= T::SCALE_FTOL
+                });
+        if every_lane_restores_to_zero {
+            for (basis, &value) in scaled_basis.iter_mut().zip(current.iter()) {
+                *basis = T::zero().copysign(value);
+            }
+        } else {
+            let uniform_scale = scale
+                .first()
+                .is_some_and(|&first| scale.iter().all(|&value| value == first));
+            let vector_scaled = if uniform_scale {
+                let Some(exponent) = scale[0].checked_mul(T::SCALE_EXPONENT) else {
+                    return false;
+                };
+                T::scale_binary_uniform::<S>(simd, current, scaled_basis, exponent)
+            } else {
+                false
+            };
+            if !vector_scaled && !T::scale_binary_simd(simd, current, scale, scaled_basis) {
+                return false;
+            }
+            for basis in scaled_basis.iter().take(current.len()) {
+                if !basis.is_finite() {
+                    use_shared_scaled_basis = false;
+                    break;
+                }
+            }
+        }
+    } else if use_shared_scaled_basis {
         if !T::scale_binary_simd(simd, current, scale, scaled_basis) {
             return false;
         }

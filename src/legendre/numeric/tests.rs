@@ -15,6 +15,19 @@ impl WithSimd for F32VectorScaling<'_> {
     }
 }
 
+struct F32UniformVectorScaling<'a> {
+    values: &'a [f32],
+    output: &'a mut [f32],
+}
+
+impl WithSimd for F32UniformVectorScaling<'_> {
+    type Output = bool;
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        scale_binary_f32_uniform(simd, self.values, self.output, -80)
+    }
+}
+
 fn shared_scaled_arithmetic_preserves_precision<T: LegendrePrecision + std::fmt::Debug>() {
     let two = T::one() + T::one();
     let low = T::SMALL / two;
@@ -294,4 +307,81 @@ fn f32_simd_binary_scaling_matches_exact_lane_scaling() {
                 .collect::<Vec<_>>(),
         );
     }
+}
+
+#[test]
+fn f32_uniform_minus_80_simd_scaling_matches_exact_scalar_scaling_and_tail() {
+    let mut values = vec![-0.0_f32, 0.0, f32::from_bits(1), -f32::from_bits(1)];
+    for exponent_field in 1..=254_u32 {
+        for fraction in [0, 1, 0x003f_ffff, 0x0040_0000, 0x007f_ffff] {
+            let bits = (exponent_field << 23) | fraction;
+            values.push(f32::from_bits(bits));
+            values.push(f32::from_bits(bits | 0x8000_0000));
+        }
+    }
+    let mut state = 0x9e37_79b9_u32;
+    for _ in 0..513 {
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        let value = f32::from_bits(state);
+        if value.is_finite() {
+            values.push(value);
+        }
+    }
+    while values.len().is_multiple_of(8) {
+        values.push(1.0);
+    }
+    assert_ne!(values.len() % 8, 0, "exercise the AVX2 scalar tail");
+
+    for arch in [Arch::Scalar, Arch::new()] {
+        let mut output = vec![f32::NAN; values.len()];
+        assert!(arch.dispatch(F32UniformVectorScaling {
+            values: &values,
+            output: &mut output,
+        }));
+        for (lane, (&value, &actual)) in values.iter().zip(&output).enumerate() {
+            assert_eq!(
+                actual.to_bits(),
+                scale_binary_f32(value, -80).to_bits(),
+                "lane {lane}, {value:?}"
+            );
+        }
+    }
+
+    let exceptional = [f32::INFINITY; 8];
+    let mut output = [0.0; 8];
+    assert!(!Arch::new().dispatch(F32UniformVectorScaling {
+        values: &exceptional,
+        output: &mut output,
+    }));
+}
+
+#[test]
+fn f32_shared_basis_zero_scale_limit_covers_the_recurrence_bound() {
+    assert_eq!(
+        <f32 as OrderedSimdPrecision>::SHARED_BASIS_ZERO_SCALE_LIMIT,
+        -2
+    );
+    let bound = <f32 as OrderedSimdPrecision>::SCALE_FTOL;
+    for value in [
+        bound,
+        -bound,
+        f32::from_bits(1),
+        -f32::from_bits(1),
+        0.0,
+        -0.0,
+    ] {
+        assert_eq!(
+            scale_binary_f32(value, -2 * <f32 as LegendrePrecision>::SCALE_EXPONENT).to_bits(),
+            (0.0_f32.copysign(value)).to_bits(),
+            "value={value:?}"
+        );
+    }
+    let next_exponent = -<f32 as LegendrePrecision>::SCALE_EXPONENT;
+    assert_eq!(
+        scale_binary_f32(bound, next_exponent).to_bits(),
+        512,
+        "the less negative epoch remains a nonzero subnormal"
+    );
 }

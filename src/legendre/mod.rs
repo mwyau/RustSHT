@@ -2090,6 +2090,10 @@ impl ShtScalar for f64 {
 impl ShtScalar for f32 {
     type SpinInitial = spin_factors::SpinInitial<f32>;
 
+    fn supports_scalar_ordered() -> bool {
+        true
+    }
+
     #[inline(always)]
     fn scalar_ordered_lane_count(arch: Arch) -> usize {
         arch.dispatch(F32LaneCount).max(1)

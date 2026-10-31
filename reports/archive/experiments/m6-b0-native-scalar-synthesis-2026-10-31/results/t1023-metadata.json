@@ -1,0 +1,53 @@
+{
+  "source_base_commit": "d4a7fa1552af08eecb69b252c31221b19e256ccb",
+  "candidate_patch_sha256": "6e797e1af92ed911ea216cfa5d7fe38c0948d8d07e0bfd5d85da4dae2369e699",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "5d435ead16fe37f86b4db7a991261697d627847d465733b607e9130fb95af01e",
+  "parent_binary_sha256": "fbe467e55d2d5146b106d38938c425412f74bd0a16df98f510c85adeeca6c6a7",
+  "candidate_binary_sha256": "0f566d35bc671461844e65fa2a0a9e787622b6b1aca6a84d97ffd550932a7018",
+  "fixture_sha256": {
+    "map0.f64": "d88e9eaf351be4c883735249f7d3f64c6dce5df24c96c90c2eb81e2c4c000585",
+    "map1.f64": "08739c1082357fe0a6a7562a6975df518186f2847e8072bbe4b0757c06634c8a",
+    "e.f64": "5bf4a0d123607e889676542bd4b43eafb69eb83ebac65f7a4be8998e79530203",
+    "b.f64": "c0964c66709741e63ff4e774da1c88ba1b0a923d677e38911c67a18bc8851c26"
+  },
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "pairs": {
+    "q1": 3,
+    "q8": 15
+  },
+  "results": {
+    "q1": {
+      "parent_median_ms": 95.78197499999999,
+      "candidate_median_ms": 95.8886815,
+      "ducc_median_ms": 129.61147,
+      "candidate_over_parent_median": 1.0011140561676664,
+      "candidate_over_ducc_median": 0.7444448523441066,
+      "candidate_parent_ratio_range": [
+        0.9908796837663821,
+        1.0255878446336826
+      ],
+      "outputs_bitwise_equal": true,
+      "workers_repeat_reset_ok": true
+    },
+    "q8": {
+      "parent_median_ms": 21.068532,
+      "candidate_median_ms": 19.89848325,
+      "ducc_median_ms": 25.574786,
+      "candidate_over_parent_median": 0.9761438589902187,
+      "candidate_over_ducc_median": 0.7812283557085584,
+      "candidate_parent_ratio_range": [
+        0.7402465321043495,
+        1.1538310478639737
+      ],
+      "outputs_bitwise_equal": true,
+      "workers_repeat_reset_ok": true
+    }
+  },
+  "affinity_policy": {
+    "q1": "first allowed CPU",
+    "q8": "first eight allowed CPUs"
+  }
+}

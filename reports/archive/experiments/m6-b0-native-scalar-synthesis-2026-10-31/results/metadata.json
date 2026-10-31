@@ -1,0 +1,258 @@
+{
+  "source_parent_sha": "d4a7fa1552af08eecb69b252c31221b19e256ccb",
+  "candidate_patch_sha256": "6e797e1af92ed911ea216cfa5d7fe38c0948d8d07e0bfd5d85da4dae2369e699",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "binary_sha256": {
+    "parent32": "3b47176278dbd3f89bbc6a6905d32d2af0db832a1ac0bfd79d604c0bd003e17d",
+    "parent64": "9f17683174d911d3b5e930ba1b55d5f59cb47f2da00aefd0272a31efa1b36806",
+    "candidate32": "32b2226bbe59021ae57267e35dd11eb5c1eb041c23ec74c8b05f4ef396aae850",
+    "candidate64": "66a498b7fe2a293f4937c87c9d7f232ae8e8ac54dd498600c30d5b4c10ab29b0",
+    "ducc32": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+    "ducc64": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+  },
+  "fixture_sha256": {
+    "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+    "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+    "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+    "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+  },
+  "pairs": 15,
+  "target_batch_ms": 25.0,
+  "candidate32_route": "shared scalar_ordered reflected order-major kernel; native f32 AVX2 (8 lanes), spectra, FFT and map; no runtime promotion",
+  "parent32_route": "current d4 native-f32 general ring-group fallback; sidecar declined archived fixtures",
+  "runner_sha256": "a52f2058f1b1914a50d43bc874e2a0386d62a7bd50d9544bb6c068b593285bde",
+  "fixture_sha256_by_case": {
+    "GL-T720-M720-even-s0-synthesis-q1": {
+      "f32": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "f64": {
+        "map0": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+        "map1": "4d886dc3fd85bb04c0d5050d5a32f0345d1bc3dbd042aeeee6f7aeeed7b70e59",
+        "alm0": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831",
+        "alm1": "27f0a6fc6153fafa815de422c176cac78cd1e5237a6337edf8e7989a678925f4"
+      }
+    },
+    "GL-T720-M720-even-s0-synthesis-q8": {
+      "f32": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "f64": {
+        "map0": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+        "map1": "4d886dc3fd85bb04c0d5050d5a32f0345d1bc3dbd042aeeee6f7aeeed7b70e59",
+        "alm0": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831",
+        "alm1": "27f0a6fc6153fafa815de422c176cac78cd1e5237a6337edf8e7989a678925f4"
+      }
+    },
+    "GL-T720-M180-even-s0-synthesis-q1": {
+      "f32": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "f64": {
+        "map0": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+        "map1": "606ed1e152d2957b98af1fb34eb8b02bfbbeeb64ddb9f7896eca8450d9237a26",
+        "alm0": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21",
+        "alm1": "8075e7c1cc82c8b8feeacb1249e0fc500f0dbff08ba17e90511220791c74b83f"
+      }
+    },
+    "GL-T720-M180-even-s0-synthesis-q8": {
+      "f32": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "f64": {
+        "map0": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+        "map1": "606ed1e152d2957b98af1fb34eb8b02bfbbeeb64ddb9f7896eca8450d9237a26",
+        "alm0": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21",
+        "alm1": "8075e7c1cc82c8b8feeacb1249e0fc500f0dbff08ba17e90511220791c74b83f"
+      }
+    }
+  },
+  "cell_summary": [
+    {
+      "case": "GL-T720-M180-even-s0-synthesis-q1",
+      "pairs": 15,
+      "median_ms": {
+        "parent32": 100.4538355,
+        "parent64": 6.272008899999999,
+        "candidate32": 8.750258666666667,
+        "candidate64": 6.2853791,
+        "ducc32": 8.600601166666667,
+        "ducc64": 8.629850000000001
+      },
+      "ratios": {
+        "candidate32_over_candidate64": {
+          "median": 1.395992534409067,
+          "ci95": [
+            1.391862916000209,
+            1.4103437139261925
+          ]
+        },
+        "candidate32_over_ducc32": {
+          "median": 1.0145289130429296,
+          "ci95": [
+            1.0049001847023225,
+            1.0327746650541025
+          ]
+        },
+        "candidate64_over_ducc64": {
+          "median": 0.7258158893569252,
+          "ci95": [
+            0.7219900326162638,
+            0.7444437686933324
+          ]
+        },
+        "candidate32_over_parent32": {
+          "median": 0.08716265161091502,
+          "ci95": [
+            0.08458249507045265,
+            0.08933455457855712
+          ]
+        }
+      }
+    },
+    {
+      "case": "GL-T720-M180-even-s0-synthesis-q8",
+      "pairs": 15,
+      "median_ms": {
+        "parent32": 25.889618,
+        "parent64": 1.0844304775,
+        "candidate32": 1.6745796,
+        "candidate64": 1.132482923,
+        "ducc32": 1.4157386923076922,
+        "ducc64": 1.4197199999999999
+      },
+      "ratios": {
+        "candidate32_over_candidate64": {
+          "median": 1.4790900655175725,
+          "ci95": [
+            1.4144147863739756,
+            1.5252112335761492
+          ]
+        },
+        "candidate32_over_ducc32": {
+          "median": 1.1433548096491284,
+          "ci95": [
+            1.0629696192713312,
+            1.2145260776141014
+          ]
+        },
+        "candidate64_over_ducc64": {
+          "median": 0.7990927920111717,
+          "ci95": [
+            0.7845608802592939,
+            0.8247230617444571
+          ]
+        },
+        "candidate32_over_parent32": {
+          "median": 0.06365575524313967,
+          "ci95": [
+            0.06301186165800764,
+            0.06786064250214717
+          ]
+        }
+      }
+    },
+    {
+      "case": "GL-T720-M720-even-s0-synthesis-q1",
+      "pairs": 15,
+      "median_ms": {
+        "parent32": 300.040902,
+        "parent64": 15.09873275,
+        "candidate32": 24.660214,
+        "candidate64": 15.086046249999999,
+        "ducc32": 19.23391325,
+        "ducc64": 19.39415
+      },
+      "ratios": {
+        "candidate32_over_candidate64": {
+          "median": 1.6395024249321983,
+          "ci95": [
+            1.6249761087631505,
+            1.644597052853892
+          ]
+        },
+        "candidate32_over_ducc32": {
+          "median": 1.2853773936178259,
+          "ci95": [
+            1.2776105872586856,
+            1.2917735661874827
+          ]
+        },
+        "candidate64_over_ducc64": {
+          "median": 0.7796963503462099,
+          "ci95": [
+            0.7734966314083993,
+            0.7869421861119913
+          ]
+        },
+        "candidate32_over_parent32": {
+          "median": 0.08244110830751372,
+          "ci95": [
+            0.08119346918795185,
+            0.08331643762382006
+          ]
+        }
+      }
+    },
+    {
+      "case": "GL-T720-M720-even-s0-synthesis-q8",
+      "pairs": 15,
+      "median_ms": {
+        "parent32": 51.25935,
+        "parent64": 2.6270782225,
+        "candidate32": 3.9962197142857145,
+        "candidate64": 2.5577953329999996,
+        "ducc32": 3.043594611111111,
+        "ducc64": 3.086865
+      },
+      "ratios": {
+        "candidate32_over_candidate64": {
+          "median": 1.5601831970345537,
+          "ci95": [
+            1.538541595697177,
+            1.6519779448102665
+          ]
+        },
+        "candidate32_over_ducc32": {
+          "median": 1.3247658479396787,
+          "ci95": [
+            1.305195960569452,
+            1.39972612081907
+          ]
+        },
+        "candidate64_over_ducc64": {
+          "median": 0.8163358335226071,
+          "ci95": [
+            0.7887088303698703,
+            0.8303491572164495
+          ]
+        },
+        "candidate32_over_parent32": {
+          "median": 0.07773574157238125,
+          "ci95": [
+            0.07245659148069465,
+            0.07939723015980442
+          ]
+        }
+      }
+    }
+  ],
+  "affinity_policy": {
+    "q1": "first allowed CPU",
+    "q8": "first eight allowed CPUs"
+  }
+}
