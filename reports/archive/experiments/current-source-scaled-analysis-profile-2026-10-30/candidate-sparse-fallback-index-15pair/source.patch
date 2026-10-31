@@ -1,0 +1,125 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index fab7597b..cb02f6c9 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -81,7 +81,8 @@ pub(crate) struct F32ScaledAnalysisState {
+     factors: [f32; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+     hard_factors: [f32; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+     hard_scale_exponents: [i64; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+-    hard_scalar_lanes: [bool; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
++    hard_scalar_indices: [u8; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
++    hard_scalar_count: usize,
+     hard_vector_indices: [u8; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+     hard_vector_count: usize,
+     lane_count: usize,
+@@ -119,7 +120,8 @@ impl FusedAnalysisPrecision for f32 {
+             factors: [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+             hard_factors: [0.0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+             hard_scale_exponents: [0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+-            hard_scalar_lanes: [false; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
++            hard_scalar_indices: [0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
++            hard_scalar_count: 0,
+             hard_vector_indices: [0; SCALAR_ANALYSIS_PAIR_TILE_SIZE],
+             hard_vector_count: 0,
+             lane_count: 0,
+@@ -236,7 +238,8 @@ impl FusedAnalysisPrecision for f32 {
+             factors,
+             hard_factors,
+             hard_scale_exponents,
+-            hard_scalar_lanes,
++            hard_scalar_indices,
++            hard_scalar_count,
+             hard_vector_indices,
+             hard_vector_count,
+             lane_count,
+@@ -262,7 +265,7 @@ impl FusedAnalysisPrecision for f32 {
+                 };
+             }
+             hard_factors.fill(0.0);
+-            hard_scalar_lanes.fill(false);
++            *hard_scalar_count = 0;
+             *hard_vector_count = 0;
+             let vector_width = S::F32_LANES;
+             let vector_count = basis.len() / vector_width;
+@@ -303,7 +306,9 @@ impl FusedAnalysisPrecision for f32 {
+                         -5
+                     };
+                     if factor_exponent < factor_floor || !cosine_is_safe {
+-                        hard_scalar_lanes[lane] = true;
++                        debug_assert!(lane <= u8::MAX as usize);
++                        hard_scalar_indices[*hard_scalar_count] = lane as u8;
++                        *hard_scalar_count += 1;
+                     } else {
+                         hard_factors[lane] = numeric::scale_binary_f32(1.0, factor_exponent);
+                         grouped_lanes = true;
+@@ -315,8 +320,18 @@ impl FusedAnalysisPrecision for f32 {
+                     *hard_vector_count += 1;
+                 }
+             }
+-            for lane in (vector_count * vector_width)..basis.len() {
+-                hard_scalar_lanes[lane] = factors[lane] == 0.0;
++            for (lane, factor) in factors
++                .iter()
++                .copied()
++                .enumerate()
++                .take(basis.len())
++                .skip(vector_count * vector_width)
++            {
++                if factor == 0.0 {
++                    debug_assert!(lane <= u8::MAX as usize);
++                    hard_scalar_indices[*hard_scalar_count] = lane as u8;
++                    *hard_scalar_count += 1;
++                }
+             }
+             *lane_count = basis.len();
+             *valid = true;
+@@ -324,28 +339,27 @@ impl FusedAnalysisPrecision for f32 {
+ 
+         let mut hard_same = Complex32::new(0.0, 0.0);
+         let mut hard_opposite = Complex32::new(0.0, 0.0);
+-        for lane in 0..basis.len() {
+-            if hard_scalar_lanes[lane] {
+-                let same = scalar::multiply_complex_scaled_f32(
+-                    Complex32::new(same_real[lane], same_imag[lane]),
+-                    basis[lane],
+-                    exponents[lane],
+-                );
+-                let opposite_basis = if OPPOSITE_PREWEIGHTED {
+-                    basis[lane]
+-                } else {
+-                    basis[lane] * cos_theta[lane]
+-                };
+-                let opposite = scalar::multiply_complex_scaled_f32(
+-                    Complex32::new(opposite_real[lane], opposite_imag[lane]),
+-                    opposite_basis,
+-                    exponents[lane],
+-                );
+-                hard_same.re += same.re;
+-                hard_same.im += same.im;
+-                hard_opposite.re += opposite.re;
+-                hard_opposite.im += opposite.im;
+-            }
++        for &lane in hard_scalar_indices.iter().take(*hard_scalar_count) {
++            let lane = lane as usize;
++            let same = scalar::multiply_complex_scaled_f32(
++                Complex32::new(same_real[lane], same_imag[lane]),
++                basis[lane],
++                exponents[lane],
++            );
++            let opposite_basis = if OPPOSITE_PREWEIGHTED {
++                basis[lane]
++            } else {
++                basis[lane] * cos_theta[lane]
++            };
++            let opposite = scalar::multiply_complex_scaled_f32(
++                Complex32::new(opposite_real[lane], opposite_imag[lane]),
++                opposite_basis,
++                exponents[lane],
++            );
++            hard_same.re += same.re;
++            hard_same.im += same.im;
++            hard_opposite.re += opposite.re;
++            hard_opposite.im += opposite.im;
+         }
+ 
+         let (same_real_vectors, same_real_tail) = S::as_simd_f32s(same_real);

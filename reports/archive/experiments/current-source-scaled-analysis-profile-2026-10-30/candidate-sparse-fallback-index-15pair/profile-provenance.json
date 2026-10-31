@@ -1,0 +1,30 @@
+{
+  "tool": "Valgrind 3.26.0 Callgrind",
+  "events": [
+    "Ir"
+  ],
+  "source_parent": "47906d0966897cf2f04d33d38d71a467a7fafd7c",
+  "source_candidate": "deced73802a05d9b6c3c2bddf8ef2fc0cf8a0dc3",
+  "harness_source_sha256": "d486640185f113dd3a8cc20ac51fcbe6fa1dbba7c29ecddc49617805eda4e6e3",
+  "parent_harness_binary_sha256": "2784001a0828e14c981312b599b1f6c25119c34f237d2b344574eff6be498a51",
+  "candidate_harness_binary_sha256": "daa1139c133197e3d080ccba0280205a16980319d2b9d875ac0b47fba581030f",
+  "instruction_references": {
+    "parent-b1-q1": {
+      "count": 1465363688,
+      "sha256": "0594030e50a07172c620d441df7132acc0b813d17135c1ebd420782b1112ab43"
+    },
+    "candidate-b1-q1": {
+      "count": 1244090413,
+      "sha256": "9800a842ddd9f390b8970f92dc755a7aedfb94c04491aa1f5f8627483087cccb"
+    },
+    "parent-b3-q1": {
+      "count": 1992075499,
+      "sha256": "df2e50799fcdf6784f14f5516a0fcb280ee0aefd158749ba0898a41934c2b52e"
+    },
+    "candidate-b3-q1": {
+      "count": 1635697946,
+      "sha256": "da7f978173e1ae9b9e88bd0b9c7a9742f361f1afba99d662775937bd539c6c93"
+    }
+  },
+  "warning": "Callgrind Ir are instruction references, not cycles. Raw captures are retained in local untracked experiment scratch."
+}
