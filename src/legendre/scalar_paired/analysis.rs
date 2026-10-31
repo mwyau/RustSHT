@@ -89,6 +89,293 @@ pub(crate) struct F32ScaledAnalysisState {
     valid: bool,
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scaled analysis lane pass shares one basis vector between accumulation and recurrence."
+)]
+#[inline(always)]
+fn accumulate_scaled_f32_impl<S: Simd, const OPPOSITE_PREWEIGHTED: bool, const ADVANCE: bool>(
+    simd: S,
+    same_real: &[f32],
+    same_imag: &[f32],
+    opposite_real: &[f32],
+    opposite_imag: &[f32],
+    basis: &[f32],
+    exponents: &[i64],
+    cos_theta: &[f32],
+    previous: &[f32],
+    next: &mut [f32],
+    cos_theta_squared: &[f32],
+    coefficient_a: f32,
+    coefficient_b: f32,
+    state: &mut F32ScaledAnalysisState,
+) -> (Complex32, Complex32) {
+    let F32ScaledAnalysisState {
+        maximum_coefficient_exponent,
+        common_exponent,
+        shift,
+        factors,
+        hard_factors,
+        hard_scale_exponents,
+        hard_scalar_indices,
+        hard_scalar_count,
+        hard_vector_indices,
+        hard_vector_count,
+        lane_count,
+        valid,
+    } = state;
+    if !*valid || *lane_count != basis.len() {
+        *common_exponent = exponents.iter().copied().max().unwrap_or(0);
+        let lane_bits = if basis.len() <= 1 {
+            0
+        } else {
+            (usize::BITS - (basis.len() - 1).leading_zeros()) as i32
+        };
+        let shift_budget = 126 - *maximum_coefficient_exponent - 40 - lane_bits;
+        *shift = i64::from(shift_budget.clamp(0, 78));
+        for lane in 0..basis.len() {
+            let factor_exponent = exponents[lane]
+                .saturating_sub(*common_exponent)
+                .saturating_add(*shift);
+            factors[lane] = if factor_exponent < -86 {
+                0.0
+            } else {
+                numeric::scale_binary_f32(1.0, factor_exponent)
+            };
+        }
+        hard_factors.fill(0.0);
+        *hard_scalar_count = 0;
+        *hard_vector_count = 0;
+        let vector_width = S::F32_LANES;
+        let vector_count = basis.len() / vector_width;
+        for (vector_index, hard_scale_exponent) in hard_scale_exponents
+            .iter_mut()
+            .take(vector_count)
+            .enumerate()
+        {
+            let lane_start = vector_index * vector_width;
+            let lane_end = lane_start + vector_width;
+            let mut hard_common = None::<i64>;
+            for lane in lane_start..lane_end {
+                if factors[lane] == 0.0 {
+                    hard_common = Some(
+                        hard_common.map_or(exponents[lane], |maximum| maximum.max(exponents[lane])),
+                    );
+                }
+            }
+            let Some(hard_common) = hard_common else {
+                continue;
+            };
+            *hard_scale_exponent = hard_common.saturating_sub(*shift);
+            let mut grouped_lanes = false;
+            for lane in lane_start..lane_end {
+                if factors[lane] != 0.0 {
+                    continue;
+                }
+                let factor_exponent = exponents[lane]
+                    .saturating_sub(hard_common)
+                    .saturating_add(*shift);
+                let cosine_is_safe = OPPOSITE_PREWEIGHTED
+                    || cos_theta[lane] == 0.0
+                    || cos_theta[lane].abs() >= f32::from_bits(87_u32 << 23);
+                let factor_floor = if OPPOSITE_PREWEIGHTED || cos_theta[lane] == 0.0 {
+                    -45
+                } else {
+                    -5
+                };
+                if factor_exponent < factor_floor || !cosine_is_safe {
+                    debug_assert!(lane <= u8::MAX as usize);
+                    hard_scalar_indices[*hard_scalar_count] = lane as u8;
+                    *hard_scalar_count += 1;
+                } else {
+                    hard_factors[lane] = numeric::scale_binary_f32(1.0, factor_exponent);
+                    grouped_lanes = true;
+                }
+            }
+            if grouped_lanes {
+                debug_assert!(vector_index <= u8::MAX as usize);
+                hard_vector_indices[*hard_vector_count] = vector_index as u8;
+                *hard_vector_count += 1;
+            }
+        }
+        for (lane, factor) in factors
+            .iter()
+            .copied()
+            .enumerate()
+            .take(basis.len())
+            .skip(vector_count * vector_width)
+        {
+            if factor == 0.0 {
+                debug_assert!(lane <= u8::MAX as usize);
+                hard_scalar_indices[*hard_scalar_count] = lane as u8;
+                *hard_scalar_count += 1;
+            }
+        }
+        *lane_count = basis.len();
+        *valid = true;
+    }
+
+    let mut hard_same = Complex32::new(0.0, 0.0);
+    let mut hard_opposite = Complex32::new(0.0, 0.0);
+    for &lane in hard_scalar_indices.iter().take(*hard_scalar_count) {
+        let lane = lane as usize;
+        let same = scalar::multiply_complex_scaled_f32(
+            Complex32::new(same_real[lane], same_imag[lane]),
+            basis[lane],
+            exponents[lane],
+        );
+        let opposite_basis = if OPPOSITE_PREWEIGHTED {
+            basis[lane]
+        } else {
+            basis[lane] * cos_theta[lane]
+        };
+        let opposite = scalar::multiply_complex_scaled_f32(
+            Complex32::new(opposite_real[lane], opposite_imag[lane]),
+            opposite_basis,
+            exponents[lane],
+        );
+        hard_same.re += same.re;
+        hard_same.im += same.im;
+        hard_opposite.re += opposite.re;
+        hard_opposite.im += opposite.im;
+    }
+
+    let (same_real_vectors, same_real_tail) = S::as_simd_f32s(same_real);
+    let (same_imag_vectors, same_imag_tail) = S::as_simd_f32s(same_imag);
+    let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f32s(opposite_real);
+    let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f32s(opposite_imag);
+    let (basis_vectors, basis_tail) = S::as_simd_f32s(basis);
+    let (cosine_vectors, cosine_tail) = S::as_simd_f32s(cos_theta);
+    let (factor_vectors, factor_tail) = S::as_simd_f32s(&factors[..basis.len()]);
+    let (hard_factor_vectors, _) = S::as_simd_f32s(&hard_factors[..basis.len()]);
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f32s(cos_theta_squared);
+    let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+    if ADVANCE {
+        debug_assert_eq!(previous_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(cosine_squared_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(next_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(previous_tail.len(), basis_tail.len());
+        debug_assert_eq!(cosine_squared_tail.len(), basis_tail.len());
+        debug_assert_eq!(next_tail.len(), basis_tail.len());
+    }
+    debug_assert_eq!(same_real_vectors.len(), basis_vectors.len());
+    debug_assert_eq!(same_imag_vectors.len(), basis_vectors.len());
+    debug_assert_eq!(opposite_real_vectors.len(), basis_vectors.len());
+    debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
+    debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
+    debug_assert_eq!(factor_vectors.len(), basis_vectors.len());
+    debug_assert_eq!(hard_factor_vectors.len(), basis_vectors.len());
+    let zero = simd.splat_f32s(0.0);
+    let coefficient_a_vector = simd.splat_f32s(coefficient_a);
+    let coefficient_b_vector = simd.splat_f32s(coefficient_b);
+    let mut same_re = zero;
+    let mut same_im = zero;
+    let mut opposite_re = zero;
+    let mut opposite_im = zero;
+    for index in 0..basis_vectors.len() {
+        let aligned_basis = simd.mul_f32s(basis_vectors[index], factor_vectors[index]);
+        same_re = simd.mul_add_f32s(same_real_vectors[index], aligned_basis, same_re);
+        same_im = simd.mul_add_f32s(same_imag_vectors[index], aligned_basis, same_im);
+        let opposite_basis = if OPPOSITE_PREWEIGHTED {
+            basis_vectors[index]
+        } else {
+            simd.mul_f32s(basis_vectors[index], cosine_vectors[index])
+        };
+        let aligned_opposite_basis = simd.mul_f32s(opposite_basis, factor_vectors[index]);
+        opposite_re = simd.mul_add_f32s(
+            opposite_real_vectors[index],
+            aligned_opposite_basis,
+            opposite_re,
+        );
+        opposite_im = simd.mul_add_f32s(
+            opposite_imag_vectors[index],
+            aligned_opposite_basis,
+            opposite_im,
+        );
+        if ADVANCE {
+            let leading = simd.mul_add_f32s(
+                coefficient_a_vector,
+                cosine_squared_vectors[index],
+                coefficient_b_vector,
+            );
+            next_vectors[index] =
+                simd.mul_add_f32s(leading, basis_vectors[index], previous_vectors[index]);
+        }
+    }
+    let mut same_re_sum = simd.reduce_sum_f32s(same_re);
+    let mut same_im_sum = simd.reduce_sum_f32s(same_im);
+    let mut opposite_re_sum = simd.reduce_sum_f32s(opposite_re);
+    let mut opposite_im_sum = simd.reduce_sum_f32s(opposite_im);
+    for lane in 0..basis_tail.len() {
+        let aligned_basis = basis_tail[lane] * factor_tail[lane];
+        same_re_sum = same_real_tail[lane].mul_add(aligned_basis, same_re_sum);
+        same_im_sum = same_imag_tail[lane].mul_add(aligned_basis, same_im_sum);
+        let opposite_basis = if OPPOSITE_PREWEIGHTED {
+            basis_tail[lane]
+        } else {
+            basis_tail[lane] * cosine_tail[lane]
+        };
+        let aligned_opposite_basis = opposite_basis * factor_tail[lane];
+        opposite_re_sum = opposite_real_tail[lane].mul_add(aligned_opposite_basis, opposite_re_sum);
+        opposite_im_sum = opposite_imag_tail[lane].mul_add(aligned_opposite_basis, opposite_im_sum);
+        if ADVANCE {
+            let leading = coefficient_a.mul_add(cosine_squared_tail[lane], coefficient_b);
+            next_tail[lane] = leading.mul_add(basis_tail[lane], previous_tail[lane]);
+        }
+    }
+    for &vector_index in hard_vector_indices.iter().take(*hard_vector_count) {
+        let vector_index = vector_index as usize;
+        let aligned_basis = simd.mul_f32s(
+            basis_vectors[vector_index],
+            hard_factor_vectors[vector_index],
+        );
+        let hard_same_re = simd.mul_add_f32s(same_real_vectors[vector_index], aligned_basis, zero);
+        let hard_same_im = simd.mul_add_f32s(same_imag_vectors[vector_index], aligned_basis, zero);
+        let aligned_opposite_basis = if OPPOSITE_PREWEIGHTED {
+            aligned_basis
+        } else {
+            simd.mul_f32s(
+                simd.mul_f32s(basis_vectors[vector_index], cosine_vectors[vector_index]),
+                hard_factor_vectors[vector_index],
+            )
+        };
+        let hard_opposite_re = simd.mul_add_f32s(
+            opposite_real_vectors[vector_index],
+            aligned_opposite_basis,
+            zero,
+        );
+        let hard_opposite_im = simd.mul_add_f32s(
+            opposite_imag_vectors[vector_index],
+            aligned_opposite_basis,
+            zero,
+        );
+        let scale_exponent = hard_scale_exponents[vector_index];
+        hard_same.re +=
+            numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_same_re), scale_exponent);
+        hard_same.im +=
+            numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_same_im), scale_exponent);
+        hard_opposite.re +=
+            numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_opposite_re), scale_exponent);
+        hard_opposite.im +=
+            numeric::scale_binary_f32(simd.reduce_sum_f32s(hard_opposite_im), scale_exponent);
+    }
+    (
+        Complex32::new(
+            numeric::scale_binary_f32(same_re_sum, common_exponent.saturating_sub(*shift))
+                + hard_same.re,
+            numeric::scale_binary_f32(same_im_sum, common_exponent.saturating_sub(*shift))
+                + hard_same.im,
+        ),
+        Complex32::new(
+            numeric::scale_binary_f32(opposite_re_sum, common_exponent.saturating_sub(*shift))
+                + hard_opposite.re,
+            numeric::scale_binary_f32(opposite_im_sum, common_exponent.saturating_sub(*shift))
+                + hard_opposite.im,
+        ),
+    )
+}
+
 impl FusedAnalysisPrecision for f32 {
     type Vector<S: Simd> = S::f32s;
     type ScaledState = F32ScaledAnalysisState;
@@ -613,6 +900,94 @@ impl FusedAnalysisPrecision for f64 {
     #[inline(always)]
     fn invalidate_scaled_state(_state: &mut Self::ScaledState) {}
 }
+
+/// B3-only scaled-path fusion. Keeping this precision leaf outside
+/// `FusedAnalysisPrecision` leaves the B1 scalar-analysis monomorphization
+/// unchanged.
+pub(crate) trait B3ScaledRecurrencePrecision: FusedAnalysisPrecision {
+    const FUSE_B3_SCALED_ACCUMULATION_AND_RECURRENCE: bool = false;
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The spin analysis scaled pass shares basis lanes between one channel and recurrence advancement."
+    )]
+    fn accumulate_scaled_and_advance<S: Simd, const OPPOSITE_PREWEIGHTED: bool>(
+        simd: S,
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        basis: &[Self],
+        exponents: &[i64],
+        cos_theta: &[Self],
+        previous: &[Self],
+        next: &mut [Self],
+        cos_theta_squared: &[Self],
+        coefficient_a: Self,
+        coefficient_b: Self,
+        state: &mut Self::ScaledState,
+    ) -> (Complex<Self>, Complex<Self>) {
+        let _ = (
+            previous,
+            next,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+        );
+        Self::accumulate_scaled::<S, OPPOSITE_PREWEIGHTED>(
+            simd,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+            state,
+        )
+    }
+}
+
+impl B3ScaledRecurrencePrecision for f32 {
+    const FUSE_B3_SCALED_ACCUMULATION_AND_RECURRENCE: bool = true;
+
+    #[inline(always)]
+    fn accumulate_scaled_and_advance<S: Simd, const OPPOSITE_PREWEIGHTED: bool>(
+        simd: S,
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        basis: &[Self],
+        exponents: &[i64],
+        cos_theta: &[Self],
+        previous: &[Self],
+        next: &mut [Self],
+        cos_theta_squared: &[Self],
+        coefficient_a: Self,
+        coefficient_b: Self,
+        state: &mut Self::ScaledState,
+    ) -> (Complex<Self>, Complex<Self>) {
+        accumulate_scaled_f32_impl::<S, OPPOSITE_PREWEIGHTED, true>(
+            simd,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+            previous,
+            next,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            state,
+        )
+    }
+}
+
+impl B3ScaledRecurrencePrecision for f64 {}
 
 /// Shared native-f32/f64 scalar-analysis block. It consumes the preweighted
 /// opposite spectrum, carries lane scale exponents when needed, accumulates
@@ -4940,6 +5315,7 @@ struct NativeScaledFusedAnalysisPairChannels<'a, T> {
     m: usize,
     lmax: usize,
     cos_theta: &'a [T],
+    cos_theta_squared: &'a [T],
     coefficient_a: &'a [T],
     coefficient_b: &'a [T],
     same_real: [&'a [T]; 2],
@@ -4954,7 +5330,7 @@ struct NativeScaledFusedAnalysisPairChannels<'a, T> {
     exponents: &'a mut [i64],
 }
 
-impl<T: FusedAnalysisPrecision> WithSimd for NativeScaledFusedAnalysisPairChannels<'_, T> {
+impl<T: B3ScaledRecurrencePrecision> WithSimd for NativeScaledFusedAnalysisPairChannels<'_, T> {
     type Output = Result<bool, ShtError>;
 
     #[inline(always)]
@@ -4963,6 +5339,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for NativeScaledFusedAnalysisPairChanne
             m,
             lmax,
             cos_theta,
+            cos_theta_squared,
             coefficient_a,
             coefficient_b,
             same_real,
@@ -4978,6 +5355,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for NativeScaledFusedAnalysisPairChanne
         } = self;
         let lane_count = cos_theta.len();
         if lane_count == 0
+            || cos_theta_squared.len() != lane_count
             || same_real.iter().any(|values| values.len() != lane_count)
             || same_imag.iter().any(|values| values.len() != lane_count)
             || opposite_real
@@ -5016,20 +5394,55 @@ impl<T: FusedAnalysisPrecision> WithSimd for NativeScaledFusedAnalysisPairChanne
         let coefficient_count = lmax - m + 1;
 
         for pair in 0..pair_count {
+            let advances = pair + 1 < pair_count;
+            let mut recurrence_precomputed = false;
             let mut sums = [[T::zero(); 4]; 2];
-            for channel in 0..2 {
-                let (same, opposite) = T::accumulate_scaled::<S, false>(
+            if advances && T::FUSE_B3_SCALED_ACCUMULATION_AND_RECURRENCE {
+                let (same, opposite) = T::accumulate_scaled_and_advance::<S, false>(
                     simd,
-                    same_real[channel],
-                    same_imag[channel],
-                    opposite_real[channel],
-                    opposite_imag[channel],
+                    same_real[0],
+                    same_imag[0],
+                    opposite_real[0],
+                    opposite_imag[0],
                     &current[..lane_count],
                     exponents,
                     cos_theta,
-                    &mut scaled_states[channel],
+                    previous,
+                    next,
+                    cos_theta_squared,
+                    coefficient_a[pair],
+                    coefficient_b[pair],
+                    &mut scaled_states[0],
                 );
-                sums[channel] = [same.re, same.im, opposite.re, opposite.im];
+                sums[0] = [same.re, same.im, opposite.re, opposite.im];
+                let (same, opposite) = T::accumulate_scaled::<S, false>(
+                    simd,
+                    same_real[1],
+                    same_imag[1],
+                    opposite_real[1],
+                    opposite_imag[1],
+                    &current[..lane_count],
+                    exponents,
+                    cos_theta,
+                    &mut scaled_states[1],
+                );
+                sums[1] = [same.re, same.im, opposite.re, opposite.im];
+                recurrence_precomputed = true;
+            } else {
+                for channel in 0..2 {
+                    let (same, opposite) = T::accumulate_scaled::<S, false>(
+                        simd,
+                        same_real[channel],
+                        same_imag[channel],
+                        opposite_real[channel],
+                        opposite_imag[channel],
+                        &current[..lane_count],
+                        exponents,
+                        cos_theta,
+                        &mut scaled_states[channel],
+                    );
+                    sums[channel] = [same.re, same.im, opposite.re, opposite.im];
+                }
             }
 
             if !sums
@@ -5048,18 +5461,20 @@ impl<T: FusedAnalysisPrecision> WithSimd for NativeScaledFusedAnalysisPairChanne
                 staged_second[offset + 1] = Complex::new(sums[1][2], sums[1][3]);
             }
 
-            if pair + 1 == pair_count {
+            if !advances {
                 continue;
             }
-            T::step_pair(
-                simd,
-                coefficient_a[pair],
-                coefficient_b[pair],
-                cos_theta,
-                previous,
-                current,
-                next,
-            );
+            if !recurrence_precomputed {
+                T::step_pair(
+                    simd,
+                    coefficient_a[pair],
+                    coefficient_b[pair],
+                    cos_theta,
+                    previous,
+                    current,
+                    next,
+                );
+            }
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
             if T::pair_state_needs_scaling(simd, previous, current) {
@@ -5077,7 +5492,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for NativeScaledFusedAnalysisPairChanne
     clippy::too_many_arguments,
     reason = "The native paired kernel receives reflected channels and caller-owned recurrence scratch."
 )]
-pub(crate) fn fused_scalar_analysis_pair_channels_block_native<T: FusedAnalysisPrecision>(
+pub(crate) fn fused_scalar_analysis_pair_channels_block_native<T: B3ScaledRecurrencePrecision>(
     arch: Arch,
     range_check_is_proven_safe: bool,
     range_check_was_exercised: &mut bool,
@@ -5163,10 +5578,17 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_native<T: FusedAnalysisP
     staged_first[..coefficient_count].fill(Complex::new(T::zero(), T::zero()));
     staged_second[..coefficient_count].fill(Complex::new(T::zero(), T::zero()));
     if !ordinary_seed {
+        let mut scaled_cos_theta_squared = [T::zero(); LATITUDE_BLOCK_SIZE];
+        if T::FUSE_B3_SCALED_ACCUMULATION_AND_RECURRENCE {
+            for (squared, &cosine) in scaled_cos_theta_squared.iter_mut().zip(cos_theta) {
+                *squared = cosine * cosine;
+            }
+        }
         return arch.dispatch(NativeScaledFusedAnalysisPairChannels {
             m,
             lmax,
             cos_theta,
+            cos_theta_squared: &scaled_cos_theta_squared[..sin_theta.len()],
             coefficient_a,
             coefficient_b,
             same_real,
