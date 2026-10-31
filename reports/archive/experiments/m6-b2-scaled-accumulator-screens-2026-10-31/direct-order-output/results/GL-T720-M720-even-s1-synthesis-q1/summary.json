@@ -1,0 +1,49 @@
+{
+  "case": {
+    "grid": "GL",
+    "lmax": 720,
+    "longitude": "even",
+    "mmax": 720,
+    "nphi": 1458,
+    "ntheta": 721,
+    "operation": "synthesis",
+    "spin": 1,
+    "threads": 1
+  },
+  "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+  "median_ratios": {
+    "ratio_candidate_over_parent": 1.00179790942744,
+    "ratio_f32_over_f64": 1.5432198356466407,
+    "ratio_rust_f32_over_ducc_f32": 1.4295749139334986,
+    "ratio_rust_f64_over_ducc_f64": 0.8958740045351242
+  },
+  "paired_ratios": {
+    "ratio_candidate_over_parent": [
+      1.0367735965452902,
+      1.00179790942744,
+      0.9556346423445142
+    ],
+    "ratio_f32_over_f64": [
+      1.5422997837915513,
+      1.5432198356466407,
+      1.5536685334387714
+    ],
+    "ratio_rust_f32_over_ducc_f32": [
+      1.4295749139334986,
+      1.4251771570430118,
+      1.4416885984773185
+    ],
+    "ratio_rust_f64_over_ducc_f64": [
+      0.9057517955404313,
+      0.8951944024538349,
+      0.8958740045351242
+    ]
+  },
+  "route": "current f32 production route; see source dispatch; f64 workers are matched diagnostic controls",
+  "screen_status": {
+    "ratio_candidate_over_parent": "INCONCLUSIVE",
+    "ratio_f32_over_f64": "GAP",
+    "ratio_rust_f32_over_ducc_f32": "GAP",
+    "ratio_rust_f64_over_ducc_f64": "SCREEN_PASS_NEEDS_15_PAIR"
+  }
+}

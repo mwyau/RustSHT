@@ -1,0 +1,307 @@
+{
+  "dispatch": {
+    "ducc32": {
+      "backend": "ducc",
+      "output_checksum": -16.47067680838518,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc64": {
+      "backend": "ducc64",
+      "output_checksum": -16.47067746999882,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "parent32": {
+      "backend": "rustsht",
+      "f32_lanes": 8,
+      "output_checksum": -35.40937111247331,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+    },
+    "rust32": {
+      "backend": "rustsht",
+      "f32_lanes": 8,
+      "output_checksum": -35.40937111247331,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+    },
+    "rust64": {
+      "backend": "rust64",
+      "output_checksum": -35.4296847656311,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  },
+  "fixture_sha256": {
+    "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+    "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+    "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+    "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+  },
+  "ms": {
+    "ducc32": 41.0254545,
+    "ducc64": 42.493212,
+    "parent32": 61.891781,
+    "rust32": 59.14593,
+    "rust64": 38.068563999999995
+  },
+  "output_rel_l2": {
+    "candidate_vs_parent_f32": 0.0,
+    "rust_f32_vs_ducc_f32": 0.000280565618799124,
+    "rust_f32_vs_widened_rust_f64": 0.0002805651490653241,
+    "rust_f64_vs_ducc_f64": 4.4215509599070657e-13
+  },
+  "pair": 3,
+  "ratio_candidate_over_parent": 0.9556346423445142,
+  "ratio_f32_over_f64": 1.5536685334387714,
+  "ratio_rust_f32_over_ducc_f32": 1.4416885984773185,
+  "ratio_rust_f64_over_ducc_f64": 0.8958740045351242,
+  "workers": {
+    "ducc32": {
+      "backend": "ducc",
+      "batch_ms": [
+        40.984588,
+        40.65298,
+        40.758679,
+        41.234831,
+        41.397088,
+        41.418408,
+        41.047997,
+        40.393579,
+        42.67204,
+        41.002912
+      ],
+      "batch_total_ms": [
+        40.984588,
+        40.65298,
+        40.758679,
+        41.234831,
+        41.397088,
+        41.418408,
+        41.047997,
+        40.393579,
+        42.67204,
+        41.002912
+      ],
+      "binary_sha256": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+      "finite_outputs": true,
+      "first_ms": 45.679361,
+      "fixture_load_ms": 8.382803,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -16.47067680838518,
+      "outputs": [
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/ducc32/out0.f32",
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/ducc32/out1.f32"
+      ],
+      "process_elapsed_s": 0.6190766002982855,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "setup_ms": 10.888395,
+      "spin": 1,
+      "threads": 1,
+      "warmup_ms": 44.818342
+    },
+    "ducc64": {
+      "backend": "ducc64",
+      "batch_ms": [
+        42.680437,
+        42.477272,
+        42.990984,
+        42.223341,
+        43.24223,
+        42.166364,
+        41.894318,
+        43.663456,
+        42.268136,
+        42.509152
+      ],
+      "batch_total_ms": [
+        42.680437,
+        42.477272,
+        42.990984,
+        42.223341,
+        43.24223,
+        42.166364,
+        41.894318,
+        43.663456,
+        42.268136,
+        42.509152
+      ],
+      "binary_sha256": "5d435ead16fe37f86b4db7a991261697d627847d465733b607e9130fb95af01e",
+      "first_ms": 50.297421,
+      "fixture_load_ms": 19.364034,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -16.47067746999882,
+      "outputs": [
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/ducc64/out0.f64",
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/ducc64/out1.f64"
+      ],
+      "process_elapsed_s": 0.6789683657698333,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "setup_ms": 20.769934,
+      "threads": 1,
+      "warmup_ms": 49.38822
+    },
+    "parent32": {
+      "backend": "rustsht",
+      "batch_ms": [
+        59.154391000000004,
+        61.210252,
+        65.94927,
+        61.867786,
+        61.915776,
+        63.080841,
+        62.235662,
+        62.101858,
+        58.719057,
+        58.325391999999994
+      ],
+      "batch_total_ms": [
+        59.154391000000004,
+        61.210252,
+        65.94927,
+        61.867786,
+        61.915776,
+        63.080841,
+        62.235662,
+        62.101858,
+        58.719057,
+        58.325391999999994
+      ],
+      "binary_sha256": "32b2226bbe59021ae57267e35dd11eb5c1eb041c23ec74c8b05f4ef396aae850",
+      "f32_lanes": 8,
+      "finite_outputs": true,
+      "first_ms": 58.592788999999996,
+      "fixture_load_ms": 10.371026,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.40937111247331,
+      "outputs": [
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/parent32/out0.f32",
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/parent32/out1.f32"
+      ],
+      "pool_setup_ms": 0.126439,
+      "process_elapsed_s": 11.652869643643498,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "setup_ms": 3.378874,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "spin": 1,
+      "threads": 1,
+      "warmup_ms": 59.54504
+    },
+    "rust32": {
+      "backend": "rustsht",
+      "batch_ms": [
+        58.647532000000005,
+        58.907363,
+        59.321808,
+        62.199153,
+        62.685984,
+        60.596049,
+        61.443493000000004,
+        58.970052,
+        58.724628,
+        58.485375
+      ],
+      "batch_total_ms": [
+        58.647532000000005,
+        58.907363,
+        59.321808,
+        62.199153,
+        62.685984,
+        60.596049,
+        61.443493000000004,
+        58.970052,
+        58.724628,
+        58.485375
+      ],
+      "binary_sha256": "63fdca88e56c836b2269a840b8e5553c118e8a06b4ef64e0da968725f3cd6eb6",
+      "f32_lanes": 8,
+      "finite_outputs": true,
+      "first_ms": 59.026078000000005,
+      "fixture_load_ms": 9.746573999999999,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.40937111247331,
+      "outputs": [
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/rust32/out0.f32",
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/rust32/out1.f32"
+      ],
+      "pool_setup_ms": 0.12107899999999999,
+      "process_elapsed_s": 11.66935679409653,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "setup_ms": 3.318901,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "spin": 1,
+      "threads": 1,
+      "warmup_ms": 59.679414
+    },
+    "rust64": {
+      "backend": "rust64",
+      "batch_ms": [
+        37.856217,
+        37.832963,
+        38.907116,
+        37.910681000000004,
+        38.059332,
+        38.077796,
+        38.013344,
+        38.118503999999994,
+        38.122782,
+        38.083287
+      ],
+      "batch_total_ms": [
+        37.856217,
+        37.832963,
+        38.907116,
+        37.910681000000004,
+        38.059332,
+        38.077796,
+        38.013344,
+        38.118503999999994,
+        38.122782,
+        38.083287
+      ],
+      "binary_sha256": "9e483008730ed9822ea2e052ed6dc39158e48630cd3bbfc82831e4f79bc223d2",
+      "first_ms": 42.342427,
+      "fixture_load_ms": 33.542134000000004,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.4296847656311,
+      "outputs": [
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/rust64/out0.f64",
+        "results/GL-T720-M720-even-s1-synthesis-q1/pair-3/rust64/out1.f64"
+      ],
+      "pool_ms": 0.146277,
+      "process_elapsed_s": 11.51190222473815,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "setup_ms": 6.442652,
+      "threads": 1,
+      "warmup_ms": 38.299175
+    }
+  }
+}

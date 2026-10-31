@@ -1,0 +1,60 @@
+{
+  "analysis_source_sha256": "514932cdb18b6a8ac0f77fc6b12822145249e5ba9497436c48e90447976e7a7a",
+  "binary_sha256": {
+    "candidate/ducc_f32_full_transform_parity": "63fdca88e56c836b2269a840b8e5553c118e8a06b4ef64e0da968725f3cd6eb6",
+    "candidate/ducc_full_transform_parity": "a8da7f033b6a18206fc06756ad26176f264a42961c386efdd12f7597018dd3a2",
+    "candidate/ducc_spin1_full_transform_parity": "9e483008730ed9822ea2e052ed6dc39158e48630cd3bbfc82831e4f79bc223d2",
+    "ducc_f32_full_transform_parity": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+    "ducc_full_transform_parity": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11",
+    "ducc_spin1_full_transform_parity": "5d435ead16fe37f86b4db7a991261697d627847d465733b607e9130fb95af01e",
+    "parent/ducc_f32_full_transform_parity": "32b2226bbe59021ae57267e35dd11eb5c1eb041c23ec74c8b05f4ef396aae850"
+  },
+  "candidate_patch_sha256": "0893c1988893923893a400cc9ce82146d6b50695c92188316bfeaea59c354e80",
+  "cases": [
+    {
+      "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+      "fixture_sha256": {
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+      }
+    },
+    {
+      "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+      "fixture_sha256": {
+        "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+        "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+        "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+        "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s1-synthesis-q1",
+      "fixture_sha256": {
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+      }
+    },
+    {
+      "case_id": "GL-T720-M180-even-s1-synthesis-q8",
+      "fixture_sha256": {
+        "alm0": "738b1dca3d9a775296c355e9675f264b90e1b61c1ee9ba9c92203c70f7ba8a36",
+        "alm1": "aab90e397527bda9331a830748c56a9b9fac2b7607c9533773b2af762446544c",
+        "map0": "68f3d4da093d266b1b5fec6c517d01631f0f8e2485aa0493261a3a04d0d60b80",
+        "map1": "3ded2f8baf61b79a1664e0d6640e3285d1d0d6256b2277248ae1175d9e0f0179"
+      }
+    }
+  ],
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "ducc_expected_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "pairs": 3,
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rust_source_sha": "de6fc98e04dcbf56de125f4e1c0ec81aa402cb0f",
+  "rust_source_tree": "da31dc2805f38c3fba96acfc1ccda170dedc16ad",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "target_batch_ms": 25.0
+}

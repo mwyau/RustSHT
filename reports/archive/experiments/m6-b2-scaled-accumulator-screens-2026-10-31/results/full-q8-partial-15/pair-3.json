@@ -1,0 +1,363 @@
+{
+  "dispatch": {
+    "ducc32": {
+      "backend": "ducc",
+      "output_checksum": -16.47067680838518,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "ducc64": {
+      "backend": "ducc64",
+      "output_checksum": -16.47067746999882,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "parent32": {
+      "backend": "rustsht",
+      "f32_lanes": 8,
+      "output_checksum": -35.40937111247331,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+    },
+    "parent64": {
+      "backend": "parent64",
+      "output_checksum": -35.4296847656311,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    },
+    "rust32": {
+      "backend": "rustsht",
+      "f32_lanes": 8,
+      "output_checksum": -35.40937111247331,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+    },
+    "rust64": {
+      "backend": "rust64",
+      "output_checksum": -35.4296847656311,
+      "repeat_consistent": true,
+      "reset_consistent": true
+    }
+  },
+  "fixture_sha256": {
+    "alm0": "6a6e405f086a31606318c0d5dd3547ab900b659bbe79287e73a43bcf8b425413",
+    "alm1": "3add7c9249f142a4c2bfb0f83dce8f3b6f56af8a85955e5f21b44518db8d4072",
+    "map0": "2f5c74d4144bb78cd6b4b7507ab7fedf1d5605b848c9f88a4bbbf4d8099bc032",
+    "map1": "14bfa8b7db3131a688e18b8477dca389e189aa66966d0360b9a1ac786895fb9a"
+  },
+  "ms": {
+    "ducc32": 5.6219769,
+    "ducc64": 5.9766703,
+    "parent32": 8.47855,
+    "parent64": 5.760235,
+    "rust32": 8.5740625,
+    "rust64": 5.7354533750000005
+  },
+  "output_rel_l2": {
+    "candidate_vs_parent_f32": 0.0,
+    "candidate_vs_parent_f64": 0.0,
+    "rust_f32_vs_ducc_f32": 0.000280565618799124,
+    "rust_f32_vs_widened_rust_f64": 0.0002805651490653241,
+    "rust_f64_vs_ducc_f64": 4.4215509599070657e-13
+  },
+  "pair": 3,
+  "ratio_candidate_f64_over_parent_f64": 0.995697810071985,
+  "ratio_candidate_over_parent": 1.011265192751119,
+  "ratio_f32_over_f64": 1.4949232326380824,
+  "ratio_rust_f32_over_ducc_f32": 1.5250974261384818,
+  "ratio_rust_f64_over_ducc_f64": 0.9596402490195921,
+  "workers": {
+    "ducc32": {
+      "backend": "ducc",
+      "batch_ms": [
+        5.6280326,
+        5.6083226,
+        5.6039482,
+        5.6681882,
+        5.6321326,
+        5.6296698,
+        5.6135688,
+        5.6260568,
+        5.6028842,
+        5.617897
+      ],
+      "batch_total_ms": [
+        28.140163,
+        28.041613,
+        28.019741,
+        28.340941,
+        28.160663,
+        28.148349,
+        28.067844,
+        28.130284,
+        28.014421,
+        28.089485
+      ],
+      "binary_sha256": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+      "finite_outputs": true,
+      "first_ms": 9.509608,
+      "fixture_load_ms": 9.405617,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -16.47067680838518,
+      "outputs": [
+        "pair-3/ducc32/out0.f32",
+        "pair-3/ducc32/out1.f32"
+      ],
+      "process_elapsed_s": 0.3875534567050636,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 5,
+      "reset_consistent": true,
+      "setup_ms": 10.974965,
+      "spin": 1,
+      "threads": 8,
+      "warmup_ms": 8.944137
+    },
+    "ducc64": {
+      "backend": "ducc64",
+      "batch_ms": [
+        5.9442968,
+        5.9136598,
+        5.9366900000000005,
+        5.9708662,
+        6.0175122000000005,
+        6.016476,
+        6.022712,
+        5.9824744,
+        5.9542138,
+        6.0181774
+      ],
+      "batch_total_ms": [
+        29.721484,
+        29.568299,
+        29.68345,
+        29.854331,
+        30.087561,
+        30.08238,
+        30.11356,
+        29.912372,
+        29.771069,
+        30.090887
+      ],
+      "binary_sha256": "5d435ead16fe37f86b4db7a991261697d627847d465733b607e9130fb95af01e",
+      "first_ms": 10.043577,
+      "fixture_load_ms": 20.995548,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -16.47067746999882,
+      "outputs": [
+        "pair-3/ducc64/out0.f64",
+        "pair-3/ducc64/out1.f64"
+      ],
+      "process_elapsed_s": 0.4495771252550185,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 5,
+      "reset_consistent": true,
+      "setup_ms": 20.860027,
+      "threads": 8,
+      "warmup_ms": 8.535288
+    },
+    "parent32": {
+      "backend": "rustsht",
+      "batch_ms": [
+        8.418973666666668,
+        8.405721,
+        8.444743333333333,
+        8.418061666666667,
+        8.539716,
+        8.394109,
+        8.512356666666667,
+        8.641482666666667,
+        8.519313666666667,
+        8.60564
+      ],
+      "batch_total_ms": [
+        25.256921000000002,
+        25.217163,
+        25.334229999999998,
+        25.254185,
+        25.619148000000003,
+        25.182327,
+        25.53707,
+        25.924447999999998,
+        25.557941,
+        25.81692
+      ],
+      "binary_sha256": "32b2226bbe59021ae57267e35dd11eb5c1eb041c23ec74c8b05f4ef396aae850",
+      "f32_lanes": 8,
+      "finite_outputs": true,
+      "first_ms": 8.533915,
+      "fixture_load_ms": 9.100749,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.40937111247331,
+      "outputs": [
+        "pair-3/parent32/out0.f32",
+        "pair-3/parent32/out1.f32"
+      ],
+      "pool_setup_ms": 0.340247,
+      "process_elapsed_s": 10.994529129937291,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 3,
+      "reset_consistent": true,
+      "setup_ms": 3.86133,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "spin": 1,
+      "threads": 8,
+      "warmup_ms": 8.522193000000001
+    },
+    "parent64": {
+      "backend": "parent64",
+      "batch_ms": [
+        5.7471535000000005,
+        5.603053,
+        6.098604,
+        5.805719,
+        5.676665,
+        5.7733165,
+        5.830329000000001,
+        5.7469655,
+        5.645114250000001,
+        5.9817835
+      ],
+      "batch_total_ms": [
+        22.988614000000002,
+        22.412212,
+        24.394416,
+        23.222876,
+        22.70666,
+        23.093266,
+        23.321316000000003,
+        22.987862,
+        22.580457000000003,
+        23.927134
+      ],
+      "binary_sha256": "0f566d35bc671461844e65fa2a0a9e787622b6b1aca6a84d97ffd550932a7018",
+      "first_ms": 8.948425,
+      "fixture_load_ms": 19.059523,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.4296847656311,
+      "outputs": [
+        "pair-3/parent64/out0.f64",
+        "pair-3/parent64/out1.f64"
+      ],
+      "pool_ms": 0.408027,
+      "process_elapsed_s": 10.86676097707823,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 4,
+      "reset_consistent": true,
+      "setup_ms": 8.077955,
+      "threads": 8,
+      "warmup_ms": 6.523015
+    },
+    "rust32": {
+      "backend": "rustsht",
+      "batch_ms": [
+        8.586396333333333,
+        8.526277,
+        8.590711333333333,
+        8.610937,
+        8.663658999999999,
+        8.558596333333334,
+        8.685591,
+        8.433711666666666,
+        8.503887333333333,
+        8.561728666666665
+      ],
+      "batch_total_ms": [
+        25.759189,
+        25.578831,
+        25.772133999999998,
+        25.832811,
+        25.990976999999997,
+        25.675789,
+        26.056773,
+        25.301135,
+        25.511662,
+        25.685185999999998
+      ],
+      "binary_sha256": "fb1d87c934a5413224d2c44233baa5e441ea79a33d5339c6c2d0a97d4bcdca37",
+      "f32_lanes": 8,
+      "finite_outputs": true,
+      "first_ms": 8.773647,
+      "fixture_load_ms": 9.763176999999999,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.40937111247331,
+      "outputs": [
+        "pair-3/rust32/out0.f32",
+        "pair-3/rust32/out1.f32"
+      ],
+      "pool_setup_ms": 0.366798,
+      "process_elapsed_s": 10.898180447053164,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 3,
+      "reset_consistent": true,
+      "setup_ms": 3.625635,
+      "simd_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "spin": 1,
+      "threads": 8,
+      "warmup_ms": 8.626223000000001
+    },
+    "rust64": {
+      "backend": "rust64",
+      "batch_ms": [
+        5.6422360000000005,
+        5.5600875,
+        5.70609425,
+        5.7104375,
+        5.74925,
+        5.861504,
+        5.7919925,
+        5.7277385,
+        5.74316825,
+        5.8503074999999995
+      ],
+      "batch_total_ms": [
+        22.568944000000002,
+        22.24035,
+        22.824377,
+        22.84175,
+        22.997,
+        23.446016,
+        23.16797,
+        22.910954,
+        22.972673,
+        23.401229999999998
+      ],
+      "binary_sha256": "977bd9795dbe2e566cec8911651569f658570ddcebf0a6748ea8bd3ae346bb8e",
+      "first_ms": 7.521401,
+      "fixture_load_ms": 47.161412999999996,
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "output_checksum": -35.4296847656311,
+      "outputs": [
+        "pair-3/rust64/out0.f64",
+        "pair-3/rust64/out1.f64"
+      ],
+      "pool_ms": 0.39759700000000003,
+      "process_elapsed_s": 10.974298458080739,
+      "repeat_consistent": true,
+      "repetitions_per_batch": 4,
+      "reset_consistent": true,
+      "setup_ms": 8.35509,
+      "threads": 8,
+      "warmup_ms": 6.489931
+    }
+  }
+}
