@@ -1,0 +1,79 @@
+{
+  "source_parent": "8560bcae34e0532a230b9a3e0d05cf10380cfccf",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "candidate_patch_sha256_uncompressed": "6717042a76e059df7c9c17edcb9a1dd41b1bec5d81868f4dfe9fe33c5f3093db",
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "values": 8192,
+  "fast_eligible_fraction": 0.75,
+  "repetitions": 1024,
+  "paired_samples_ns_per_value": [
+    [
+      2.6869791746139526,
+      2.3337900638580322
+    ],
+    [
+      2.6768858432769775,
+      2.3299896717071533
+    ],
+    [
+      2.6776180267333984,
+      2.3287500143051147
+    ],
+    [
+      2.585183620452881,
+      2.3399481773376465
+    ],
+    [
+      2.536030650138855,
+      2.2135874032974243
+    ],
+    [
+      2.5714809894561768,
+      2.246020793914795
+    ],
+    [
+      2.5432063341140747,
+      2.215449333190918
+    ],
+    [
+      2.5962812900543213,
+      2.3619024753570557
+    ],
+    [
+      2.5503674745559692,
+      2.356791853904724
+    ],
+    [
+      2.674782633781433,
+      2.21915066242218
+    ],
+    [
+      2.544556975364685,
+      2.219482660293579
+    ],
+    [
+      2.5451242923736572,
+      2.6503955125808716
+    ],
+    [
+      2.663269281387329,
+      2.2126450538635254
+    ],
+    [
+      2.54276442527771,
+      2.211296558380127
+    ],
+    [
+      2.652682662010193,
+      2.204217791557312
+    ]
+  ],
+  "reported_baseline_median_ns_per_value": 2.585,
+  "reported_candidate_median_ns_per_value": 2.246,
+  "paired_candidate_baseline_geomean": 0.881,
+  "paired_candidate_baseline_ci95_t_log": [
+    0.855,
+    0.909
+  ],
+  "decision": "helper microbenchmark improved; whole-transform candidate rejected after three-pair screen"
+}

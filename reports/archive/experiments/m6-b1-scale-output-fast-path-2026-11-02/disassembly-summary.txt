@@ -1,0 +1,29 @@
+B1 f32 AVX2 V3 monomorphization, compiled by rustc 1.99.1 / LLVM 23.1.1
+with -C target-cpu=x86-64-v3. Parent binary SHA-256:
+ fedee7e26c13c2e886ac16b70bfb8efd80d1b86590b7f209254023537ea84255
+Candidate binary SHA-256:
+ 4a4281c984cf3423f88112d5c4f700b9debede32e8839a807bb77dfd4f406560
+
+Symbol: V3::vectorize::imp<...FusedScalarAnalysisPairTyped<f32>>
+Parent:    22,307 bytes, 5,023 decoded instructions, 204 vfmadd*,
+           368 cmp, 654 conditional branches.
+Candidate: 23,610 bytes, 5,346 decoded instructions, 204 vfmadd*,
+           406 cmp, 706 conditional branches.
+The candidate adds 1,303 bytes / 323 instructions (+5.8% / +6.4%),
+including 38 extra comparisons and 52 extra branches, without changing the
+FMA count. Both reserve the same 0x17e8-byte frame. The count of YMM moves
+referencing stack memory is unchanged (86 across the entire large function);
+this static whole-function count is not a spill count for the hot loop. The
+ordinary two-pair loop retains the parent FMA sequence. The exponent fast path
+is inlined into the same large monomorphization; it is not an independent
+function. This is compatible with the lack of a whole-transform gain, but does
+not prove an instruction-cache or branch-misprediction cause.
+
+The accepted zipped-loop disassembly is in
+../m6-b1-zip-loop-2026-11-02/loop-disassembly.txt. It records the parent
+ordinary-loop's repeated slice guards and stack base reloads, and the
+candidate's single loop guard with unchanged FMAs. That separate change is
+already in source commit 8560bcae.
+
+Hardware perf stat/record could not access PMU events at
+perf_event_paranoid=4. These are static decoded instruction counts, not cycles.

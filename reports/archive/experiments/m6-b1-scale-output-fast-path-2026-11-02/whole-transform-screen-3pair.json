@@ -1,0 +1,1249 @@
+{
+  "metadata": {
+    "parent_source": "8560bcae34e0532a230b9a3e0d05cf10380cfccf",
+    "candidate_source_base": "8560bcae34e0532a230b9a3e0d05cf10380cfccf",
+    "candidate_change": "B1 f32 scaled-output exact normal exponent-field fast path",
+    "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "host": "AMD Ryzen 9 5950X 16-Core Processor",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs; release; Pulp V3 AVX2/FMA",
+    "affinity_q1": "2",
+    "affinity_q8": "0,1,2,3,4,5,6,7",
+    "pairs": 3,
+    "target_ms": 25.0,
+    "binary_sha256": {
+      "parent_f32": "fedee7e26c13c2e886ac16b70bfb8efd80d1b86590b7f209254023537ea84255",
+      "candidate_f32": "4a4281c984cf3423f88112d5c4f700b9debede32e8839a807bb77dfd4f406560",
+      "ducc_f32": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+      "parent_f64": "6cb4cf48f2e8be623e94939cdf442011a79ea8d7b3c559a5f37b9bdcbe4c761e",
+      "candidate_f64": "b1c0b0e697bd56fb606ff81c465d51257858412c67493fffb4209ec1583b7a17",
+      "ducc_f64": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+    }
+  },
+  "cells": [
+    {
+      "case_id": "f32-GL-T720-M720-q1",
+      "affinity": "2",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "candidate_parent": {
+        "geomean": 1.053207945167002,
+        "ci95_t_log": [
+          0.9855499983296081,
+          1.125510605898171
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.02872289970931,
+          1.0473906728307667,
+          1.0842645790546095
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 2.846959515956787,
+        "ci95_t_log": [
+          2.8151052547816326,
+          2.8791742233189153
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.8350410886757538,
+          2.8452325003316257,
+          2.860663376574461
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 2.703131446188776,
+        "ci95_t_log": [
+          2.5580336257996144,
+          2.856459563970962
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.755884105891744,
+          2.7164959304457614,
+          2.6383443965943507
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 41.984235999999996,
+            "candidate": 43.190145,
+            "ducc": 15.23439825
+          },
+          "candidate_parent": 1.02872289970931,
+          "candidate_ducc": 2.8350410886757538,
+          "parent_ducc": 2.755884105891744,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 15.25249975,
+            "candidate": 43.396907999999996,
+            "parent": 41.433353499999996
+          },
+          "candidate_parent": 1.0473906728307667,
+          "candidate_ducc": 2.8452325003316257,
+          "parent_ducc": 2.7164959304457614,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 43.5495535,
+            "parent": 40.1650615,
+            "ducc": 15.223585499999999
+          },
+          "candidate_parent": 1.0842645790546095,
+          "candidate_ducc": 2.860663376574461,
+          "parent_ducc": 2.6383443965943507,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f32-GL-T720-M720-q8",
+      "affinity": "0,1,2,3,4,5,6,7",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "candidate_parent": {
+        "geomean": 1.0096237319882286,
+        "ci95_t_log": [
+          0.9125812889900237,
+          1.1169855140488005
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0104601358846141,
+          1.0510971426574622,
+          0.9689840116850595
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 2.7223997017668116,
+        "ci95_t_log": [
+          2.414854978740571,
+          3.069111893437739
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.8677732313333792,
+          2.698729043606506,
+          2.607063299733625
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 2.6964497916522348,
+        "ci95_t_log": [
+          2.380714537407919,
+          3.05405850414042
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.8380864612959398,
+          2.567535324835322,
+          2.690512194520064
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 6.657928166666666,
+            "candidate": 6.727570999999999,
+            "ducc": 2.3459215416666668
+          },
+          "candidate_parent": 1.0104601358846141,
+          "candidate_ducc": 2.8677732313333792,
+          "parent_ducc": 2.8380864612959398,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.3963396363636367,
+            "candidate": 6.467071375,
+            "parent": 6.152686666666668
+          },
+          "candidate_parent": 1.0510971426574622,
+          "candidate_ducc": 2.698729043606506,
+          "parent_ducc": 2.567535324835322,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.314741625,
+            "parent": 6.51686875,
+            "ducc": 2.422166590909091
+          },
+          "candidate_parent": 0.9689840116850595,
+          "candidate_ducc": 2.607063299733625,
+          "parent_ducc": 2.690512194520064,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f32-GL-T720-M180-q1",
+      "affinity": "2",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "candidate_parent": {
+        "geomean": 1.0041080356350598,
+        "ci95_t_log": [
+          0.928063778838351,
+          1.086383253195049
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0196259823433556,
+          1.0255359909801502,
+          0.9681653328068806
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 2.2449586301720226,
+        "ci95_t_log": [
+          2.1209831923236697,
+          2.376180664431567
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.274951236882046,
+          2.2746337370644385,
+          2.1864596069742595
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 2.2357739909452796,
+        "ci95_t_log": [
+          2.1852974714670483,
+          2.2874164290464463
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.231162481416607,
+          2.2179950358353295,
+          2.2583535403352344
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 13.20938975,
+            "candidate": 13.468637000000001,
+            "ducc": 5.9204069
+          },
+          "candidate_parent": 1.0196259823433556,
+          "candidate_ducc": 2.274951236882046,
+          "parent_ducc": 2.231162481416607,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 5.93342525,
+            "candidate": 13.49636925,
+            "parent": 13.16030775
+          },
+          "candidate_parent": 1.0255359909801502,
+          "candidate_ducc": 2.2746337370644385,
+          "parent_ducc": 2.2179950358353295,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 13.52549625,
+            "parent": 13.970234000000001,
+            "ducc": 6.186026125
+          },
+          "candidate_parent": 0.9681653328068806,
+          "candidate_ducc": 2.1864596069742595,
+          "parent_ducc": 2.2583535403352344,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f32-GL-T720-M180-q8",
+      "affinity": "0,1,2,3,4,5,6,7",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "candidate_parent": {
+        "geomean": 1.0336730159211782,
+        "ci95_t_log": [
+          0.9872277865604923,
+          1.082303312760447
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0130395075634884,
+          1.0505623542919196,
+          1.0377704981930367
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 2.1406270137916104,
+        "ci95_t_log": [
+          1.9373865153150156,
+          2.3651883482988505
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.0440460940286647,
+          2.198783268863703,
+          2.182478110018203
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 2.0708937747436007,
+        "ci95_t_log": [
+          1.9575901912823062,
+          2.190755269090606
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          2.0177358126386418,
+          2.0929583664224154,
+          2.1030450507297407
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 2.2577883846153846,
+            "candidate": 2.2872288333333333,
+            "ducc": 1.11897126
+          },
+          "candidate_parent": 1.0130395075634884,
+          "candidate_ducc": 2.0440460940286647,
+          "parent_ducc": 2.0177358126386418,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.0593877,
+            "candidate": 2.32936395,
+            "parent": 2.21725435
+          },
+          "candidate_parent": 1.0505623542919196,
+          "candidate_ducc": 2.198783268863703,
+          "parent_ducc": 2.0929583664224154,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.2262403636363635,
+            "parent": 2.145214541666667,
+            "ducc": 1.0200516346153847
+          },
+          "candidate_parent": 1.0377704981930367,
+          "candidate_ducc": 2.182478110018203,
+          "parent_ducc": 2.1030450507297407,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f64-GL-T720-M720-q1",
+      "affinity": "2",
+      "fixture_sha256": {
+        "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469",
+        "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0"
+      },
+      "candidate_parent": {
+        "geomean": 1.0109110076451027,
+        "ci95_t_log": [
+          0.9671732245173803,
+          1.0566267132632683
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          0.9920728726325632,
+          1.013161158833103,
+          1.0278190673663583
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 1.0685537846828914,
+        "ci95_t_log": [
+          1.016456378026187,
+          1.123321389332376
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.045876183365493,
+          1.088452623832474,
+          1.0717644723010358
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 1.0570206245672074,
+        "ci95_t_log": [
+          1.0181489825366343,
+          1.0973763367879685
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0542332244103776,
+          1.0743134143496844,
+          1.042755973624114
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 16.308619,
+            "candidate": 16.1793385,
+            "ducc": 15.469650000000001
+          },
+          "candidate_parent": 0.9920728726325632,
+          "candidate_ducc": 1.045876183365493,
+          "parent_ducc": 1.0542332244103776,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.013697172875158588,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 9.453208419344607e-16,
+            "reference_peak": 0.013697172875158833,
+            "relative_l2": 4.63288818559382e-14,
+            "max_relative_above_1e-12_peak": 3.212781248598374e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 15.219149999999999,
+            "candidate": 16.565323749999997,
+            "parent": 16.350137
+          },
+          "candidate_parent": 1.013161158833103,
+          "candidate_ducc": 1.088452623832474,
+          "parent_ducc": 1.0743134143496844,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.013697172875158588,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 9.453208419344607e-16,
+            "reference_peak": 0.013697172875158833,
+            "relative_l2": 4.63288818559382e-14,
+            "max_relative_above_1e-12_peak": 3.212781248598374e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 16.26182875,
+            "parent": 15.82168425,
+            "ducc": 15.17295
+          },
+          "candidate_parent": 1.0278190673663583,
+          "candidate_ducc": 1.0717644723010358,
+          "parent_ducc": 1.042755973624114,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.013697172875158588,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 9.453208419344607e-16,
+            "reference_peak": 0.013697172875158833,
+            "relative_l2": 4.63288818559382e-14,
+            "max_relative_above_1e-12_peak": 3.212781248598374e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f64-GL-T720-M720-q8",
+      "affinity": "0,1,2,3,4,5,6,7",
+      "fixture_sha256": {
+        "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469",
+        "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0"
+      },
+      "candidate_parent": {
+        "geomean": 0.9790642731583912,
+        "ci95_t_log": [
+          0.8597239433299005,
+          1.1149705186323273
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          0.9310729711477864,
+          1.0335585646278562,
+          0.9752473969948223
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 1.0997292372290313,
+        "ci95_t_log": [
+          1.013927799537601,
+          1.1927914352164843
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0752133603197271,
+          1.1417532862422228,
+          1.0834038920360167
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 1.1232451917394386,
+        "ci95_t_log": [
+          1.057795693622579,
+          1.1927442779096196
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.15481105524334,
+          1.104681752265604,
+          1.110901598275959
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 2.810030611,
+            "candidate": 2.61634355,
+            "ducc": 2.433325
+          },
+          "candidate_parent": 0.9310729711477864,
+          "candidate_ducc": 1.0752133603197271,
+          "parent_ducc": 1.15481105524334,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.013697172875158588,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 9.453208419344607e-16,
+            "reference_peak": 0.013697172875158833,
+            "relative_l2": 4.63288818559382e-14,
+            "max_relative_above_1e-12_peak": 3.212781248598374e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.35147,
+            "candidate": 2.6847985999999997,
+            "parent": 2.597626
+          },
+          "candidate_parent": 1.0335585646278562,
+          "candidate_ducc": 1.1417532862422228,
+          "parent_ducc": 1.104681752265604,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.013697172875158588,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 9.453208419344607e-16,
+            "reference_peak": 0.013697172875158833,
+            "relative_l2": 4.63288818559382e-14,
+            "max_relative_above_1e-12_peak": 3.212781248598374e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.5111243749999996,
+            "parent": 2.5748588335,
+            "ducc": 2.3178099999999997
+          },
+          "candidate_parent": 0.9752473969948223,
+          "candidate_ducc": 1.0834038920360167,
+          "parent_ducc": 1.110901598275959,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.013697172875158588,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 9.453208419344607e-16,
+            "reference_peak": 0.013697172875158833,
+            "relative_l2": 4.63288818559382e-14,
+            "max_relative_above_1e-12_peak": 3.212781248598374e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f64-GL-T720-M180-q1",
+      "affinity": "2",
+      "fixture_sha256": {
+        "map": "a8236a82af804dd85df8a14e3992933f9017c6e3cc8a1300da33d6a9ab174681",
+        "alm": "d8568adda375db30135373a6b9cd20797bea6a8e9a3fad27292ad17f45119599"
+      },
+      "candidate_parent": {
+        "geomean": 1.0055824555632629,
+        "ci95_t_log": [
+          0.9883226497506582,
+          1.0231436820675455
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0046946669575716,
+          1.0130193295760888,
+          0.9990822276524196
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 1.018904464188731,
+        "ci95_t_log": [
+          0.9988875250310856,
+          1.0393225274401312
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.010862450126322,
+          1.0271370694764264,
+          1.018778866794046
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 1.013248051964079,
+        "ci95_t_log": [
+          0.996454945404485,
+          1.0303241702435932
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0061389627830193,
+          1.0139362986353333,
+          1.0197147327782103
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 6.4694685,
+            "candidate": 6.4998404999999995,
+            "ducc": 6.429995
+          },
+          "candidate_parent": 1.0046946669575716,
+          "candidate_ducc": 1.010862450126322,
+          "parent_ducc": 1.0061389627830193,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.025570558997903847,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 1.9989916450208708e-15,
+            "reference_peak": 0.025570558997903878,
+            "relative_l2": 4.9100990925761365e-14,
+            "max_relative_above_1e-12_peak": 3.308757144926956e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 6.403395,
+            "candidate": 6.577164375000001,
+            "parent": 6.492634625
+          },
+          "candidate_parent": 1.0130193295760888,
+          "candidate_ducc": 1.0271370694764264,
+          "parent_ducc": 1.0139362986353333,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.025570558997903847,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 1.9989916450208708e-15,
+            "reference_peak": 0.025570558997903878,
+            "relative_l2": 4.9100990925761365e-14,
+            "max_relative_above_1e-12_peak": 3.308757144926956e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.478363874999999,
+            "parent": 6.4843150000000005,
+            "ducc": 6.35895
+          },
+          "candidate_parent": 0.9990822276524196,
+          "candidate_ducc": 1.018778866794046,
+          "parent_ducc": 1.0197147327782103,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.025570558997903847,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 1.9989916450208708e-15,
+            "reference_peak": 0.025570558997903878,
+            "relative_l2": 4.9100990925761365e-14,
+            "max_relative_above_1e-12_peak": 3.308757144926956e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    },
+    {
+      "case_id": "f64-GL-T720-M180-q8",
+      "affinity": "0,1,2,3,4,5,6,7",
+      "fixture_sha256": {
+        "map": "a8236a82af804dd85df8a14e3992933f9017c6e3cc8a1300da33d6a9ab174681",
+        "alm": "d8568adda375db30135373a6b9cd20797bea6a8e9a3fad27292ad17f45119599"
+      },
+      "candidate_parent": {
+        "geomean": 1.016420327012451,
+        "ci95_t_log": [
+          0.9963169175640813,
+          1.0369293775418105
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0248184290519247,
+          1.0160251769819628,
+          1.0084831093910922
+        ]
+      },
+      "candidate_ducc": {
+        "geomean": 1.0789823521520583,
+        "ci95_t_log": [
+          1.0179585636740984,
+          1.1436643472536379
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0543682881580747,
+          1.1049444142303695,
+          1.0782271372630723
+        ]
+      },
+      "parent_ducc": {
+        "geomean": 1.0615513321378516,
+        "ci95_t_log": [
+          0.9891949720273733,
+          1.1392003221104765
+        ],
+        "pairs": 3,
+        "pair_ratios": [
+          1.0288342386011606,
+          1.087516765590923,
+          1.0691573584351755
+        ]
+      },
+      "all_candidate_parent_outputs_byte_equal": true,
+      "pair_rows": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "median_ms": {
+            "parent": 1.167371913,
+            "candidate": 1.19634425,
+            "ducc": 1.134655
+          },
+          "candidate_parent": 1.0248184290519247,
+          "candidate_ducc": 1.0543682881580747,
+          "parent_ducc": 1.0288342386011606,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.025570558997903847,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 1.9989916450208708e-15,
+            "reference_peak": 0.025570558997903878,
+            "relative_l2": 4.9100990925761365e-14,
+            "max_relative_above_1e-12_peak": 3.308757144926956e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.08669,
+            "candidate": 1.2007320455000001,
+            "parent": 1.1817935940000002
+          },
+          "candidate_parent": 1.0160251769819628,
+          "candidate_ducc": 1.1049444142303695,
+          "parent_ducc": 1.087516765590923,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.025570558997903847,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 1.9989916450208708e-15,
+            "reference_peak": 0.025570558997903878,
+            "relative_l2": 4.9100990925761365e-14,
+            "max_relative_above_1e-12_peak": 3.308757144926956e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 1.1385701190000002,
+            "parent": 1.12899275,
+            "ducc": 1.055965
+          },
+          "candidate_parent": 1.0084831093910922,
+          "candidate_ducc": 1.0782271372630723,
+          "parent_ducc": 1.0691573584351755,
+          "candidate_parent_byte_equal": true,
+          "candidate_parent_error": {
+            "absolute_max": 0.0,
+            "reference_peak": 0.025570558997903847,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_ducc_error": {
+            "absolute_max": 1.9989916450208708e-15,
+            "reference_peak": 0.025570558997903878,
+            "relative_l2": 4.9100990925761365e-14,
+            "max_relative_above_1e-12_peak": 3.308757144926956e-11,
+            "near_zero_reference_count": 0,
+            "metrics_finite": true
+          },
+          "candidate_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })"
+        }
+      ]
+    }
+  ],
+  "status": "complete"
+}

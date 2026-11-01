@@ -1,0 +1,438 @@
+{
+  "purpose": "Test-only B1 phase and f32 scaled-lane distribution profile; no candidate performance timings are taken from this instrumented binary.",
+  "source_parent": "8560bcae34e0532a230b9a3e0d05cf10380cfccf",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rust_flags": "test probe: release; production candidate example: -C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "affinity": {
+    "q1": "CPU 2",
+    "q8": "CPUs 0-7"
+  },
+  "profile_test": "transform::tests::b1_native_analysis_phase_route_profile",
+  "profile_binary_sha256": "9b301fbfa0174fc9fbdeace2e41feff3d83186eeade3d9fe0542570197d00cb8",
+  "candidate_production_binary_sha256": "4a4281c984cf3423f88112d5c4f700b9debede32e8839a807bb77dfd4f406560",
+  "parent_binary_sha256": "fedee7e26c13c2e886ac16b70bfb8efd80d1b86590b7f209254023537ea84255",
+  "test_candidate_patch_sha256": "6717042a76e059df7c9c17edcb9a1dd41b1bec5d81868f4dfe9fe33c5f3093db",
+  "fixture_sha256": {
+    "f32-M720": {
+      "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "f32-M180": {
+      "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    },
+    "f64-M720": {
+      "map.bin": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469",
+      "alm.bin": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0"
+    },
+    "f64-M180": {
+      "map.bin": "a8236a82af804dd85df8a14e3992933f9017c6e3cc8a1300da33d6a9ab174681",
+      "alm.bin": "d8568adda375db30135373a6b9cd20797bea6a8e9a3fad27292ad17f45119599"
+    }
+  },
+  "cells": {
+    "f32-T720-M720-q1": {
+      "route_counts": {
+        "blocks_normal": 6437,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 6437,
+        "typed_successes": 6437,
+        "typed_seed_declines": 0,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 2821,
+        "typed_scaled_pairs": 266685,
+        "scaled_state_inits": 159441,
+        "hard_scalar_lanes": 5601,
+        "hard_vectors": 13643,
+        "zero_factor_lanes": 52902,
+        "scaled_output_values": 1066740,
+        "fast_scale_values": 816698,
+        "zero_exponent_lanes": 965236,
+        "nonzero_exponent_lanes": 4136876,
+        "jobs": 0,
+        "leaf_records": 1
+      },
+      "queue_lock_total_us": 0.0,
+      "summed_job_ms": 0.0,
+      "wall_us_median": 41458.409,
+      "wall_us_samples": [
+        42759.112,
+        42110.483,
+        40973.358,
+        41458.409,
+        41311.883
+      ],
+      "legendre_us_median": 38613.496,
+      "legendre_us_samples": [
+        39871.389,
+        39232.277,
+        38208.034,
+        38613.496,
+        38293.595
+      ],
+      "fft_us_median": 2859.24,
+      "fft_us_samples": [
+        2872.516,
+        2859.24,
+        2750.105,
+        2818.985,
+        2991.749
+      ]
+    },
+    "f64-T720-M720-q1": {
+      "route_counts": {
+        "blocks_normal": 1139,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 1139,
+        "typed_successes": 665,
+        "typed_seed_declines": 474,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 334,
+        "typed_scaled_pairs": 0,
+        "scaled_state_inits": 0,
+        "hard_scalar_lanes": 0,
+        "hard_vectors": 0,
+        "zero_factor_lanes": 0,
+        "scaled_output_values": 0,
+        "fast_scale_values": 0,
+        "zero_exponent_lanes": 0,
+        "nonzero_exponent_lanes": 0,
+        "jobs": 0,
+        "leaf_records": 1
+      },
+      "queue_lock_total_us": 0.0,
+      "summed_job_ms": 0.0,
+      "wall_us_median": 16282.738,
+      "wall_us_samples": [
+        16174.669,
+        16460.692,
+        16282.738,
+        16203.123,
+        16286.325
+      ],
+      "legendre_us_median": 13016.122,
+      "legendre_us_samples": [
+        12938.427,
+        13180.441,
+        13016.122,
+        12979.599,
+        13075.544
+      ],
+      "fft_us_median": 3221.966,
+      "fft_us_samples": [
+        3221.966,
+        3264.301,
+        3247.689,
+        3207.405,
+        3186.921
+      ]
+    },
+    "f32-T720-M180-q1": {
+      "route_counts": {
+        "blocks_normal": 2119,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 2119,
+        "typed_successes": 2119,
+        "typed_seed_declines": 0,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 970,
+        "typed_scaled_pairs": 89429,
+        "scaled_state_inits": 35248,
+        "hard_scalar_lanes": 5601,
+        "hard_vectors": 11899,
+        "zero_factor_lanes": 49636,
+        "scaled_output_values": 357716,
+        "fast_scale_values": 302277,
+        "zero_exponent_lanes": 246334,
+        "nonzero_exponent_lanes": 881602,
+        "jobs": 0,
+        "leaf_records": 1
+      },
+      "queue_lock_total_us": 0.0,
+      "summed_job_ms": 0.0,
+      "wall_us_median": 14422.794,
+      "wall_us_samples": [
+        14422.794,
+        16075.824,
+        14609.229,
+        13446.611,
+        13603.28
+      ],
+      "legendre_us_median": 13651.396,
+      "legendre_us_samples": [
+        13718.422,
+        14255.73,
+        13651.396,
+        12750.073,
+        12910.835
+      ],
+      "fft_us_median": 691.218,
+      "fft_us_samples": [
+        691.218,
+        885.814,
+        940.636,
+        682.822,
+        679.381
+      ]
+    },
+    "f64-T720-M180-q1": {
+      "route_counts": {
+        "blocks_normal": 362,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 362,
+        "typed_successes": 230,
+        "typed_seed_declines": 132,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 116,
+        "typed_scaled_pairs": 0,
+        "scaled_state_inits": 0,
+        "hard_scalar_lanes": 0,
+        "hard_vectors": 0,
+        "zero_factor_lanes": 0,
+        "scaled_output_values": 0,
+        "fast_scale_values": 0,
+        "zero_exponent_lanes": 0,
+        "nonzero_exponent_lanes": 0,
+        "jobs": 0,
+        "leaf_records": 1
+      },
+      "queue_lock_total_us": 0.0,
+      "summed_job_ms": 0.0,
+      "wall_us_median": 6958.089,
+      "wall_us_samples": [
+        6808.007,
+        7037.238,
+        6969.079,
+        6931.742,
+        6958.089
+      ],
+      "legendre_us_median": 6011.216,
+      "legendre_us_samples": [
+        5938.739,
+        6112.919,
+        5975.902,
+        6011.216,
+        6034.968
+      ],
+      "fft_us_median": 911.347,
+      "fft_us_samples": [
+        857.095,
+        912.318,
+        980.662,
+        908.967,
+        911.347
+      ]
+    },
+    "f32-T720-M720-q8": {
+      "route_counts": {
+        "blocks_normal": 6437,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 6437,
+        "typed_successes": 6437,
+        "typed_seed_declines": 0,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 2821,
+        "typed_scaled_pairs": 266685,
+        "scaled_state_inits": 159441,
+        "hard_scalar_lanes": 5601,
+        "hard_vectors": 13643,
+        "zero_factor_lanes": 52902,
+        "scaled_output_values": 1066740,
+        "fast_scale_values": 816698,
+        "zero_exponent_lanes": 965236,
+        "nonzero_exponent_lanes": 4136876,
+        "jobs": 721,
+        "leaf_records": 721
+      },
+      "queue_lock_total_us": 39.93,
+      "summed_job_ms": 167.999,
+      "wall_us_median": 6471.437,
+      "wall_us_samples": [
+        6304.577,
+        6471.437,
+        6600.177,
+        6560.435,
+        6339.507
+      ],
+      "legendre_us_median": 5913.136,
+      "legendre_us_samples": [
+        5745.296,
+        5913.136,
+        5952.117,
+        5976.385,
+        5835.969
+      ],
+      "fft_us_median": 542.048,
+      "fft_us_samples": [
+        542.048,
+        539.844,
+        630.98,
+        568.064,
+        486.439
+      ]
+    },
+    "f64-T720-M720-q8": {
+      "route_counts": {
+        "blocks_normal": 1139,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 1139,
+        "typed_successes": 665,
+        "typed_seed_declines": 474,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 334,
+        "typed_scaled_pairs": 0,
+        "scaled_state_inits": 0,
+        "hard_scalar_lanes": 0,
+        "hard_vectors": 0,
+        "zero_factor_lanes": 0,
+        "scaled_output_values": 0,
+        "fast_scale_values": 0,
+        "zero_exponent_lanes": 0,
+        "nonzero_exponent_lanes": 0,
+        "jobs": 721,
+        "leaf_records": 721
+      },
+      "queue_lock_total_us": 54.234,
+      "summed_job_ms": 18.349,
+      "wall_us_median": 2832.295,
+      "wall_us_samples": [
+        3020.744,
+        3070.411,
+        2832.295,
+        2661.698,
+        2764.001
+      ],
+      "legendre_us_median": 2160.89,
+      "legendre_us_samples": [
+        2201.456,
+        2188.611,
+        2160.89,
+        2073.942,
+        2155.664
+      ],
+      "fft_us_median": 621.465,
+      "fft_us_samples": [
+        802.737,
+        621.465,
+        653.027,
+        568.665,
+        591.376
+      ]
+    },
+    "f32-T720-M180-q8": {
+      "route_counts": {
+        "blocks_normal": 2119,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 2119,
+        "typed_successes": 2119,
+        "typed_seed_declines": 0,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 970,
+        "typed_scaled_pairs": 89429,
+        "scaled_state_inits": 35248,
+        "hard_scalar_lanes": 5601,
+        "hard_vectors": 11899,
+        "zero_factor_lanes": 49636,
+        "scaled_output_values": 357716,
+        "fast_scale_values": 302277,
+        "zero_exponent_lanes": 246334,
+        "nonzero_exponent_lanes": 881602,
+        "jobs": 181,
+        "leaf_records": 181
+      },
+      "queue_lock_total_us": 13.108,
+      "summed_job_ms": 50.359,
+      "wall_us_median": 2117.32,
+      "wall_us_samples": [
+        2336.236,
+        2070.275,
+        2117.32,
+        2185.106,
+        2095.405
+      ],
+      "legendre_us_median": 1965.398,
+      "legendre_us_samples": [
+        2146.958,
+        1925.994,
+        1965.398,
+        2002.12,
+        1934.573
+      ],
+      "fft_us_median": 143.529,
+      "fft_us_samples": [
+        173.224,
+        127.241,
+        135.227,
+        165.216,
+        143.529
+      ]
+    },
+    "f64-T720-M180-q8": {
+      "route_counts": {
+        "blocks_normal": 362,
+        "blocks_scaled": 0,
+        "blocks_mixed": 0,
+        "typed_attempts": 362,
+        "typed_successes": 230,
+        "typed_seed_declines": 132,
+        "typed_recurrence_declines": 0,
+        "typed_normal_pairs": 116,
+        "typed_scaled_pairs": 0,
+        "scaled_state_inits": 0,
+        "hard_scalar_lanes": 0,
+        "hard_vectors": 0,
+        "zero_factor_lanes": 0,
+        "scaled_output_values": 0,
+        "fast_scale_values": 0,
+        "zero_exponent_lanes": 0,
+        "nonzero_exponent_lanes": 0,
+        "jobs": 181,
+        "leaf_records": 181
+      },
+      "queue_lock_total_us": 8.587,
+      "summed_job_ms": 7.689,
+      "wall_us_median": 1283.849,
+      "wall_us_samples": [
+        1361.799,
+        1256.066,
+        1283.849,
+        1287.983,
+        1202.234
+      ],
+      "legendre_us_median": 1044.64,
+      "legendre_us_samples": [
+        1075.19,
+        1034.932,
+        1057.35,
+        1044.64,
+        977.015
+      ],
+      "fft_us_median": 209.23,
+      "fft_us_samples": [
+        270.28,
+        204.525,
+        209.23,
+        225.598,
+        207.108
+      ]
+    }
+  },
+  "limitations": [
+    "Phase probes and atomic route counters are test-only and add overhead; phase values are diagnostic, not acceptance timings.",
+    "Callgrind instruction counts and route work counts are not CPU cycles.",
+    "Hardware perf stat/record are unavailable at perf_event_paranoid=4.",
+    "The phase probe separates Legendre plus accumulation from FFT, not subregions within the fused Legendre kernel."
+  ]
+}
