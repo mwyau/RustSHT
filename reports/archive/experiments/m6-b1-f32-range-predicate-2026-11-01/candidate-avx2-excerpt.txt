@@ -1,0 +1,16 @@
+Candidate FusedScalarAnalysisPairTyped<f32>, V3/AVX2, 8 f32 lanes
+  23a51a: vandps       ymm0,ymm2,ymm3       ; abs mask
+  23a51e: vandps       ymm1,ymm13,ymm3      ; abs mask
+  23a522: vmaxps       ymm0,ymm0,ymm1       ; pairwise magnitude max
+  23a526: vcmple_oqps  ymm1,ymm0,ymm4       ; upper-bound check
+  23a52b: vcmpeqps     ymm14,ymm2,ymm2      ; ordered / NaN check
+  23a530: vcmpeqps     ymm15,ymm13,ymm13
+  23a536: vandps       ymm14,ymm14,ymm15
+  23a53b: vandps       ymm1,ymm14,ymm1
+  23a53f: vptest       ymm1,ymm5
+  23a544: jae          23aee9              ; range-classification control flow
+  ... exceptional block retains vblendvps / vcmplt_oqps and vptest
+
+Parent/candidate symbol sizes: 22,390 / 22,879 bytes.
+Static counts from saved disassembly: 4,471 / 4,578 instructions and 721 / 734 branch instructions.
+Assembly source: screen-predicate3/{parent,candidate}-v3.asm in the temporary experiment tree; these summary counts describe code size, not runtime cycles.

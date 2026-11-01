@@ -1,0 +1,21 @@
+{
+  "kind": "direct f32 scalar-analysis range predicate microbenchmark",
+  "arch": "AMD Ryzen 9 5950X, AVX2/FMA V3 dispatch",
+  "lanes": 8,
+  "vectors_per_scan": 8,
+  "iterations_per_sample": 100000,
+  "samples": 7,
+  "predicate_reference": "numeric::f32_pair_lanes_need_scaling::<S, true>",
+  "predicate_candidate": "f32_scalar_analysis_pair_needs_scaling",
+  "inputs": {
+    "ordinary": "previous=0.75 and current=-1.25 in all 64 lanes",
+    "suspect-first-vector": "same ordinary input except both values are below SMALL at lane 0",
+    "suspect-last-vector": "same ordinary input except both values are below SMALL at lane 56"
+  },
+  "median_nanoseconds": {
+    "ordinary": {"reference": 1372298, "candidate": 654529, "candidate_over_reference": 0.4770},
+    "suspect-first-vector": {"reference": 217071, "candidate": 245535, "candidate_over_reference": 1.1311},
+    "suspect-last-vector": {"reference": 1251188, "candidate": 765839, "candidate_over_reference": 0.6121}
+  },
+  "caveat": "This isolates predicate scanning over eight AVX2 vectors; it is not a whole-transform timing or representative exception-frequency estimate."
+}

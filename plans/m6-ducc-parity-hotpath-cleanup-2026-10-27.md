@@ -8,12 +8,12 @@ Target **Rust f32/DUCC f32 ≤1.0x** and **Rust f64/DUCC f64 ≤1.0x**, separate
 
 | GL T720 B1 | f32/f64 (diagnostic) | f32/DUCC f32 | f64/DUCC f64 |
 |---|---:|---:|---:|
-| Full q1 | 3.564x | 4.796x | 1.310x |
-| Full q8 | 3.337x | 4.419x | 1.273x |
-| Reduced q1 | 2.903x | 3.779x | 1.278x |
-| Reduced q8 | 2.665x | 3.373x | 1.226x |
+| Full q1 | 3.565x | 4.792x | 1.310x |
+| Full q8 | 3.299x | 4.395x | 1.273x |
+| Reduced q1 | 2.831x | 3.700x | 1.278x |
+| Reduced q8 | 2.607x | 3.257x | 1.226x |
 
-These are the latest simultaneous 15-pair GL T720 screen: native f32 candidate, native f64, and precision-matched DUCC. The f32 candidate uses source `ecb66f10` plus the result-short-circuit patch in the [2026-11-01 profile package](../reports/archive/experiments/m6-b1-analysis-normalizer-result-short-circuit-2026-11-01/README.md). The ratios are geometric paired means; all four f32/DUCC and f64/DUCC cells remain GAP. A separate 15-pair f64 parent/candidate screen is INCONCLUSIVE in all cells and bitwise equal. Pinned DUCC 0.42.0: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+The f32 medians and ratios are from the 15-pair candidate/parent/DUCC screen at `40241a5c`; the matched f64 baseline is unchanged because this patch only overrides the f32 B1 range predicate. The f32/f64 column is diagnostic. All precision-matched DUCC cells remain GAP. Candidate/parent intervals pass on reduced q1/q8 and are inconclusive on full q1/q8. See the [range-predicate evidence package](../reports/archive/experiments/m6-b1-f32-range-predicate-2026-11-01/README.md). Pinned DUCC 0.42.0: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
 
 ## Investigate before optimizing
 
@@ -33,4 +33,4 @@ During exploration **do not run** complete Rust/Python suites, all 16 cells, rep
 
 ## NEXT
 
-At parent `410c9ec`, warm phase probes put Legendre recurrence plus accumulation at 94–97% of Rust f32 time and 82–91% of Rust f64 time; FFT took 3–6% and 8–18%, respectively. The profile combines recurrence with accumulation and hardware `perf` is blocked on this host. The accepted f64 two-pair traversal remains active. The new f32 result-classification short-circuit improves all four T720 cells by 3.1–3.7% against its exact parent, with 15-pair confidence intervals below 1 and zero candidate/parent relative L2 in every pair. The f32/DUCC gap remains 3.37–4.80x; f64/DUCC remains 1.23–1.31x. The f64 candidate/parent intervals include 1.00 in all cells. See the [profile package](../reports/archive/experiments/m6-b1-profile-410c-2026-10-31/README.md), [f64 two-pair evidence](../reports/archive/experiments/m6-b1-two-pair-analysis-unroll-2026-11-01/README.md), and [f32 normalizer screen](../reports/archive/experiments/m6-b1-analysis-normalizer-result-short-circuit-2026-11-01/README.md). **NEXT:** profile the remaining f32 scaled recurrence and accumulation path with a bounded, source-matched probe; test one new measured hypothesis. Do not repeat the rejected factor, fusion, tile or sparse-index variants, infer cycles from Callgrind Ir, or change B0/B2/B3.
+At parent `410c9ec`, phase probes put Legendre recurrence plus accumulation at 94–97% of Rust f32 time and 82–91% of Rust f64 time; FFT took 3–6% and 8–18%. Callgrind at that parent attributes 43.5% of f32 q1 instructions to scaled accumulation plus factor preparation and 43.5% to range checks plus normalization (nested costs are documented in the evidence package); hardware `perf` remains blocked. The f32-only range-predicate change in `40241a5` has 15-pair gains on reduced q1/q8 (2.4%, 2.7%), with exact parent outputs; full q1/q8 are INCONCLUSIVE. Its direct ordinary-vector predicate probe is 0.477x the prior helper, but an early exceptional vector is 1.131x. The f32/DUCC gap remains 3.26–4.79x; f64/DUCC remains 1.23–1.31x. The new kernel is 489 bytes larger, and the predicate does not explain the whole-call gap. See the [profile package](../reports/archive/experiments/m6-b1-profile-410c-2026-10-31/README.md), [f64 two-pair evidence](../reports/archive/experiments/m6-b1-two-pair-analysis-unroll-2026-11-01/README.md), [normalizer screen](../reports/archive/experiments/m6-b1-analysis-normalizer-result-short-circuit-2026-11-01/README.md), and [range-predicate package](../reports/archive/experiments/m6-b1-f32-range-predicate-2026-11-01/README.md). **NEXT:** isolate f32 scaled accumulation/factor preparation from normalization and range classification with a bounded source-matched probe, then test one materially different optimization. Do not repeat rejected factor, fusion, tile or sparse-index variants, infer cycles from Callgrind Ir, or change B0/B2/B3.
