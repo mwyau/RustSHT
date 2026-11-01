@@ -1,0 +1,7 @@
+Pinned CPU 2, Ryzen 9 5950X, Rust release, AVX2 V3, 256 f32 lanes, 360 scaled degree-pair accumulations per sample.
+
+Parent (before any candidate): steady ns/pair = [48.48, 47.30, 47.28, 47.55, 47.44, 47.45, 47.33, 47.14, 47.33], median 47.33.
+Inline preweight candidate: [46.02, 44.57, 44.65, 44.54, 44.60, 44.57, 44.57, 44.79, 44.63], median 44.60 (-5.8%).
+Lazy-box plus preweight candidate: [42.33, 40.88, 40.69, 40.99, 40.89, 40.86, 41.19, 40.83, 40.91], median 40.89 (-13.6%).
+
+The microbench holds exponents/factors fixed for all 360 pairs. The production route re-prepares factors after about every 1.67 scaled pair accumulations (single full T720 q1 diagnostic), so these steady-state microbench savings do not predict whole-transform behavior.

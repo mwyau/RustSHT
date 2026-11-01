@@ -1,0 +1,18 @@
+{
+  "source_parent_sha": "255e34d4a078c42ffa5de3616c73f6eca173f472",
+  "cell": "GL-T720-M720-analysis-q1",
+  "pairs": 3,
+  "parent_ms": [41.4098475, 40.7866405, 41.5821635],
+  "candidate_ms": [47.599625, 47.196774, 47.672784],
+  "ducc_ms": [14.723302, 15.43318625, 14.41441325],
+  "candidate_parent_ratios": [1.14947598, 1.15716258, 1.14647195],
+  "candidate_parent_geomean": 1.15102804,
+  "candidate_ducc_geomean": 3.19773785,
+  "parent_ducc_geomean": 2.77815808,
+  "candidate_vs_parent_error": {"relative_l2": 0.0, "max_absolute": 0.0},
+  "candidate_vs_ducc_relative_l2": 1.8390751e-5,
+  "rust_parent_binary_sha256": "dfdfd44e98ffef13effcac5f93e0f67fafef291d7a2ab32348213aa84480f2f5",
+  "rust_candidate_binary_sha256": "a9d2d66b9dafde111fc88ad947cd730ab023cadc6038ea3ef9670b211727da5b",
+  "ducc_binary_sha256": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+  "decision": "reject after full-q1 screen; candidate was consistently 14.6-15.7% slower"
+}

@@ -1,0 +1,326 @@
+[
+  {
+    "case_id": "GL-T720-M720-analysis-q1",
+    "case": {
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "threads": 1
+    },
+    "cpus": "2",
+    "fixture_sha256": {
+      "map": "1f27ed34875cc07f78ef0455596bff672f707036a3ef2ce305a74337c2285466",
+      "alm": "4c4fdfeb1141fcc370e4df2c142d841526bda549e7138efe99894e9690063d02"
+    },
+    "binary_sha256": {
+      "parent": "567fe2816b73406cf2418e19a9637eebb1417b9c819cdae0ade07164ae7de878",
+      "candidate": "108b5389748ac2763fea5dbbcd6c4b437754e2554a72c3a81a4797ce8b4bd7ac",
+      "ducc": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 16.083808750000003,
+          "candidate": 15.9789455,
+          "ducc": 15.28875
+        },
+        "candidate_parent": 0.9934801979039944,
+        "candidate_ducc": 1.0451440111192871,
+        "parent_ducc": 1.0520028615812282,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 15.224599999999999,
+          "candidate": 16.32566675,
+          "parent": 16.771152
+        },
+        "candidate_parent": 0.9734374090700507,
+        "candidate_ducc": 1.072321555246115,
+        "parent_ducc": 1.101582438947493,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 16.412173000000003,
+          "parent": 16.08576025,
+          "ducc": 15.3139
+        },
+        "candidate_parent": 1.0202920312703283,
+        "candidate_ducc": 1.071717394001528,
+        "parent_ducc": 1.0504025917630389,
+        "candidate_parent_bitwise_equal": true
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 16.31043775,
+      "candidate": 16.356129250000002,
+      "ducc": 15.280349999999999
+    },
+    "candidate_parent_geomean": 0.9955519193671124,
+    "candidate_ducc_geomean": 1.0629850353128532,
+    "parent_ducc_geomean": 1.0677344040365158
+  },
+  {
+    "case_id": "GL-T720-M720-analysis-q8",
+    "case": {
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "threads": 8
+    },
+    "cpus": "0,1,2,3,4,5,6,7",
+    "fixture_sha256": {
+      "map": "1f27ed34875cc07f78ef0455596bff672f707036a3ef2ce305a74337c2285466",
+      "alm": "4c4fdfeb1141fcc370e4df2c142d841526bda549e7138efe99894e9690063d02"
+    },
+    "binary_sha256": {
+      "parent": "567fe2816b73406cf2418e19a9637eebb1417b9c819cdae0ade07164ae7de878",
+      "candidate": "108b5389748ac2763fea5dbbcd6c4b437754e2554a72c3a81a4797ce8b4bd7ac",
+      "ducc": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 3.019558857,
+          "candidate": 2.6767564375,
+          "ducc": 2.3915699999999998
+        },
+        "candidate_parent": 0.8864726816947751,
+        "candidate_ducc": 1.1192465357484833,
+        "parent_ducc": 1.2625843512838848,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 2.40002,
+          "candidate": 2.7391745,
+          "parent": 2.8404005
+        },
+        "candidate_parent": 0.9643620679548536,
+        "candidate_ducc": 1.1413131973900217,
+        "parent_ducc": 1.183490345913784,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 2.8739841430000004,
+          "parent": 3.0270938750000003,
+          "ducc": 2.2556000000000003
+        },
+        "candidate_parent": 0.949420223381741,
+        "candidate_ducc": 1.2741550554176273,
+        "parent_ducc": 1.342034879854584,
+        "candidate_parent_bitwise_equal": true
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 2.9898603215,
+      "candidate": 2.7262463125,
+      "ducc": 2.371555
+    },
+    "candidate_parent_geomean": 0.9327988130789855,
+    "candidate_ducc_geomean": 1.1762987257942765,
+    "parent_ducc_geomean": 1.2610422625984543
+  },
+  {
+    "case_id": "GL-T720-M180-analysis-q1",
+    "case": {
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "threads": 1
+    },
+    "cpus": "2",
+    "fixture_sha256": {
+      "map": "eeb80a89737717c3e83b1e3b769ad35a4aca57c70bfd0e383235e25e2a9e7958",
+      "alm": "27b98db1dcc45bddf7fb43bf1135239a895d010e05b30fbeb034c520fcbc2bc2"
+    },
+    "binary_sha256": {
+      "parent": "567fe2816b73406cf2418e19a9637eebb1417b9c819cdae0ade07164ae7de878",
+      "candidate": "108b5389748ac2763fea5dbbcd6c4b437754e2554a72c3a81a4797ce8b4bd7ac",
+      "ducc": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 6.546875125,
+          "candidate": 6.611820625,
+          "ducc": 6.070615
+        },
+        "candidate_parent": 1.0099200761829104,
+        "candidate_ducc": 1.0891516963273078,
+        "parent_ducc": 1.0784533568674672,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 6.00065,
+          "candidate": 6.867554375,
+          "parent": 6.463317
+        },
+        "candidate_parent": 1.0625433310790728,
+        "candidate_ducc": 1.1444684117553932,
+        "parent_ducc": 1.0771028138618315,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 6.43516125,
+          "parent": 6.46362375,
+          "ducc": 6.213480000000001
+        },
+        "candidate_parent": 0.9955965103940341,
+        "candidate_ducc": 1.0356774705961875,
+        "parent_ducc": 1.0402582369300295,
+        "candidate_parent_bitwise_equal": true
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 6.52092725,
+      "candidate": 6.611820625,
+      "ducc": 6.093500000000001
+    },
+    "candidate_parent_geomean": 1.0222858284785725,
+    "candidate_ducc_geomean": 1.0888604843249101,
+    "parent_ducc_geomean": 1.065123328517053
+  },
+  {
+    "case_id": "GL-T720-M180-analysis-q8",
+    "case": {
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "threads": 8
+    },
+    "cpus": "0,1,2,3,4,5,6,7",
+    "fixture_sha256": {
+      "map": "eeb80a89737717c3e83b1e3b769ad35a4aca57c70bfd0e383235e25e2a9e7958",
+      "alm": "27b98db1dcc45bddf7fb43bf1135239a895d010e05b30fbeb034c520fcbc2bc2"
+    },
+    "binary_sha256": {
+      "parent": "567fe2816b73406cf2418e19a9637eebb1417b9c819cdae0ade07164ae7de878",
+      "candidate": "108b5389748ac2763fea5dbbcd6c4b437754e2554a72c3a81a4797ce8b4bd7ac",
+      "ducc": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 1.125893955,
+          "candidate": 1.0633191,
+          "ducc": 1.007695
+        },
+        "candidate_parent": 0.9444220703716275,
+        "candidate_ducc": 1.0551993410704628,
+        "parent_ducc": 1.1172963595135432,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 1.0017800000000001,
+          "candidate": 1.072092921,
+          "parent": 1.053068975
+        },
+        "candidate_parent": 1.0180652421176877,
+        "candidate_ducc": 1.070187986384236,
+        "parent_ducc": 1.051197842839745,
+        "candidate_parent_bitwise_equal": true
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 1.0748819749999998,
+          "parent": 1.0915610789999999,
+          "ducc": 1.0382449999999999
+        },
+        "candidate_parent": 0.9847199535409598,
+        "candidate_ducc": 1.0352874080780547,
+        "parent_ducc": 1.0513521172748244,
+        "candidate_parent_bitwise_equal": true
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 1.0910170455000001,
+      "candidate": 1.0703261,
+      "ducc": 1.008845
+    },
+    "candidate_parent_geomean": 0.981939714515932,
+    "candidate_ducc_geomean": 1.0534611032366656,
+    "parent_ducc_geomean": 1.0728368428972155
+  }
+]

@@ -1,0 +1,134 @@
+[
+  {
+    "case_id": "GL-T720-M720-analysis-q1",
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1
+    },
+    "cpus": "2",
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 45.513172499999996,
+          "candidate": 55.9821035,
+          "ducc": 14.7911155
+        },
+        "candidate_parent": 1.2300198036074064,
+        "candidate_ducc": 3.784846619580518,
+        "parent_ducc": 3.0770615306195124,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "parent": 42.06544649999999,
+          "candidate": 61.000280499999995,
+          "ducc": 15.231534499999999
+        },
+        "candidate_parent": 1.4501279690446174,
+        "candidate_ducc": 4.004867697341985,
+        "parent_ducc": 2.761733986815314,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 44.12359649999999,
+          "candidate": 56.8499125,
+          "ducc": 15.233523
+        },
+        "candidate_parent": 1.2884242675004975,
+        "candidate_ducc": 3.731895274651832,
+        "parent_ducc": 2.8964801182234727,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      }
+    ],
+    "fixture_sha256": {
+      "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "binary_sha256": {
+      "parent": "dfdfd44e98ffef13effcac5f93e0f67fafef291d7a2ab32348213aa84480f2f5",
+      "candidate": "10da8a1a10510d277ca67c502dd0909428561ff822828b598781560d707fea1e",
+      "ducc": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8"
+    },
+    "aggregate_median_ms": {
+      "parent": 44.12359649999999,
+      "candidate": 56.8499125,
+      "ducc": 14.962583500000001
+    },
+    "candidate_parent_geomean": 1.3196510560295394,
+    "candidate_ducc_geomean": 3.8387394450658885,
+    "parent_ducc_geomean": 2.90890491658877
+  }
+]

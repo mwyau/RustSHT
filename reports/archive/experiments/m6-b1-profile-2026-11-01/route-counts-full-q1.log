@@ -1,0 +1,5 @@
+GL T720, spin 0, nonzero deterministic map, one test-instrumented q1 transform; source parent 255e34d4a078c42ffa5de3616c73f6eca173f472.
+B1_ROUTE f64 mmax=720 q=1 attempts=1139 successes=665 seed_declines=474 recurrence_declines=0 normal_pairs=134206 scaled_pairs=0 scaled_state_prepares=0 factor_epochs=0 invalidations=0 scaled_lane_visits=0 factor_epoch_lane_visits=0
+B1_ROUTE f32 mmax=720 q=1 attempts=6437 successes=6437 seed_declines=0 recurrence_declines=0 normal_pairs=1067695 scaled_pairs=266685 scaled_state_prepares=3883 factor_epochs=159441 invalidations=158692 scaled_lane_visits=8533920 factor_epoch_lane_visits=5102112
+
+Derived: f32 had 0.598 factor epochs per scaled accumulation pair (one factor epoch per 1.67 scaled pairs), 32.0 active lane visits per epoch on average, and nearly one state invalidation per epoch. This is from one route-diagnostic transform; counters are cfg(test) only.

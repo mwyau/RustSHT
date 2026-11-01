@@ -1,0 +1,530 @@
+[
+  {
+    "case_id": "GL-T720-M720-analysis-q1",
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1
+    },
+    "cpus": "2",
+    "fixture_sha256": {
+      "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "binary_sha256": {
+      "parent": "dfdfd44e98ffef13effcac5f93e0f67fafef291d7a2ab32348213aa84480f2f5",
+      "candidate": "f8efa2f59c32f805906f3f2e160823fe89c7879f32b9ec40a7530bc62171f7dd",
+      "ducc": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 41.526575,
+          "candidate": 41.274883,
+          "ducc": 14.2128205
+        },
+        "candidate_parent": 0.9939390137520371,
+        "candidate_ducc": 2.904059964733953,
+        "parent_ducc": 2.9217687650385793,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 14.11617025,
+          "candidate": 39.574791,
+          "parent": 39.972188
+        },
+        "candidate_parent": 0.9900581624403446,
+        "candidate_ducc": 2.8035076298403245,
+        "parent_ducc": 2.831659528900907,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 41.0884205,
+          "parent": 41.0845885,
+          "ducc": 14.72109
+        },
+        "candidate_parent": 1.000093270984082,
+        "candidate_ducc": 2.791126234538339,
+        "parent_ducc": 2.790865927726819,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 41.100764,
+      "candidate": 41.010463,
+      "ducc": 14.2128205
+    },
+    "candidate_parent_geomean": 0.994688241019351,
+    "candidate_ducc_geomean": 2.8324500963176007,
+    "parent_ducc_geomean": 2.8475757322866526
+  },
+  {
+    "case_id": "GL-T720-M720-analysis-q8",
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8
+    },
+    "cpus": "0,1,2,3,4,5,6,7",
+    "fixture_sha256": {
+      "map0.f32": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "map1.f32": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+      "alm0.f32": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+      "alm1.f32": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+    },
+    "binary_sha256": {
+      "parent": "dfdfd44e98ffef13effcac5f93e0f67fafef291d7a2ab32348213aa84480f2f5",
+      "candidate": "f8efa2f59c32f805906f3f2e160823fe89c7879f32b9ec40a7530bc62171f7dd",
+      "ducc": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 6.5196816,
+          "candidate": 6.380331249999999,
+          "ducc": 2.1987537083333333
+        },
+        "candidate_parent": 0.9786262031569147,
+        "candidate_ducc": 2.901794423731216,
+        "parent_ducc": 2.9651713947270397,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 2.1907360000000002,
+          "candidate": 6.4218695,
+          "parent": 5.7660473
+        },
+        "candidate_parent": 1.1137386091161616,
+        "candidate_ducc": 2.9313753460024388,
+        "parent_ducc": 2.6320137615851475,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 5.8800721,
+          "parent": 6.4863029999999995,
+          "ducc": 2.2322881500000005
+        },
+        "candidate_parent": 0.906536759075239,
+        "candidate_ducc": 2.6341008440151414,
+        "parent_ducc": 2.905674610152815,
+        "candidate_vs_parent_error": {
+          "output_values": 520562,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0015668230126658555,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 520562,
+          "relative_l2": 1.8390751126253984e-05,
+          "absolute_l2": 2.0790067303606924e-05,
+          "max_absolute": 3.475579433143139e-07,
+          "reference_rms": 0.0015668239333598852,
+          "finite": true
+        }
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 6.337562,
+      "candidate": 6.2986273,
+      "ducc": 2.2042137000000004
+    },
+    "candidate_parent_geomean": 0.9960057479531091,
+    "candidate_ducc_geomean": 2.8191844422988424,
+    "parent_ducc_geomean": 2.83049013330751
+  },
+  {
+    "case_id": "GL-T720-M180-analysis-q1",
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1
+    },
+    "cpus": "2",
+    "fixture_sha256": {
+      "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    },
+    "binary_sha256": {
+      "parent": "dfdfd44e98ffef13effcac5f93e0f67fafef291d7a2ab32348213aa84480f2f5",
+      "candidate": "f8efa2f59c32f805906f3f2e160823fe89c7879f32b9ec40a7530bc62171f7dd",
+      "ducc": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 14.021698749999999,
+          "candidate": 14.01124175,
+          "ducc": 5.828151125
+        },
+        "candidate_parent": 0.9992542273096547,
+        "candidate_ducc": 2.40406287508545,
+        "parent_ducc": 2.405857097605718,
+        "candidate_vs_parent_error": {
+          "output_values": 228422,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0029028632612545556,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 228422,
+          "relative_l2": 2.220446789070277e-05,
+          "absolute_l2": 3.0806062857220496e-05,
+          "max_absolute": 1.005362719297409e-06,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 5.851844625,
+          "candidate": 13.833212,
+          "parent": 14.559957749999999
+        },
+        "candidate_parent": 0.9500859987042202,
+        "candidate_ducc": 2.36390623580509,
+        "parent_ducc": 2.48809711860728,
+        "candidate_vs_parent_error": {
+          "output_values": 228422,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0029028632612545556,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 228422,
+          "relative_l2": 2.220446789070277e-05,
+          "absolute_l2": 3.0806062857220496e-05,
+          "max_absolute": 1.005362719297409e-06,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 13.8493825,
+          "parent": 14.047978500000001,
+          "ducc": 5.906275375
+        },
+        "candidate_parent": 0.985863019366096,
+        "candidate_ducc": 2.3448589205002994,
+        "parent_ducc": 2.3784834956158813,
+        "candidate_vs_parent_error": {
+          "output_values": 228422,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0029028632612545556,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 228422,
+          "relative_l2": 2.220446789070277e-05,
+          "absolute_l2": 3.0806062857220496e-05,
+          "max_absolute": 1.005362719297409e-06,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        }
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 14.054748750000002,
+      "candidate": 13.8554165,
+      "ducc": 5.847665624999999
+    },
+    "candidate_parent_geomean": 0.9781793629881307,
+    "candidate_ducc_geomean": 2.370814613296726,
+    "parent_ducc_geomean": 2.4237013200262063
+  },
+  {
+    "case_id": "GL-T720-M180-analysis-q8",
+    "case": {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8
+    },
+    "cpus": "0,1,2,3,4,5,6,7",
+    "fixture_sha256": {
+      "map0.f32": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+      "map1.f32": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+      "alm0.f32": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+      "alm1.f32": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+    },
+    "binary_sha256": {
+      "parent": "dfdfd44e98ffef13effcac5f93e0f67fafef291d7a2ab32348213aa84480f2f5",
+      "candidate": "f8efa2f59c32f805906f3f2e160823fe89c7879f32b9ec40a7530bc62171f7dd",
+      "ducc": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8"
+    },
+    "rows": [
+      {
+        "pair": 1,
+        "order": [
+          "parent",
+          "candidate",
+          "ducc"
+        ],
+        "median_ms": {
+          "parent": 2.2022843500000002,
+          "candidate": 2.430244833333333,
+          "ducc": 1.0595086304347827
+        },
+        "candidate_parent": 1.1035109218904147,
+        "candidate_ducc": 2.293747085699577,
+        "parent_ducc": 2.0785902886852985,
+        "candidate_vs_parent_error": {
+          "output_values": 228422,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0029028632612545556,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 228422,
+          "relative_l2": 2.220446789070277e-05,
+          "absolute_l2": 3.0806062857220496e-05,
+          "max_absolute": 1.005362719297409e-06,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        }
+      },
+      {
+        "pair": 2,
+        "order": [
+          "ducc",
+          "candidate",
+          "parent"
+        ],
+        "median_ms": {
+          "ducc": 0.99188798,
+          "candidate": 2.186698333333333,
+          "parent": 1.9474671538461537
+        },
+        "candidate_parent": 1.122842215343509,
+        "candidate_ducc": 2.204581946172322,
+        "parent_ducc": 1.963394247247712,
+        "candidate_vs_parent_error": {
+          "output_values": 228422,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0029028632612545556,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 228422,
+          "relative_l2": 2.220446789070277e-05,
+          "absolute_l2": 3.0806062857220496e-05,
+          "max_absolute": 1.005362719297409e-06,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        }
+      },
+      {
+        "pair": 3,
+        "order": [
+          "candidate",
+          "parent",
+          "ducc"
+        ],
+        "median_ms": {
+          "candidate": 2.099340772727273,
+          "parent": 2.160796875,
+          "ducc": 0.9865432399999999
+        },
+        "candidate_parent": 0.9715585935060523,
+        "candidate_ducc": 2.127976440979184,
+        "parent_ducc": 2.1902708238110273,
+        "candidate_vs_parent_error": {
+          "output_values": 228422,
+          "relative_l2": 0.0,
+          "absolute_l2": 0.0,
+          "max_absolute": 0.0,
+          "reference_rms": 0.0029028632612545556,
+          "finite": true
+        },
+        "candidate_vs_ducc_error": {
+          "output_values": 228422,
+          "relative_l2": 2.220446789070277e-05,
+          "absolute_l2": 3.0806062857220496e-05,
+          "max_absolute": 1.005362719297409e-06,
+          "reference_rms": 0.0029028651541686016,
+          "finite": true
+        }
+      }
+    ],
+    "aggregate_median_ms": {
+      "parent": 2.160796875,
+      "candidate": 2.200492193181818,
+      "ducc": 1.0042002313043479
+    },
+    "candidate_parent_geomean": 1.0637872691160375,
+    "candidate_ducc_geomean": 2.2077312106413722,
+    "parent_ducc_geomean": 2.0753502835918543
+  }
+]
