@@ -1438,6 +1438,62 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd_analysis<S: Simd>(
     normalize_pair_lanes_with_state_f32_simd_impl::<S, true>(simd, previous, current, exponents)
 }
 
+/// Updates only the lane exponents selected by one SIMD normalization mask.
+/// B1's short-circuit normalizer commonly adjusts a small subset of each
+/// eight-lane vector; compress the mask once and visit only set lanes.
+#[inline(always)]
+fn update_f32_scale_exponents_from_mask<S: Simd>(
+    simd: S,
+    mask: S::m32s,
+    exponents: &mut [i64],
+    exponent_start: usize,
+    scale_delta: i64,
+) -> Result<(), ShtError> {
+    debug_assert!(S::F32_LANES <= u32::BITS as usize);
+    if std::mem::size_of::<S::m32s>() == std::mem::size_of::<S::u32s>() {
+        let mut lane_masks = [0_u32; 32];
+        debug_assert_eq!(
+            std::mem::size_of::<S::m32s>(),
+            S::F32_LANES * std::mem::size_of::<u32>()
+        );
+        simd.partial_store_u32s(
+            &mut lane_masks[..S::F32_LANES],
+            simd.select_u32s(mask, simd.splat_u32s(1_u32 << 31), simd.splat_u32s(0)),
+        );
+        let mut selected_lanes = 0_u32;
+        for (lane, lane_mask) in lane_masks[..S::F32_LANES].iter().copied().enumerate() {
+            selected_lanes |= (lane_mask >> 31) << lane;
+        }
+        while selected_lanes != 0 {
+            let lane = selected_lanes.trailing_zeros() as usize;
+            let exponent = &mut exponents[exponent_start + lane];
+            *exponent = exponent
+                .checked_add(scale_delta)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "scalar recurrence scale",
+                })?;
+            selected_lanes &= selected_lanes - 1;
+        }
+    } else {
+        let mut selected = [0.0_f32; 32];
+        simd.partial_store_f32s(
+            &mut selected[..S::F32_LANES],
+            simd.select_f32s(mask, simd.splat_f32s(1.0), simd.splat_f32s(0.0)),
+        );
+        for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
+            if selected != 0.0 {
+                let exponent = &mut exponents[exponent_start + lane];
+                *exponent = exponent
+                    .checked_add(scale_delta)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "scalar recurrence scale",
+                    })?;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[inline(always)]
 fn normalize_pair_lanes_with_state_f32_simd_impl<S: Simd, const SHORT_CIRCUIT_RESULT: bool>(
     simd: S,
@@ -1533,19 +1589,29 @@ fn normalize_pair_lanes_with_state_f32_simd_impl<S: Simd, const SHORT_CIRCUIT_RE
             if simd.first_true_m32s(too_large) == S::F32_LANES {
                 break;
             }
-            let mut selected = [0.0_f32; MAX_F32_LANES];
-            simd.partial_store_f32s(
-                &mut selected[..S::F32_LANES],
-                simd.select_f32s(too_large, one, zero),
-            );
-            for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
-                if selected != 0.0 {
-                    let exponent = &mut exponents[index * S::F32_LANES + lane];
-                    *exponent = exponent
-                        .checked_add(<f32 as LegendrePrecision>::SCALE_EXPONENT)
-                        .ok_or(ShtError::IntegerOverflow {
-                            quantity: "scalar recurrence scale",
-                        })?;
+            if SHORT_CIRCUIT_RESULT {
+                update_f32_scale_exponents_from_mask(
+                    simd,
+                    too_large,
+                    exponents,
+                    index * S::F32_LANES,
+                    <f32 as LegendrePrecision>::SCALE_EXPONENT,
+                )?;
+            } else {
+                let mut selected = [0.0_f32; MAX_F32_LANES];
+                simd.partial_store_f32s(
+                    &mut selected[..S::F32_LANES],
+                    simd.select_f32s(too_large, one, zero),
+                );
+                for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
+                    if selected != 0.0 {
+                        let exponent = &mut exponents[index * S::F32_LANES + lane];
+                        *exponent = exponent
+                            .checked_add(<f32 as LegendrePrecision>::SCALE_EXPONENT)
+                            .ok_or(ShtError::IntegerOverflow {
+                                quantity: "scalar recurrence scale",
+                            })?;
+                    }
                 }
             }
             previous_value = simd.select_f32s(
@@ -1567,19 +1633,29 @@ fn normalize_pair_lanes_with_state_f32_simd_impl<S: Simd, const SHORT_CIRCUIT_RE
             if simd.first_true_m32s(too_small) == S::F32_LANES {
                 break;
             }
-            let mut selected = [0.0_f32; MAX_F32_LANES];
-            simd.partial_store_f32s(
-                &mut selected[..S::F32_LANES],
-                simd.select_f32s(too_small, one, zero),
-            );
-            for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
-                if selected != 0.0 {
-                    let exponent = &mut exponents[index * S::F32_LANES + lane];
-                    *exponent = exponent
-                        .checked_sub(<f32 as LegendrePrecision>::SCALE_EXPONENT)
-                        .ok_or(ShtError::IntegerOverflow {
-                            quantity: "scalar recurrence scale",
-                        })?;
+            if SHORT_CIRCUIT_RESULT {
+                update_f32_scale_exponents_from_mask(
+                    simd,
+                    too_small,
+                    exponents,
+                    index * S::F32_LANES,
+                    -<f32 as LegendrePrecision>::SCALE_EXPONENT,
+                )?;
+            } else {
+                let mut selected = [0.0_f32; MAX_F32_LANES];
+                simd.partial_store_f32s(
+                    &mut selected[..S::F32_LANES],
+                    simd.select_f32s(too_small, one, zero),
+                );
+                for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
+                    if selected != 0.0 {
+                        let exponent = &mut exponents[index * S::F32_LANES + lane];
+                        *exponent = exponent
+                            .checked_sub(<f32 as LegendrePrecision>::SCALE_EXPONENT)
+                            .ok_or(ShtError::IntegerOverflow {
+                                quantity: "scalar recurrence scale",
+                            })?;
+                    }
                 }
             }
             previous_value = simd.select_f32s(

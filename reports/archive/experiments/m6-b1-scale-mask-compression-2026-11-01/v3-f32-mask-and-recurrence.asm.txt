@@ -1,0 +1,163 @@
+# Disassembly excerpts
+# f32 source binary: V3 FusedScalarAnalysisPairTyped<f32>, executable SHA-256 f01d80611b6bdf3f53885efc6ae7d8a52a14aeb0aeb4d1e6e335862c91faa45b
+# f64 source binary: V3 FusedScalarAnalysisPairTyped<f64>, executable SHA-256 7251f390c28b3cb435b53455eec41ad2acf9b519ce30a04d73d0949c3a7755ae
+# Compiler: rustc 1.99.1, -C target-cpu=x86-64-v3. Runtime dispatch was Pulp V3 on Ryzen 9 5950X.
+# The f32 mask block shows typed select/store, vector mask compression, then tzcnt/blsr sparse exponent updates.
+# Both recurrence snippets show YMM FMA accumulation; f32 carries eight lanes and f64 four.
+
+RustSHT candidate f32 executable (SHA-256 f01d80611b6bdf3f53885efc6ae7d8a52a14aeb0aeb4d1e6e335862c91faa45b):     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+00000000001e573a <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x30a>:
+  1e573a:	c5 fe 6f 84 24 b0 05 	vmovdqu 0x5b0(%rsp),%ymm0
+  1e5741:	00 00
+  1e5743:	c4 c2 7d 45 c2       	vpsrlvd %ymm10,%ymm0,%ymm0
+  1e5748:	c5 a5 db c0          	vpand  %ymm0,%ymm11,%ymm0
+  1e574c:	c4 e3 7d 39 c1 01    	vextracti128 $0x1,%ymm0,%xmm1
+  1e5752:	c5 f9 eb c1          	vpor   %xmm1,%xmm0,%xmm0
+  1e5756:	c5 f9 70 c8 ee       	vpshufd $0xee,%xmm0,%xmm1
+  1e575b:	c5 f9 eb c1          	vpor   %xmm1,%xmm0,%xmm0
+  1e575f:	c5 f9 70 c8 55       	vpshufd $0x55,%xmm0,%xmm1
+  1e5764:	c5 f9 eb c1          	vpor   %xmm1,%xmm0,%xmm0
+  1e5768:	c5 f9 7e c6          	vmovd  %xmm0,%esi
+  1e576c:	85 f6                	test   %esi,%esi
+  1e576e:	0f 84 5c ff ff ff    	je     1e56d0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x2a0>
+  1e5774:	66 66 66 2e 0f 1f 84 	data16 data16 cs nopw 0x0(%rax,%rax,1)
+  1e577b:	00 00 00 00 00
+  1e5780:	31 c9                	xor    %ecx,%ecx
+  1e5782:	f3 0f bc ce          	tzcnt  %esi,%ecx
+  1e5786:	4c 01 c1             	add    %r8,%rcx
+  1e5789:	4c 39 f1             	cmp    %r14,%rcx
+  1e578c:	0f 83 47 46 00 00    	jae    1e9dd9 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x49a9>
+  1e5792:	4d 8b 3c cc          	mov    (%r12,%rcx,8),%r15
+  1e5796:	49 83 c7 50          	add    $0x50,%r15
+  1e579a:	0f 80 bf 45 00 00    	jo     1e9d5f <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x492f>
+  1e57a0:	4d 89 3c cc          	mov    %r15,(%r12,%rcx,8)
+  1e57a4:	c4 e2 48 f3 ce       	blsr   %esi,%esi
+  1e57a9:	75 d5                	jne    1e5780 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x350>
+  1e57ab:	e9 20 ff ff ff       	jmp    1e56d0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x2a0>
+
+RustSHT candidate f32 executable (SHA-256 f01d80611b6bdf3f53885efc6ae7d8a52a14aeb0aeb4d1e6e335862c91faa45b):     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+00000000001e6740 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1310>:
+  1e6740:	8b 9c 24 10 01 00 00 	mov    0x110(%rsp),%ebx
+  1e6747:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+  1e674e:	00 00
+  1e6750:	c4 c1 7c 10 64 10 e0 	vmovups -0x20(%r8,%rdx,1),%ymm4
+  1e6757:	c4 e2 5d b8 44 16 e0 	vfmadd231ps -0x20(%rsi,%rdx,1),%ymm4,%ymm0
+  1e675e:	c4 c2 5d b8 54 15 e0 	vfmadd231ps -0x20(%r13,%rdx,1),%ymm4,%ymm2
+  1e6765:	c4 e2 5d b8 4c 15 e0 	vfmadd231ps -0x20(%rbp,%rdx,1),%ymm4,%ymm1
+  1e676c:	c4 e2 5d b8 5c 17 e0 	vfmadd231ps -0x20(%rdi,%rdx,1),%ymm4,%ymm3
+  1e6773:	c4 c1 7c 10 24 10    	vmovups (%r8,%rdx,1),%ymm4
+  1e6779:	48 83 c0 02          	add    $0x2,%rax
+  1e677d:	c4 e2 5d b8 04 16    	vfmadd231ps (%rsi,%rdx,1),%ymm4,%ymm0
+  1e6783:	c4 c2 5d b8 54 15 00 	vfmadd231ps 0x0(%r13,%rdx,1),%ymm4,%ymm2
+  1e678a:	c4 e2 5d b8 4c 15 00 	vfmadd231ps 0x0(%rbp,%rdx,1),%ymm4,%ymm1
+  1e6791:	c4 e2 5d b8 1c 17    	vfmadd231ps (%rdi,%rdx,1),%ymm4,%ymm3
+  1e6797:	48 83 c2 40          	add    $0x40,%rdx
+  1e679b:	48 39 c1             	cmp    %rax,%rcx
+  1e679e:	75 b0                	jne    1e6750 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1320>
+  1e67a0:	f6 44 24 18 08       	testb  $0x8,0x18(%rsp)
+  1e67a5:	0f 85 bc 00 00 00    	jne    1e6867 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1437>
+  1e67ab:	e9 db 00 00 00       	jmp    1e688b <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x145b>
+  1e67b0:	80 bc 24 dc 17 00 00 	cmpb   $0x1,0x17dc(%rsp)
+  1e67b7:	01
+  1e67b8:	48 8b b4 24 e0 00 00 	mov    0xe0(%rsp),%rsi
+  1e67bf:	00
+  1e67c0:	48 8b 84 24 00 01 00 	mov    0x100(%rsp),%rax
+  1e67c7:	00
+  1e67c8:	4c 8b 9c 24 b0 00 00 	mov    0xb0(%rsp),%r11
+  1e67cf:	00
+  1e67d0:	49 89 d8             	mov    %rbx,%r8
+  1e67d3:	75 0e                	jne    1e67e3 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x13b3>
+  1e67d5:	4c 39 84 24 d0 17 00 	cmp    %r8,0x17d0(%rsp)
+  1e67dc:	00
+  1e67dd:	0f 84 6a 09 00 00    	je     1e714d <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1d1d>
+  1e67e3:	4c 89 c3             	mov    %r8,%rbx
+  1e67e6:	4d 85 f6             	test   %r14,%r14
+  1e67e9:	49 8d 6c 24 08       	lea    0x8(%r12),%rbp
+  1e67ee:	0f 84 66 02 00 00    	je     1e6a5a <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x162a>
+  1e67f4:	4d 8b 3c 24          	mov    (%r12),%r15
+  1e67f8:	49 83 fe 01          	cmp    $0x1,%r14
+  1e67fc:	48 8b 94 24 90 01 00 	mov    0x190(%rsp),%rdx
+  1e6803:	00
+  1e6804:	0f 84 ad 03 00 00    	je     1e6bb7 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1787>
+  1e680a:	48 83 fa 04          	cmp    $0x4,%rdx
+  1e680e:	0f 83 4e 02 00 00    	jae    1e6a62 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1632>
+  1e6814:	31 c0                	xor    %eax,%eax
+  1e6816:	e9 85 03 00 00       	jmp    1e6ba0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x1770>
+  1e681b:	c5 e0 57 db          	vxorps %xmm3,%xmm3,%xmm3
+  1e681f:	c5 f0 57 c9          	vxorps %xmm1,%xmm1,%xmm1
+  1e6823:	c5 e8 57 d2          	vxorps %xmm2,%xmm2,%xmm2
+  1e6827:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e682b:	4c 8b 8c 24 30 01 00 	mov    0x130(%rsp),%r9
+  1e6832:	00
+  1e6833:	4c 8b 94 24 28 01 00 	mov    0x128(%rsp),%r10
+  1e683a:	00
+  1e683b:	4c 8b 9c 24 20 01 00 	mov    0x120(%rsp),%r11
+  1e6842:	00
+  1e6843:	48 8b 9c 24 10 01 00 	mov    0x110(%rsp),%rbx
+  1e684a:	00
+  1e684b:	eb 3e                	jmp    1e688b <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x145b>
+  1e684d:	c5 f8 57 c0          	vxorps %xmm0,%xmm0,%xmm0
+  1e6851:	31 c0                	xor    %eax,%eax
+  1e6853:	c5 e8 57 d2          	vxorps %xmm2,%xmm2,%xmm2
+  1e6857:	c5 f0 57 c9          	vxorps %xmm1,%xmm1,%xmm1
+  1e685b:	c5 e0 57 db          	vxorps %xmm3,%xmm3,%xmm3
+  1e685f:	48 8b 9c 24 10 01 00 	mov    0x110(%rsp),%rbx
+  1e6866:	00
+  1e6867:	48 c1 e0 05          	shl    $0x5,%rax
+  1e686b:	c4 c1 7c 10 24 00    	vmovups (%r8,%rax,1),%ymm4
+  1e6871:	c4 e2 5d b8 04 06    	vfmadd231ps (%rsi,%rax,1),%ymm4,%ymm0
+  1e6877:	c4 c2 5d b8 54 05 00 	vfmadd231ps 0x0(%r13,%rax,1),%ymm4,%ymm2
+  1e687e:	c4 e2 5d b8 4c 05 00 	vfmadd231ps 0x0(%rbp,%rax,1),%ymm4,%ymm1
+  1e6885:	c4 e2 5d b8 1c 07    	vfmadd231ps (%rdi,%rax,1),%ymm4,%ymm3
+  1e688b:	48 8b 44 24 18       	mov    0x18(%rsp),%rax
+  1e6890:	c4 e3 7d 19 c4 01    	vextractf128 $0x1,%ymm0,%xmm4
+  1e6896:	c5 f8 58 c4          	vaddps %xmm4,%xmm0,%xmm0
+  1e689a:	c5 f9 c6 e0 01       	vshufpd $0x1,%xmm0,%xmm0,%xmm4
+  1e689f:	c5 f8 58 c4          	vaddps %xmm4,%xmm0,%xmm0
+  1e68a3:	c5 fa 16 e0          	vmovshdup %xmm0,%xmm4
+  1e68a7:	c5 fa 58 c4          	vaddss %xmm4,%xmm0,%xmm0
+  1e68ab:	c4 e3 7d 19 d4 01    	vextractf128 $0x1,%ymm2,%xmm4
+  1e68b1:	c5 e8 58 d4          	vaddps %xmm4,%xmm2,%xmm2
+  1e68b5:	c5 e9 c6 e2 01       	vshufpd $0x1,%xmm2,%xmm2,%xmm4
+  1e68ba:	c5 e8 58 d4          	vaddps %xmm4,%xmm2,%xmm2
+  1e68be:	c5 fa 16 e2          	vmovshdup %xmm2,%xmm4
+  1e68c2:	c5 ea 58 d4          	vaddss %xmm4,%xmm2,%xmm2
+  1e68c6:	c4 e3 7d 19 cc 01    	vextractf128 $0x1,%ymm1,%xmm4
+  1e68cc:	c5 f0 58 cc          	vaddps %xmm4,%xmm1,%xmm1
+  1e68d0:	c5 f1 c6 e1 01       	vshufpd $0x1,%xmm1,%xmm1,%xmm4
+  1e68d5:	c5 f0 58 cc          	vaddps %xmm4,%xmm1,%xmm1
+  1e68d9:	c5 fa 16 e1          	vmovshdup %xmm1,%xmm4
+  1e68dd:	c5 f2 58 cc          	vaddss %xmm4,%xmm1,%xmm1
+  1e68e1:	c4 e3 7d 19 dc 01    	vextractf128 $0x1,%ymm3,%xmm4
+  1e68e7:	c5 e0 58 dc          	vaddps %xmm4,%xmm3,%xmm3
+  1e68eb:	c5 e1 c6 e3 01       	vshufpd $0x1,%xmm3,%xmm3,%xmm4
+
+RustSHT candidate f64 profile executable (SHA-256 7251f390c28b3cb435b53455eec41ad2acf9b519ce30a04d73d0949c3a7755ae):     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000191880 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x690>:
+  191880:	c5 fd 10 64 16 e0    	vmovupd -0x20(%rsi,%rdx,1),%ymm4
+  191886:	c4 e2 dd b8 4c 13 e0 	vfmadd231pd -0x20(%rbx,%rdx,1),%ymm4,%ymm1
+  19188d:	c4 c2 dd b8 5c 17 e0 	vfmadd231pd -0x20(%r15,%rdx,1),%ymm4,%ymm3
+  191894:	c4 c2 dd b8 54 14 e0 	vfmadd231pd -0x20(%r12,%rdx,1),%ymm4,%ymm2
+  19189b:	c4 c2 dd b8 44 13 e0 	vfmadd231pd -0x20(%r11,%rdx,1),%ymm4,%ymm0
+  1918a2:	c5 fd 10 24 16       	vmovupd (%rsi,%rdx,1),%ymm4
+  1918a7:	48 83 c0 02          	add    $0x2,%rax
+  1918ab:	c4 e2 dd b8 0c 13    	vfmadd231pd (%rbx,%rdx,1),%ymm4,%ymm1
+  1918b1:	c4 c2 dd b8 1c 17    	vfmadd231pd (%r15,%rdx,1),%ymm4,%ymm3
+  1918b7:	c4 c2 dd b8 14 14    	vfmadd231pd (%r12,%rdx,1),%ymm4,%ymm2
+  1918bd:	c4 c2 dd b8 04 13    	vfmadd231pd (%r11,%rdx,1),%ymm4,%ymm0
+  1918c3:	48 83 c2 40          	add    $0x40,%rdx
+  1918c7:	48 39 c1             	cmp    %rax,%rcx
+  1918ca:	75 b4                	jne    191880 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x690>
+  1918cc:	40 f6 c5 04          	test   $0x4,%bpl

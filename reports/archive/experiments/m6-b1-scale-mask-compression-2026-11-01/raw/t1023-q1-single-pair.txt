@@ -1,0 +1,3 @@
+{"threads": 1, "pair": 1, "parent_ms": 91.0265755, "candidate_ms": 90.52707050000001, "ratio": 0.9945125366162983, "outputs_exact": true}
+
+Observed from the interrupted 15-pair control runner after its first complete q1 pair. This is retained only as a one-pair smoke result; see t1023-control.json for its source and binary provenance.

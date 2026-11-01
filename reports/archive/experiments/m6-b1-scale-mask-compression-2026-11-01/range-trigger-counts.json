@@ -1,0 +1,21 @@
+{
+  "source_sha": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16",
+  "fixture": "GL T720 B1 zero-map recurrence route, plan phi0=0.23",
+  "f32": {
+    "full": {
+      "attempts": 6437,
+      "normal_pairs": 1067695,
+      "scaled_pairs": 266685,
+      "range_checks": 1327943,
+      "triggers": 158692
+    },
+    "reduced": {
+      "attempts": 2119,
+      "normal_pairs": 581344,
+      "scaled_pairs": 89429,
+      "range_checks": 668654,
+      "triggers": 35084
+    }
+  },
+  "note": "test-only counters; recurrence route independent of map values; ranges are per update checks and successful checks that triggered normalization"
+}

@@ -1,0 +1,72 @@
+{
+  "purpose": "single-pair protected f64 GL T1023 spin-1 synthesis smoke controls; not a performance claim",
+  "parent_source_sha": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16",
+  "candidate_source": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16 plus B1 candidate patch 38bac5b72e5602c046021a2ecbbb739ed7960176bcb3773e58dd24701c13cc23",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "case": {
+    "grid": "GL",
+    "lmax": 1023,
+    "mmax": 1023,
+    "ntheta": 1024,
+    "nphi": 2048,
+    "operation": "spin-1 synthesis",
+    "precision": "f64",
+    "phi0": 0.23,
+    "target_ms": 25.0
+  },
+  "binary_sha256": {
+    "parent": "6df51b59518ed17458d21d5ec5f4132c5aef40fa1c323aff13cfa5536066523e",
+    "candidate": "5962a3a6551f1ddc8b62a0c6e80eb7ee74a9ae8705fda52bb1eee7830e4f8dc4"
+  },
+  "fixture_sha256": {
+    "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+    "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+    "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+    "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+  },
+  "affinity": {
+    "q1": [
+      0
+    ],
+    "q8": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "controls": [
+    {
+      "threads": 1,
+      "pairs": 1,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 91.0265755,
+      "candidate_ms": 90.5270705,
+      "candidate_parent_ratio": 0.9945125366162983,
+      "outputs_exact": true,
+      "confidence": "one-pair screen only"
+    },
+    {
+      "threads": 8,
+      "pairs": 1,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 15.41201325,
+      "candidate_ms": 14.413649499999998,
+      "candidate_parent_ratio": 0.9352217173833535,
+      "outputs_exact": true,
+      "repeat_consistent": true,
+      "reset_consistent": true,
+      "confidence": "one-pair screen only"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+33c966bb6cb6bec49197fb1a5a6fae07caf6656b31ac6b150bc74c73c20f4dfd  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/README.md
+d7efc628c671349a342822f3b7f7ebd07b54247eb94bb70099b7f9ba10c84384  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/candidate.patch.gz
+9ee9acc750935b7a802249bab942817307d83be4daa03372add30e8e9a6c809f  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/capture-environment.json
+a384309cc48e7e02046a5fc590eeebcdc63041b13c558f76b7221a8aeb3690d2  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/microbenchmark.txt
+a12a29468a7435b83ee8369461d4cc305c6f378e9d2d5e2bdc55ea36e5c51320  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/profile-summary.json
+f1b6b285aae378d38f20220e73cd1224a407eeb2daa071ea470a9e18ae430ae6  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/range-trigger-counts.json
+04b8df5dbbc8c6f576183821d84eec5c39717426a3b3182f4c480c07e2bf310f  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/raw/t1023-q1-single-pair.txt
+ee92327e5f7058edcc7e163427cbf6a65033783d399b3c254eaf228da0b425e9  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/raw/t1023-q8-single-pair.json
+85b17cdfe518e64551c94023552b57081afc2cb8605da422bdae575731afcba8  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/repro/profile_harness/m6_b1_callgrind.rs
+30d944145b04f89c4e781048e391e412c03013d8bd01acbcaa61a677c051ce73  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/repro/profile_harness/m6_b1_callgrind_f64.rs
+01838aedc53e2a92f7262adab2fc72d00fced41ec25bb4eae1f13e5ccbc17f0b  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/repro/profile_harness/m6_callgrind.c
+feacc6a69290f581e7523218c222b9f4e48d74aeb1290bcdc6812facc889343c  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/repro/screen15-runner.py
+d7346af4023d7eacd498a416b33d8b52a414daebf5095e3e61996df541df236e  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/screen15.json
+6318f6b953b6053e4cb81494a5f7282bde2f84b59f15d580a5868f7904a10dea  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/t1023-control.json
+16692da26937106b47ee4a17519a22963411e361687f7a6ba9602c0394092ac2  reports/archive/experiments/m6-b1-scale-mask-compression-2026-11-01/v3-f32-mask-and-recurrence.asm.txt

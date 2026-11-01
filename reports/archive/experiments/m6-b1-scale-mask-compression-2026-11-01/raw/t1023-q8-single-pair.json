@@ -1,0 +1,69 @@
+{
+  "source_parent": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16 exact parent source plus B1 mask update patch 38bac5b72e5602c046021a2ecbbb739ed7960176bcb3773e58dd24701c13cc23",
+  "candidate_source_base": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16 plus B1 safe mask update patch 38bac5b72e5602c046021a2ecbbb739ed7960176bcb3773e58dd24701c13cc23",
+  "parent_binary_sha256": "6df51b59518ed17458d21d5ec5f4132c5aef40fa1c323aff13cfa5536066523e",
+  "candidate_binary_sha256": "5962a3a6551f1ddc8b62a0c6e80eb7ee74a9ae8705fda52bb1eee7830e4f8dc4",
+  "fixture_sha256": {
+    "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+    "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+    "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+    "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+  },
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "q1_cpus": [
+    0
+  ],
+  "q8_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "ducc_reference": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "pairs": [
+    {
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 15.41201325,
+      "candidate_ms": 14.413649499999998,
+      "ratio": 0.9352217173833535,
+      "outputs_exact": true,
+      "parent_repeat": true,
+      "candidate_repeat": true,
+      "parent_reset": true,
+      "candidate_reset": true,
+      "parent_batches_ms": [
+        19.0765365,
+        18.187795,
+        16.929073499999998,
+        18.203665,
+        14.6325035,
+        15.586513499999999,
+        14.5036495,
+        15.0473135,
+        15.237513,
+        14.606519
+      ],
+      "candidate_batches_ms": [
+        14.4211485,
+        14.43252,
+        14.2750825,
+        14.449693,
+        14.330497500000002,
+        14.406150499999999,
+        15.352917000000001,
+        14.5016365,
+        14.3862575,
+        14.315052999999999
+      ]
+    }
+  ]
+}

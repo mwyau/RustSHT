@@ -1,0 +1,77 @@
+{
+  "source_parent_sha": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16",
+  "candidate_patch_sha256": "38bac5b72e5602c046021a2ecbbb739ed7960176bcb3773e58dd24701c13cc23",
+  "workload": "GL T720 full M720 scalar analysis, q1, phi0=0.23; f32 fixture map0 expanded exactly f32->f64 for paired precision profile",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "method": "Callgrind transform-only collection with cache and branch simulation. No wall-time or cycle interpretation.",
+  "f32_parent": {
+    "Ir": 803358528,
+    "Dr": 350751882,
+    "Dw": 74780657,
+    "D1mr": 782409,
+    "D1mw": 250466,
+    "Bc": 145906720,
+    "Bcm": 2714324
+  },
+  "f32_candidate": {
+    "Ir": 793182722,
+    "Dr": 363627389,
+    "Dw": 69238130,
+    "D1mr": 777887,
+    "D1mw": 240731,
+    "Bc": 143543217,
+    "Bcm": 2403698,
+    "analyze_symmetric_order_group_inclusive_Ir": 752515704,
+    "analyze_symmetric_order_group_percent": 94.87,
+    "V3_FusedScalarAnalysisPairTyped_self_Ir": 615417015,
+    "V3_FusedScalarAnalysisPairTyped_self_percent": 77.59
+  },
+  "f64_candidate": {
+    "Ir": 320340451,
+    "Dr": 139137860,
+    "Dw": 24322018,
+    "D1mr": 1294597,
+    "D1mw": 728108,
+    "Bc": 45302982,
+    "Bcm": 864492,
+    "analyze_symmetric_order_group_inclusive_Ir": 268449751,
+    "analyze_symmetric_order_group_percent": 83.8,
+    "V3_FusedScaledScalarAnalysisPair_self_Ir": 94076744,
+    "V3_FusedScaledScalarAnalysisPair_self_percent": 29.37
+  },
+  "candidate_vs_parent_f32": {
+    "Ir_change_percent": -1.267,
+    "D1_misses_parent": 1032875,
+    "D1_misses_candidate": 1018618,
+    "conditional_branches_parent": 145906720,
+    "conditional_branches_candidate": 143543217,
+    "branch_mispredicts_parent": 2714324,
+    "branch_mispredicts_candidate": 2403698
+  },
+  "profile_sha256": {
+    "raw/f32-parent-4ce.callgrind": "867ffa7dd9a7b619470f9f357921a08635d2caa86c1022e74da356afadbdfe29",
+    "raw/f32-safe-candidate.callgrind": "23eb8b60305c9013ca84578716cdd4e4402c31137f9ea5037b7b77bcf6f1e357",
+    "raw/f64-safe-candidate.callgrind": "422dcd102e7d02b5accefa1df126d11fda019c1bbe88092614c3d5d541f6157e"
+  },
+  "f32_fixture_sha256": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+  "f64_fixture_sha256": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+  "interpretation": "The B1 order-group/fused recurrence and accumulation dominate; the lane-exponent update is a small avoidable subcost. Callgrind proves instruction and branch-count differences only, not cycle contribution.",
+  "normalizer_lane_density": {
+    "source_sha": "4ce0ed5efa2e36f46aa2f34537821211ff17ef16",
+    "f32_full": {
+      "normalization_triggers": 158692,
+      "vector_passes": 191209,
+      "selected_lane_updates": 252316,
+      "mean_selected_lanes_per_pass": 1.319582237237787,
+      "uniform_trigger_masks": 0
+    },
+    "f32_reduced": {
+      "normalization_triggers": 35084,
+      "vector_passes": 41975,
+      "selected_lane_updates": 56472,
+      "mean_selected_lanes_per_pass": 1.3453722453841572,
+      "uniform_trigger_masks": 0
+    },
+    "note": "Test-only route instrumentation; all observed triggers had mixed lane exponents."
+  }
+}

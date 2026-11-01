@@ -1,5 +1,90 @@
 use super::*;
 
+struct ScalarAnalysisMaskUpdateBench;
+
+impl WithSimd for ScalarAnalysisMaskUpdateBench {
+    type Output = (Vec<f64>, Vec<f64>);
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        use std::time::Instant;
+
+        let lane_count = S::F32_LANES;
+        assert!(lane_count <= 32);
+        let mut one_lane = [0.0_f32; 32];
+        let mut two_lanes = [0.0_f32; 32];
+        one_lane[1.min(lane_count - 1)] = 1.0;
+        two_lanes[1.min(lane_count - 1)] = 1.0;
+        two_lanes[6.min(lane_count - 1)] = 1.0;
+        let (one_vector, one_tail) = S::as_simd_f32s(&one_lane[..lane_count]);
+        let (two_vector, two_tail) = S::as_simd_f32s(&two_lanes[..lane_count]);
+        assert!(one_tail.is_empty() && two_tail.is_empty());
+        let zero = simd.splat_f32s(0.0);
+        let one = simd.splat_f32s(1.0);
+        let masks = [
+            simd.greater_than_f32s(one_vector[0], zero),
+            simd.greater_than_f32s(two_vector[0], zero),
+        ];
+        let iterations = 50_000;
+        let mut old_samples = Vec::with_capacity(7);
+        let mut new_samples = Vec::with_capacity(7);
+        for sample in 0..8 {
+            let mut previous_exponents = [0_i64; 32];
+            let old_started = Instant::now();
+            for iteration in 0..iterations {
+                let mask = masks[usize::from(iteration % 4 == 0)];
+                let mut selected = [0.0_f32; 32];
+                simd.partial_store_f32s(
+                    &mut selected[..lane_count],
+                    simd.select_f32s(mask, one, zero),
+                );
+                for (lane, selected) in selected[..lane_count].iter().copied().enumerate() {
+                    if selected != 0.0 {
+                        previous_exponents[lane] = previous_exponents[lane]
+                            .checked_add(<f32 as LegendrePrecision>::SCALE_EXPONENT)
+                            .unwrap();
+                    }
+                }
+                std::hint::black_box(&previous_exponents);
+            }
+            let old_elapsed = old_started.elapsed().as_secs_f64() * 1.0e9 / iterations as f64;
+
+            let mut new_exponents = [0_i64; 32];
+            let new_started = Instant::now();
+            for iteration in 0..iterations {
+                let mask = masks[usize::from(iteration % 4 == 0)];
+                update_f32_scale_exponents_from_mask(
+                    simd,
+                    mask,
+                    &mut new_exponents,
+                    0,
+                    <f32 as LegendrePrecision>::SCALE_EXPONENT,
+                )
+                .unwrap();
+                std::hint::black_box(&new_exponents);
+            }
+            let new_elapsed = new_started.elapsed().as_secs_f64() * 1.0e9 / iterations as f64;
+            if sample != 0 {
+                old_samples.push(old_elapsed);
+                new_samples.push(new_elapsed);
+            }
+        }
+        (old_samples, new_samples)
+    }
+}
+
+#[test]
+#[ignore = "manual mask-density microbenchmark for B1 f32 scale normalization"]
+fn benchmark_b1_f32_scale_mask_update() {
+    let arch = Arch::new();
+    let (mut old, mut new) = arch.dispatch(ScalarAnalysisMaskUpdateBench);
+    old.sort_by(f64::total_cmp);
+    new.sort_by(f64::total_cmp);
+    eprintln!(
+        "B1_SCALE_MASK_UPDATE arch={arch:?} lane_updates_per_vector=1.25 old_ns={} new_ns={} old_samples={old:?} new_samples={new:?}",
+        old[3], new[3]
+    );
+}
+
 struct PairLaneNormalization<'a> {
     previous: &'a mut [f64],
     current: &'a mut [f64],

@@ -1,0 +1,13 @@
+Release V3 helper microbenchmark; 50,000 updates per sample, seven samples retained after warm-up.
+Density: 1.25 selected exponent lanes per eight-lane vector.
+CPU: AMD Ryzen 9 5950X; pinned to CPU 2.
+rustc: 1.99.1; RUSTFLAGS=-C target-cpu=x86-64-v3 -Aunexpected_cfgs
+
+old median ns/vector: 3.40304
+new median ns/vector: 2.60974
+reduction: 23.3%
+
+old samples: [3.18744, 3.37016, 3.39704, 3.40304, 3.74548, 4.90648, 5.04936]
+new samples: [2.58548, 2.58790, 2.60132, 2.60974, 2.61414, 3.43470, 3.43770]
+
+The probe compares the prior full-lane f32 mask materialization/scan with the typed mask-to-u32 select/store and set-lane loop. It isolates exponent updates; it is not a transform timing.
