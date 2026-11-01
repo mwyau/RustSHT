@@ -1,0 +1,136 @@
+{
+  "parent_source_sha": "0433c21587dbc20c0a1366ad38892c174769cb16",
+  "candidate_production_patch_sha256": "068828b7e527edaeb6485b6482aca576c1bc9a359cd81fb8b2dad67223c3a5a7",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "environment": {
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "simd": "Pulp V3 AVX2/FMA; eight f32 lanes and four f64 lanes",
+    "q1_affinity": "one pinned physical core",
+    "q8_affinity": "eight pinned physical cores",
+    "perf_events": "Unavailable: perf_event_paranoid=4 and no CAP_PERFMON"
+  },
+  "profile_fixtures": {
+    "f32_full_q1_map0_sha256": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+    "f32_full_q1_map1_sha256": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+    "f64_profile_map0_sha256": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+    "f64_profile_map0_is_widened_f32_map0": true,
+    "reduced_map0_sha256": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5"
+  },
+  "profile_binary_sha256": {
+    "f32_parent": "f01d80611b6bdf3f53885efc6ae7d8a52a14aeb0aeb4d1e6e335862c91faa45b",
+    "f32_candidate": "1a9e2c9affdcf54b01321dcc46271a29d11b42f33ca61e613c7bb01c93614a85",
+    "f64_parent": "30dbc5ec6d7d9b7cbeebb63754bd1e014ba4eea0c1622f708240d7904a303389",
+    "f64_candidate": "e6b9446eb50539a375e24a2dd19841e4bf33d77a418367614f019d24917a788c"
+  },
+  "phase_profiles": {
+    "geometry": "GL T720, M720, 721 latitudes, nphi=1458, phi0=0.23",
+    "input": "same deterministic f32 map for f32 and its exact f64 widening for f64",
+    "samples_per_cell": 5,
+    "f32": {
+      "q1": {"wall_ms_median": 42.174, "fft_ms_median": 2.573, "legendre_accumulation_ms_median": 39.592, "fft_share": 0.061, "legendre_accumulation_share": 0.939},
+      "q8": {"wall_ms_median": 5.944, "fft_ms_median": 0.358, "legendre_accumulation_ms_median": 5.559, "fft_share": 0.060, "legendre_accumulation_share": 0.935}
+    },
+    "f64": {
+      "q1": {"wall_ms_median": 18.591, "fft_ms_median": 3.257, "legendre_accumulation_ms_median": 15.325, "fft_share": 0.175, "legendre_accumulation_share": 0.824},
+      "q8": {"wall_ms_median": 2.634, "fft_ms_median": 0.428, "legendre_accumulation_ms_median": 2.187, "fft_share": 0.163, "legendre_accumulation_share": 0.830}
+    },
+    "capture_note": "Raw command logs are local-only; these structured phase summaries are the committed measurements."
+  },
+  "phase_probe_tests_patch_sha256": "eb87055d5dc661b372d9230c99092fb044e557d1984970fe56318338f5947f56",
+  "f32_route_probe": {
+    "source": "0433c215 plus candidate production patch",
+    "fixture": "zero spectra; isolates recurrence routing and does not estimate timed share",
+    "full": {"q1_attempts": 6437, "q1_successes": 6437, "q1_seed_declines": 0, "q1_recurrence_declines": 0, "q1_normal_pair_invocations": 1067695, "q1_scaled_pair_invocations": 266685, "q8_same_counts": true, "scaled_share": 0.200},
+    "reduced_m180": {"q1_attempts": 2119, "q1_successes": 2119, "q1_seed_declines": 0, "q1_recurrence_declines": 0, "q1_normal_pair_invocations": 581344, "q1_scaled_pair_invocations": 89429, "q8_same_counts": true, "scaled_share": 0.133},
+    "capture_note": "Raw command output is local-only; counts are summarized here."
+  },
+  "f64_q8_scheduling_probe": {
+    "source": "0433c215 plus f32-only lazy-state candidate; f64 .text is identical",
+    "input": "same f64-widened profile map",
+    "samples": 30,
+    "jobs_per_call": 721,
+    "jobs_per_worker_range": [88, 91],
+    "uninstrumented_wall_ms_median": 2.500079,
+    "queue_lock_us_median": 33.026,
+    "queue_lock_share_of_uninstrumented_wall": 0.0132,
+    "capture_note": "Raw command output is local-only; counts and timings are summarized here."
+  },
+  "current_source_full_q1_callgrind": {
+    "rust_f32_parent": {
+      "Ir": 794298809,
+      "Dr": 363627389,
+      "Dw": 69875894,
+      "Bc": 143702658,
+      "Bcm": 2397675,
+      "D1mr": 782818,
+      "D1mw": 246685,
+      "order_group_inclusive_Ir": 753631791,
+      "order_group_share": 0.9488,
+      "fused_v3_self_Ir": 661088868,
+      "fused_v3_self_share": 0.8323
+    },
+    "rust_f32_candidate": {
+      "Ir": 780748006,
+      "Dr": 354165094,
+      "Dw": 66526203,
+      "Bc": 142009677,
+      "Bcm": 2367439,
+      "D1mr": 761831,
+      "D1mw": 243450,
+      "order_group_inclusive_Ir": 740080988,
+      "order_group_share": 0.9479,
+      "fused_v3_self_Ir": 647538065,
+      "fused_v3_self_share": 0.8294
+    },
+    "rust_f64_parent": {
+      "Ir": 320340451,
+      "Dr": 139137860,
+      "Dw": 24322018,
+      "D1mr": 1295029,
+      "D1mw": 727078,
+      "DLmr": 132432,
+      "DLmw": 196825,
+      "Bc": 45302982,
+      "Bcm": 864492,
+      "order_group_inclusive_Ir": 268449751,
+      "order_group_share": 0.838
+    },
+    "rust_f32_memset_inclusive_Ir": {
+      "parent": 34676592,
+      "candidate": 31221485
+    },
+    "ducc_reference_from_matched_profile_at_acd7fe5": {
+      "source_note": "Pinned DUCC and GL T720 workload; Rust f32 source predates the later tile-32 schedule, so these Ir counts are mechanism context, not a same-source candidate comparison.",
+      "ducc_f32_Ir": 214194628,
+      "ducc_f64_Ir": 219956436,
+      "ducc_f64_inner_loop_m2a_inclusive_Ir": 137905652
+    }
+  },
+  "candidate_f32_code_size_and_text": {
+    "parent_v3_kernel_bytes": 20050,
+    "candidate_v3_kernel_bytes": 19820,
+    "parent_text_sha256": "77185fd5f0f33a50726ee0377ac3ad7baaf8ea135a1e4133d266f6389d2eaa43",
+    "candidate_text_sha256": "efe90acc25a80cded684f7c926352e234d0115bb39a1d36c4c11b37b31410323"
+  },
+  "f64_text_identity": {
+    "parent_text_sha256": "54811b1d57c84ab844275678fcd9d894d28d7b80d85fc88d934ced3c8e490859",
+    "candidate_text_sha256": "54811b1d57c84ab844275678fcd9d894d28d7b80d85fc88d934ced3c8e490859"
+  },
+  "assembly_observations": {
+    "rust_f32_v3_kernel_bytes_candidate": 19820,
+    "rust_f64_v3_kernel_bytes": 7236,
+    "ducc_map2alm_kernel_bytes": 722,
+    "rust_f32_ordinary_body": "8 lanes; four YMM vfmadd231ps accumulators and horizontal reductions for four reflected real/imag channels",
+    "rust_f64_ordinary_body": "4 lanes; two-pair unroll and FMA accumulation; no repeated YMM stack spill traffic observed in the ordinary vector loop",
+    "ducc_avx2_body": "native_simd<double>, four lanes; two coefficient outputs advanced in the same loop"
+  },
+  "limitations": [
+    "perf stat and perf record cannot access hardware events on this host (perf_event_paranoid=4; no CAP_PERFMON).",
+    "Callgrind instruction and cache-event counts are not hardware cycles.",
+    "The current f64 profile and f32 profiles use the exact 0433 parent source plus the candidate patch only for f32 candidate.",
+    "Phase probes combine recurrence, normal/scaled accumulation, normalization, and exceptional fallback into the Legendre stage; exact-current subregion times are not yet available.",
+    "DUCC instruction totals from the matched profile at acd7fe5 are mechanism context; the Rust source in that profile predates the accepted tile-32 schedule."
+  ]
+}

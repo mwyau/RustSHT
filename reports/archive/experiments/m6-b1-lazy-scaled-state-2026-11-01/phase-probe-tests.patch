@@ -1,0 +1,103 @@
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index db7618b0..59b9cd36 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -2290,6 +2290,98 @@ fn plan17_f32_t720_native_phase_profile() {
+     }
+ }
+ 
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "temporary matched f64 B1 phase profile; set RUSTSHT_PROFILE_Q and RUSTSHT_PROFILE_MAP"]
++fn m6_b1_f64_t720_matched_phase_profile() {
++    use std::time::Instant;
++
++    let threads = std::env::var("RUSTSHT_PROFILE_Q")
++        .expect("set RUSTSHT_PROFILE_Q")
++        .parse::<usize>()
++        .expect("invalid RUSTSHT_PROFILE_Q");
++    let nphi = GridSpec::fft_friendly_nphi(720).unwrap();
++    assert_eq!(nphi, 1458);
++    let plan = ShtPlan::<f64>::new(
++        GridSpec::new(GridKind::GaussLegendre, 721, nphi, 0.23).unwrap(),
++        HarmonicSpec::scalar(720, 720).unwrap(),
++    )
++    .unwrap();
++    let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
++    let mut workspace = pool.install(|| plan.workspace()).unwrap();
++    pool.install(|| plan.prepare_workspace(&mut workspace, threads)).unwrap();
++    let bytes = std::fs::read(std::env::var("RUSTSHT_PROFILE_MAP").unwrap()).unwrap();
++    assert_eq!(bytes.len(), plan.sample_count * 8);
++    let map = bytes
++        .chunks_exact(8)
++        .map(|chunk| f64::from_le_bytes(chunk.try_into().unwrap()))
++        .collect::<Vec<_>>();
++    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
++    let probe = workspace.observe_transform_phases();
++    for _ in 0..2 {
++        pool.install(|| plan.analysis_into(&map, &mut alm, &mut workspace)).unwrap();
++    }
++    for sample in 0..5 {
++        probe.lock().unwrap().clear();
++        let started = Instant::now();
++        pool.install(|| plan.analysis_into(&map, &mut alm, &mut workspace)).unwrap();
++        let wall_ms = started.elapsed().as_secs_f64() * 1e3;
++        let phases = probe.lock().unwrap().clone();
++        let phase_sum_ms = phases.iter().map(|p| p.elapsed_ns as f64 * 1e-6).sum::<f64>();
++        eprintln!("M6_B1_F64_PHASE q{threads} sample={} wall_ms={wall_ms:.3} phase_sum_ms={phase_sum_ms:.3} unmeasured_ms={:.3}", sample + 1, wall_ms - phase_sum_ms);
++        for phase in phases {
++            eprintln!("M6_B1_F64_PHASE q{threads} sample={} name={:?} elapsed_ms={:.3}", sample + 1, phase.phase, phase.elapsed_ns as f64 * 1e-6);
++        }
++    }
++    assert!(alm.iter().all(|value| value.re.is_finite() && value.im.is_finite()));
++}
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "temporary matched f32 B1 phase profile; set RUSTSHT_PROFILE_Q and RUSTSHT_PROFILE_MAP"]
++fn m6_b1_f32_t720_matched_phase_profile() {
++    use std::time::Instant;
++
++    let threads = std::env::var("RUSTSHT_PROFILE_Q")
++        .expect("set RUSTSHT_PROFILE_Q")
++        .parse::<usize>()
++        .expect("invalid RUSTSHT_PROFILE_Q");
++    let nphi = GridSpec::fft_friendly_nphi(720).unwrap();
++    assert_eq!(nphi, 1458);
++    let plan = ShtPlan::<f32>::new(
++        GridSpec::new(GridKind::GaussLegendre, 721, nphi, 0.23).unwrap(),
++        HarmonicSpec::scalar(720, 720).unwrap(),
++    )
++    .unwrap();
++    let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
++    let mut workspace = pool.install(|| plan.workspace()).unwrap();
++    pool.install(|| plan.prepare_workspace(&mut workspace, threads)).unwrap();
++    let bytes = std::fs::read(std::env::var("RUSTSHT_PROFILE_MAP").unwrap()).unwrap();
++    assert_eq!(bytes.len(), plan.sample_count * 4);
++    let map = bytes
++        .chunks_exact(4)
++        .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
++        .collect::<Vec<_>>();
++    let mut alm = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
++    let probe = workspace.observe_transform_phases();
++    for _ in 0..2 {
++        pool.install(|| plan.analysis_into(&map, &mut alm, &mut workspace)).unwrap();
++    }
++    for sample in 0..5 {
++        probe.lock().unwrap().clear();
++        let started = Instant::now();
++        pool.install(|| plan.analysis_into(&map, &mut alm, &mut workspace)).unwrap();
++        let wall_ms = started.elapsed().as_secs_f64() * 1e3;
++        let phases = probe.lock().unwrap().clone();
++        let phase_sum_ms = phases.iter().map(|p| p.elapsed_ns as f64 * 1e-6).sum::<f64>();
++        eprintln!("M6_B1_F32_PHASE q{threads} sample={} wall_ms={wall_ms:.3} phase_sum_ms={phase_sum_ms:.3} unmeasured_ms={:.3}", sample + 1, wall_ms - phase_sum_ms);
++        for phase in phases {
++            eprintln!("M6_B1_F32_PHASE q{threads} sample={} name={:?} elapsed_ms={:.3}", sample + 1, phase.phase, phase.elapsed_ns as f64 * 1e-6);
++        }
++    }
++    assert!(alm.iter().all(|value| value.re.is_finite() && value.im.is_finite()));
++}
++
+ #[cfg(feature = "parallel")]
+ #[test]
+ #[ignore = "Plan 14 calibrated analysis phase profile; set geometry, q and affinity"]

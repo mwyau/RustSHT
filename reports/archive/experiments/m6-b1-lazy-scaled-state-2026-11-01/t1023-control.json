@@ -1,0 +1,195 @@
+{
+  "metadata": {
+    "case": {
+      "case_id": "GL-T1023-m1023-n1024-exact-p2048-even-smooth",
+      "grid": "GL",
+      "lmax": 1023,
+      "mmax": 1023,
+      "ntheta": 1024,
+      "nphi": 2048,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth"
+    },
+    "parent_source_sha": "0433c21587dbc20c0a1366ad38892c174769cb16",
+    "candidate_source": "parent plus B1 patch 068828b7e527edaeb6485b6482aca576c1bc9a359cd81fb8b2dad67223c3a5a7",
+    "purpose": "protected f64 GL T1023 full spin-1 synthesis; candidate only changes f32 scalar-analysis scaled-state setup",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "binary_sha256": {
+      "parent": "5962a3a6551f1ddc8b62a0c6e80eb7ee74a9ae8705fda52bb1eee7830e4f8dc4",
+      "candidate": "eb150a085b269b5cd1f0517420455e99d4f05afc3a3e8f733e4d4219884b4bcd"
+    },
+    "fixture_sha256": {
+      "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+      "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+      "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+      "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+    },
+    "pairs_per_q": 3,
+    "target_ms": 25.0,
+    "affinity": {
+      "q1": [
+        2
+      ],
+      "q8": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "candidate_production_patch_sha256": "068828b7e527edaeb6485b6482aca576c1bc9a359cd81fb8b2dad67223c3a5a7",
+    "host": "AMD Ryzen 9 5950X 16-Core Processor",
+    "result_kind": "short protected smoke control; three pairs per q, not a performance claim"
+  },
+  "summary": {
+    "q1": {
+      "parent_median_ms": 90.3360585,
+      "candidate_median_ms": 90.9231535,
+      "candidate_parent_paired_ratio_median": 1.0045101252719357
+    },
+    "q8": {
+      "parent_median_ms": 14.33005725,
+      "candidate_median_ms": 14.422667750000002,
+      "candidate_parent_paired_ratio_median": 1.0140744478429733
+    }
+  },
+  "records": [
+    {
+      "threads": 1,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 90.3360585,
+      "candidate_ms": 91.1811365,
+      "candidate_parent_ratio": 1.0093548247956823,
+      "outputs_exact": true,
+      "repeat_reset": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 1,
+      "pair": 1,
+      "order": [
+        "candidate",
+        "parent"
+      ],
+      "parent_ms": 90.11024649999999,
+      "candidate_ms": 90.516655,
+      "candidate_parent_ratio": 1.0045101252719357,
+      "outputs_exact": true,
+      "repeat_reset": {
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 1,
+      "pair": 2,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 90.602227,
+      "candidate_ms": 90.9231535,
+      "candidate_parent_ratio": 1.003542148031306,
+      "outputs_exact": true,
+      "repeat_reset": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 14.222494000000001,
+      "candidate_ms": 14.422667750000002,
+      "candidate_parent_ratio": 1.0140744478429733,
+      "outputs_exact": true,
+      "repeat_reset": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "candidate",
+        "parent"
+      ],
+      "parent_ms": 14.33005725,
+      "candidate_ms": 14.5640375,
+      "candidate_parent_ratio": 1.0163279354658545,
+      "outputs_exact": true,
+      "repeat_reset": {
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "pair": 2,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 14.36960475,
+      "candidate_ms": 14.33082375,
+      "candidate_parent_ratio": 0.997301178377923,
+      "outputs_exact": true,
+      "repeat_reset": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    }
+  ]
+}

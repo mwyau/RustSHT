@@ -1428,8 +1428,10 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
         let exponents_slice: &mut [i64] = exponents;
         let mut normal_range =
             T::normalize_analysis_pair_state(simd, previous_slice, current_slice, exponents_slice)?;
-        let mut scaled_state =
-            T::prepare_scaled_state(same_real, same_imag, opposite_real, opposite_imag);
+        // Most order blocks stay in the ordinary range. Delay the f32 scaled
+        // accumulator's sizeable lane-state initialization until a block
+        // actually crosses into scaled accumulation.
+        let mut scaled_state = None;
         let (same_re_vectors, same_re_tail) = T::as_simd::<S>(same_real);
         let (same_im_vectors, same_im_tail) = T::as_simd::<S>(same_imag);
         let (opposite_re_vectors, opposite_re_tail) = T::as_simd::<S>(opposite_real);
@@ -1523,6 +1525,9 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
                 }
                 (same_re_sum, same_im_sum, opposite_re_sum, opposite_im_sum)
             } else {
+                let scaled_state = scaled_state.get_or_insert_with(|| {
+                    T::prepare_scaled_state(same_real, same_imag, opposite_real, opposite_imag)
+                });
                 let (same, opposite) = T::accumulate_scaled::<S, true>(
                     simd,
                     same_real,
@@ -1532,7 +1537,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
                     current_slice,
                     exponents_slice,
                     cos_theta,
-                    &mut scaled_state,
+                    scaled_state,
                 );
                 (same.re, same.im, opposite.re, opposite.im)
             };
@@ -1594,7 +1599,9 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
                         current_slice,
                         exponents_slice,
                     )?;
-                    T::invalidate_scaled_state(&mut scaled_state);
+                    if let Some(scaled_state) = scaled_state.as_mut() {
+                        T::invalidate_scaled_state(scaled_state);
+                    }
                 }
             }
             pair_index += 1;

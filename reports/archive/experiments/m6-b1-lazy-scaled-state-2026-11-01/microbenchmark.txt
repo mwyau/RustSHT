@@ -1,0 +1,22 @@
+Manual isolated f32 scaled-state setup benchmark
+===============================================
+
+Command:
+  taskset -c "$RUSTSHT_Q1_CPUSET" cargo test --release --features parallel --lib \
+    benchmark_b1_f32_scaled_state_setup_vs_lazy_ordinary_block \
+    -- --ignored --nocapture
+
+Set `RUSTSHT_Q1_CPUSET` to the selected benchmark core before running. Inputs:
+32 representative nonzero latitude lanes; 20,000 setup iterations per
+sample, two warmups and nine measured samples. Source is the test-only
+`analysis/tests/lazy_state_bench.rs` module.
+
+Result on 2026-11-01:
+  eager F32ScaledAnalysisState setup median: 66.10 ns/state
+  eager sample range: 62.14–66.85 ns/state
+  lazy `None` block median: 0.21 ns/block
+
+The benchmark isolates initialization cost; whole-transform measurements are
+the authority for impact. On the full q1 screen the median saving was 0.416 ms,
+consistent with avoiding this setup on ordinary blocks. It does not explain the
+remaining scaled recurrence and accumulation cost.

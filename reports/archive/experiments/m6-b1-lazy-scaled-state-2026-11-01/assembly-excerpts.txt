@@ -1,0 +1,52 @@
+Captured AVX2/FMA excerpt for the B1 ordinary accumulation loop
+==============================================================
+
+Rust f32 candidate, eight lanes, one recurrence basis vector applied to four
+reflected real/imaginary accumulators. The compiler processes two adjacent
+eight-lane vectors before the loop branch:
+
+  15a900: vmovups ymm4, YMMWORD PTR [r9+rdx-0x20]
+  15a907: vfmadd231ps ymm0, ymm4, YMMWORD PTR [rsi+rdx-0x20]
+  15a90e: vfmadd231ps ymm2, ymm4, YMMWORD PTR [r13+rdx-0x20]
+  15a915: vfmadd231ps ymm1, ymm4, YMMWORD PTR [rdi+rdx-0x20]
+  15a91c: vfmadd231ps ymm3, ymm4, YMMWORD PTR [r8+rdx-0x20]
+  15a923: vmovups ymm4, YMMWORD PTR [r9+rdx]
+  15a929: add eax, 2
+  15a92d: vfmadd231ps ymm0, ymm4, YMMWORD PTR [rsi+rdx]
+  15a933: vfmadd231ps ymm2, ymm4, YMMWORD PTR [r13+rdx]
+  15a93a: vfmadd231ps ymm1, ymm4, YMMWORD PTR [rdi+rdx]
+  15a940: vfmadd231ps ymm3, ymm4, YMMWORD PTR [r8+rdx]
+  15a946: add rdx, 0x40
+  15a94a: cmp rcx, rax
+  15a94d: jne 15a900
+
+The four vector accumulators are reduced after the loop. For example:
+
+  15aaf3: vextractf128 xmm4, ymm0, 1
+  15aaf9: vaddps xmm0, xmm0, xmm4
+  15aafd: vshufpd xmm4, xmm0, xmm0, 1
+  15ab02: vaddps xmm0, xmm0, xmm4
+  15ab06: vmovshdup xmm4, xmm0
+  15ab0a: vaddss xmm0, xmm0, xmm4
+
+Rust f64 parent, four lanes, same two-vector unroll and four channel
+accumulators:
+
+  191880: vmovupd ymm4, YMMWORD PTR [rsi+rdx-0x20]
+  191886: vfmadd231pd ymm1, ymm4, YMMWORD PTR [rbx+rdx-0x20]
+  19188d: vfmadd231pd ymm3, ymm4, YMMWORD PTR [r15+rdx-0x20]
+  191894: vfmadd231pd ymm2, ymm4, YMMWORD PTR [r12+rdx-0x20]
+  19189b: vfmadd231pd ymm0, ymm4, YMMWORD PTR [r11+rdx-0x20]
+  1918a2: vmovupd ymm4, YMMWORD PTR [rsi+rdx]
+  1918a7: add eax, 2
+  1918ab: vfmadd231pd ymm1, ymm4, YMMWORD PTR [rbx+rdx]
+  1918b1: vfmadd231pd ymm3, ymm4, YMMWORD PTR [r15+rdx]
+  1918b7: vfmadd231pd ymm2, ymm4, YMMWORD PTR [r12+rdx]
+  1918bd: vfmadd231pd ymm0, ymm4, YMMWORD PTR [r11+rdx]
+  1918c3: add rdx, 0x40
+  1918c7: cmp rcx, rax
+  1918ca: jne 191880
+
+This confirms the steady-state accumulation shape but does not identify the
+remaining cycle gap. The same kernel contains scaling/range paths outside
+these excerpts. Hardware performance counters were unavailable on the host.

@@ -1,5 +1,7 @@
 use super::*;
 
+mod lazy_state_bench;
+
 struct B1F32FactorFillCheck<'a> {
     exponents: &'a [i64],
     common_exponent: i64,
