@@ -1,6 +1,6 @@
 # Plans and contracts
 
-The only active execution plan is [M6 — native-generic SHT execution and DUCC
+The only active execution plan is [M6 — B1/B3 f64 analysis and DUCC
 parity](m6-ducc-parity-hotpath-cleanup-2026-10-27.md). `AGENTS.md` points to its current
 next action and the live per-cell performance ledger.
 

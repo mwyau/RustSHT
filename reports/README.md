@@ -1,5 +1,7 @@
 # Reports
 
+- [Current performance summary](../PERFORMANCE_STATUS.md)
+- [Active B1/B3 f64 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md)
 - [Live M6 per-cell parity ledger](DUCC_PARITY_M6.md)
 - [Five recent progress checkpoints](PROGRESS.md)
 - [Historical plans and experiment index](archive/README.md)

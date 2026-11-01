@@ -2,6 +2,8 @@
 
 RustSHT implements spherical harmonic transforms in Rust, using [DUCC](https://github.com/mreineck/ducc) as its numerical reference. It supports scalar and spin-weighted synthesis and analysis, their adjoints, scalar derivatives and gradient-only synthesis on Gauss–Legendre (GL), Clenshaw–Curtis (CC) and Fejér-1 (F1) grids through Rust and Python APIs.
 
+For current performance work, see the [B1/B3 f64 plan](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md) and [source-specific status](PERFORMANCE_STATUS.md).
+
 ## Rust API migration
 
 The former `rustsht::pyspharm` Rust module has been removed. Its numerical functions now live beside their mathematical owners:
