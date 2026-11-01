@@ -1,0 +1,38 @@
+# Source-equivalent f64 AVX2 loop disassembly
+
+Build: corrected B1 f64 two-pair candidate, rustc 1.99.1, Pulp V3 AVX2/FMA.
+Typed f64 symbol: 0x1c4480, size 0x1c44 (7,236 bytes); parent symbol size 0x14c6 (5,318 bytes).
+The loop keeps eight accumulators in YMM registers and has no accumulator spills. It does reload pointers/counters from stack slots (shown below), and writes the next recurrence vector to the recurrence-state buffer.
+  1c4a00:	48 39 d7             	cmp    %rdx,%rdi
+  1c4a03:	0f 84 3f 14 00 00    	je     1c5e48 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x19c8>
+  1c4a09:	49 39 d6             	cmp    %rdx,%r14
+  1c4a0c:	0f 84 20 14 00 00    	je     1c5e32 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x19b2>
+  1c4a12:	48 39 d6             	cmp    %rdx,%rsi
+  1c4a15:	0f 84 04 14 00 00    	je     1c5e1f <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x199f>
+  1c4a1b:	4c 8b 44 24 38       	mov    0x38(%rsp),%r8
+  1c4a20:	c4 41 7d 10 24 08    	vmovupd (%r8,%rcx,1),%ymm12
+  1c4a26:	c4 e2 9d b8 24 0b    	vfmadd231pd (%rbx,%rcx,1),%ymm12,%ymm4
+  1c4a2c:	c4 42 9d b8 04 0f    	vfmadd231pd (%r15,%rcx,1),%ymm12,%ymm8
+  1c4a32:	c4 c2 9d b8 3c 0c    	vfmadd231pd (%r12,%rcx,1),%ymm12,%ymm7
+  1c4a38:	c4 42 9d b8 1c 0b    	vfmadd231pd (%r11,%rcx,1),%ymm12,%ymm11
+  1c4a3e:	c4 41 7d 10 2c 09    	vmovupd (%r9,%rcx,1),%ymm13
+  1c4a44:	c4 62 e5 a8 e8       	vfmadd213pd %ymm0,%ymm3,%ymm13
+  1c4a49:	4c 8b 6c 24 20       	mov    0x20(%rsp),%r13
+  1c4a4e:	c4 42 9d a8 6c 0d 00 	vfmadd213pd 0x0(%r13,%rcx,1),%ymm12,%ymm13
+  1c4a55:	4c 8b 6c 24 18       	mov    0x18(%rsp),%r13
+  1c4a5a:	c4 41 7d 11 6c 0d 00 	vmovupd %ymm13,0x0(%r13,%rcx,1)
+  1c4a61:	c4 e2 95 b8 2c 0b    	vfmadd231pd (%rbx,%rcx,1),%ymm13,%ymm5
+  1c4a67:	c4 42 95 b8 0c 0f    	vfmadd231pd (%r15,%rcx,1),%ymm13,%ymm9
+  1c4a6d:	c4 c2 95 b8 34 0c    	vfmadd231pd (%r12,%rcx,1),%ymm13,%ymm6
+  1c4a73:	c4 42 95 b8 14 0b    	vfmadd231pd (%r11,%rcx,1),%ymm13,%ymm10
+  1c4a79:	4c 3b 94 24 80 00 00 	cmp    0x80(%rsp),%r10
+  1c4a80:	00
+  1c4a81:	0f 83 69 ff ff ff    	jae    1c49f0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x570>
+  1c4a87:	c4 41 7d 10 34 09    	vmovupd (%r9,%rcx,1),%ymm14
+  1c4a8d:	c4 62 ed a8 f1       	vfmadd213pd %ymm1,%ymm2,%ymm14
+  1c4a92:	c4 42 8d a8 ec       	vfmadd213pd %ymm12,%ymm14,%ymm13
+  1c4a97:	4c 8b 6c 24 20       	mov    0x20(%rsp),%r13
+  1c4a9c:	c4 41 7d 11 6c 0d 00 	vmovupd %ymm13,0x0(%r13,%rcx,1)
+  1c4aa3:	e9 48 ff ff ff       	jmp    1c49f0 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>+0x570>
+
+The two sets of four `vfmadd231pd` instructions accumulate two consecutive degree outputs against the same loaded spectrum vectors. The two recurrence updates are separate FMA sequences; `cmp` and `mov` operations access loop state/pointers, so the loop is not stack-traffic-free.

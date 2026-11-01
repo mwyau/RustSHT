@@ -28,6 +28,7 @@ pub(crate) trait FusedAnalysisPrecision: PairedScalarRecurrencePrecision {
     type Vector<S: Simd>: Copy;
     type ScaledState;
     const USE_EXISTING_SCALED_BLOCK: bool = false;
+    const TWO_PAIR_ANALYSIS_UNROLL: bool = false;
 
     fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]);
     fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]);
@@ -773,6 +774,7 @@ impl FusedAnalysisPrecision for f64 {
     type Vector<S: Simd> = S::f64s;
     type ScaledState = ();
     const USE_EXISTING_SCALED_BLOCK: bool = true;
+    const TWO_PAIR_ANALYSIS_UNROLL: bool = true;
 
     #[inline(always)]
     fn prepare_scaled_state(
@@ -1088,6 +1090,130 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_typed<T: FusedAnalysi
     Ok(succeeded)
 }
 
+#[inline(always)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The two-pair block receives preweighted spectra and recurrence buffers explicitly."
+)]
+fn accumulate_two_normal_scalar_analysis_pairs<T: FusedAnalysisPrecision, S: Simd>(
+    simd: S,
+    pair_index: usize,
+    advance_after_second_pair: bool,
+    same_real: &[T],
+    same_imag: &[T],
+    opposite_real: &[T],
+    opposite_imag: &[T],
+    cos_theta_squared: &[T],
+    coefficient_a: &[T],
+    coefficient_b: &[T],
+    staged_coefficients: &mut [Complex<T>],
+    previous: &mut [T],
+    current: &mut [T],
+    next: &mut [T],
+) {
+    let (same_re_vectors, same_re_tail) = T::as_simd::<S>(same_real);
+    let (same_im_vectors, same_im_tail) = T::as_simd::<S>(same_imag);
+    let (opposite_re_vectors, opposite_re_tail) = T::as_simd::<S>(opposite_real);
+    let (opposite_im_vectors, opposite_im_tail) = T::as_simd::<S>(opposite_imag);
+    let (cos2_vectors, cos2_tail) = T::as_simd::<S>(cos_theta_squared);
+    let (previous_vectors, previous_tail) = T::as_mut_simd::<S>(previous);
+    let (current_vectors, current_tail) = T::as_simd::<S>(current);
+    let (next_vectors, next_tail) = T::as_mut_simd::<S>(next);
+    debug_assert_eq!(same_re_vectors.len(), same_im_vectors.len());
+    debug_assert_eq!(same_re_vectors.len(), opposite_re_vectors.len());
+    debug_assert_eq!(same_re_vectors.len(), opposite_im_vectors.len());
+    debug_assert_eq!(same_re_vectors.len(), cos2_vectors.len());
+    debug_assert_eq!(same_re_vectors.len(), previous_vectors.len());
+    debug_assert_eq!(same_re_vectors.len(), current_vectors.len());
+    debug_assert_eq!(same_re_vectors.len(), next_vectors.len());
+    debug_assert_eq!(same_re_tail.len(), same_im_tail.len());
+    debug_assert_eq!(same_re_tail.len(), opposite_re_tail.len());
+    debug_assert_eq!(same_re_tail.len(), opposite_im_tail.len());
+    debug_assert_eq!(same_re_tail.len(), cos2_tail.len());
+    debug_assert_eq!(same_re_tail.len(), previous_tail.len());
+    debug_assert_eq!(same_re_tail.len(), current_tail.len());
+    debug_assert_eq!(same_re_tail.len(), next_tail.len());
+    let zero = T::splat(simd, T::zero());
+    let a0 = T::splat(simd, coefficient_a[pair_index]);
+    let b0 = T::splat(simd, coefficient_b[pair_index]);
+    let a1 = T::splat(simd, coefficient_a[pair_index + 1]);
+    let b1 = T::splat(simd, coefficient_b[pair_index + 1]);
+    let mut same_re0 = zero;
+    let mut same_im0 = zero;
+    let mut opposite_re0 = zero;
+    let mut opposite_im0 = zero;
+    let mut same_re1 = zero;
+    let mut same_im1 = zero;
+    let mut opposite_re1 = zero;
+    let mut opposite_im1 = zero;
+    for index in 0..current_vectors.len() {
+        let previous0 = previous_vectors[index];
+        let basis0 = current_vectors[index];
+        same_re0 = T::simd_fma(simd, same_re_vectors[index], basis0, same_re0);
+        same_im0 = T::simd_fma(simd, same_im_vectors[index], basis0, same_im0);
+        opposite_re0 = T::simd_fma(simd, opposite_re_vectors[index], basis0, opposite_re0);
+        opposite_im0 = T::simd_fma(simd, opposite_im_vectors[index], basis0, opposite_im0);
+
+        let leading0 = T::simd_fma(simd, a0, cos2_vectors[index], b0);
+        let basis1 = T::simd_fma(simd, leading0, basis0, previous0);
+        next_vectors[index] = basis1;
+        same_re1 = T::simd_fma(simd, same_re_vectors[index], basis1, same_re1);
+        same_im1 = T::simd_fma(simd, same_im_vectors[index], basis1, same_im1);
+        opposite_re1 = T::simd_fma(simd, opposite_re_vectors[index], basis1, opposite_re1);
+        opposite_im1 = T::simd_fma(simd, opposite_im_vectors[index], basis1, opposite_im1);
+
+        if advance_after_second_pair {
+            let leading1 = T::simd_fma(simd, a1, cos2_vectors[index], b1);
+            previous_vectors[index] = T::simd_fma(simd, leading1, basis1, basis0);
+        }
+    }
+
+    let mut sums = [
+        T::reduce_sum(simd, same_re0),
+        T::reduce_sum(simd, same_im0),
+        T::reduce_sum(simd, opposite_re0),
+        T::reduce_sum(simd, opposite_im0),
+        T::reduce_sum(simd, same_re1),
+        T::reduce_sum(simd, same_im1),
+        T::reduce_sum(simd, opposite_re1),
+        T::reduce_sum(simd, opposite_im1),
+    ];
+    for lane in 0..current_tail.len() {
+        let previous0 = previous_tail[lane];
+        let basis0 = current_tail[lane];
+        sums[0] = same_re_tail[lane].mul_add(basis0, sums[0]);
+        sums[1] = same_im_tail[lane].mul_add(basis0, sums[1]);
+        sums[2] = opposite_re_tail[lane].mul_add(basis0, sums[2]);
+        sums[3] = opposite_im_tail[lane].mul_add(basis0, sums[3]);
+
+        let leading0 =
+            coefficient_a[pair_index].mul_add(cos2_tail[lane], coefficient_b[pair_index]);
+        let basis1 = leading0.mul_add(basis0, previous0);
+        next_tail[lane] = basis1;
+        sums[4] = same_re_tail[lane].mul_add(basis1, sums[4]);
+        sums[5] = same_im_tail[lane].mul_add(basis1, sums[5]);
+        sums[6] = opposite_re_tail[lane].mul_add(basis1, sums[6]);
+        sums[7] = opposite_im_tail[lane].mul_add(basis1, sums[7]);
+
+        if advance_after_second_pair {
+            let leading1 = coefficient_a[pair_index + 1]
+                .mul_add(cos2_tail[lane], coefficient_b[pair_index + 1]);
+            previous_tail[lane] = leading1.mul_add(basis1, basis0);
+        }
+    }
+
+    let offset0 = pair_index * 2;
+    let offset1 = offset0 + 2;
+    staged_coefficients[offset0] = Complex::new(sums[0], sums[1]);
+    if offset0 + 1 < staged_coefficients.len() {
+        staged_coefficients[offset0 + 1] = Complex::new(sums[2], sums[3]);
+    }
+    staged_coefficients[offset1] = Complex::new(sums[4], sums[5]);
+    if offset1 + 1 < staged_coefficients.len() {
+        staged_coefficients[offset1 + 1] = Complex::new(sums[6], sums[7]);
+    }
+}
+
 struct FusedScalarAnalysisPairTyped<'a, T: FusedAnalysisPrecision> {
     m: usize,
     lmax: usize,
@@ -1161,7 +1287,38 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
         let coefficient_count = lmax - m + 1;
         let pair_count = coefficient_count.div_ceil(2);
 
-        for pair_index in 0..pair_count {
+        let mut pair_index = 0;
+        while pair_index < pair_count {
+            if T::TWO_PAIR_ANALYSIS_UNROLL
+                && range_check_is_proven_safe
+                && normal_range
+                && pair_index + 1 < pair_count
+            {
+                accumulate_two_normal_scalar_analysis_pairs::<T, S>(
+                    simd,
+                    pair_index,
+                    pair_index + 2 < pair_count,
+                    same_real,
+                    same_imag,
+                    opposite_real,
+                    opposite_imag,
+                    cos_theta_squared,
+                    coefficient_a,
+                    coefficient_b,
+                    staged_coefficients,
+                    previous_slice,
+                    current_slice,
+                    next_slice,
+                );
+                std::mem::swap(&mut previous_slice, &mut current_slice);
+                std::mem::swap(&mut current_slice, &mut next_slice);
+                if pair_index + 2 < pair_count {
+                    std::mem::swap(&mut previous_slice, &mut current_slice);
+                    std::mem::swap(&mut current_slice, &mut next_slice);
+                }
+                pair_index += 2;
+                continue;
+            }
             #[cfg(all(test, feature = "parallel"))]
             super::record_typed_scalar_analysis_pair_accumulation(normal_range);
             let (same_re_sum, same_im_sum, opposite_re_sum, opposite_im_sum) = if normal_range {
@@ -1276,6 +1433,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
                     T::invalidate_scaled_state(&mut scaled_state);
                 }
             }
+            pair_index += 1;
         }
         Ok(true)
     }

@@ -1,0 +1,163 @@
+{
+  "baseline_source_sha": "410c9ec2594007a1e081c949767fc5f7c28d2654",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "host": "AMD Ryzen 9 5950X",
+  "rust_release_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "dispatch": "Pulp V3 AVX2/FMA; native f32 eight lanes",
+  "affinity": "q1: one pinned physical core; q8: eight pinned physical cores",
+  "hardware_perf_counters": {
+    "available": false,
+    "reason": "perf_event_paranoid=4; no perf capabilities"
+  },
+  "baseline_full_q1_f32_callgrind_regions_ir": {
+    "total_ir": 1239125687,
+    "normal_accumulation": 20921758,
+    "scaled_accumulation_and_factor_preparation": 539089068,
+    "recurrence": 49750530,
+    "range_check_and_normalization": 538792655,
+    "factor_preparation_subset": 409590879,
+    "normalization_subset": 232239654,
+    "state_setup": 4585065,
+    "note": "Separate targeted region runs; factor preparation is included within scaled accumulation; normalization is included within range-check/normalization. Do not add the subset regions."
+  },
+  "candidates": [
+    {
+      "name": "f32 range-check fusion",
+      "patch": "raw/rejected-range-fusion.patch.gz",
+      "patch_sha256": "cf0bc77be07173f6ebb77314d1d46af8f210757ebe705f97c1e610a05e776f1f",
+      "screen": "Full q1 three ratios 1.06194, 1.04590, 1.04583 (median 1.04590); full q8 1.11903 and 1.06095 then stopped before pair 3.",
+      "decision": "REJECT; regression in both screened cells.",
+      "validation": "Focused B1 module tests passed: 36 passed, 8 ignored.",
+      "patch_encoding": "gzip; patch_sha256 is the decoded content hash"
+    },
+    {
+      "name": "f32 direct normal power-of-two factor construction",
+      "patch": "raw/rejected-f32-power-of-two-factors.patch.gz",
+      "patch_sha256": "f1f91f3e0dc85637fc8a4f0c5b29b8a0b53c18dc4461074c98159018cdd80536",
+      "binary_sha256": {
+        "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+        "candidate": "66c094025a2aa8ffeb0345b795775ec4f2f8a3677aa9e5f8c03c7e6c02367d33",
+        "ducc_f32": "6c70f3b27a594d2f3e37d12bc5be650183072e439435640aedc397d566dc4100"
+      },
+      "region5_ir": {
+        "parent": 409590879,
+        "candidate": 352019957,
+        "change_percent": -14.05
+      },
+      "cells": [
+        {
+          "cell": "full q1",
+          "candidate_parent": 1.0592523812,
+          "parent_ducc": 4.7751862772,
+          "candidate_ducc": 4.936462602,
+          "status": "REJECT"
+        },
+        {
+          "cell": "full q8",
+          "candidate_parent": 0.9872463181,
+          "parent_ducc": 4.9529384266,
+          "candidate_ducc": 4.8204052769,
+          "status": "INCONCLUSIVE: three pairs"
+        },
+        {
+          "cell": "reduced q1",
+          "candidate_parent": 1.06475345299,
+          "parent_ducc": 3.8683651779,
+          "candidate_ducc": 4.0202557445,
+          "status": "REJECT"
+        },
+        {
+          "cell": "reduced q8",
+          "candidate_parent": 1.0626627946,
+          "parent_ducc": 3.3744236141,
+          "candidate_ducc": 3.5121038911,
+          "status": "REJECT"
+        }
+      ],
+      "decision": "REJECT; 14.05% fewer instructions in setup did not improve whole-call timing and regressed three of four cells.",
+      "fixture_hashes_file": "raw/factorpow-fixture-hashes.txt",
+      "fixture_hashes_sha256": "5a3055fd9b7bd4bb7876bec54370c4818bff2cf2f090111850b0fb54c1f2a772",
+      "validation": "Exhaustive bit-equality over emitted exponents -86..78 and focused B1 module tests passed: 37 passed, 8 ignored; candidate output bitwise matched parent.",
+      "v3_kernel_bytes": {
+        "parent": 22750,
+        "candidate": 22878
+      },
+      "patch_encoding": "gzip; patch_sha256 is the decoded content hash"
+    },
+    {
+      "name": "checked exponent fast path",
+      "patch": "raw/rejected-checked-exponent-fast-path.patch.gz",
+      "patch_sha256": "4e7f49a32b68fe781de11b942b3591f7ddba864b96ef5e0c90dd9bff2e566a82",
+      "region5_ir": {
+        "parent": 409590879,
+        "candidate": 429595768,
+        "change_percent": 4.89
+      },
+      "validation": "Focused B1 module tests passed: 37 passed, 8 ignored.",
+      "decision": "REJECT before whole-call screen; region work grew.",
+      "patch_encoding": "gzip; patch_sha256 is the decoded content hash"
+    },
+    {
+      "name": "lazy clear of only consumed hard-factor vectors",
+      "patch": "raw/rejected-hard-factor-lazy-clear.patch.gz",
+      "patch_sha256": "656f295b15672ccec21b6ae028133be12c90d34124c6b834e3e3f191a8848090",
+      "fixture_sha256": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+      "binary_sha256": {
+        "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+        "candidate": "b505eac77fd2f855bc93416b3555916f55285f1a1f0d2732e4d4b302df63c38d",
+        "ducc_f32": "6c70f3b27a594d2f3e37d12bc5be650183072e439435640aedc397d566dc4100"
+      },
+      "region5_ir": {
+        "parent": 409590879,
+        "candidate": 408597082,
+        "change_percent": -0.243
+      },
+      "v3_kernel_bytes": {
+        "parent": 22750,
+        "candidate": 22310
+      },
+      "cell": "GL T720 full q1 f32; 2 interleaved pairs, stopped for consistent regression",
+      "pairs": [
+        {
+          "parent_ms": 72.4556925,
+          "candidate_ms": 84.38566,
+          "ducc_ms": 15.4653065,
+          "candidate_parent": 1.1646519009,
+          "parent_ducc": 4.6850473025,
+          "candidate_ducc": 5.4564492466
+        },
+        {
+          "parent_ms": 74.92707,
+          "candidate_ms": 84.0242705,
+          "ducc_ms": 15.275457,
+          "candidate_parent": 1.1214140697,
+          "parent_ducc": 4.9050624148,
+          "candidate_ducc": 5.5006060048
+        }
+      ],
+      "accuracy_and_execution": "Candidate map matched parent exactly; output finite; reset/repeat consistent; V3 eight-lane AVX2/FMA confirmed.",
+      "focused_tests": "B1 module: 36 passed, 8 ignored; cargo fmt --all -- --check passed.",
+      "decision": "REJECT; two large whole-call regressions despite a 0.24% setup-region Ir reduction and a 1.9% smaller V3 method.",
+      "fixture_hashes_file": "raw/hardfill-fixture-hashes.txt",
+      "fixture_hashes_file_sha256": "3210fb0d9b7526e2a248052b7dcd08996699eda12f53257ec4595bfa9f39a5b6",
+      "patch_encoding": "gzip; patch_sha256 is the decoded content hash"
+    }
+  ],
+  "conclusion": "No production optimization was accepted. Stage timing localizes the dominant elapsed time to Legendre recurrence/accumulation, but no available hardware counter attributes actual cycles. The f32 scaled-state machinery is a concrete hotspot hypothesis; these factor-preparation simplifications did not reduce whole-transform time.",
+  "profile_commit_sha": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a",
+  "evidence_sha256": {
+    "raw/rejected-range-fusion.patch.gz": "fa1735a1457f757343075838650ca69088ea8c2f0b1230906d27bb662e403d5c",
+    "raw/rejected-f32-power-of-two-factors.patch.gz": "728f56a81dde3f876a43515f0d2d63829144f0e9c3c76d3f40847d779c217aaa",
+    "raw/f32-factor-region-probe.patch.gz": "65339896d6d9af655d08806d39efa3a4b5bc7254a96c7ece1d1ca1d442667567",
+    "raw/rejected-checked-exponent-fast-path.patch.gz": "bd362b164a2dd1cc023ff1648aaea5ab484edf6c84cea872faa3ff2d9b98649c",
+    "raw/rejected-hard-factor-lazy-clear.patch.gz": "ee7d501c256228635c24e33b4d6213976f1b0a2e27479f7f8eb3e495b8b71b5f",
+    "raw/hardfill-region5.callgrind.gz": "04c54ce2cdfea8a18e9de3414a8933eb3a996ed5d665f2decedea8c230d82961",
+    "raw/exponent-fast-region5.callgrind.gz": "4ed45082d66e6df6ac62d90773e473e94edce7e7b75199f17182a73af7c8304e",
+    "raw/factorpow-region5.callgrind.gz": "1a82069e8371bda727ce0e592b1cf243d9d71782e1fa218d1fa4573d47a00a7e",
+    "raw/factorpow-screen-results.json": "b49a076fc597ce85c5aac0a9c9b6285e56d9b9da4394fffa33d150a046379683",
+    "raw/hardfill-screen.py": "aef0e1dbab1a613bf68df4da4cc6734d121c9347e57e453dac40bdb17d511234",
+    "raw/factorpow-fixture-hashes.txt": "5a3055fd9b7bd4bb7876bec54370c4818bff2cf2f090111850b0fb54c1f2a772",
+    "raw/hardfill-fixture-hashes.txt": "3210fb0d9b7526e2a248052b7dcd08996699eda12f53257ec4595bfa9f39a5b6"
+  },
+  "evidence_sha256_semantics": "Hashes cover stored bytes. Candidate patch_sha256 fields cover the decoded patch payload."
+}

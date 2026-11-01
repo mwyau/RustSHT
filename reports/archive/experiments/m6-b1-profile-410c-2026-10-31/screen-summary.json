@@ -4,8 +4,8 @@
   "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13); release; RUSTFLAGS=-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
   "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
   "affinity": {
-    "q1": "CPU 0",
-    "q8": "CPUs 0-7"
+    "q1": "one pinned physical core",
+    "q8": "eight pinned physical cores"
   },
   "fixture_sha256": {
     "GL-T720-M720": {
@@ -23,7 +23,7 @@
     {
       "name": "direct-view normalization representation",
       "candidate_source": "410c9ec2594007a1e081c949767fc5f7c28d2654 + patch",
-      "patch_file": "raw/rejected-f32-normalizer-direct-view.patch",
+      "patch_file": "raw/rejected-f32-normalizer-direct-view.patch.gz",
       "patch_sha256": "26a4e07d589b0a61dfd6b0c7dc00242724c8ad04a58552fb8526d064a1c4595f",
       "candidate_f32_binary_sha256": "929589379241af9d879dc441ffd4ebc55703e08d23f6865de7778d480fb2a65d",
       "pairs_per_cell": 3,
@@ -800,12 +800,13 @@
             }
           ]
         }
-      ]
+      ],
+      "patch_sha256_semantics": "SHA-256 is of decoded patch content"
     },
     {
       "name": "outline exceptional scalar normalization",
       "candidate_source": "410c9ec2594007a1e081c949767fc5f7c28d2654 + patch",
-      "patch_file": "raw/rejected-cold-exception-normalizer-outline.patch",
+      "patch_file": "raw/rejected-cold-exception-normalizer-outline.patch.gz",
       "patch_sha256": "fd493382eb26579237564fdc6c9cd76bcf9a97e536f3c268f72051d015a9c22b",
       "candidate_f32_binary_sha256": "a6f81b85ac886d47347b0da2304e85b86c6ffcda6ee0ba74ee3f954906f73e42",
       "pairs_per_cell": 3,
@@ -1582,7 +1583,8 @@
             }
           ]
         }
-      ]
+      ],
+      "patch_sha256_semantics": "SHA-256 is of decoded patch content"
     }
   ]
 }

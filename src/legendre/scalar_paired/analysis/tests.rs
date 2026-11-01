@@ -698,6 +698,41 @@ fn fused_scalar_analysis_block_matches_paired_reference_with_simd_tails() {
     for (actual, expected) in staged_preweighted.iter().zip(&reference) {
         assert!((*actual - expected).norm() <= 2.0e-14);
     }
+
+    let mut staged_typed = vec![Complex64::new(17.0, -9.0); coefficient_count];
+    previous.fill(0.0);
+    current.fill(0.0);
+    next.fill(0.0);
+    exponents.fill(0);
+    let mut typed_range_check_was_exercised = false;
+    let fused_typed = fused_scalar_analysis_pair_block_preweighted_typed::<f64>(
+        arch,
+        m,
+        lmax,
+        true,
+        &mut typed_range_check_was_exercised,
+        &sin_theta,
+        &cos_theta,
+        &cos_theta_squared,
+        sectoral_norm,
+        &coefficient_a,
+        &coefficient_b,
+        &same_real,
+        &same_imag,
+        &weighted_opposite_real,
+        &weighted_opposite_imag,
+        &mut staged_typed,
+        &mut previous,
+        &mut current,
+        &mut next,
+        &mut exponents,
+    )
+    .unwrap();
+    assert!(fused_typed);
+    assert!(!typed_range_check_was_exercised);
+    for (actual, expected) in staged_typed.iter().zip(&reference) {
+        assert!((*actual - expected).norm() <= 2.0e-14);
+    }
 }
 
 #[test]

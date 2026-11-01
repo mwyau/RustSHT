@@ -1,0 +1,73 @@
+{
+  "source": {
+    "screen_parent_commit": "410c9ec2594007a1e081c949767fc5f7c28d2654",
+    "current_dev_base": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a",
+    "parent_analysis_rs_sha256": "514932cdb18b6a8ac0f77fc6b12822145249e5ba9497436c48e90447976e7a7a",
+    "candidate_analysis_rs_sha256": "b79424a92b24968a50f9b9b611a893277ad4efdeba18c54eddc9acf02274a518",
+    "candidate_analysis_tests_rs_sha256": "288790e5ee9f5fda19d80f1a139c77551b17fffa27dc8271b65946a970d17bc3",
+    "candidate_patch_sha256": "cdb31b7bc6c0bbfaa915acc9cd1a13219e329c64aa17bc385369a9a04dddcb8c",
+    "b1_sources_unchanged_between_parent_and_current_dev_base": true,
+    "candidate_patch_stored_file": "candidate-final-8fef.patch.gz",
+    "candidate_patch_stored_sha256": "3e0bdec451c2cb0e2682d2343f9fb414a91bcaa06be4bb2745cde9fa91757c0c",
+    "candidate_patch_sha256_semantics": "decoded patch payload"
+  },
+  "environment": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "rust_flags": "-C target-cpu=x86-64-v3",
+    "executed_simd": "Pulp V3 AVX2/FMA; f64 4 lanes, f32 8 lanes",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "perf_counters": "Unavailable: perf_event_paranoid=4 and no perf capabilities"
+  },
+  "f64_whole_transform_screen": {
+    "pairs_per_cell": 15,
+    "source_parent_binary_sha256_recorded_by_runner": "98bc5255e9060211aa2ecd5d8a8690bed0938221d37b7e5789741400e829dce1",
+    "candidate_binary_sha256_recorded_by_runner": "b1808a60e5a4a7461972fbaf3349886e8994c4d1e16d8b8cbad27b03001cd649",
+    "ducc_binary_sha256_recorded_by_runner": "771fb759383aa410f26660935e861284ec26ddc134e6bf3f47388615f71c4fe5",
+    "pair_records": "paired-15.json",
+    "batch_target_ms": 25,
+    "q1_affinity": "one pinned physical core",
+    "q8_affinity": "eight pinned physical cores",
+    "all_60_parent_candidate_outputs_byte_identical": true
+  },
+  "disassembly_snapshot": {
+    "source": "candidate_analysis_rs_sha256 above",
+    "binary_sha256": "b5eadbdaf031fe4ca028b79e42adde10ee166f152f43fc0238b460da51f764ef",
+    "text_section_sha256": "5db574bdd2c7e2a01dbaf1309c24a6c4363e399b4582b7aae623d0b2f4767c94",
+    "v3_f64_typed_symbol": "address 0x1c4480, size 0x1c44 (7236 bytes)",
+    "parent_v3_f64_typed_symbol_size": "0x14c6 (5318 bytes)",
+    "executable_is_separate_from_screen_worker": true
+  },
+  "typed_block_microbenchmark": {
+    "parent_test_binary_sha256": "140f262413a429151a8b45b0a3f744180f487c337d376194180e51cb9d395275",
+    "candidate_test_binary_sha256": "e862d725ccc69eae9b3375ac061110b08f921f163868dbfc1721fae69316803d",
+    "harness_patch_sha256": "d8e35c414aa67657c64ff69dbdf78d63fdecf0bff04b2ff22a456478c4762b26",
+    "geometry": "GL T720, theta indices 328-391, 64 lanes, m=1, lmax=720",
+    "execution": "Nine batches of 100 calls, one pinned physical core, Pulp V3, generated recurrence factors and sectoral normalization",
+    "harness_patch_stored_file": "microbench-harness.patch.gz",
+    "harness_patch_stored_sha256": "9d837a3623fdfd946569841271f6f210e4541bd0163be64126827169245e9281",
+    "harness_patch_sha256_semantics": "decoded patch payload"
+  },
+  "f32_unroll_diagnostic": {
+    "screen_pairs_per_cell": 3,
+    "parent_binary_sha256": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+    "candidate_binary_sha256": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+    "ducc_binary_sha256": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836",
+    "enabled_candidate_analysis_rs_sha256": "826f88d59af3667c08a232c9b41382e26fe02f560d22cebbfe9ee117132454e8",
+    "screen_results": "f32-unroll-3pair-screen.json",
+    "decision": "Rejected: 1.5-2.7% slower than parent in all four cells; output byte-identical; f32 production flag remains false",
+    "toggle_patch_stored_file": "f32-unroll-toggle.patch.gz",
+    "toggle_patch_stored_sha256": "5fcb0addba9ec2f724716cf01665d6bd48ace236926ecdd516fb6c7bd5b2066e",
+    "toggle_patch_sha256_semantics": "decoded patch payload"
+  },
+  "f32_disabled_codegen": {
+    "parent_worker_binary_sha256": "dbce0d603f2f514157040a2bf65ed6f7d76fc3c05ac458ed926913f78b0e73c6",
+    "candidate_worker_binary_sha256": "173f5dad0b0e65fb38bde683bda4aeedba6e748db5d8fb12d07eaeae7e2484ba",
+    "v3_symbol_size": "0x58de",
+    "parent_candidate_symbol_sha256": "660258c1ba6ae894c6f987390b7ff6f7503eeb06110b186df33e4b8c230bc3e5"
+  },
+  "protected_t1023_spin1_synthesis": {
+    "worker_binary_sha256": "92b4009fb1397249daaf10bc06c205daa1a7acc68ac7e2a577aef2a0c7c6ade2",
+    "result": "Three-pair q1/q8 control; bitwise-equal output and no regression indicated; not a statistical PASS"
+  }
+}

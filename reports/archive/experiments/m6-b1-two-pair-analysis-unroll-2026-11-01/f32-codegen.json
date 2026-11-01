@@ -1,0 +1,14 @@
+{
+  "production_flag": "FusedAnalysisPrecision::TWO_PAIR_ANALYSIS_UNROLL=false for f32; true for f64",
+  "parent_source": "410c9ec2594007a1e081c949767fc5f7c28d2654 (B1 source unchanged through 8fef71d5ce2b0921fd84f2feb1ecac213362bf0a)",
+  "candidate_source": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a plus f64-only two-pair unroll",
+  "parent_f32_worker_binary_sha256": "dbce0d603f2f514157040a2bf65ed6f7d76fc3c05ac458ed926913f78b0e73c6",
+  "candidate_f32_worker_binary_sha256": "173f5dad0b0e65fb38bde683bda4aeedba6e748db5d8fb12d07eaeae7e2484ba",
+  "ducc_f32_worker_binary_sha256": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836",
+  "rust_flags": "-C target-cpu=x86-64-v3",
+  "v3_typed_analysis_symbol": "<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>",
+  "symbol_address": "0x239c90",
+  "symbol_size_both_binaries": "0x58de",
+  "parent_and_candidate_symbol_sha256": "660258c1ba6ae894c6f987390b7ff6f7503eeb06110b186df33e4b8c230bc3e5",
+  "conclusion": "With the production f32 flag false, the f32 V3 typed-kernel bytes are identical in parent and candidate builds. Temporarily enabling the flag produced a finite/reset-stable but slower four-cell three-pair screen; see f32-unroll-3pair-screen.json."
+}

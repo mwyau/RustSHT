@@ -1,0 +1,539 @@
+{
+  "description": "Three-pair screening of the f64 two-pair ordinary B1 unroll temporarily enabled for native f32. The f32 setting remains disabled in production.",
+  "parent_source": "410c9ec2594007a1e081c949767fc5f7c28d2654 (B1 sources unchanged through 8fef71d5ce2b0921fd84f2feb1ecac213362bf0a)",
+  "candidate_base": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a plus final f64 two-pair implementation and f32 const enabled for this screen only",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "rust_flags": "-C target-cpu=x86-64-v3",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": "q1: one pinned physical core; q8: eight pinned physical cores",
+  "simd": "Pulp V3 AVX2/FMA; f32 eight lanes",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "pairs": 3,
+  "interpretation": "All 12 paired outputs were byte-identical and all workers reported finite, repeat-consistent, reset-consistent output. Candidate/parent median exceeded 1.0 in every cell (1.015-1.027), so f32 unroll was rejected without a 15-pair promotion screen.",
+  "cells": [
+    {
+      "cell": "GL-T720-M180-even-s0-analysis-q1",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 1,
+      "n_pairs": 3,
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 22.93287925,
+          "candidate_ms": 23.26841125,
+          "ducc_ms": 5.874862,
+          "candidate_parent": 1.0146310455107812,
+          "parent_ducc": 3.903560500655164,
+          "candidate_ducc": 3.960673671994338,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+            "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 22.69745175,
+          "candidate_ms": 23.335185250000002,
+          "ducc_ms": 5.86463525,
+          "candidate_parent": 1.0280971409048156,
+          "parent_ducc": 3.870223941037083,
+          "candidate_ducc": 3.9789661684415925,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+            "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "candidate": true,
+            "ducc": true,
+            "parent": true
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 23.320592249999997,
+          "candidate_ms": 23.4251025,
+          "ducc_ms": 5.86850375,
+          "candidate_parent": 1.0044814577983114,
+          "parent_ducc": 3.9738565814156623,
+          "candidate_ducc": 3.991665251981819,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+            "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "ducc": true,
+            "parent": true,
+            "candidate": true
+          }
+        }
+      ],
+      "candidate_parent_median": 1.0146310455107812,
+      "candidate_ducc_median": 3.9789661684415925,
+      "source_base": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a",
+      "candidate_analysis_source_sha256": "826f88d59af3667c08a232c9b41382e26fe02f560d22cebbfe9ee117132454e8",
+      "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "rustc": "rustc 1.99.1",
+      "rust_flags": "-C target-cpu=x86-64-v3",
+      "cpu": "AMD Ryzen 9 5950X",
+      "binary_sha256": {
+        "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+        "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+        "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+      },
+      "affinity_mode": "pinned to one physical core"
+    },
+    {
+      "cell": "GL-T720-M180-even-s0-analysis-q8",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 8,
+      "n_pairs": 3,
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 3.1162440625,
+          "candidate_ms": 3.1716933750000003,
+          "ducc_ms": 0.8663742142857143,
+          "candidate_parent": 1.0177936359886768,
+          "parent_ducc": 3.596879975322442,
+          "candidate_ducc": 3.66088154829829,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+            "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 3.1160500625,
+          "candidate_ms": 3.1661916249999997,
+          "ducc_ms": 0.8660038448275862,
+          "candidate_parent": 1.016091385405975,
+          "parent_ducc": 3.59819425873378,
+          "candidate_ducc": 3.6560941893166317,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+            "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "candidate": true,
+            "ducc": true,
+            "parent": true
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 3.1263143749999998,
+          "candidate_ms": 3.163506,
+          "ducc_ms": 0.8663059655172414,
+          "candidate_parent": 1.0118963164093182,
+          "parent_ducc": 3.608787771804602,
+          "candidate_ducc": 3.651719052992068,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+            "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+            "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+            "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "ducc": true,
+            "parent": true,
+            "candidate": true
+          }
+        }
+      ],
+      "candidate_parent_median": 1.016091385405975,
+      "candidate_ducc_median": 3.6560941893166317,
+      "source_base": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a",
+      "candidate_analysis_source_sha256": "826f88d59af3667c08a232c9b41382e26fe02f560d22cebbfe9ee117132454e8",
+      "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "rustc": "rustc 1.99.1",
+      "rust_flags": "-C target-cpu=x86-64-v3",
+      "cpu": "AMD Ryzen 9 5950X",
+      "binary_sha256": {
+        "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+        "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+        "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+      },
+      "affinity_mode": "pinned to eight physical cores"
+    },
+    {
+      "cell": "GL-T720-M720-even-s0-analysis-q1",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 1,
+      "n_pairs": 3,
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 71.402333,
+          "candidate_ms": 73.0908365,
+          "ducc_ms": 14.500059,
+          "candidate_parent": 1.023647735711941,
+          "parent_ducc": 4.92427879086561,
+          "candidate_ducc": 5.040726834283915,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+            "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 71.4236685,
+          "candidate_ms": 73.4388195,
+          "ducc_ms": 14.223268749999999,
+          "candidate_parent": 1.0282140506406499,
+          "parent_ducc": 5.021607181541866,
+          "candidate_ducc": 5.16328706085934,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+            "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "candidate": true,
+            "ducc": true,
+            "parent": true
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 71.135965,
+          "candidate_ms": 72.929767,
+          "ducc_ms": 14.425939249999999,
+          "candidate_parent": 1.0252165272517213,
+          "parent_ducc": 4.931114970555557,
+          "candidate_ducc": 5.055460565591942,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+            "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "ducc": true,
+            "parent": true,
+            "candidate": true
+          }
+        }
+      ],
+      "candidate_parent_median": 1.0252165272517213,
+      "candidate_ducc_median": 5.055460565591942,
+      "source_base": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a",
+      "candidate_analysis_source_sha256": "826f88d59af3667c08a232c9b41382e26fe02f560d22cebbfe9ee117132454e8",
+      "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "rustc": "rustc 1.99.1",
+      "rust_flags": "-C target-cpu=x86-64-v3",
+      "cpu": "AMD Ryzen 9 5950X",
+      "binary_sha256": {
+        "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+        "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+        "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+      },
+      "affinity_mode": "pinned to one physical core"
+    },
+    {
+      "cell": "GL-T720-M720-even-s0-analysis-q8",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 8,
+      "n_pairs": 3,
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "parent_ms": 9.304035666666667,
+          "candidate_ms": 9.637249,
+          "ducc_ms": 2.010059076923077,
+          "candidate_parent": 1.035813849524151,
+          "parent_ducc": 4.628737420448824,
+          "candidate_ducc": 4.794510325911585,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+            "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "parent": true,
+            "ducc": true,
+            "candidate": true
+          }
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "parent_ms": 9.400922,
+          "candidate_ms": 9.604254833333334,
+          "ducc_ms": 1.998375076923077,
+          "candidate_parent": 1.0216290309964633,
+          "parent_ducc": 4.704283049043384,
+          "candidate_ducc": 4.806032132927281,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+            "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "candidate": true,
+            "ducc": true,
+            "parent": true
+          }
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "parent_ms": 9.394274333333334,
+          "candidate_ms": 9.651056666666666,
+          "ducc_ms": 2.0271830384615384,
+          "candidate_parent": 1.027333918961915,
+          "parent_ducc": 4.634152000631772,
+          "candidate_ducc": 4.760821535874238,
+          "parent_candidate_output": {
+            "differing_float_values": 0,
+            "max_abs_difference": 0.0,
+            "relative_l2": 0.0
+          },
+          "fixture_sha256": {
+            "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+            "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+            "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+            "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+          },
+          "binary_sha256": {
+            "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+            "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+            "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+          },
+          "all_finite_repeat_reset": {
+            "ducc": true,
+            "parent": true,
+            "candidate": true
+          }
+        }
+      ],
+      "candidate_parent_median": 1.027333918961915,
+      "candidate_ducc_median": 4.794510325911585,
+      "source_base": "8fef71d5ce2b0921fd84f2feb1ecac213362bf0a",
+      "candidate_analysis_source_sha256": "826f88d59af3667c08a232c9b41382e26fe02f560d22cebbfe9ee117132454e8",
+      "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "rustc": "rustc 1.99.1",
+      "rust_flags": "-C target-cpu=x86-64-v3",
+      "cpu": "AMD Ryzen 9 5950X",
+      "binary_sha256": {
+        "parent": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+        "candidate": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+        "ducc": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836"
+      },
+      "affinity_mode": "pinned to eight physical cores"
+    }
+  ],
+  "reproducibility": {
+    "candidate_enabled_source_sha256": "826f88d59af3667c08a232c9b41382e26fe02f560d22cebbfe9ee117132454e8",
+    "candidate_binary_sha256": "79c4d12f1d7307c43a9be9a4d6082c177b4ca4281c1bd305e98f15b4bd6f60bd",
+    "parent_binary_sha256": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+    "ducc_binary_sha256": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836",
+    "toggle_patch_sha256": "aeaa69718931ef5104cff9b7ff9c22ba4c5c5fad25fa39ac608ca263f631a554",
+    "toggle_patch_stored_file": "f32-unroll-toggle.patch.gz",
+    "toggle_patch_stored_sha256": "5fcb0addba9ec2f724716cf01665d6bd48ace236926ecdd516fb6c7bd5b2066e",
+    "toggle_patch_sha256_semantics": "toggle_patch_sha256 is the decoded patch payload hash",
+    "local_runner_sha256": "b505d1ab1e54fe544c54dea4d56e978767c452d5db76e0551249d26a8f98f3ca",
+    "runner_location": "local task scratch; runner intentionally not committed"
+  }
+}
