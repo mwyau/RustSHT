@@ -1,0 +1,16 @@
+Rust source parent: 5483faa8f3d2035ba505a171885ad23b051d1b8c
+B1 analysis.rs blob: baa5cee6c64ac43aa54828ab4c15055e8d23532e
+Pinned DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b
+Rust toolchain: rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1
+Rust release target: x86-64-v3; runtime dispatch: Pulp V3 AVX2/FMA
+Host: AMD Ryzen 9 5950X
+
+Callgrind parent f32 binary SHA-256: 8ed57b5321ee863a8cef7cf8ef4019d24ce483a8d414ae8a3cd7287befa18e87
+Callgrind parent f64 binary SHA-256: 2e2f0c51b5822e5f5ae7575490500c1aa8b54007e6943b2d3d813fccc2abe414
+15-pair parent f32 binary SHA-256: 8ed57b5321ee863a8cef7cf8ef4019d24ce483a8d414ae8a3cd7287befa18e87
+Adjacent-factor candidate f32 binary SHA-256: 7a29709c80b3961a8176e9093aa576148ffb4104be1ff4d5eabf5bd24ce02be3
+Range-fusion candidate f32 binary SHA-256: ca33b0b0061b624d45cb959a240946c1f976e4f609cd48a2c78cd42fc3c90980
+Lazy-clear candidate f32 binary SHA-256: 54d24a907cdf9e73eeb1d4e4f4cbc013cd20050ec108713a63ba85dbe0e00428
+DUCC f32 benchmark binary SHA-256: efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836
+
+The screen JSON files also contain per-cell fixture and binary hashes, runtime SIMD metadata, thread affinity and paired timings. Binaries and full map fixtures are not duplicated in the archive.

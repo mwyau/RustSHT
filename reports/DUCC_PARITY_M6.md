@@ -49,6 +49,19 @@ The isolated f32 output-scale exponent-bit shortcut improved a pinned 15-sample 
 
 On base `d4cc76bfe22410ec410bfffac7f00d7b677fb928`, the candidate added an early no-change vector branch in the native-f32 pair normalizer. The mixed synthetic normalizer microbenchmark improved 11.6% (107.39 to 94.90 ns/block), while vectors requiring a small-lane scale update regressed 6.7%. The generated f32 V3 body grew 736 bytes and retained its 6,120-byte frame; f64 V3 instructions were identical after address normalization. Fifteen interleaved whole-transform pairs showed only reduced q1 as a resolved improvement: 0.988 [0.978, 0.997] candidate/parent. Full q1, full q8 and reduced q8 were INCONCLUSIVE. Candidate output was bitwise identical to parent across all pairs, and repeat/reset checks passed. The candidate is not promoted. Full provenance, per-pair data, microbench samples, disassembly and patch are in the [normalizer bypass package](archive/experiments/m6-b1-normalizer-nochange-2026-11-01/README.md).
 
-Current source-matched baseline remains 2.10–2.72× DUCC f32 and 1.03–1.13× DUCC f64. B1 Legendre recurrence plus accumulation still dominates measured warm time (91–95% f32; 76–86% f64 at source `8560bcae`); the isolated no-change normalizer optimization did not yield a robust whole-call improvement. PMU cycle sampling remains blocked, so Callgrind Ir is not presented as cycles.
+## Latest exact-parent B1 profile — 2026-11-01
 
-**NEXT:** on `8560bcae`, measure disjoint f32 factor-materialization, scaled-accumulation, normalization and hard-lane-recovery regions with test-only Callgrind gates plus warm wall timing; separately split f64 full-q8 fused-kernel and FFT time against matching DUCC. Select another candidate only after a materially larger region cost is identified. Do not repeat the no-change normalizer, output-scale shortcut or f64 seed-decline experiments. Keep B0/B2/B3 untouched. See the [active B1 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
+The B1 code at current head `5483faa8` has the same `analysis.rs` and `transform/scalar.rs` blobs as `8560bcae`. A 15-pair f32 parent/DUCC refresh from exact base `5483faa8` gives:
+
+| Cell | Rust parent ms | DUCC f32 ms | Rust / DUCC f32 (95% paired interval) |
+|---|---:|---:|---:|
+| Full q1 | 38.628 | 14.151 | 2.729 [2.702, 2.756] GAP |
+| Full q8 | 6.384 | 2.309 | 2.425 [2.198, 2.675] GAP |
+| Reduced q1 | 12.961 | 5.839 | 2.225 [2.198, 2.252] GAP |
+| Reduced q8 | 1.981 | 1.116 | 1.889 [1.775, 2.012] GAP |
+
+Test-only Callgrind regions on nonzero full-q1 f32 count 719.3M total Ir: scaled accumulation 263.7M, range/normalization 146.6M, recurrence advancement 22.9M, and ordinary accumulation 8.6M. Factor materialization (106.9M), state setup (140.5M), hard fallback (21.9M) and scaled SIMD accumulation (41.4M) are subsets of scaled accumulation; do not add them to its total. The warm phase probe places 91–95% of f32 and 76–86% of f64 elapsed time in combined Legendre work. Hardware cycle events are blocked (`perf_event_paranoid=4`), so these are instruction and phase measurements, not cycle attribution.
+
+Three f32 changes were screened and rejected: adjacent-factor reuse (15 pairs, all four intervals cross 1.0), fused recurrence range checking (15 pairs, full q8 1.037 [0.888, 1.212]), and lazy hard-factor clearing (15 pairs, all four intervals cross 1.0; full q8 point 0.949). Their helper microbenchmarks improved factor generation/clearing but did not establish a whole-call gain. No production change is promoted. V3 code sizes, representative YMM FMA disassembly, profile gates, exact patches, JSON pair records and hashes are in the [B1 hotspot package](archive/experiments/m6-b1-hotspot-profile-2026-11-01/README.md). The f64 current 15-pair ledger remains 1.032–1.131× DUCC; no f64 candidate was screened in this pass.
+
+**NEXT:** use sampled wall timing on the exact nonzero T720 f32 stream to separate factor/state rebuild, scaled SIMD accumulation and pair range/normalization; report sample overhead and keep FFT/scheduling disjoint. Then test one materially different f32 candidate in three interleaved whole-call pairs. Keep matching f64/DUCC performance as a guard and leave B0/B2/B3 untouched. See the [active B1 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).

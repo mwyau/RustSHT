@@ -1,0 +1,55 @@
+parent f32: <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>
+  address=0x1e66b0 size=22307 bytes frame_allocated=6120 bytes
+  {'static_instructions': 4374, 'vfmadd': 204, 'ymm_mentions': 364, 'rsp_frame_memory_instruction_refs': 871, 'ymm_stack_references': 86, 'ymm_stack_stores': 80, 'ymm_stack_loads': 4, 'static_calls': 62, 'static_conditional_branches': 479}
+
+  first FMA excerpt:
+  1e7977:	je     1e7a19 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x1369>
+  1e797d:	vmovups ymm12,YMMWORD PTR [rcx+rdx*1]
+  1e7982:	vfmadd231ps ymm4,ymm12,YMMWORD PTR [rbp+rdx*1+0x0]
+  1e7989:	vfmadd231ps ymm5,ymm12,YMMWORD PTR [rsi+rdx*1]
+  1e798f:	vfmadd231ps ymm6,ymm12,YMMWORD PTR [r13+rdx*1+0x0]
+  1e7996:	vfmadd231ps ymm8,ymm12,YMMWORD PTR [rbx+rdx*1]
+  1e799c:	vmovups ymm13,YMMWORD PTR [r10+rdx*1]
+  1e79a2:	vfmadd213ps ymm13,ymm3,ymm0
+
+adjacent-reuse f32: <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>
+  address=0x1e65e0 size=23070 bytes frame_allocated=6104 bytes
+  {'static_instructions': 4590, 'vfmadd': 204, 'ymm_mentions': 364, 'rsp_frame_memory_instruction_refs': 863, 'ymm_stack_references': 86, 'ymm_stack_stores': 80, 'ymm_stack_loads': 4, 'static_calls': 61, 'static_conditional_branches': 535}
+
+  first FMA excerpt:
+  1e7867:	je     1e7904 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x1324>
+  1e786d:	vmovups ymm12,YMMWORD PTR [rsi+rdx*1]
+  1e7872:	vfmadd231ps ymm4,ymm12,YMMWORD PTR [rbp+rdx*1+0x0]
+  1e7879:	vfmadd231ps ymm5,ymm12,YMMWORD PTR [r12+rdx*1]
+  1e787f:	vfmadd231ps ymm6,ymm12,YMMWORD PTR [r10+rdx*1]
+  1e7885:	vfmadd231ps ymm8,ymm12,YMMWORD PTR [r13+rdx*1+0x0]
+  1e788c:	vmovups ymm13,YMMWORD PTR [rbx+rdx*1]
+  1e7891:	vfmadd213ps ymm13,ymm3,ymm0
+
+lazy-clear f32: <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>
+  address=0x1e6570 size=22442 bytes frame_allocated=6120 bytes
+  {'static_instructions': 4372, 'vfmadd': 204, 'ymm_mentions': 365, 'rsp_frame_memory_instruction_refs': 846, 'ymm_stack_references': 86, 'ymm_stack_stores': 80, 'ymm_stack_loads': 4, 'static_calls': 62, 'static_conditional_branches': 481}
+
+  first FMA excerpt:
+  1e7677:	je     1e7714 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x11a4>
+  1e767d:	vmovups ymm12,YMMWORD PTR [r9+rdx*1]
+  1e7683:	vfmadd231ps ymm4,ymm12,YMMWORD PTR [r10+rdx*1]
+  1e7689:	vfmadd231ps ymm5,ymm12,YMMWORD PTR [r12+rdx*1]
+  1e768f:	vfmadd231ps ymm6,ymm12,YMMWORD PTR [r13+rdx*1+0x0]
+  1e7696:	vfmadd231ps ymm8,ymm12,YMMWORD PTR [rsi+rdx*1]
+  1e769c:	vmovups ymm13,YMMWORD PTR [rbx+rdx*1]
+  1e76a1:	vfmadd213ps ymm13,ymm3,ymm0
+
+parent f64: <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f64>>>
+  address=0x1c3db0 size=7227 bytes frame_allocated=504 bytes
+  {'static_instructions': 1352, 'vfmadd': 88, 'ymm_mentions': 124, 'rsp_frame_memory_instruction_refs': 357, 'ymm_stack_references': 5, 'ymm_stack_stores': 1, 'ymm_stack_loads': 4, 'static_calls': 33, 'static_conditional_branches': 124}
+
+  first FMA excerpt:
+  1c43a7:	je     1c4600 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypeddEEEB1L_+0x850>
+  1c43ad:	vmovupd ymm12,YMMWORD PTR [r12+rcx*1]
+  1c43b3:	vfmadd231pd ymm4,ymm12,YMMWORD PTR [r14+rcx*1]
+  1c43b9:	vfmadd231pd ymm8,ymm12,YMMWORD PTR [rbp+rcx*1+0x0]
+  1c43c0:	vfmadd231pd ymm7,ymm12,YMMWORD PTR [r13+rcx*1+0x0]
+  1c43c7:	vfmadd231pd ymm11,ymm12,YMMWORD PTR [r11+rcx*1]
+  1c43cd:	vmovupd ymm13,YMMWORD PTR [r15+rcx*1]
+  1c43d3:	vfmadd213pd ymm13,ymm3,ymm0
