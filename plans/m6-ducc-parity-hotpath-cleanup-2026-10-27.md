@@ -8,12 +8,12 @@ Target **Rust f32/DUCC f32 ≤1.0x** and **Rust f64/DUCC f64 ≤1.0x**, separate
 
 | GL T720 B1 | f32/f64 (diagnostic) | f32/DUCC f32 | f64/DUCC f64 |
 |---|---:|---:|---:|
-| Full q1 | 3.696x | 4.959x | 1.319x |
-| Full q8 | 3.449x | 4.763x | 1.362x |
-| Reduced q1 | 2.751x | 3.635x | 1.182x (inconclusive) |
-| Reduced q8 | 2.565x | 3.589x | 1.367x |
+| Full q1 | 3.564x | 4.796x | 1.310x |
+| Full q8 | 3.337x | 4.419x | 1.273x |
+| Reduced q1 | 2.903x | 3.779x | 1.278x |
+| Reduced q8 | 2.665x | 3.373x | 1.226x |
 
-These are source-specific controlled screens, not a simultaneous final-HEAD benchmark. The quiet full-q8 B1 whole-binary control was 1.060 [1.039,1.099] relative to `95bcbecc` despite bitwise-identical output and unchanged B1 entrypoint; isolate code-layout, compiler, CPU-load and dispatch effects before assigning cause. Pinned DUCC 0.42.0: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+These are the latest simultaneous 15-pair GL T720 screen: native f32 candidate, native f64, and precision-matched DUCC. The f32 candidate uses source `ecb66f10` plus the result-short-circuit patch in the [2026-11-01 profile package](../reports/archive/experiments/m6-b1-analysis-normalizer-result-short-circuit-2026-11-01/README.md). The ratios are geometric paired means; all four f32/DUCC and f64/DUCC cells remain GAP. A separate 15-pair f64 parent/candidate screen is INCONCLUSIVE in all cells and bitwise equal. Pinned DUCC 0.42.0: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
 
 ## Investigate before optimizing
 
@@ -33,4 +33,4 @@ During exploration **do not run** complete Rust/Python suites, all 16 cells, rep
 
 ## NEXT
 
-At parent `410c9ec`, warm phase probes put Legendre recurrence plus accumulation at 94–97% of Rust f32 time and 82–91% of Rust f64 time; FFT is not the dominant f32 cost. Full-q1 f32 Callgrind regions total 1.149B nonoverlapping Ir for normal accumulation, scaled accumulation/factor setup, recurrence, and range-check/normalization. These are instruction counts, not cycles. Hardware `perf` remains blocked on this host. Four f32 factor/range candidates were rejected. A DUCC-shaped ordinary two-pair traversal is now enabled for f64 only: the corrected 15-pair T720 screen improves full/reduced q1/q8 by 3.6–9.7%, with byte-identical outputs; f64/DUCC remains 1.24–1.29x. A scalar-tail state handoff bug explained the earlier f32 finite/reset failure. After correcting it, the f32 regression file passes with unroll enabled, but a three-pair screen is 1.5–2.7% slower than parent in every cell, so f32 remains disabled. See the [profile package](../reports/archive/experiments/m6-b1-profile-410c-2026-10-31/README.md) and [two-pair unroll evidence](../reports/archive/experiments/m6-b1-two-pair-analysis-unroll-2026-11-01/README.md). **NEXT:** retain the f64 change; profile f32 scaled recurrence, factor/state updates and normalization with a bounded probe, then test one distinct f32-safe optimization. Do not infer cycles from Callgrind Ir. Keep B0/B2/B3 unchanged.
+At parent `410c9ec`, warm phase probes put Legendre recurrence plus accumulation at 94–97% of Rust f32 time and 82–91% of Rust f64 time; FFT took 3–6% and 8–18%, respectively. The profile combines recurrence with accumulation and hardware `perf` is blocked on this host. The accepted f64 two-pair traversal remains active. The new f32 result-classification short-circuit improves all four T720 cells by 3.1–3.7% against its exact parent, with 15-pair confidence intervals below 1 and zero candidate/parent relative L2 in every pair. The f32/DUCC gap remains 3.37–4.80x; f64/DUCC remains 1.23–1.31x. The f64 candidate/parent intervals include 1.00 in all cells. See the [profile package](../reports/archive/experiments/m6-b1-profile-410c-2026-10-31/README.md), [f64 two-pair evidence](../reports/archive/experiments/m6-b1-two-pair-analysis-unroll-2026-11-01/README.md), and [f32 normalizer screen](../reports/archive/experiments/m6-b1-analysis-normalizer-result-short-circuit-2026-11-01/README.md). **NEXT:** profile the remaining f32 scaled recurrence and accumulation path with a bounded, source-matched probe; test one new measured hypothesis. Do not repeat the rejected factor, fusion, tile or sparse-index variants, infer cycles from Callgrind Ir, or change B0/B2/B3.

@@ -1422,6 +1422,29 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
     current: &mut [f32],
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
+    normalize_pair_lanes_with_state_f32_simd_impl::<S, false>(simd, previous, current, exponents)
+}
+
+/// B1 can stop classifying whether the entire block remains ordinary after
+/// one SIMD group fails that predicate. It still normalizes every group; this
+/// only skips later checks whose result can no longer change from `false`.
+#[inline(always)]
+pub(super) fn normalize_pair_lanes_with_state_f32_simd_analysis<S: Simd>(
+    simd: S,
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    normalize_pair_lanes_with_state_f32_simd_impl::<S, true>(simd, previous, current, exponents)
+}
+
+#[inline(always)]
+fn normalize_pair_lanes_with_state_f32_simd_impl<S: Simd, const SHORT_CIRCUIT_RESULT: bool>(
+    simd: S,
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
     const MAX_F32_LANES: usize = 64;
     debug_assert_eq!(previous.len(), current.len());
     debug_assert_eq!(current.len(), exponents.len());
@@ -1574,17 +1597,20 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
 
         previous_vectors[index] = previous_value;
         current_vectors[index] = current_value;
-        let zero_epoch = exponents[index * S::F32_LANES..(index + 1) * S::F32_LANES]
-            .iter()
-            .all(|&exponent| exponent == 0);
-        let in_range = simd.and_m32s(
-            simd.less_than_or_equal_f32s(magnitude, big),
-            simd.or_m32s(
-                simd.equal_f32s(magnitude, zero),
-                simd.greater_than_or_equal_f32s(magnitude, small),
-            ),
-        );
-        normal_range &= zero_epoch && simd.first_true_m32s(simd.not_m32s(in_range)) == S::F32_LANES;
+        if !SHORT_CIRCUIT_RESULT || normal_range {
+            let zero_epoch = exponents[index * S::F32_LANES..(index + 1) * S::F32_LANES]
+                .iter()
+                .all(|&exponent| exponent == 0);
+            let in_range = simd.and_m32s(
+                simd.less_than_or_equal_f32s(magnitude, big),
+                simd.or_m32s(
+                    simd.equal_f32s(magnitude, zero),
+                    simd.greater_than_or_equal_f32s(magnitude, small),
+                ),
+            );
+            normal_range &=
+                zero_epoch && simd.first_true_m32s(simd.not_m32s(in_range)) == S::F32_LANES;
+        }
     }
 
     let exponent_tail_start = previous_vectors.len() * S::F32_LANES;

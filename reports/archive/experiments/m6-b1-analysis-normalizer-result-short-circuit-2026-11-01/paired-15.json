@@ -1,0 +1,1381 @@
+{
+  "date": "2026-11-01",
+  "parent_source_sha": "ecb66f10ecb11146fb1c1a49ef3fdfd5bd1c7505",
+  "parent_tree_sha": "00ebc654130e2f4cd153be07759c9c517de6c6ca",
+  "candidate_patch_sha256": "aaffc4602e6d1fd218cad39ff335fab226e8f8344e547d6d5af8add63f70fe26",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": "q1 pinned to one physical core; q8 pinned to eight physical cores",
+  "cells": [
+    {
+      "case_id": "GL-T720-M720-even-s0-analysis-q1",
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "threads": 1
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "f32_candidate_parent": {
+        "geomean_ratio": 0.9626293711244592,
+        "paired_log_t_95_ci": [
+          0.9565329644769268,
+          0.9687646328615622
+        ],
+        "pairs_faster": 15,
+        "all_parent_errors_zero_l2": true,
+        "paired_ratios": [
+          0.968028082787588,
+          0.9679656123904509,
+          0.963042807789098,
+          0.9599316463193488,
+          0.9473541843468201,
+          0.9765127283318277,
+          0.9513471660180335,
+          0.9607433669338243,
+          0.9668923564548788,
+          0.9616917929819614,
+          0.984606914819337,
+          0.9721161562182253,
+          0.9426566497226436,
+          0.9530571118545721,
+          0.964380874237934
+        ]
+      },
+      "f64_candidate_parent": {
+        "geomean_ratio": 1.0009311743908946,
+        "paired_log_t_95_ci": [
+          0.9911063246402079,
+          1.0108534180035957
+        ],
+        "status": "INCONCLUSIVE",
+        "all_outputs_bitwise_equal": true,
+        "paired_ratios": [
+          1.042028629175689,
+          0.984076704404212,
+          1.0208879838612175,
+          0.9740077521386258,
+          0.997394211879197,
+          1.0076431173584641,
+          0.9812353411546313,
+          1.0119826103285436,
+          0.993503842512499,
+          1.0113955111632646,
+          1.0063732824941527,
+          0.9986189176085734,
+          0.9797202688391812,
+          1.0125521100488364,
+          0.994776171730224
+        ]
+      },
+      "ducc_ratios": {
+        "rust_f32_over_ducc_f32": {
+          "geomean_ratio": 4.795808738764441,
+          "paired_log_t_95_ci": [
+            4.757935666426455,
+            4.833983279997528
+          ],
+          "median_paired_ratio": 4.810572572825001,
+          "status": "GAP",
+          "median_ms": {
+            "rust32": 67.8146715,
+            "ducc32": 14.1131305
+          }
+        },
+        "rust_f64_over_ducc_f64": {
+          "geomean_ratio": 1.3099765974560544,
+          "paired_log_t_95_ci": [
+            1.2747723074249293,
+            1.3461530940760558
+          ],
+          "median_paired_ratio": 1.305283646538621,
+          "status": "GAP",
+          "median_ms": {
+            "rust64": 18.9092795,
+            "ducc64": 14.61615
+          }
+        }
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "ms": {
+            "rust32": 67.859892,
+            "parent32": 70.1011605,
+            "rust64": 19.469355999999998,
+            "ducc32": 13.922951,
+            "ducc64": 14.54815
+          },
+          "candidate32_over_parent32": 0.968028082787588,
+          "candidate32_over_ducc32": 4.873958976082011,
+          "rust64_over_ducc64": 1.3382702267985962,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 10,
+          "ms": {
+            "rust32": 68.06011600000001,
+            "parent32": 70.312535,
+            "rust64": 18.4698285,
+            "ducc32": 14.13434325,
+            "ducc64": 14.68675
+          },
+          "candidate32_over_parent32": 0.9679656123904509,
+          "candidate32_over_ducc32": 4.815230166424606,
+          "rust64_over_ducc64": 1.2575844553764446,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 11,
+          "ms": {
+            "rust32": 67.8417485,
+            "parent32": 70.44520549999999,
+            "rust64": 19.160349250000003,
+            "ducc32": 14.25244675,
+            "ducc64": 14.61615
+          },
+          "candidate32_over_parent32": 0.963042807789098,
+          "candidate32_over_ducc32": 4.7600071545610225,
+          "rust64_over_ducc64": 1.3109026145736056,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 12,
+          "ms": {
+            "rust32": 67.2584445,
+            "parent32": 70.0658685,
+            "rust64": 22.27516125,
+            "ducc32": 14.154812249999999,
+            "ducc64": 14.42325
+          },
+          "candidate32_over_parent32": 0.9599316463193488,
+          "candidate32_over_ducc32": 4.751630986839829,
+          "rust64_over_ducc64": 1.5443926472882326,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 13,
+          "ms": {
+            "rust32": 67.92471950000001,
+            "parent32": 71.6993925,
+            "rust64": 18.56806925,
+            "ducc32": 14.052874249999999,
+            "ducc64": 14.85825
+          },
+          "candidate32_over_parent32": 0.9473541843468201,
+          "candidate32_over_ducc32": 4.833510802959047,
+          "rust64_over_ducc64": 1.2496807665774907,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 14,
+          "ms": {
+            "rust32": 67.9076775,
+            "parent32": 69.54100600000001,
+            "rust64": 18.708707500000003,
+            "ducc32": 13.96176475,
+            "ducc64": 14.65865
+          },
+          "candidate32_over_parent32": 0.9765127283318277,
+          "candidate32_over_ducc32": 4.863831952189282,
+          "rust64_over_ducc64": 1.2762913024050648,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 15,
+          "ms": {
+            "rust32": 67.010741,
+            "parent32": 70.4377365,
+            "rust64": 19.028625249999997,
+            "ducc32": 13.98864275,
+            "ducc64": 14.607099999999999
+          },
+          "candidate32_over_parent32": 0.9513471660180335,
+          "candidate32_over_ducc32": 4.7903676001733615,
+          "rust64_over_ducc64": 1.302696993243012,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 2,
+          "ms": {
+            "ducc64": 14.6598,
+            "ducc32": 14.0144415,
+            "rust64": 18.9092795,
+            "parent32": 70.58562549999999,
+            "rust32": 67.8146715
+          },
+          "candidate32_over_parent32": 0.9607433669338243,
+          "candidate32_over_ducc32": 4.838913594951323,
+          "rust64_over_ducc64": 1.2898729518820176,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 3,
+          "ms": {
+            "rust64": 18.893887749999998,
+            "ducc64": 14.6411,
+            "rust32": 67.5745675,
+            "parent32": 69.888408,
+            "ducc32": 14.1508845
+          },
+          "candidate32_over_parent32": 0.9668923564548788,
+          "candidate32_over_ducc32": 4.775289311420781,
+          "rust64_over_ducc64": 1.290469141662853,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 4,
+          "ms": {
+            "rust32": 67.1398605,
+            "parent32": 69.814322,
+            "rust64": 18.8405345,
+            "ducc32": 14.054024,
+            "ducc64": 14.341899999999999
+          },
+          "candidate32_over_parent32": 0.9616917929819614,
+          "candidate32_over_ducc32": 4.777269520814821,
+          "rust64_over_ducc64": 1.3136707479483194,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 5,
+          "ms": {
+            "rust32": 68.8078945,
+            "parent32": 69.883619,
+            "rust64": 19.320755,
+            "ducc32": 14.17363,
+            "ducc64": 14.7486
+          },
+          "candidate32_over_parent32": 0.984606914819337,
+          "candidate32_over_ducc32": 4.854641647905301,
+          "rust64_over_ducc64": 1.3100060344710684,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 6,
+          "ms": {
+            "rust32": 67.8922385,
+            "parent32": 69.83963600000001,
+            "rust64": 19.160935000000002,
+            "ducc32": 14.1131305,
+            "ducc64": 14.670300000000001
+          },
+          "candidate32_over_parent32": 0.9721161562182253,
+          "candidate32_over_ducc32": 4.810572572825001,
+          "rust64_over_ducc64": 1.306103828824223,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 7,
+          "ms": {
+            "rust32": 67.13443000000001,
+            "parent32": 71.21832749999999,
+            "rust64": 18.892675500000003,
+            "ducc32": 14.11605875,
+            "ducc64": 14.474
+          },
+          "candidate32_over_parent32": 0.9426566497226436,
+          "candidate32_over_ducc32": 4.755890520787186,
+          "rust64_over_ducc64": 1.305283646538621,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 8,
+          "ms": {
+            "rust32": 67.628946,
+            "parent32": 70.960014,
+            "rust64": 18.462622500000002,
+            "ducc32": 13.9627815,
+            "ducc64": 14.5962
+          },
+          "candidate32_over_parent32": 0.9530571118545721,
+          "candidate32_over_ducc32": 4.843515312475526,
+          "rust64_over_ducc64": 1.2648924035022815,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 9,
+          "ms": {
+            "rust32": 67.44892949999999,
+            "parent32": 69.940136,
+            "rust64": 18.924215,
+            "ducc32": 14.66494175,
+            "ducc64": 14.4164
+          },
+          "candidate32_over_parent32": 0.964380874237934,
+          "candidate32_over_ducc32": 4.599331565704991,
+          "rust64_over_ducc64": 1.312686593046808,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M720-even-s0-analysis-q8",
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "threads": 8
+      },
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "f32_candidate_parent": {
+        "geomean_ratio": 0.9659338788962745,
+        "paired_log_t_95_ci": [
+          0.9589473280937961,
+          0.9729713312349328
+        ],
+        "pairs_faster": 15,
+        "all_parent_errors_zero_l2": true,
+        "paired_ratios": [
+          0.956384130706819,
+          0.9317134225945285,
+          0.983133814754145,
+          0.9599792755930002,
+          0.9699990676506448,
+          0.9735046324920835,
+          0.9852557406302599,
+          0.9607840085617402,
+          0.964195501909927,
+          0.9676105169605727,
+          0.972658956575004,
+          0.9726307447115371,
+          0.9595700297226879,
+          0.9641625037900106,
+          0.9685822769040633
+        ]
+      },
+      "f64_candidate_parent": {
+        "geomean_ratio": 1.007102418838749,
+        "paired_log_t_95_ci": [
+          0.9997108288200465,
+          1.0145486602640676
+        ],
+        "status": "INCONCLUSIVE",
+        "all_outputs_bitwise_equal": true,
+        "paired_ratios": [
+          1.0158862176807077,
+          0.9887882293286837,
+          1.0126330461064212,
+          0.9988447554223272,
+          0.9925790809415499,
+          1.0212654925435425,
+          1.0084828998012003,
+          0.9978673501835347,
+          1.0041028317292768,
+          1.0099023639215208,
+          1.0090281903839984,
+          0.9943196712443554,
+          1.005624762205401,
+          1.0046365469813257,
+          1.0438285447226778
+        ]
+      },
+      "ducc_ratios": {
+        "rust_f32_over_ducc_f32": {
+          "geomean_ratio": 4.418626687088078,
+          "paired_log_t_95_ci": [
+            4.396702218441318,
+            4.440660483658713
+          ],
+          "median_paired_ratio": 4.419155363278349,
+          "status": "GAP",
+          "median_ms": {
+            "rust32": 9.102067166666668,
+            "ducc32": 2.0583235
+          }
+        },
+        "rust_f64_over_ducc_f64": {
+          "geomean_ratio": 1.2733207614686075,
+          "paired_log_t_95_ci": [
+            1.2435762822710352,
+            1.3037766839892377
+          ],
+          "median_paired_ratio": 1.2765847597370927,
+          "status": "GAP",
+          "median_ms": {
+            "rust64": 2.7482955000000002,
+            "ducc64": 2.15285
+          }
+        }
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "ms": {
+            "rust32": 9.047190166666667,
+            "parent32": 9.459786999999999,
+            "rust64": 2.8674875625,
+            "ducc32": 2.04299925,
+            "ducc64": 2.134195
+          },
+          "candidate32_over_parent32": 0.956384130706819,
+          "candidate32_over_ducc32": 4.428386435612577,
+          "rust64_over_ducc64": 1.3435921096713281,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 10,
+          "ms": {
+            "rust32": 9.080054,
+            "parent32": 9.745543833333333,
+            "rust64": 3.028872167,
+            "ducc32": 2.0626210454545455,
+            "ducc64": 2.156225
+          },
+          "candidate32_over_parent32": 0.9317134225945285,
+          "candidate32_over_ducc32": 4.4021920652899205,
+          "rust64_over_ducc64": 1.4047106248188383,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 11,
+          "ms": {
+            "rust32": 9.219901666666665,
+            "parent32": 9.378074000000002,
+            "rust64": 2.8404920000000002,
+            "ducc32": 2.125838375,
+            "ducc64": 2.1819249999999997
+          },
+          "candidate32_over_parent32": 0.983133814754145,
+          "candidate32_over_ducc32": 4.337066154743145,
+          "rust64_over_ducc64": 1.3018284313163837,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 12,
+          "ms": {
+            "rust32": 9.127745666666668,
+            "parent32": 9.508273666666668,
+            "rust64": 2.7130950555,
+            "ducc32": 2.0916272307692303,
+            "ducc64": 2.1656649999999997
+          },
+          "candidate32_over_parent32": 0.9599792755930002,
+          "candidate32_over_ducc32": 4.363944747128669,
+          "rust64_over_ducc64": 1.2527768863143656,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 13,
+          "ms": {
+            "rust32": 9.059989333333334,
+            "parent32": 9.340204166666666,
+            "rust64": 2.7070607775,
+            "ducc32": 2.0607544583333333,
+            "ducc64": 2.1390700000000002
+          },
+          "candidate32_over_parent32": 0.9699990676506448,
+          "candidate32_over_ducc32": 4.3964429127867755,
+          "rust64_over_ducc64": 1.2655316457619432,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 14,
+          "ms": {
+            "rust32": 9.147124000000002,
+            "parent32": 9.3960765,
+            "rust64": 2.7100453890000002,
+            "ducc32": 2.058282653846154,
+            "ducc64": 2.2573749999999997
+          },
+          "candidate32_over_parent32": 0.9735046324920835,
+          "candidate32_over_ducc32": 4.444056302426432,
+          "rust64_over_ducc64": 1.2005295482584863,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 15,
+          "ms": {
+            "rust32": 9.267159333333334,
+            "parent32": 9.4058415,
+            "rust64": 2.777243556,
+            "ducc32": 2.0558311153846156,
+            "ducc64": 2.16746
+          },
+          "candidate32_over_parent32": 0.9852557406302599,
+          "candidate32_over_ducc32": 4.507743493122287,
+          "rust64_over_ducc64": 1.2813355522131895,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 2,
+          "ms": {
+            "ducc64": 2.15285,
+            "ducc32": 2.058339692307692,
+            "rust64": 2.7482955000000002,
+            "parent32": 9.488102166666668,
+            "rust32": 9.116016833333333
+          },
+          "candidate32_over_parent32": 0.9607840085617402,
+          "candidate32_over_ducc32": 4.428820406758507,
+          "rust64_over_ducc64": 1.2765847597370927,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 3,
+          "ms": {
+            "rust64": 2.7500649445,
+            "ducc64": 2.15118,
+            "rust32": 9.114308833333332,
+            "parent32": 9.452760166666668,
+            "ducc32": 2.0645683846153844
+          },
+          "candidate32_over_parent32": 0.964195501909927,
+          "candidate32_over_ducc32": 4.414631601089479,
+          "rust64_over_ducc64": 1.2783983416078617,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 4,
+          "ms": {
+            "rust32": 9.097670666666666,
+            "parent32": 9.402203166666666,
+            "rust64": 2.7654217225,
+            "ducc32": 2.052687125,
+            "ducc64": 2.3703450000000004
+          },
+          "candidate32_over_parent32": 0.9676105169605727,
+          "candidate32_over_ducc32": 4.432078593890273,
+          "rust64_over_ducc64": 1.166674776245652,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 5,
+          "ms": {
+            "rust32": 9.140979166666666,
+            "parent32": 9.397928333333333,
+            "rust64": 2.7381686875,
+            "ducc32": 2.0506513076923074,
+            "ducc64": 2.14161
+          },
+          "candidate32_over_parent32": 0.972658956575004,
+          "candidate32_over_ducc32": 4.457597999414845,
+          "rust64_over_ducc64": 1.278556173859853,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 6,
+          "ms": {
+            "rust32": 9.090702333333333,
+            "parent32": 9.346509333333334,
+            "rust64": 2.7206765555,
+            "ducc32": 2.0598077083333335,
+            "ducc64": 2.14942
+          },
+          "candidate32_over_parent32": 0.9726307447115371,
+          "candidate32_over_ducc32": 4.413374266226509,
+          "rust64_over_ducc64": 1.2657724202342957,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 7,
+          "ms": {
+            "rust32": 9.045249666666667,
+            "parent32": 9.426357,
+            "rust64": 2.6963426875,
+            "ducc32": 2.0583235,
+            "ducc64": 2.1497650000000004
+          },
+          "candidate32_over_parent32": 0.9595700297226879,
+          "candidate32_over_ducc32": 4.394474273196932,
+          "rust64_over_ducc64": 1.2542499703455958,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 8,
+          "ms": {
+            "rust32": 9.102067166666668,
+            "parent32": 9.440387000000001,
+            "rust64": 2.704590875,
+            "ducc32": 2.04912375,
+            "ducc64": 2.166175
+          },
+          "candidate32_over_parent32": 0.9641625037900106,
+          "candidate32_over_ducc32": 4.441931419059814,
+          "rust64_over_ducc64": 1.248556037716251,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 9,
+          "ms": {
+            "rust32": 9.062876333333334,
+            "parent32": 9.356847166666666,
+            "rust64": 2.7798763335,
+            "ducc32": 2.050816409090909,
+            "ducc64": 2.143295
+          },
+          "candidate32_over_parent32": 0.9685822769040633,
+          "candidate32_over_ducc32": 4.419155363278349,
+          "rust64_over_ducc64": 1.297010599800774,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-analysis-q1",
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "threads": 1
+      },
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "f32_candidate_parent": {
+        "geomean_ratio": 0.9667747651290468,
+        "paired_log_t_95_ci": [
+          0.9604347416033174,
+          0.9731566404293587
+        ],
+        "pairs_faster": 15,
+        "all_parent_errors_zero_l2": true,
+        "paired_ratios": [
+          0.9714081040468389,
+          0.9639300555854398,
+          0.9619581276524748,
+          0.9709952520762063,
+          0.968750416547194,
+          0.9690936830556107,
+          0.980132141014379,
+          0.9663430485080915,
+          0.9392706568815122,
+          0.959559312353994,
+          0.9724615201872415,
+          0.9793851088522704,
+          0.9724471343560832,
+          0.9474361492015883,
+          0.9794020143221509
+        ]
+      },
+      "f64_candidate_parent": {
+        "geomean_ratio": 1.0002478364143548,
+        "paired_log_t_95_ci": [
+          0.9437139784467954,
+          1.060168395405413
+        ],
+        "status": "INCONCLUSIVE",
+        "all_outputs_bitwise_equal": true,
+        "paired_ratios": [
+          0.9490586293990062,
+          1.0580528382693477,
+          0.9409580782063027,
+          1.0011626346832798,
+          1.0003042046195403,
+          0.9999131112655102,
+          0.7357928746860342,
+          0.9983080871402564,
+          1.0471600431957577,
+          1.0192609176399743,
+          1.2209090525355875,
+          0.9958559556846984,
+          0.9911614305848674,
+          1.0297115108795356,
+          1.0904010073092658
+        ]
+      },
+      "ducc_ratios": {
+        "rust_f32_over_ducc_f32": {
+          "geomean_ratio": 3.779315405989583,
+          "paired_log_t_95_ci": [
+            3.7543467483170003,
+            3.8044501202114835
+          ],
+          "median_paired_ratio": 3.781970464544708,
+          "status": "GAP",
+          "median_ms": {
+            "rust32": 21.81619825,
+            "ducc32": 5.7695674
+          }
+        },
+        "rust_f64_over_ducc_f64": {
+          "geomean_ratio": 1.2784051412991297,
+          "paired_log_t_95_ci": [
+            1.2516286220167558,
+            1.3057544998185322
+          ],
+          "median_paired_ratio": 1.2596498832302585,
+          "status": "GAP",
+          "median_ms": {
+            "rust64": 7.492128875,
+            "ducc64": 5.92373
+          }
+        }
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "ms": {
+            "rust32": 21.8471045,
+            "parent32": 22.490140250000003,
+            "rust64": 7.437623374999999,
+            "ducc32": 5.8526225,
+            "ducc64": 5.886005000000001
+          },
+          "candidate32_over_parent32": 0.9714081040468389,
+          "candidate32_over_ducc32": 3.732874365295216,
+          "rust64_over_ducc64": 1.263611460574702,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 10,
+          "ms": {
+            "rust32": 21.7531115,
+            "parent32": 22.567105750000003,
+            "rust64": 7.526956,
+            "ducc32": 5.740012500000001,
+            "ducc64": 5.975435
+          },
+          "candidate32_over_parent32": 0.9639300555854398,
+          "candidate32_over_ducc32": 3.7897324265408825,
+          "rust64_over_ducc64": 1.2596498832302585,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 11,
+          "ms": {
+            "rust32": 21.771083,
+            "parent32": 22.6320485,
+            "rust64": 7.5018787499999995,
+            "ducc32": 5.848804125,
+            "ducc64": 5.9944
+          },
+          "candidate32_over_parent32": 0.9619581276524748,
+          "candidate32_over_ducc32": 3.722313576367203,
+          "rust64_over_ducc64": 1.2514811740958227,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 12,
+          "ms": {
+            "rust32": 21.81619825,
+            "parent32": 22.467873249999997,
+            "rust64": 7.302753375,
+            "ducc32": 5.6802634,
+            "ducc64": 5.881625
+          },
+          "candidate32_over_parent32": 0.9709952520762063,
+          "candidate32_over_ducc32": 3.8407018678042286,
+          "rust64_over_ducc64": 1.2416217244383994,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 13,
+          "ms": {
+            "rust32": 21.748628250000003,
+            "parent32": 22.45018725,
+            "rust64": 8.017868,
+            "ducc32": 5.8128291,
+            "ducc64": 5.972245
+          },
+          "candidate32_over_parent32": 0.968750416547194,
+          "candidate32_over_ducc32": 3.74148764325447,
+          "rust64_over_ducc64": 1.3425216145687258,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 14,
+          "ms": {
+            "rust32": 21.801233,
+            "parent32": 22.4965175,
+            "rust64": 7.771791374999999,
+            "ducc32": 5.805381000000001,
+            "ducc64": 5.88945
+          },
+          "candidate32_over_parent32": 0.9690936830556107,
+          "candidate32_over_ducc32": 3.755349218251136,
+          "rust64_over_ducc64": 1.3196124213636247,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 15,
+          "ms": {
+            "rust32": 22.0654875,
+            "parent32": 22.512768,
+            "rust64": 7.63883125,
+            "ducc32": 5.7447083,
+            "ducc64": 5.92373
+          },
+          "candidate32_over_parent32": 0.980132141014379,
+          "candidate32_over_ducc32": 3.841010952636185,
+          "rust64_over_ducc64": 1.2895306251297747,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 2,
+          "ms": {
+            "ducc64": 5.925515000000001,
+            "ducc32": 5.847817125000001,
+            "rust64": 7.381988166999999,
+            "parent32": 22.82553725,
+            "rust32": 22.05729925
+          },
+          "candidate32_over_parent32": 0.9663430485080915,
+          "candidate32_over_ducc32": 3.771885949665363,
+          "rust64_over_ducc64": 1.2457968914094384,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 3,
+          "ms": {
+            "rust64": 7.6090943335,
+            "ducc64": 5.9376999999999995,
+            "rust32": 21.69218625,
+            "parent32": 23.094713,
+            "ducc32": 5.8671275000000005
+          },
+          "candidate32_over_parent32": 0.9392706568815122,
+          "candidate32_over_ducc32": 3.6972413246516282,
+          "rust64_over_ducc64": 1.2814885112922514,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 4,
+          "ms": {
+            "rust32": 21.769738500000003,
+            "parent32": 22.687225500000004,
+            "rust64": 7.3869074999999995,
+            "ducc32": 5.745799399999999,
+            "ducc64": 5.869725
+          },
+          "candidate32_over_parent32": 0.959559312353994,
+          "candidate32_over_ducc32": 3.788809351750081,
+          "rust64_over_ducc64": 1.2584759081558334,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 5,
+          "ms": {
+            "rust32": 21.93879,
+            "parent32": 22.56005975,
+            "rust64": 7.388317625,
+            "ducc32": 5.7478031000000005,
+            "ducc64": 5.894825
+          },
+          "candidate32_over_parent32": 0.9724615201872415,
+          "candidate32_over_ducc32": 3.8169000604770194,
+          "rust64_over_ducc64": 1.253356566988842,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 6,
+          "ms": {
+            "rust32": 22.06696,
+            "parent32": 22.53144325,
+            "rust64": 7.297899125,
+            "ducc32": 5.7435741,
+            "ducc64": 5.927245
+          },
+          "candidate32_over_parent32": 0.9793851088522704,
+          "candidate32_over_ducc32": 3.842025821517651,
+          "rust64_over_ducc64": 1.2312464095882656,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 7,
+          "ms": {
+            "rust32": 21.7499505,
+            "parent32": 22.3662035,
+            "rust64": 7.492128875,
+            "ducc32": 5.782920600000001,
+            "ducc64": 5.9033999999999995
+          },
+          "candidate32_over_parent32": 0.9724471343560832,
+          "candidate32_over_ducc32": 3.7610667696181057,
+          "rust64_over_ducc64": 1.2691209938340617,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 8,
+          "ms": {
+            "rust32": 21.8203335,
+            "parent32": 23.03092775,
+            "rust64": 7.3921641665,
+            "ducc32": 5.7695674,
+            "ducc64": 5.893190000000001
+          },
+          "candidate32_over_parent32": 0.9474361492015883,
+          "candidate32_over_ducc32": 3.781970464544708,
+          "rust64_over_ducc64": 1.2543570063921237,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 9,
+          "ms": {
+            "rust32": 21.96721125,
+            "parent32": 22.42920775,
+            "rust64": 8.4891855,
+            "ducc32": 5.7654455,
+            "ducc64": 5.946555
+          },
+          "candidate32_over_parent32": 0.9794020143221509,
+          "candidate32_over_ducc32": 3.810149840112095,
+          "rust64_over_ducc64": 1.427580422614438,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-M180-even-s0-analysis-q8",
+      "geometry": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "threads": 8
+      },
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "f32_candidate_parent": {
+        "geomean_ratio": 0.9692396381117919,
+        "paired_log_t_95_ci": [
+          0.9603030955676155,
+          0.97825934376667
+        ],
+        "pairs_faster": 15,
+        "all_parent_errors_zero_l2": true,
+        "paired_ratios": [
+          0.9630413982186935,
+          0.9640928802718634,
+          0.9655808975972212,
+          0.9859063750357214,
+          0.9610108153759699,
+          0.9627751331328311,
+          0.9297596180955212,
+          0.9751184181955361,
+          0.99096586074445,
+          0.9760307476300323,
+          0.9956431828215802,
+          0.9541588757179028,
+          0.9638351707141755,
+          0.9789143630219237,
+          0.9736526900235231
+        ]
+      },
+      "f64_candidate_parent": {
+        "geomean_ratio": 1.011025296433168,
+        "paired_log_t_95_ci": [
+          0.987208301693501,
+          1.0354168905126668
+        ],
+        "status": "INCONCLUSIVE",
+        "all_outputs_bitwise_equal": true,
+        "paired_ratios": [
+          1.0069485016016437,
+          1.0136421642879447,
+          1.008759269250871,
+          0.967817512397468,
+          1.001708019158402,
+          1.0044591087628894,
+          0.9932723082423942,
+          1.0251252338380337,
+          0.9934771485142919,
+          0.9932208688546661,
+          0.9898097941543753,
+          1.1726774052513063,
+          0.9960595531881666,
+          1.0021008751036637,
+          1.009968794781451
+        ]
+      },
+      "ducc_ratios": {
+        "rust_f32_over_ducc_f32": {
+          "geomean_ratio": 3.373351865123627,
+          "paired_log_t_95_ci": [
+            3.345542779414924,
+            3.401392107717458
+          ],
+          "median_paired_ratio": 3.37937661303231,
+          "status": "GAP",
+          "median_ms": {
+            "rust32": 3.0344365,
+            "ducc32": 0.8992655555555555
+          }
+        },
+        "rust_f64_over_ducc_f64": {
+          "geomean_ratio": 1.2254686351232662,
+          "paired_log_t_95_ci": [
+            1.1940633468707578,
+            1.2576999198631533
+          ],
+          "median_paired_ratio": 1.2089315280682489,
+          "status": "GAP",
+          "median_ms": {
+            "rust64": 1.135581421,
+            "ducc64": 0.9346909999999999
+          }
+        }
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "ms": {
+            "rust32": 2.9831973888888887,
+            "parent32": 3.0976834374999997,
+            "rust64": 1.218812737,
+            "ducc32": 0.9173360862068967,
+            "ducc64": 0.95001
+          },
+          "candidate32_over_parent32": 0.9630413982186935,
+          "candidate32_over_ducc32": 3.2520222781425128,
+          "rust64_over_ducc64": 1.282947271081357,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 10,
+          "ms": {
+            "rust32": 3.031063125,
+            "parent32": 3.1439534374999996,
+            "rust64": 1.1243061669999999,
+            "ducc32": 0.8992655555555555,
+            "ducc64": 0.9142155000000001
+          },
+          "candidate32_over_parent32": 0.9640928802718634,
+          "candidate32_over_ducc32": 3.370598491485027,
+          "rust64_over_ducc64": 1.229804315284525,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 11,
+          "ms": {
+            "rust32": 3.0241905,
+            "parent32": 3.1319908124999998,
+            "rust64": 1.1214555000000002,
+            "ducc32": 0.8939227678571429,
+            "ducc64": 0.9307544999999999
+          },
+          "candidate32_over_parent32": 0.9655808975972212,
+          "candidate32_over_ducc32": 3.383055683042289,
+          "rust64_over_ducc64": 1.2048886145594786,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 12,
+          "ms": {
+            "rust32": 3.054267888888889,
+            "parent32": 3.0979289375,
+            "rust64": 1.11726825,
+            "ducc32": 0.9000913928571429,
+            "ducc64": 0.977249
+          },
+          "candidate32_over_parent32": 0.9859063750357214,
+          "candidate32_over_ducc32": 3.3932864074988927,
+          "rust64_over_ducc64": 1.1432789903085088,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 13,
+          "ms": {
+            "rust32": 3.02091075,
+            "parent32": 3.1434721666666667,
+            "rust64": 1.202762158,
+            "ducc32": 0.9137757407407407,
+            "ducc64": 0.9243295
+          },
+          "candidate32_over_parent32": 0.9610108153759699,
+          "candidate32_over_ducc32": 3.3059651458366983,
+          "rust64_over_ducc64": 1.3012266275175681,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 14,
+          "ms": {
+            "rust32": 3.1353423888888887,
+            "parent32": 3.2565676875,
+            "rust64": 1.306588947,
+            "ducc32": 0.9321118541666666,
+            "ducc64": 0.9414195
+          },
+          "candidate32_over_parent32": 0.9627751331328311,
+          "candidate32_over_ducc32": 3.3636975807929943,
+          "rust64_over_ducc64": 1.3878923763529438,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 15,
+          "ms": {
+            "rust32": 3.0432411249999998,
+            "parent32": 3.2731483125,
+            "rust64": 1.135581421,
+            "ducc32": 0.9005332857142856,
+            "ducc64": 0.9393265
+          },
+          "candidate32_over_parent32": 0.9297596180955212,
+          "candidate32_over_ducc32": 3.37937661303231,
+          "rust64_over_ducc64": 1.2089315280682489,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 2,
+          "ms": {
+            "ducc64": 0.992981,
+            "ducc32": 0.89613925,
+            "rust64": 1.1694570524999999,
+            "parent32": 3.1532184375,
+            "rust32": 3.074761375
+          },
+          "candidate32_over_parent32": 0.9751184181955361,
+          "candidate32_over_ducc32": 3.431120079831343,
+          "rust64_over_ducc64": 1.1777234937022962,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 3,
+          "ms": {
+            "rust64": 1.1507078945,
+            "ducc64": 0.9683455,
+            "rust32": 3.0671519375,
+            "parent32": 3.0951136249999998,
+            "ducc32": 0.8916439821428571
+          },
+          "candidate32_over_parent32": 0.99096586074445,
+          "candidate32_over_ducc32": 3.439884078092267,
+          "rust64_over_ducc64": 1.188323686638705,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 4,
+          "ms": {
+            "rust32": 3.0193858888888894,
+            "parent32": 3.0935356250000003,
+            "rust64": 1.1092231845,
+            "ducc32": 0.8901481428571428,
+            "ducc64": 0.9231275
+          },
+          "candidate32_over_parent32": 0.9760307476300323,
+          "candidate32_over_ducc32": 3.3920038064646745,
+          "rust64_over_ducc64": 1.2015926126131007,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 5,
+          "ms": {
+            "rust32": 3.158414214285714,
+            "parent32": 3.1722350625,
+            "rust64": 1.122292361,
+            "ducc32": 0.922147888888889,
+            "ducc64": 0.9391769999999999
+          },
+          "candidate32_over_parent32": 0.9956431828215802,
+          "candidate32_over_ducc32": 3.425062565714203,
+          "rust64_over_ducc64": 1.1949742817381601,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 6,
+          "ms": {
+            "rust32": 3.0223297857142857,
+            "parent32": 3.1675330625,
+            "rust64": 1.1367855525000001,
+            "ducc32": 0.8953220178571428,
+            "ducc64": 0.9335015
+          },
+          "candidate32_over_parent32": 0.9541588757179028,
+          "candidate32_over_ducc32": 3.375690227017881,
+          "rust64_over_ducc64": 1.2177651053586953,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 7,
+          "ms": {
+            "rust32": 3.008776,
+            "parent32": 3.1216706875,
+            "rust64": 1.1312103055,
+            "ducc32": 0.8980543392857143,
+            "ducc64": 0.9346909999999999
+          },
+          "candidate32_over_parent32": 0.9638351707141755,
+          "candidate32_over_ducc32": 3.350327333636727,
+          "rust64_over_ducc64": 1.2102505592757393,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 8,
+          "ms": {
+            "rust32": 3.0551445555555556,
+            "parent32": 3.1209518125,
+            "rust64": 1.1220683055,
+            "ducc32": 0.8943693392857143,
+            "ducc64": 0.930499
+          },
+          "candidate32_over_parent32": 0.9789143630219237,
+          "candidate32_over_ducc32": 3.4159763996332195,
+          "rust64_over_ducc64": 1.2058780347963836,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        },
+        {
+          "pair": 9,
+          "ms": {
+            "rust32": 3.0344365,
+            "parent32": 3.1165491875,
+            "rust64": 1.150764342,
+            "ducc32": 0.9119366250000001,
+            "ducc64": 0.9237275
+          },
+          "candidate32_over_parent32": 0.9736526900235231,
+          "candidate32_over_ducc32": 3.3274642303131534,
+          "rust64_over_ducc64": 1.2457833527744924,
+          "candidate_parent_rel_l2": 0.0,
+          "candidate_repeat_consistent": true,
+          "candidate_reset_consistent": true
+        }
+      ]
+    }
+  ],
+  "binary_sha256": {
+    "rust_f32_candidate": "bc561d97f988d71aae94d88269137ebc956a0313cd452a59442215f79e07f225",
+    "rust_f32_parent": "b211c60204163a1442f97ee99f52e49e2c8b4d27f571aaf83a896c8aec2ece25",
+    "rust_f64_candidate": "e349304a59f59aa057d006e3c1eafa635b63dde59758c92daaa379de12ff7439",
+    "ducc_f32": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+    "ducc_f64_scalar": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+  },
+  "ducc_build_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3"
+}

@@ -1,0 +1,9 @@
+{
+  "method": "release-mode test-only direct normalizer microbenchmark; 64 lanes; 30,000 calls per sample; one warm-up sample then eight timed samples; state mixes ordinary, tiny, large, and nonzero-exponent lanes",
+  "source_parent": "ecb66f10ecb11146fb1c1a49ef3fdfd5bd1c7505",
+  "candidate_patch_sha256": "aaffc4602e6d1fd218cad39ff335fab226e8f8344e547d6d5af8add63f70fe26",
+  "parent_median_us": 1068.09,
+  "candidate_median_us": 1043.713,
+  "candidate_over_parent": 0.9772,
+  "correctness": "test asserts identical return value, mantissas, exponents and lane values"
+}

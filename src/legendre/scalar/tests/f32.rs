@@ -190,6 +190,194 @@ impl pulp::WithSimd for NormalizeF32PairWithSimd<'_> {
     }
 }
 
+struct NormalizeF32AnalysisPairWithSimd<'a> {
+    previous: &'a mut [f32],
+    current: &'a mut [f32],
+    exponents: &'a mut [i64],
+}
+
+impl pulp::WithSimd for NormalizeF32AnalysisPairWithSimd<'_> {
+    type Output = Result<bool, ShtError>;
+
+    #[inline(always)]
+    fn with_simd<S: pulp::Simd>(self, simd: S) -> Self::Output {
+        super::super::normalize_pair_lanes_with_state_f32_simd_analysis(
+            simd,
+            self.previous,
+            self.current,
+            self.exponents,
+        )
+    }
+}
+
+struct F32NormalizerBatch<'a, const SHORT_CIRCUIT_RESULT: bool> {
+    initial_previous: &'a [f32],
+    initial_current: &'a [f32],
+    initial_exponents: &'a [i64],
+    previous: &'a mut [f32],
+    current: &'a mut [f32],
+    exponents: &'a mut [i64],
+    repetitions: usize,
+}
+
+impl<const SHORT_CIRCUIT_RESULT: bool> pulp::WithSimd
+    for F32NormalizerBatch<'_, SHORT_CIRCUIT_RESULT>
+{
+    type Output = f32;
+
+    #[inline(always)]
+    fn with_simd<S: pulp::Simd>(self, simd: S) -> Self::Output {
+        let mut checksum = 0.0;
+        for _ in 0..self.repetitions {
+            self.previous.copy_from_slice(self.initial_previous);
+            self.current.copy_from_slice(self.initial_current);
+            self.exponents.copy_from_slice(self.initial_exponents);
+            let normal_range = if SHORT_CIRCUIT_RESULT {
+                super::super::normalize_pair_lanes_with_state_f32_simd_analysis(
+                    simd,
+                    self.previous,
+                    self.current,
+                    self.exponents,
+                )
+            } else {
+                super::super::normalize_pair_lanes_with_state_f32_simd(
+                    simd,
+                    self.previous,
+                    self.current,
+                    self.exponents,
+                )
+            }
+            .unwrap();
+            checksum += f32::from(normal_range);
+        }
+        std::hint::black_box((self.previous, self.current, self.exponents, checksum));
+        checksum
+    }
+}
+
+#[test]
+#[ignore = "manual B1 f32 normalizer microbenchmark"]
+fn benchmark_f32_analysis_normalizer_result_short_circuit() {
+    use std::time::Instant;
+
+    const LANES: usize = 64;
+    const REPETITIONS: usize = 30_000;
+    let mut initial_previous = (0..LANES)
+        .map(|lane| 0.25 + lane as f32 * 0.001)
+        .collect::<Vec<_>>();
+    let mut initial_current = (0..LANES)
+        .map(|lane| -0.5 - lane as f32 * 0.001)
+        .collect::<Vec<_>>();
+    let mut initial_exponents = vec![0_i64; LANES];
+    initial_previous[0] = SMALL * 0.5;
+    initial_current[0] = -SMALL * 0.25;
+    initial_previous[24] = BIG * 2.0;
+    initial_current[24] = -BIG * 1.5;
+    initial_previous[48] = SMALL * 0.5;
+    initial_exponents[48] = -80;
+
+    let mut parent_previous = vec![0.0; LANES];
+    let mut parent_current = vec![0.0; LANES];
+    let mut parent_exponents = vec![0; LANES];
+    let mut candidate_previous = vec![0.0; LANES];
+    let mut candidate_current = vec![0.0; LANES];
+    let mut candidate_exponents = vec![0; LANES];
+    let arch = Arch::new();
+    let mut parent_us = Vec::new();
+    let mut candidate_us = Vec::new();
+
+    for sample in 0_usize..9 {
+        let parent_started = Instant::now();
+        let parent_checksum = arch.dispatch(F32NormalizerBatch::<false> {
+            initial_previous: &initial_previous,
+            initial_current: &initial_current,
+            initial_exponents: &initial_exponents,
+            previous: &mut parent_previous,
+            current: &mut parent_current,
+            exponents: &mut parent_exponents,
+            repetitions: REPETITIONS,
+        });
+        let elapsed = parent_started.elapsed().as_secs_f64() * 1.0e6;
+        if sample != 0 {
+            parent_us.push(elapsed);
+        }
+
+        let candidate_started = Instant::now();
+        let candidate_checksum = arch.dispatch(F32NormalizerBatch::<true> {
+            initial_previous: &initial_previous,
+            initial_current: &initial_current,
+            initial_exponents: &initial_exponents,
+            previous: &mut candidate_previous,
+            current: &mut candidate_current,
+            exponents: &mut candidate_exponents,
+            repetitions: REPETITIONS,
+        });
+        let elapsed = candidate_started.elapsed().as_secs_f64() * 1.0e6;
+        assert_eq!(parent_checksum, candidate_checksum);
+        assert_eq!(parent_previous, candidate_previous);
+        assert_eq!(parent_current, candidate_current);
+        assert_eq!(parent_exponents, candidate_exponents);
+        if sample != 0 {
+            candidate_us.push(elapsed);
+        }
+        if sample.is_multiple_of(2) {
+            std::hint::black_box((&parent_us, &candidate_us));
+        }
+    }
+    parent_us.sort_by(f64::total_cmp);
+    candidate_us.sort_by(f64::total_cmp);
+    eprintln!(
+        "B1_F32_NORMALIZER lanes={LANES} repetitions={REPETITIONS} parent_median_us={:.3} candidate_median_us={:.3} ratio={:.4}",
+        parent_us[4],
+        candidate_us[4],
+        candidate_us[4] / parent_us[4]
+    );
+}
+
+#[test]
+fn f32_analysis_normalizer_short_circuit_preserves_all_lane_updates() {
+    let initial_previous = {
+        let mut values = vec![0.375_f32; 67];
+        values[0] = SMALL * 0.5;
+        values[8] = BIG * 2.0;
+        values[64] = f32::from_bits(1);
+        values
+    };
+    let initial_current = {
+        let mut values = vec![-0.625_f32; 67];
+        values[0] = -SMALL * 0.25;
+        values[8] = -BIG * 1.5;
+        values[64] = -f32::from_bits(3);
+        values
+    };
+    let mut reference_previous = initial_previous.clone();
+    let mut reference_current = initial_current.clone();
+    let mut reference_exponents = vec![0_i64; initial_previous.len()];
+    let reference_range = Arch::new()
+        .dispatch(NormalizeF32PairWithSimd {
+            previous: &mut reference_previous,
+            current: &mut reference_current,
+            exponents: &mut reference_exponents,
+        })
+        .unwrap();
+
+    let mut candidate_previous = initial_previous;
+    let mut candidate_current = initial_current;
+    let mut candidate_exponents = vec![0_i64; candidate_previous.len()];
+    let candidate_range = Arch::new()
+        .dispatch(NormalizeF32AnalysisPairWithSimd {
+            previous: &mut candidate_previous,
+            current: &mut candidate_current,
+            exponents: &mut candidate_exponents,
+        })
+        .unwrap();
+
+    assert_eq!(reference_range, candidate_range);
+    assert_eq!(reference_previous, candidate_previous);
+    assert_eq!(reference_current, candidate_current);
+    assert_eq!(reference_exponents, candidate_exponents);
+}
+
 #[test]
 fn f32_simd_pair_normalization_matches_scalar_epochs_and_bits() {
     let initial_previous = [

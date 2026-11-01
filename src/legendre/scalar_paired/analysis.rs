@@ -73,6 +73,16 @@ pub(crate) trait FusedAnalysisPrecision: PairedScalarRecurrencePrecision {
     ) -> (Complex<Self>, Complex<Self>);
 
     fn invalidate_scaled_state(state: &mut Self::ScaledState);
+
+    #[inline(always)]
+    fn normalize_analysis_pair_state<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        Self::normalize_pair_state_simd(simd, previous, current, exponents)
+    }
 }
 
 pub(crate) struct F32ScaledAnalysisState {
@@ -380,6 +390,18 @@ fn accumulate_scaled_f32_impl<S: Simd, const OPPOSITE_PREWEIGHTED: bool, const A
 impl FusedAnalysisPrecision for f32 {
     type Vector<S: Simd> = S::f32s;
     type ScaledState = F32ScaledAnalysisState;
+
+    #[inline(always)]
+    fn normalize_analysis_pair_state<S: Simd>(
+        simd: S,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar::normalize_pair_lanes_with_state_f32_simd_analysis(
+            simd, previous, current, exponents,
+        )
+    }
 
     fn prepare_scaled_state(
         same_real: &[Self],
@@ -1263,7 +1285,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
         let mut next_slice: &mut [T] = next;
         let exponents_slice: &mut [i64] = exponents;
         let mut normal_range =
-            T::normalize_pair_state_simd(simd, previous_slice, current_slice, exponents_slice)?;
+            T::normalize_analysis_pair_state(simd, previous_slice, current_slice, exponents_slice)?;
         let mut scaled_state =
             T::prepare_scaled_state(same_real, same_imag, opposite_real, opposite_imag);
         let (same_re_vectors, same_re_tail) = T::as_simd::<S>(same_real);
@@ -1424,7 +1446,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
                     {
                         return Ok(false);
                     }
-                    normal_range = T::normalize_pair_state_simd(
+                    normal_range = T::normalize_analysis_pair_state(
                         simd,
                         previous_slice,
                         current_slice,

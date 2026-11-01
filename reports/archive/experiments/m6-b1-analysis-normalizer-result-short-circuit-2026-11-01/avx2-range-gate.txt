@@ -1,0 +1,55 @@
+# Actual objdump excerpts from x86-64-v3 release workers, source parent ecb66f10
+# and candidate.patch. Addresses are from the respective linked binaries.
+#
+# Candidate V3 vectorizer symbol size: 0x5776 (22,390 bytes).
+# Parent V3 vectorizer symbol size:    0x58de (22,750 bytes).
+# Candidate code begins with r11b = 1 (the block-wide normal_range flag).
+#
+# Candidate: after normalized vectors are stored, skip epoch and in-range
+# classification when the persistent flag is already false.
+  23a390: vmovups %ymm2,0x0(%r13)
+  23a396: mov    0xa0(%rsp),%rcx
+  23a39e: vmovups %ymm13,(%rcx)
+  23a3a2: testb  $0x1,0x48(%rsp)
+  23a3a7: je     239e80
+  23a3ad: mov    0x50(%rsp),%rcx
+  23a3b2: lea    0x0(,%rcx,8),%r9
+  23a3ba: cmp    %r14,%r9
+  23a3d0: cmpq   $0x0,(%rbx,%rbp,8)
+  23a3d7: cmpq   $0x0,0x8(%rbx,%rbp,8)
+  23a3df: cmpq   $0x0,0x10(%rbx,%rbp,8)
+  23a3e7: cmpq   $0x0,0x18(%rbx,%rbp,8)
+  23a3ef: cmpq   $0x0,0x20(%rbx,%rbp,8)
+  23a3f7: cmpq   $0x0,0x28(%rbx,%rbp,8)
+  23a3ff: cmpq   $0x0,0x30(%rbx,%rbp,8)
+  23a407: cmpq   $0x0,0x38(%rbx,%rbp,8)
+  23a427: vcmple_oqps %ymm6,%ymm0,%ymm2
+  23a42c: vcmpge_oqps %ymm8,%ymm0,%ymm0
+  23a432: vorps  %ymm1,%ymm0,%ymm0
+  23a436: vandps %ymm2,%ymm0,%ymm0
+  23a43a: vptest %ymm5,%ymm0
+  23a43f: setb   %r11b
+
+# Parent: after storing normalized vectors, it always scans the lane epochs
+# and computes the SIMD range reduction for each group.
+  23a3f0: mov    0x90(%rsp),%rcx
+  23a3f8: vmovups %ymm2,(%rcx)
+  23a3fc: mov    0x80(%rsp),%rcx
+  23a404: vmovups %ymm13,(%rcx)
+  23a410: cmp    %r14,%rsi
+  23a419: cmpq   $0x0,(%rbx,%r13,8)
+  23a424: cmpq   $0x0,0x8(%rbx,%r13,8)
+  23a436: cmpq   $0x0,0x10(%rbx,%r13,8)
+  23a43e: cmpq   $0x0,0x18(%rbx,%r13,8)
+  23a446: cmpq   $0x0,0x20(%rbx,%r13,8)
+  23a44e: cmpq   $0x0,0x28(%rbx,%r13,8)
+  23a456: cmpq   $0x0,0x30(%rbx,%r13,8)
+  23a45e: cmpq   $0x0,0x38(%rbx,%r13,8)
+  23a478: vcmple_oqps %ymm6,%ymm0,%ymm2
+  23a47d: vcmpge_oqps %ymm8,%ymm0,%ymm0
+  23a483: vorps  %ymm1,%ymm0,%ymm0
+  23a487: vandps %ymm2,%ymm0,%ymm0
+  23a48b: vptest %ymm5,%ymm0
+
+# perf stat was attempted; the host denies hardware events with
+# perf_event_paranoid=4. No cycle count is inferred from this assembly.
