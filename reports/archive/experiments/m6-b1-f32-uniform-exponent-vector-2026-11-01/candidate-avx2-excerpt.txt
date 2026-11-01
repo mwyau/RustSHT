@@ -1,0 +1,56 @@
+# Exact disassembly excerpt from candidate worker 6fcb31167af51511d63593e5f8ddc871c6ea1a52655cd930ef549333bb27cd06
+# V3 AVX2/FMA symbol; addresses are relative to that binary.
+# First block: vector exponent preparation and factor-vector store.
+# Second block: eight-lane scaled accumulation using vmulps/vfmadd231ps.
+
+  2450b9:	c4 c1 7e 6f 54 cd 00 	vmovdqu 0x0(%r13,%rcx,8),%ymm2
+  2450c0:	c5 ed fb d8          	vpsubq %ymm0,%ymm2,%ymm3
+  2450c4:	c4 e2 7d 37 d2       	vpcmpgtq %ymm2,%ymm0,%ymm2
+  2450c9:	c5 ed ef d3          	vpxor  %ymm3,%ymm2,%ymm2
+  2450cd:	c4 e2 35 37 e3       	vpcmpgtq %ymm3,%ymm9,%ymm4
+  2450d2:	c4 e2 7d 59 2d 35 29 	vpbroadcastq -0x21d6cb(%rip),%ymm5        # 27a10 <anon.4c1b57d693123bafef41803a13652015.95.llvm.18138722029790829797+0x670>
+  2450d9:	de ff
+  2450db:	c5 dd ef e5          	vpxor  %ymm5,%ymm4,%ymm4
+  2450df:	c4 e3 65 4b d4 20    	vblendvpd %ymm2,%ymm4,%ymm3,%ymm2
+  2450e5:	c5 ed d4 d9          	vpaddq %ymm1,%ymm2,%ymm3
+  2450e9:	c4 e2 6d 37 d3       	vpcmpgtq %ymm3,%ymm2,%ymm2
+  2450ee:	c4 e2 7d 19 25 01 28 	vbroadcastsd -0x21d7ff(%rip),%ymm4        # 278f8 <anon.4c1b57d693123bafef41803a13652015.95.llvm.18138722029790829797+0x558>
+  2450f5:	de ff
+  2450f7:	c4 e3 65 4b d4 20    	vblendvpd %ymm2,%ymm4,%ymm3,%ymm2
+  2450fd:	c4 e2 7d 59 1d ba 28 	vpbroadcastq -0x21d746(%rip),%ymm3        # 279c0 <anon.4c1b57d693123bafef41803a13652015.95.llvm.18138722029790829797+0x620>
+  245104:	de ff
+  245106:	c4 e2 6d 37 db       	vpcmpgtq %ymm3,%ymm2,%ymm3
+  24510b:	c4 e3 7d 39 dc 01    	vextracti128 $0x1,%ymm3,%xmm4
+  245111:	c5 e1 6b dc          	vpackssdw %xmm4,%xmm3,%xmm3
+  245115:	c4 c2 6d 29 e1       	vpcmpeqq %ymm9,%ymm2,%ymm4
+  24511a:	c4 e2 7d 59 2d a5 28 	vpbroadcastq -0x21d75b(%rip),%ymm5        # 279c8 <anon.4c1b57d693123bafef41803a13652015.95.llvm.18138722029790829797+0x628>
+  245121:	de ff
+  245123:	c4 e2 6d 37 ed       	vpcmpgtq %ymm5,%ymm2,%ymm5
+  245128:	c4 e3 7d 39 ee 01    	vextracti128 $0x1,%ymm5,%xmm6
+  24512e:	c5 d1 6b ee          	vpackssdw %xmm6,%xmm5,%xmm5
+  245132:	c4 e2 45 36 d2       	vpermd %ymm2,%ymm7,%ymm2
+  245137:	c5 e9 72 f2 17       	vpslld $0x17,%xmm2,%xmm2
+  24513c:	c4 e2 79 58 35 ab f9 	vpbroadcastd -0x220655(%rip),%xmm6        # 24af0 <__abi_tag+0x247f4>
+  245143:	dd ff
+  245145:	c5 e9 fe d6          	vpaddd %xmm6,%xmm2,%xmm2
+  245149:	c4 e3 7d 39 e6 01    	vextracti128 $0x1,%ymm4,%xmm6
+  24514f:	c4 c3 69 4a d0 50    	vblendvps %xmm5,%xmm8,%xmm2,%xmm2
+  245155:	c5 d9 6b e6          	vpackssdw %xmm6,%xmm4,%xmm4
+  245159:	c4 c3 69 4a d2 40    	vblendvps %xmm4,%xmm10,%xmm2,%xmm2
+  24515f:	c5 e1 db d2          	vpand  %xmm2,%xmm3,%xmm2
+  245163:	c5 fa 7f 94 8c e0 02 	vmovdqu %xmm2,0x2e0(%rsp,%rcx,4)
+
+  243b34:	c4 c1 7c 10 24 10    	vmovups (%r8,%rdx,1),%ymm4
+  243b3a:	c4 c1 7c 10 2c 12    	vmovups (%r10,%rdx,1),%ymm5
+  243b40:	c5 dc 59 f5          	vmulps %ymm5,%ymm4,%ymm6
+  243b44:	c4 e2 4d b8 5c 15 00 	vfmadd231ps 0x0(%rbp,%rdx,1),%ymm6,%ymm3
+  243b4b:	4c 8b 4c 24 38       	mov    0x38(%rsp),%r9
+  243b50:	c4 c2 4d b8 14 11    	vfmadd231ps (%r9,%rdx,1),%ymm6,%ymm2
+  243b56:	c4 c1 5c 59 24 14    	vmulps (%r12,%rdx,1),%ymm4,%ymm4
+  243b5c:	48 ff c7             	inc    %rdi
+  243b5f:	c5 d4 59 e4          	vmulps %ymm4,%ymm5,%ymm4
+  243b63:	4c 8b 4c 24 30       	mov    0x30(%rsp),%r9
+  243b68:	c4 c2 5d b8 0c 11    	vfmadd231ps (%r9,%rdx,1),%ymm4,%ymm1
+  243b6e:	4c 8b 4c 24 50       	mov    0x50(%rsp),%r9
+  243b73:	c4 c2 5d b8 04 11    	vfmadd231ps (%r9,%rdx,1),%ymm4,%ymm0
+  243b79:	48 83 c2 20          	add    $0x20,%rdx

@@ -1,5 +1,76 @@
 use super::*;
 
+struct B1F32FactorFillCheck<'a> {
+    exponents: &'a [i64],
+    common_exponent: i64,
+    shift: i64,
+}
+
+impl WithSimd for B1F32FactorFillCheck<'_> {
+    type Output = (Vec<f32>, Vec<f32>);
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let mut actual = vec![f32::NAN; self.exponents.len()];
+        fill_b1_f32_analysis_factors::<S>(
+            simd,
+            self.exponents,
+            self.common_exponent,
+            self.shift,
+            &mut actual,
+        );
+        let expected = self
+            .exponents
+            .iter()
+            .map(|&exponent| {
+                let factor_exponent = exponent
+                    .saturating_sub(self.common_exponent)
+                    .saturating_add(self.shift);
+                if factor_exponent < -86 {
+                    0.0
+                } else {
+                    numeric::scale_binary_f32(1.0, factor_exponent)
+                }
+            })
+            .collect();
+        (actual, expected)
+    }
+}
+
+#[test]
+fn b1_f32_uniform_factor_vector_fill_matches_per_lane_scaling() {
+    let arch = Arch::new();
+    let width = arch.dispatch(F32LaneCount);
+    for length in [1, width - 1, width, width + 1, 63, 64, 67] {
+        let mut exponents = Vec::with_capacity(length);
+        for lane in 0..length {
+            let vector = lane / width;
+            let value = match vector % 4 {
+                0 => 12 + vector as i64,
+                1 => 12 + vector as i64 + (lane % width) as i64,
+                2 => -90 + (lane % width) as i64,
+                _ => 12 + vector as i64,
+            };
+            exponents.push(value);
+        }
+        let (actual, expected) = arch.dispatch(B1F32FactorFillCheck {
+            exponents: &exponents,
+            common_exponent: 10,
+            shift: 78,
+        });
+        assert_eq!(
+            actual
+                .iter()
+                .map(|value| value.to_bits())
+                .collect::<Vec<_>>(),
+            expected
+                .iter()
+                .map(|value| value.to_bits())
+                .collect::<Vec<_>>(),
+            "length {length}",
+        );
+    }
+}
+
 #[test]
 fn insignificant_prefix_uses_ducc_threshold_at_all_latitude_counts() {
     assert_eq!(ANALYSIS_FTOL, 2.0_f64.powi(-60));

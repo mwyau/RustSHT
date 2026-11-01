@@ -398,6 +398,60 @@ fn accumulate_scaled_f32_impl<S: Simd, const OPPOSITE_PREWEIGHTED: bool, const A
     )
 }
 
+#[inline(always)]
+fn fill_b1_f32_analysis_factors<S: Simd>(
+    simd: S,
+    exponents: &[i64],
+    common_exponent: i64,
+    shift: i64,
+    factors: &mut [f32],
+) {
+    debug_assert_eq!(exponents.len(), factors.len());
+    let width = S::F32_LANES;
+    let vector_count = factors.len() / width;
+    for vector_index in 0..vector_count {
+        let lane_start = vector_index * width;
+        let lane_end = lane_start + width;
+        let first_exponent = exponents[lane_start];
+        let factor_exponent = first_exponent
+            .saturating_sub(common_exponent)
+            .saturating_add(shift);
+        let factor = if factor_exponent < -86 {
+            0.0
+        } else {
+            numeric::scale_binary_f32(1.0, factor_exponent)
+        };
+        if exponents[lane_start..lane_end]
+            .iter()
+            .all(|&exponent| exponent == first_exponent)
+        {
+            simd.partial_store_f32s(&mut factors[lane_start..lane_end], simd.splat_f32s(factor));
+        } else {
+            factors[lane_start] = factor;
+            for lane in lane_start + 1..lane_end {
+                let factor_exponent = exponents[lane]
+                    .saturating_sub(common_exponent)
+                    .saturating_add(shift);
+                factors[lane] = if factor_exponent < -86 {
+                    0.0
+                } else {
+                    numeric::scale_binary_f32(1.0, factor_exponent)
+                };
+            }
+        }
+    }
+    for lane in vector_count * width..factors.len() {
+        let factor_exponent = exponents[lane]
+            .saturating_sub(common_exponent)
+            .saturating_add(shift);
+        factors[lane] = if factor_exponent < -86 {
+            0.0
+        } else {
+            numeric::scale_binary_f32(1.0, factor_exponent)
+        };
+    }
+}
+
 impl FusedAnalysisPrecision for f32 {
     type Vector<S: Simd> = S::f32s;
     type ScaledState = F32ScaledAnalysisState;
@@ -584,16 +638,13 @@ impl FusedAnalysisPrecision for f32 {
             };
             let shift_budget = 126 - *maximum_coefficient_exponent - 40 - lane_bits;
             *shift = i64::from(shift_budget.clamp(0, 78));
-            for lane in 0..basis.len() {
-                let factor_exponent = exponents[lane]
-                    .saturating_sub(*common_exponent)
-                    .saturating_add(*shift);
-                factors[lane] = if factor_exponent < -86 {
-                    0.0
-                } else {
-                    numeric::scale_binary_f32(1.0, factor_exponent)
-                };
-            }
+            fill_b1_f32_analysis_factors::<S>(
+                simd,
+                exponents,
+                *common_exponent,
+                *shift,
+                &mut factors[..basis.len()],
+            );
             hard_factors.fill(0.0);
             *hard_scalar_count = 0;
             *hard_vector_count = 0;

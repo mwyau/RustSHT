@@ -1,0 +1,49 @@
+{
+  "purpose": "direct fill helper microbenchmark",
+  "simd": "V3 AVX2/FMA, 8 f32 lanes",
+  "pinning": "CPU 0",
+  "iterations_per_sample": 20000,
+  "interleaved_samples": 9,
+  "fixture": "64 exponents; seven uniform 8-lane vectors and one mixed 8-lane vector",
+  "baseline_ns": [
+    427660,
+    425225,
+    429844,
+    436006,
+    427219,
+    429663,
+    441225,
+    433922,
+    432069
+  ],
+  "candidate_ns": [
+    320286,
+    324555,
+    358138,
+    321840,
+    530284,
+    333222,
+    321810,
+    321839,
+    325667
+  ],
+  "paired_ratios_candidate_over_parent": [
+    0.7489267174858533,
+    0.7632547474866247,
+    0.833181340207145,
+    0.7381549795186305,
+    1.2412462928849137,
+    0.7755426927615363,
+    0.7293557708652049,
+    0.7416978166582934,
+    0.7537384075228725
+  ],
+  "median_baseline_ns": 429844,
+  "median_candidate_ns": 324555,
+  "median_paired_ratio": 0.7537384075228725,
+  "geometric_paired_ratio": 0.8024674177751631,
+  "paired_log_ratio_95ci": [
+    0.70514210363313,
+    0.9132257927485398
+  ]
+}
