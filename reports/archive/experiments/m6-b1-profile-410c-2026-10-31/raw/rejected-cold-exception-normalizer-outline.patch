@@ -1,0 +1,146 @@
+diff --git a/src/legendre/scalar.rs b/src/legendre/scalar.rs
+index d59decd3..cf8cc9e0 100644
+--- a/src/legendre/scalar.rs
++++ b/src/legendre/scalar.rs
+@@ -1411,6 +1411,74 @@ fn normalize_pair_lanes_with_state_f32(
+     Ok(normal_range)
+ }
+ 
++#[cold]
++#[inline(never)]
++fn normalize_pair_lanes_with_state_f32_simd_exceptional<S: Simd>(
++    simd: S,
++    previous_vectors: &mut [S::f32s],
++    current_vectors: &mut [S::f32s],
++    previous_tail: &mut [f32],
++    current_tail: &mut [f32],
++    exponents: &mut [i64],
++    invalid_index: usize,
++) -> Result<bool, ShtError> {
++    const MAX_F32_LANES: usize = 64;
++    let mut previous_lanes = [0.0_f32; MAX_F32_LANES];
++    let mut current_lanes = [0.0_f32; MAX_F32_LANES];
++    simd.partial_store_f32s(
++        &mut previous_lanes[..S::F32_LANES],
++        previous_vectors[invalid_index],
++    );
++    simd.partial_store_f32s(
++        &mut current_lanes[..S::F32_LANES],
++        current_vectors[invalid_index],
++    );
++    let exponent_start = invalid_index * S::F32_LANES;
++    let mut normal_range = normalize_pair_lanes_with_state_f32(
++        &mut previous_lanes[..S::F32_LANES],
++        &mut current_lanes[..S::F32_LANES],
++        &mut exponents[exponent_start..exponent_start + S::F32_LANES],
++    )?;
++    previous_vectors[invalid_index] = simd.partial_load_f32s(&previous_lanes[..S::F32_LANES]);
++    current_vectors[invalid_index] = simd.partial_load_f32s(&current_lanes[..S::F32_LANES]);
++    for remaining in invalid_index + 1..previous_vectors.len() {
++        let mut previous_lanes = [0.0_f32; MAX_F32_LANES];
++        let mut current_lanes = [0.0_f32; MAX_F32_LANES];
++        simd.partial_store_f32s(
++            &mut previous_lanes[..S::F32_LANES],
++            previous_vectors[remaining],
++        );
++        simd.partial_store_f32s(
++            &mut current_lanes[..S::F32_LANES],
++            current_vectors[remaining],
++        );
++        let exponent_start = remaining * S::F32_LANES;
++        normal_range &= normalize_pair_lanes_with_state_f32(
++            &mut previous_lanes[..S::F32_LANES],
++            &mut current_lanes[..S::F32_LANES],
++            &mut exponents[exponent_start..exponent_start + S::F32_LANES],
++        )?;
++        previous_vectors[remaining] = simd.partial_load_f32s(&previous_lanes[..S::F32_LANES]);
++        current_vectors[remaining] = simd.partial_load_f32s(&current_lanes[..S::F32_LANES]);
++    }
++    let exponent_tail_start = previous_vectors.len() * S::F32_LANES;
++    let exponent_tail = &mut exponents[exponent_tail_start..];
++    debug_assert_eq!(exponent_tail.len(), previous_tail.len());
++    debug_assert_eq!(exponent_tail.len(), current_tail.len());
++    for lane in 0..previous_tail.len() {
++        let (maximum_bits, _) = super::numeric::normalize_pair_lane_f32(
++            &mut previous_tail[lane],
++            &mut current_tail[lane],
++            &mut exponent_tail[lane],
++            "scalar recurrence scale",
++        )?;
++        normal_range &= exponent_tail[lane] == 0
++            && maximum_bits <= BIG_F32.to_bits()
++            && (maximum_bits == 0 || maximum_bits >= SMALL_F32.to_bits());
++    }
++    Ok(normal_range)
++}
++
+ /// Normalizes native-f32 recurrence lanes with SIMD value arithmetic while
+ /// retaining the exact per-lane i64 scale epochs. The f32 recurrence block is
+ /// already vectorized; this avoids decoding and normalizing every mantissa in
+@@ -1453,56 +1521,16 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
+             simd.equal_f32s(current_value, current_value),
+         );
+         if simd.first_true_m32s(simd.not_m32s(finite)) != S::F32_LANES {
+-            // Preserve the existing exceptional-value behavior for a block
+-            // the vector normalizer cannot safely classify.
+-            let mut previous_lanes = [0.0_f32; MAX_F32_LANES];
+-            let mut current_lanes = [0.0_f32; MAX_F32_LANES];
+-            simd.partial_store_f32s(&mut previous_lanes[..S::F32_LANES], previous_vectors[index]);
+-            simd.partial_store_f32s(&mut current_lanes[..S::F32_LANES], current_vectors[index]);
+-            let exponent_start = index * S::F32_LANES;
+-            let mut exceptional_normal_range = normalize_pair_lanes_with_state_f32(
+-                &mut previous_lanes[..S::F32_LANES],
+-                &mut current_lanes[..S::F32_LANES],
+-                &mut exponents[exponent_start..exponent_start + S::F32_LANES],
+-            )?;
+-            previous_vectors[index] = simd.partial_load_f32s(&previous_lanes[..S::F32_LANES]);
+-            current_vectors[index] = simd.partial_load_f32s(&current_lanes[..S::F32_LANES]);
+-            for remaining in index + 1..previous_vectors.len() {
+-                let mut previous_lanes = [0.0_f32; MAX_F32_LANES];
+-                let mut current_lanes = [0.0_f32; MAX_F32_LANES];
+-                simd.partial_store_f32s(
+-                    &mut previous_lanes[..S::F32_LANES],
+-                    previous_vectors[remaining],
+-                );
+-                simd.partial_store_f32s(
+-                    &mut current_lanes[..S::F32_LANES],
+-                    current_vectors[remaining],
+-                );
+-                let exponent_start = remaining * S::F32_LANES;
+-                exceptional_normal_range &= normalize_pair_lanes_with_state_f32(
+-                    &mut previous_lanes[..S::F32_LANES],
+-                    &mut current_lanes[..S::F32_LANES],
+-                    &mut exponents[exponent_start..exponent_start + S::F32_LANES],
+-                )?;
+-                previous_vectors[remaining] =
+-                    simd.partial_load_f32s(&previous_lanes[..S::F32_LANES]);
+-                current_vectors[remaining] = simd.partial_load_f32s(&current_lanes[..S::F32_LANES]);
+-            }
+-            let exponent_tail_start = previous_vectors.len() * S::F32_LANES;
+-            let exponent_tail = &mut exponents[exponent_tail_start..];
+-            debug_assert_eq!(exponent_tail.len(), previous_tail.len());
+-            for lane in 0..previous_tail.len() {
+-                let (maximum_bits, _) = super::numeric::normalize_pair_lane_f32(
+-                    &mut previous_tail[lane],
+-                    &mut current_tail[lane],
+-                    &mut exponent_tail[lane],
+-                    "scalar recurrence scale",
+-                )?;
+-                exceptional_normal_range &= exponent_tail[lane] == 0
+-                    && maximum_bits <= BIG_F32.to_bits()
+-                    && (maximum_bits == 0 || maximum_bits >= SMALL_F32.to_bits());
+-            }
+-            return Ok(exceptional_normal_range);
++            // Keep the robust scalar handling outside the hot typed kernel.
++            return normalize_pair_lanes_with_state_f32_simd_exceptional(
++                simd,
++                previous_vectors,
++                current_vectors,
++                previous_tail,
++                current_tail,
++                exponents,
++                index,
++            );
+         }
+ 
+         loop {

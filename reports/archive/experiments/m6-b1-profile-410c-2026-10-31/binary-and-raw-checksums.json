@@ -1,0 +1,32 @@
+{
+  "rust_parent_f32": "f1a789d16338b34d07c40b8fbf417b56c0386978dfb7d290e6feed3619000a44",
+  "rust_normalizer_view_candidate_f32": "929589379241af9d879dc441ffd4ebc55703e08d23f6865de7778d480fb2a65d",
+  "rust_cold_outline_candidate_f32": "a6f81b85ac886d47347b0da2304e85b86c6ffcda6ee0ba74ee3f954906f73e42",
+  "ducc_f32": "efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836",
+  "rust_parent_f64": "98bc5255e9060211aa2ecd5d8a8690bed0938221d37b7e5789741400e829dce1",
+  "ducc_f64": "771fb759383aa410f26660935e861284ec26ddc134e6bf3f47388615f71c4fe5",
+  "f32_callgrind_sha256": "b594304f5ae0bfb4f873df9a5e43a4cffbcd5569d7333243fc10943019fbbf5b",
+  "f64_callgrind_sha256": "8ae5fe81ff41e1aecc7cf0cc9728fce398c250c4c8352de4c222051e0b96d868",
+  "rust_f32_asm_sha256": "4ed30c6a8e306a781e38250bbd6b20471eba02e08fc2d6a9d621994d77390066",
+  "rust_f64_asm_sha256": "2abfded1a17f71adb6aaf1520465d24271824a3884585a8d2e0743023f09263f",
+  "ducc_asm_sha256": "e9cf7d208bca3e70cda779078a85b45787c3b40c00b4b362eba0fd6c3dd1f10b",
+  "artifact_sha256": {
+    "hot-loops.asm.txt": "9f47973b4566bea8735a090cd817901d2ee73330de807bd35ef12caed31215bf",
+    "phase-summary.json": "76c7e6f263e7ae28f1690dfbc88485a8474e7565af5926c40d936820691cec86",
+    "raw/f32-full-q1.callgrind.gz": "418d506c361fa64b6b1097c941ca54c25d54a71528d0135e65565bc0780c1b1d",
+    "raw/f64-full-q1.callgrind.gz": "a7c78248dc157b593f91ff39cd074fa74732c0e18d6b12912cd23d51ecc8eca2",
+    "raw/rejected-cold-exception-normalizer-outline.patch": "fd493382eb26579237564fdc6c9cd76bcf9a97e536f3c268f72051d015a9c22b",
+    "raw/rejected-f32-normalizer-direct-view.patch": "26a4e07d589b0a61dfd6b0c7dc00242724c8ad04a58552fb8526d064a1c4595f",
+    "screen-summary.json": "4c5f6fdf6fb29b094bfa20ebb2585bac48c9d592d748761a85efec3f31998446"
+  },
+  "local_untracked_capture_sha256": {
+    "raw/phase-f32-m180-q1.log": "9b636823ac166820c4d4e91d2eeb07a94b4fd7c8d4ea3cc19ffa16650753276a",
+    "raw/phase-f32-m180-q8.log": "9f119e9869ce012cdeeb9199e4899daa4af8cf529175f057b9027a07a9668f95",
+    "raw/phase-f32-m720-q1.log": "a18506731228b64f6eb721e005e6275b88a22e1738bf73170acda251571e2729",
+    "raw/phase-f32-m720-q8.log": "0d2d02d507e8043f1c90b5e9a07c4b03fad88402500416f86457044aaaf1adf4",
+    "raw/phase-f64-m180-q1.log": "5534a25f5289aaf342db5b5c489e0b41407cb87e8eb6963c0b897791fc1b9cc8",
+    "raw/phase-f64-m180-q8.log": "b7b7539f8cf95988d77e743c79cc21eb3056492f207b48a3bc3ce43f7c595f8c",
+    "raw/phase-f64-m720-q1.log": "f24580642ee58cc9e7f25c2e1cea1ec5434cba655e580c43f51ba8919dcbee1a",
+    "raw/phase-f64-m720-q8.log": "3dd83599c3ae5400c65fd941f99337b07b83a0c4f6d6cf1e0c3229d34cc197c1"
+  }
+}

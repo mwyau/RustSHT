@@ -1,0 +1,123 @@
+Rust B1 f32 typed kernel: m6_b1_callgrind_both V3 release artifact, SHA-256 of full disassembly source:
+4ed30c6a8e306a781e38250bbd6b20471eba02e08fc2d6a9d621994d77390066
+Core ordinary accumulation loop and horizontal reductions (addresses 0x290480–0x2905ff):
+  290480:	c5 fc 10 64 15 e0    	vmovups ymm4,YMMWORD PTR [rbp+rdx*1-0x20]
+  290486:	c4 c2 5d b8 44 12 e0 	vfmadd231ps ymm0,ymm4,YMMWORD PTR [r10+rdx*1-0x20]
+  29048d:	c4 e2 5d b8 54 16 e0 	vfmadd231ps ymm2,ymm4,YMMWORD PTR [rsi+rdx*1-0x20]
+  290494:	c4 c2 5d b8 4c 17 e0 	vfmadd231ps ymm1,ymm4,YMMWORD PTR [r15+rdx*1-0x20]
+  29049b:	c4 e2 5d b8 5c 17 e0 	vfmadd231ps ymm3,ymm4,YMMWORD PTR [rdi+rdx*1-0x20]
+  2904a2:	c5 fc 10 64 15 00    	vmovups ymm4,YMMWORD PTR [rbp+rdx*1+0x0]
+  2904a8:	48 83 c0 02          	add    rax,0x2
+  2904ac:	c4 c2 5d b8 04 12    	vfmadd231ps ymm0,ymm4,YMMWORD PTR [r10+rdx*1]
+  2904b2:	c4 e2 5d b8 14 16    	vfmadd231ps ymm2,ymm4,YMMWORD PTR [rsi+rdx*1]
+  2904b8:	c4 c2 5d b8 0c 17    	vfmadd231ps ymm1,ymm4,YMMWORD PTR [r15+rdx*1]
+  2904be:	c4 e2 5d b8 1c 17    	vfmadd231ps ymm3,ymm4,YMMWORD PTR [rdi+rdx*1]
+  2904c4:	48 83 c2 40          	add    rdx,0x40
+  2904c8:	48 39 c1             	cmp    rcx,rax
+  2904cb:	75 b3                	jne    290480 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x10f0>
+  2904cd:	f6 44 24 10 08       	test   BYTE PTR [rsp+0x10],0x8
+  2904d2:	0f 85 93 00 00 00    	jne    29056b <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x11db>
+  2904d8:	e9 bd 00 00 00       	jmp    29059a <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x120a>
+  2904dd:	80 bc 24 dc 17 00 00 	cmp    BYTE PTR [rsp+0x17dc],0x1
+  2904e4:	01 
+  2904e5:	48 8b b4 24 08 01 00 	mov    rsi,QWORD PTR [rsp+0x108]
+  2904ec:	00 
+  2904ed:	75 0e                	jne    2904fd <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x116d>
+  2904ef:	48 39 bc 24 d0 17 00 	cmp    QWORD PTR [rsp+0x17d0],rdi
+  2904f6:	00 
+  2904f7:	0f 84 99 0c 00 00    	je     291196 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x1e06>
+  2904fd:	4d 85 f6             	test   r14,r14
+  290500:	0f 84 85 02 00 00    	je     29078b <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x13fb>
+  290506:	48 8b 03             	mov    rax,QWORD PTR [rbx]
+  290509:	49 83 fe 01          	cmp    r14,0x1
+  29050d:	48 8b b4 24 88 02 00 	mov    rsi,QWORD PTR [rsp+0x288]
+  290514:	00 
+  290515:	c4 62 7d 5a 05 92 66 	vbroadcasti128 ymm8,XMMWORD PTR [rip+0xffffffffffd96692]        # 26bb0 <anon.7476c57c4ada118d484b21fc8411c764.6.llvm.7002819662703864886+0x230>
+  29051c:	d9 ff 
+  29051e:	c4 62 79 18 0d b1 94 	vbroadcastss xmm9,DWORD PTR [rip+0xffffffffffd994b1]        # 299d8 <anon.0ddfc97e0e9357a19501f3c994064ae5.53.llvm.11446719097726187835+0x2478>
+  290525:	d9 ff 
+  290527:	c4 62 79 18 15 60 91 	vbroadcastss xmm10,DWORD PTR [rip+0xffffffffffd99160]        # 29690 <anon.0ddfc97e0e9357a19501f3c994064ae5.53.llvm.11446719097726187835+0x2130>
+  29052e:	d9 ff 
+  290530:	0f 84 c1 03 00 00    	je     2908f7 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x1567>
+  290536:	48 83 fe 04          	cmp    rsi,0x4
+  29053a:	0f 83 6d 02 00 00    	jae    2907ad <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x141d>
+  290540:	31 c9                	xor    ecx,ecx
+  290542:	e9 99 03 00 00       	jmp    2908e0 <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x1550>
+  290547:	c5 e0 57 db          	vxorps xmm3,xmm3,xmm3
+  29054b:	c5 f0 57 c9          	vxorps xmm1,xmm1,xmm1
+  29054f:	c5 e8 57 d2          	vxorps xmm2,xmm2,xmm2
+  290553:	c5 f8 57 c0          	vxorps xmm0,xmm0,xmm0
+  290557:	eb 41                	jmp    29059a <_RINvNvMsc_NtNtCs6aRYI14iRvw_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis28FusedScalarAnalysisPairTypedfEEEB1L_+0x120a>
+  290559:	c5 f8 57 c0          	vxorps xmm0,xmm0,xmm0
+  29055d:	31 c0                	xor    eax,eax
+  29055f:	c5 e8 57 d2          	vxorps xmm2,xmm2,xmm2
+  290563:	c5 f0 57 c9          	vxorps xmm1,xmm1,xmm1
+  290567:	c5 e0 57 db          	vxorps xmm3,xmm3,xmm3
+  29056b:	48 c1 e0 05          	shl    rax,0x5
+  29056f:	c5 fc 10 64 05 00    	vmovups ymm4,YMMWORD PTR [rbp+rax*1+0x0]
+  290575:	c4 c2 5d b8 04 02    	vfmadd231ps ymm0,ymm4,YMMWORD PTR [r10+rax*1]
+  29057b:	48 8b 8c 24 a8 00 00 	mov    rcx,QWORD PTR [rsp+0xa8]
+  290582:	00 
+  290583:	c4 e2 5d b8 14 01    	vfmadd231ps ymm2,ymm4,YMMWORD PTR [rcx+rax*1]
+  290589:	c4 c2 5d b8 0c 07    	vfmadd231ps ymm1,ymm4,YMMWORD PTR [r15+rax*1]
+  29058f:	48 8b 4c 24 70       	mov    rcx,QWORD PTR [rsp+0x70]
+  290594:	c4 e2 5d b8 1c 01    	vfmadd231ps ymm3,ymm4,YMMWORD PTR [rcx+rax*1]
+  29059a:	48 8b 44 24 10       	mov    rax,QWORD PTR [rsp+0x10]
+  29059f:	c4 e3 7d 19 c4 01    	vextractf128 xmm4,ymm0,0x1
+  2905a5:	c5 f8 58 c4          	vaddps xmm0,xmm0,xmm4
+  2905a9:	c5 f9 c6 e0 01       	vshufpd xmm4,xmm0,xmm0,0x1
+  2905ae:	c5 f8 58 c4          	vaddps xmm0,xmm0,xmm4
+  2905b2:	c5 fa 16 e0          	vmovshdup xmm4,xmm0
+  2905b6:	c5 fa 58 c4          	vaddss xmm0,xmm0,xmm4
+  2905ba:	c4 e3 7d 19 d4 01    	vextractf128 xmm4,ymm2,0x1
+  2905c0:	c5 e8 58 d4          	vaddps xmm2,xmm2,xmm4
+  2905c4:	c5 e9 c6 e2 01       	vshufpd xmm4,xmm2,xmm2,0x1
+  2905c9:	c5 e8 58 d4          	vaddps xmm2,xmm2,xmm4
+  2905cd:	c5 fa 16 e2          	vmovshdup xmm4,xmm2
+  2905d1:	c5 ea 58 d4          	vaddss xmm2,xmm2,xmm4
+  2905d5:	c4 e3 7d 19 cc 01    	vextractf128 xmm4,ymm1,0x1
+  2905db:	c5 f0 58 cc          	vaddps xmm1,xmm1,xmm4
+  2905df:	c5 f1 c6 e1 01       	vshufpd xmm4,xmm1,xmm1,0x1
+  2905e4:	c5 f0 58 cc          	vaddps xmm1,xmm1,xmm4
+  2905e8:	c5 fa 16 e1          	vmovshdup xmm4,xmm1
+  2905ec:	c5 f2 58 cc          	vaddss xmm1,xmm1,xmm4
+  2905f0:	c4 e3 7d 19 dc 01    	vextractf128 xmm4,ymm3,0x1
+  2905f6:	c5 e0 58 dc          	vaddps xmm3,xmm3,xmm4
+  2905fa:	c5 e1 c6 e3 01       	vshufpd xmm4,xmm3,xmm3,0x1
+  2905ff:	c5 e0 58 dc          	vaddps xmm3,xmm3,xmm4
+
+Pinned DUCC 0.42.0 map2alm_kernel: full binary SHA-256 efb42fd69e47bd39f0060208202efab326c337f3c0f434506ee556b5984e3836.
+V3 AVX2 loop (addresses 0x67ca30–0x67cabb):
+  67ca30:	c5 fd 28 90 00 28 00 	vmovapd ymm2,YMMWORD PTR [rax+0x2800]
+  67ca37:	00 
+  67ca38:	c5 7d 29 f8          	vmovapd ymm0,ymm15
+  67ca3c:	48 83 c0 20          	add    rax,0x20
+  67ca40:	c5 fd 28 88 e0 1f 00 	vmovapd ymm1,YMMWORD PTR [rax+0x1fe0]
+  67ca47:	00 
+  67ca48:	c5 7d 28 80 e0 2f 00 	vmovapd ymm8,YMMWORD PTR [rax+0x2fe0]
+  67ca4f:	00 
+  67ca50:	c4 62 f5 b8 b0 e0 37 	vfmadd231pd ymm14,ymm1,YMMWORD PTR [rax+0x37e0]
+  67ca57:	00 00 
+  67ca59:	c4 62 f5 b8 90 e0 3f 	vfmadd231pd ymm10,ymm1,YMMWORD PTR [rax+0x3fe0]
+  67ca60:	00 00 
+  67ca62:	c4 e2 c5 98 c2       	vfmadd132pd ymm0,ymm7,ymm2
+  67ca67:	c4 e2 f5 a8 80 e0 17 	vfmadd213pd ymm0,ymm1,YMMWORD PTR [rax+0x17e0]
+  67ca6e:	00 00 
+  67ca70:	c4 e2 d5 98 d6       	vfmadd132pd ymm2,ymm5,ymm6
+  67ca75:	c4 62 fd b8 a0 e0 37 	vfmadd231pd ymm12,ymm0,YMMWORD PTR [rax+0x37e0]
+  67ca7c:	00 00 
+  67ca7e:	c4 c2 f5 b8 e0       	vfmadd231pd ymm4,ymm1,ymm8
+  67ca83:	c4 62 fd b8 88 e0 3f 	vfmadd231pd ymm9,ymm0,YMMWORD PTR [rax+0x3fe0]
+  67ca8a:	00 00 
+  67ca8c:	c4 62 fd b8 98 e0 47 	vfmadd231pd ymm11,ymm0,YMMWORD PTR [rax+0x47e0]
+  67ca93:	00 00 
+  67ca95:	c4 62 f5 b8 a8 e0 47 	vfmadd231pd ymm13,ymm1,YMMWORD PTR [rax+0x47e0]
+  67ca9c:	00 00 
+  67ca9e:	c5 fd 29 80 e0 17 00 	vmovapd YMMWORD PTR [rax+0x17e0],ymm0
+  67caa5:	00 
+  67caa6:	c4 e2 bd b8 d8       	vfmadd231pd ymm3,ymm8,ymm0
+  67caab:	c4 e2 f5 98 c2       	vfmadd132pd ymm0,ymm1,ymm2
+  67cab0:	c5 fd 29 80 e0 1f 00 	vmovapd YMMWORD PTR [rax+0x1fe0],ymm0
+  67cab7:	00 
+  67cab8:	48 39 c2             	cmp    rdx,rax
+  67cabb:	0f 85 6f ff ff ff    	jne    67ca30 <_ZN5ducc010detail_sht21detail_sht_inner_loopL14map2alm_kernelERNS1_8s0data_vERKSt6vectorINS1_6Ylmgen4dbl2ESaIS6_EEPSt7complexIdEmmmm.isra.0+0x90>

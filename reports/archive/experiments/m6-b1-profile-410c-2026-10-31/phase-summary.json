@@ -1,0 +1,135 @@
+{
+  "rust_source_commit": "410c9ec2594007a1e081c949767fc5f7c28d2654",
+  "method": "release test-only phase probe; medians of captured warm iterations; route counters enabled",
+  "note": "Stage attribution is instrumented and combines Legendre recurrence plus accumulation; percentages are not production-cycle attribution.",
+  "cells": [
+    {
+      "precision": "f32",
+      "mmax": 720,
+      "threads": 1,
+      "total_ns_median": 72790046,
+      "forward_fft_ns_median": 2645813,
+      "recurrence_plus_accumulation_ns_median": 70122733,
+      "route_counts": {
+        "attempts": 1139,
+        "successes": 1139,
+        "seed_declines": 0,
+        "recurrence_declines": 0,
+        "normal_pairs": 111909,
+        "scaled_pairs": 125629
+      }
+    },
+    {
+      "precision": "f32",
+      "mmax": 720,
+      "threads": 8,
+      "total_ns_median": 11826734,
+      "forward_fft_ns_median": 679846,
+      "recurrence_plus_accumulation_ns_median": 11127923,
+      "route_counts": {
+        "attempts": 1139,
+        "successes": 1139,
+        "seed_declines": 0,
+        "recurrence_declines": 0,
+        "normal_pairs": 111909,
+        "scaled_pairs": 125629
+      }
+    },
+    {
+      "precision": "f32",
+      "mmax": 180,
+      "threads": 1,
+      "total_ns_median": 24222535,
+      "forward_fft_ns_median": 640481,
+      "recurrence_plus_accumulation_ns_median": 23570242,
+      "route_counts": {
+        "attempts": 362,
+        "successes": 362,
+        "seed_declines": 0,
+        "recurrence_declines": 0,
+        "normal_pairs": 61843,
+        "scaled_pairs": 52459
+      }
+    },
+    {
+      "precision": "f32",
+      "mmax": 180,
+      "threads": 8,
+      "total_ns_median": 3406229,
+      "forward_fft_ns_median": 121257,
+      "recurrence_plus_accumulation_ns_median": 3274192,
+      "route_counts": {
+        "attempts": 362,
+        "successes": 362,
+        "seed_declines": 0,
+        "recurrence_declines": 0,
+        "normal_pairs": 61843,
+        "scaled_pairs": 52459
+      }
+    },
+    {
+      "precision": "f64",
+      "mmax": 720,
+      "threads": 1,
+      "total_ns_median": 20739111,
+      "forward_fft_ns_median": 3404496,
+      "recurrence_plus_accumulation_ns_median": 17315890,
+      "route_counts": {
+        "attempts": 1139,
+        "successes": 665,
+        "seed_declines": 474,
+        "recurrence_declines": 0,
+        "normal_pairs": 134206,
+        "scaled_pairs": 0
+      }
+    },
+    {
+      "precision": "f64",
+      "mmax": 720,
+      "threads": 8,
+      "total_ns_median": 3128097,
+      "forward_fft_ns_median": 562325,
+      "recurrence_plus_accumulation_ns_median": 2558449,
+      "route_counts": {
+        "attempts": 1139,
+        "successes": 665,
+        "seed_declines": 474,
+        "recurrence_declines": 0,
+        "normal_pairs": 134206,
+        "scaled_pairs": 0
+      }
+    },
+    {
+      "precision": "f64",
+      "mmax": 180,
+      "threads": 1,
+      "total_ns_median": 8687957,
+      "forward_fft_ns_median": 740520,
+      "recurrence_plus_accumulation_ns_median": 7927390,
+      "route_counts": {
+        "attempts": 362,
+        "successes": 230,
+        "seed_declines": 132,
+        "recurrence_declines": 0,
+        "normal_pairs": 74240,
+        "scaled_pairs": 0
+      }
+    },
+    {
+      "precision": "f64",
+      "mmax": 180,
+      "threads": 8,
+      "total_ns_median": 1281815,
+      "forward_fft_ns_median": 147247,
+      "recurrence_plus_accumulation_ns_median": 1125310,
+      "route_counts": {
+        "attempts": 362,
+        "successes": 230,
+        "seed_declines": 132,
+        "recurrence_declines": 0,
+        "normal_pairs": 74240,
+        "scaled_pairs": 0
+      }
+    }
+  ]
+}

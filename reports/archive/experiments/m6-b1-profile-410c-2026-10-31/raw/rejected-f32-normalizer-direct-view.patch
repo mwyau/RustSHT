@@ -1,0 +1,139 @@
+diff --git a/src/legendre/scalar.rs b/src/legendre/scalar.rs
+index d59decd3..7c5fb77b 100644
+--- a/src/legendre/scalar.rs
++++ b/src/legendre/scalar.rs
+@@ -1432,7 +1432,6 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
+     debug_assert_eq!(previous_tail.len(), current_tail.len());
+ 
+     let zero = simd.splat_f32s(0.0);
+-    let one = simd.splat_f32s(1.0);
+     let big = simd.splat_f32s(BIG_F32);
+     let small = simd.splat_f32s(SMALL_F32);
+     let scale_up = simd.splat_f32s(<f32 as LegendrePrecision>::SCALE_UP);
+@@ -1457,36 +1456,61 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
+             // the vector normalizer cannot safely classify.
+             let mut previous_lanes = [0.0_f32; MAX_F32_LANES];
+             let mut current_lanes = [0.0_f32; MAX_F32_LANES];
+-            simd.partial_store_f32s(&mut previous_lanes[..S::F32_LANES], previous_vectors[index]);
+-            simd.partial_store_f32s(&mut current_lanes[..S::F32_LANES], current_vectors[index]);
++            let (previous_lane_vectors, previous_lane_tail) =
++                S::as_mut_simd_f32s(&mut previous_lanes[..S::F32_LANES]);
++            let (current_lane_vectors, current_lane_tail) =
++                S::as_mut_simd_f32s(&mut current_lanes[..S::F32_LANES]);
++            debug_assert_eq!(previous_lane_vectors.len(), 1);
++            debug_assert!(previous_lane_tail.is_empty());
++            debug_assert_eq!(current_lane_vectors.len(), 1);
++            debug_assert!(current_lane_tail.is_empty());
++            previous_lane_vectors[0] = previous_vectors[index];
++            current_lane_vectors[0] = current_vectors[index];
+             let exponent_start = index * S::F32_LANES;
+             let mut exceptional_normal_range = normalize_pair_lanes_with_state_f32(
+                 &mut previous_lanes[..S::F32_LANES],
+                 &mut current_lanes[..S::F32_LANES],
+                 &mut exponents[exponent_start..exponent_start + S::F32_LANES],
+             )?;
+-            previous_vectors[index] = simd.partial_load_f32s(&previous_lanes[..S::F32_LANES]);
+-            current_vectors[index] = simd.partial_load_f32s(&current_lanes[..S::F32_LANES]);
++            let (previous_lane_vectors, previous_lane_tail) =
++                S::as_simd_f32s(&previous_lanes[..S::F32_LANES]);
++            let (current_lane_vectors, current_lane_tail) =
++                S::as_simd_f32s(&current_lanes[..S::F32_LANES]);
++            debug_assert_eq!(previous_lane_vectors.len(), 1);
++            debug_assert!(previous_lane_tail.is_empty());
++            debug_assert_eq!(current_lane_vectors.len(), 1);
++            debug_assert!(current_lane_tail.is_empty());
++            previous_vectors[index] = previous_lane_vectors[0];
++            current_vectors[index] = current_lane_vectors[0];
+             for remaining in index + 1..previous_vectors.len() {
+                 let mut previous_lanes = [0.0_f32; MAX_F32_LANES];
+                 let mut current_lanes = [0.0_f32; MAX_F32_LANES];
+-                simd.partial_store_f32s(
+-                    &mut previous_lanes[..S::F32_LANES],
+-                    previous_vectors[remaining],
+-                );
+-                simd.partial_store_f32s(
+-                    &mut current_lanes[..S::F32_LANES],
+-                    current_vectors[remaining],
+-                );
++                let (previous_lane_vectors, previous_lane_tail) =
++                    S::as_mut_simd_f32s(&mut previous_lanes[..S::F32_LANES]);
++                let (current_lane_vectors, current_lane_tail) =
++                    S::as_mut_simd_f32s(&mut current_lanes[..S::F32_LANES]);
++                debug_assert_eq!(previous_lane_vectors.len(), 1);
++                debug_assert!(previous_lane_tail.is_empty());
++                debug_assert_eq!(current_lane_vectors.len(), 1);
++                debug_assert!(current_lane_tail.is_empty());
++                previous_lane_vectors[0] = previous_vectors[remaining];
++                current_lane_vectors[0] = current_vectors[remaining];
+                 let exponent_start = remaining * S::F32_LANES;
+                 exceptional_normal_range &= normalize_pair_lanes_with_state_f32(
+                     &mut previous_lanes[..S::F32_LANES],
+                     &mut current_lanes[..S::F32_LANES],
+                     &mut exponents[exponent_start..exponent_start + S::F32_LANES],
+                 )?;
+-                previous_vectors[remaining] =
+-                    simd.partial_load_f32s(&previous_lanes[..S::F32_LANES]);
+-                current_vectors[remaining] = simd.partial_load_f32s(&current_lanes[..S::F32_LANES]);
++                let (previous_lane_vectors, previous_lane_tail) =
++                    S::as_simd_f32s(&previous_lanes[..S::F32_LANES]);
++                let (current_lane_vectors, current_lane_tail) =
++                    S::as_simd_f32s(&current_lanes[..S::F32_LANES]);
++                debug_assert_eq!(previous_lane_vectors.len(), 1);
++                debug_assert!(previous_lane_tail.is_empty());
++                debug_assert_eq!(current_lane_vectors.len(), 1);
++                debug_assert!(current_lane_tail.is_empty());
++                previous_vectors[remaining] = previous_lane_vectors[0];
++                current_vectors[remaining] = current_lane_vectors[0];
+             }
+             let exponent_tail_start = previous_vectors.len() * S::F32_LANES;
+             let exponent_tail = &mut exponents[exponent_tail_start..];
+@@ -1510,13 +1534,18 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
+             if simd.first_true_m32s(too_large) == S::F32_LANES {
+                 break;
+             }
+-            let mut selected = [0.0_f32; MAX_F32_LANES];
+-            simd.partial_store_f32s(
+-                &mut selected[..S::F32_LANES],
+-                simd.select_f32s(too_large, one, zero),
++            let mut selected = [0_u32; MAX_F32_LANES];
++            let (selected_vectors, selected_tail) =
++                S::as_mut_simd_u32s(&mut selected[..S::F32_LANES]);
++            debug_assert_eq!(selected_vectors.len(), 1);
++            debug_assert!(selected_tail.is_empty());
++            selected_vectors[0] = simd.select_u32s(
++                too_large,
++                simd.splat_u32s(1),
++                simd.splat_u32s(0),
+             );
+-            for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
+-                if selected != 0.0 {
++            for lane in 0..S::F32_LANES {
++                if selected[lane] != 0 {
+                     let exponent = &mut exponents[index * S::F32_LANES + lane];
+                     *exponent = exponent
+                         .checked_add(<f32 as LegendrePrecision>::SCALE_EXPONENT)
+@@ -1544,13 +1573,18 @@ pub(super) fn normalize_pair_lanes_with_state_f32_simd<S: Simd>(
+             if simd.first_true_m32s(too_small) == S::F32_LANES {
+                 break;
+             }
+-            let mut selected = [0.0_f32; MAX_F32_LANES];
+-            simd.partial_store_f32s(
+-                &mut selected[..S::F32_LANES],
+-                simd.select_f32s(too_small, one, zero),
++            let mut selected = [0_u32; MAX_F32_LANES];
++            let (selected_vectors, selected_tail) =
++                S::as_mut_simd_u32s(&mut selected[..S::F32_LANES]);
++            debug_assert_eq!(selected_vectors.len(), 1);
++            debug_assert!(selected_tail.is_empty());
++            selected_vectors[0] = simd.select_u32s(
++                too_small,
++                simd.splat_u32s(1),
++                simd.splat_u32s(0),
+             );
+-            for (lane, selected) in selected[..S::F32_LANES].iter().copied().enumerate() {
+-                if selected != 0.0 {
++            for lane in 0..S::F32_LANES {
++                if selected[lane] != 0 {
+                     let exponent = &mut exponents[index * S::F32_LANES + lane];
+                     *exponent = exponent
+                         .checked_sub(<f32 as LegendrePrecision>::SCALE_EXPONENT)
