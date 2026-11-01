@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "case": {
+      "case_id": "GL-T1023-m1023-n1024-exact-p2048-even-smooth",
+      "grid": "GL",
+      "lmax": 1023,
+      "mmax": 1023,
+      "ntheta": 1024,
+      "nphi": 2048,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth"
+    },
+    "fixture_sha256": {
+      "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+      "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+      "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+      "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+    },
+    "parent_binary_sha256": "e1eca529ce003d5da5b049669fd7d09c960f15cbf9a131d09101a0494eccafae",
+    "candidate_binary_sha256": "e32b712fe1813fe17db7abf9692dcd27af3633c223637f9d30560de2fb29797d",
+    "pairs_per_q": 3,
+    "target_ms": 25.0,
+    "affinity": {
+      "q1": [
+        2
+      ],
+      "q8": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  },
+  "summary": {
+    "q1": {
+      "parent_median_ms": 91.699094,
+      "candidate_median_ms": 92.033827,
+      "candidate_parent_paired_ratio_median": 1.00847608537552
+    },
+    "q8": {
+      "parent_median_ms": 14.66510775,
+      "candidate_median_ms": 14.54733775,
+      "candidate_parent_paired_ratio_median": 1.0031594444472411
+    }
+  },
+  "records": [
+    {
+      "threads": 1,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 91.699094,
+      "candidate_ms": 90.997271,
+      "candidate_parent_ratio": 0.9923464565527768,
+      "outputs_exact": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 1,
+      "pair": 1,
+      "order": [
+        "candidate",
+        "parent"
+      ],
+      "parent_ms": 91.7229435,
+      "candidate_ms": 92.500395,
+      "candidate_parent_ratio": 1.00847608537552,
+      "outputs_exact": true,
+      "checks": {
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 1,
+      "pair": 2,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 90.945458,
+      "candidate_ms": 92.033827,
+      "candidate_parent_ratio": 1.011967271636589,
+      "outputs_exact": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 14.69477625,
+      "candidate_ms": 14.932113,
+      "candidate_parent_ratio": 1.0161510965503813,
+      "outputs_exact": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "candidate",
+        "parent"
+      ],
+      "parent_ms": 14.501521,
+      "candidate_ms": 14.54733775,
+      "candidate_parent_ratio": 1.0031594444472411,
+      "outputs_exact": true,
+      "checks": {
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        },
+        "parent": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    },
+    {
+      "threads": 8,
+      "pair": 2,
+      "order": [
+        "parent",
+        "candidate"
+      ],
+      "parent_ms": 14.66510775,
+      "candidate_ms": 14.5275225,
+      "candidate_parent_ratio": 0.9906181903095802,
+      "outputs_exact": true,
+      "checks": {
+        "parent": {
+          "repeat": true,
+          "reset": true
+        },
+        "candidate": {
+          "repeat": true,
+          "reset": true
+        }
+      }
+    }
+  ]
+}

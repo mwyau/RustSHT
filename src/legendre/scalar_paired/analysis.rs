@@ -30,6 +30,7 @@ pub(crate) trait FusedAnalysisPrecision: PairedScalarRecurrencePrecision {
     const USE_EXISTING_SCALED_BLOCK: bool = false;
     const TWO_PAIR_ANALYSIS_UNROLL: bool = false;
     const USE_SIMD_ANALYSIS_SEED_INIT: bool = false;
+    const SIMD_ANALYSIS_SEED_INIT_PROVES_NORMAL_RANGE: bool = false;
 
     #[expect(
         clippy::too_many_arguments,
@@ -968,6 +969,7 @@ impl FusedAnalysisPrecision for f64 {
     const USE_EXISTING_SCALED_BLOCK: bool = true;
     const TWO_PAIR_ANALYSIS_UNROLL: bool = true;
     const USE_SIMD_ANALYSIS_SEED_INIT: bool = true;
+    const SIMD_ANALYSIS_SEED_INIT_PROVES_NORMAL_RANGE: bool = true;
 
     #[inline(always)]
     fn try_initialize_analysis_pair_state(
@@ -1511,8 +1513,16 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
         let mut current_slice: &mut [T] = current;
         let mut next_slice: &mut [T] = next;
         let exponents_slice: &mut [i64] = exponents;
-        let mut normal_range =
-            T::normalize_analysis_pair_state(simd, previous_slice, current_slice, exponents_slice)?;
+        let mut normal_range = if T::SIMD_ANALYSIS_SEED_INIT_PROVES_NORMAL_RANGE
+            && lmax >= SIMD_SECTORAL_INIT_MIN_LMAX
+        {
+            // A successful SIMD seed initializer has checked every lane
+            // against the normal range, and its caller zeroed previous and
+            // exponent state. Avoid repeating that same full-lane check.
+            true
+        } else {
+            T::normalize_analysis_pair_state(simd, previous_slice, current_slice, exponents_slice)?
+        };
         // Most order blocks stay in the ordinary range. Delay the f32 scaled
         // accumulator's sizeable lane-state initialization until a block
         // actually crosses into scaled accumulation.

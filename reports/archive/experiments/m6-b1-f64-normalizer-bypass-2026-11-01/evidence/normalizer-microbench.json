@@ -1,0 +1,38 @@
+{
+  "description": "Repeated f64 SIMD normalization on actual GL T720 northern geometry after successful SIMD seed initialization; all exponents and previous values are zero and buffers are unchanged.",
+  "dispatch": "Pulp V3 AVX2/FMA, 4 f64 lanes",
+  "iterations_per_sample": 20000,
+  "samples": 9,
+  "results": [
+    {
+      "lane_count": 108,
+      "median_ns_per_call": 125.482,
+      "sample_ns_per_call": [
+        124.0452,
+        125.08415,
+        125.29255,
+        125.4599,
+        125.48245,
+        125.8035,
+        128.15245,
+        134.87015,
+        143.7179
+      ]
+    },
+    {
+      "lane_count": 256,
+      "median_ns_per_call": 289.106,
+      "sample_ns_per_call": [
+        279.57295,
+        288.87905,
+        288.96475,
+        289.0454,
+        289.106,
+        289.69415,
+        289.8865,
+        290.05935,
+        293.9572
+      ]
+    }
+  ]
+}

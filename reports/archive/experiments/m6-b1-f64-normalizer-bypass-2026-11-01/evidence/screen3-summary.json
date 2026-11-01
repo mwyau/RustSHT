@@ -1,0 +1,292 @@
+{
+  "pairs_per_cell": 3,
+  "source_parent_commit": "ac88fe80fc2cd5f522b4ae4a37e8621a9d8ee6d6",
+  "parent_analysis_rs_sha256": "a23b7e73a806adcaa2a51b1758b1d8c56ff6d999ea83731dd06dddb3de429d4f",
+  "candidate_analysis_rs_sha256": "96bde2286f8ac6ec45c896e68a8e5acfff4546facf1c3c5f1601ebcf9ff72075",
+  "candidate_patch_sha256": "063775cae135b4d4162671c8a0a0d5c3160e8a21c8bb7b3a3a9ac187227a41cb",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "worker_sha256": {
+    "parent": "11f7cf278cd2ee8f78f12f401cf2e427af1d5e2750621dad90ad9953a919c188",
+    "candidate": "567fe2816b73406cf2418e19a9637eebb1417b9c819cdae0ade07164ae7de878",
+    "ducc": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+  },
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "dispatch": "Pulp V3 AVX2/FMA; 4 f64 lanes",
+  "cpu": "AMD Ryzen 9 5950X",
+  "affinity": {
+    "q1": [
+      0
+    ],
+    "q8": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "monitor_cpu": 8
+  },
+  "benchmark": "warm complete whole transform; plan setup excluded; 25 ms batches; paired parent/candidate/DUCC order interleaved",
+  "perf_counters": "unavailable: perf_event_paranoid=4; hardware events not accessible",
+  "cells": [
+    {
+      "case": "GL-T720-M720-even-s0-analysis",
+      "threads": 1,
+      "fixture_sha256": {
+        "map": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+        "alm": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831"
+      },
+      "pairs": 3,
+      "median_ms": {
+        "parent": 16.64546225,
+        "candidate": 15.660621500000001,
+        "ducc": 14.4494
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.9419796562777999,
+          0.8948366330988775,
+          0.9916063335140577
+        ],
+        "candidate_ducc_ratio": [
+          1.0806458860254307,
+          1.0673465382603577,
+          1.0941109462790308
+        ],
+        "parent_ducc_ratio": [
+          1.147207244682508,
+          1.0993636199791794,
+          1.1971329943380846
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 16.64546225,
+          "candidate": 15.742053,
+          "ducc": 14.4494,
+          "candidate_parent_ratio": 0.9457263945914148,
+          "candidate_ducc_ratio": 1.0894606696471825,
+          "parent_ducc_ratio": 1.151982937007765,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 15.98396825,
+          "candidate": 15.660621500000001,
+          "ducc": 14.447849999999999,
+          "candidate_parent_ratio": 0.9797705585407429,
+          "candidate_ducc_ratio": 1.0839413130673423,
+          "parent_ducc_ratio": 1.1063215807196227,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 17.17591125,
+          "candidate": 15.493675750000001,
+          "ducc": 14.49845,
+          "candidate_parent_ratio": 0.9020584424596396,
+          "candidate_ducc_ratio": 1.0686435963844412,
+          "parent_ducc_ratio": 1.1846722408257433,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    },
+    {
+      "case": "GL-T720-M720-even-s0-analysis",
+      "threads": 8,
+      "fixture_sha256": {
+        "map": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+        "alm": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831"
+      },
+      "pairs": 3,
+      "median_ms": {
+        "parent": 2.407455778,
+        "candidate": 2.3301799499999998,
+        "ducc": 2.131385
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.9662340186081597,
+          0.9398406079314411,
+          0.9933686316986399
+        ],
+        "candidate_ducc_ratio": [
+          1.08932369175469,
+          1.0644132438131675,
+          1.1148171185535825
+        ],
+        "parent_ducc_ratio": [
+          1.1273911607084985,
+          1.1102094397947837,
+          1.1448387877863795
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 2.3796125,
+          "candidate": 2.3585816499999996,
+          "ducc": 2.131385,
+          "candidate_parent_ratio": 0.9911620694545854,
+          "candidate_ducc_ratio": 1.106595781616179,
+          "parent_ducc_ratio": 1.116463004102966,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 2.407455778,
+          "candidate": 2.2882656,
+          "ducc": 2.144455,
+          "candidate_parent_ratio": 0.9504912285038865,
+          "candidate_ducc_ratio": 1.0670616077278376,
+          "parent_ducc_ratio": 1.1226422461651098,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 2.433522,
+          "candidate": 2.3301799499999998,
+          "ducc": 2.128615,
+          "candidate_parent_ratio": 0.957533956956214,
+          "candidate_ducc_ratio": 1.0946930046062815,
+          "parent_ducc_ratio": 1.1432419671946312,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    },
+    {
+      "case": "GL-T720-M180-even-s0-analysis",
+      "threads": 1,
+      "fixture_sha256": {
+        "map": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+        "alm": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21"
+      },
+      "pairs": 3,
+      "median_ms": {
+        "parent": 6.71543875,
+        "candidate": 6.331745375,
+        "ducc": 5.9132
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.9156707577313105,
+          0.8464353347804366,
+          0.9905693939179949
+        ],
+        "candidate_ducc_ratio": [
+          1.0936593053720758,
+          1.0474767052435552,
+          1.1418780677789113
+        ],
+        "parent_ducc_ratio": [
+          1.1943805086467478,
+          1.0577486669418115,
+          1.3486614013513485
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 7.9869988334999995,
+          "candidate": 6.799633125,
+          "ducc": 5.9722550000000005,
+          "candidate_parent_ratio": 0.8513376885044965,
+          "candidate_ducc_ratio": 1.1385369722156873,
+          "parent_ducc_ratio": 1.3373506043362178,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 6.71543875,
+          "candidate": 6.331745375,
+          "ducc": 5.9132,
+          "candidate_parent_ratio": 0.9428639900855323,
+          "candidate_ducc_ratio": 1.0707815353784753,
+          "parent_ducc_ratio": 1.1356691385375093,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 6.619569875,
+          "candidate": 6.331358375000001,
+          "ducc": 5.900635,
+          "candidate_parent_ratio": 0.9564606907333236,
+          "candidate_ducc_ratio": 1.0729961055038992,
+          "parent_ducc_ratio": 1.1218402553284519,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    },
+    {
+      "case": "GL-T720-M180-even-s0-analysis",
+      "threads": 8,
+      "fixture_sha256": {
+        "map": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+        "alm": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21"
+      },
+      "pairs": 3,
+      "median_ms": {
+        "parent": 1.0773790555,
+        "candidate": 0.962698261,
+        "ducc": 0.9358645000000001
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.8689972617159932,
+          0.7696563424011937,
+          0.9811602909864141
+        ],
+        "candidate_ducc_ratio": [
+          1.0370867074699686,
+          1.0206352314411151,
+          1.0538033625316345
+        ],
+        "parent_ducc_ratio": [
+          1.1934292007112337,
+          1.0540452299490704,
+          1.3512449149635375
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 1.2327936055,
+          "candidate": 0.962698261,
+          "ducc": 0.922306,
+          "candidate_parent_ratio": 0.7809078962650411,
+          "candidate_ducc_ratio": 1.0437948587562047,
+          "parent_ducc_ratio": 1.3366427254078364,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 1.0773790555,
+          "candidate": 0.9562495455,
+          "ducc": 0.9358645000000001,
+          "candidate_parent_ratio": 0.8875702016095114,
+          "candidate_ducc_ratio": 1.021782048042211,
+          "parent_ducc_ratio": 1.1512126547165749,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 1.0447622619999999,
+          "candidate": 0.989168262,
+          "ducc": 0.9457979999999999,
+          "candidate_parent_ratio": 0.9467878942204749,
+          "candidate_ducc_ratio": 1.0458557345225936,
+          "parent_ducc_ratio": 1.1046357277135286,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    }
+  ]
+}

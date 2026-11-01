@@ -1,0 +1,772 @@
+{
+  "pairs_per_cell": 15,
+  "source_parent_commit": "ac88fe80fc2cd5f522b4ae4a37e8621a9d8ee6d6",
+  "parent_analysis_rs_sha256": "a23b7e73a806adcaa2a51b1758b1d8c56ff6d999ea83731dd06dddb3de429d4f",
+  "candidate_analysis_rs_sha256": "96bde2286f8ac6ec45c896e68a8e5acfff4546facf1c3c5f1601ebcf9ff72075",
+  "candidate_patch_sha256": "063775cae135b4d4162671c8a0a0d5c3160e8a21c8bb7b3a3a9ac187227a41cb",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "worker_sha256": {
+    "parent": "11f7cf278cd2ee8f78f12f401cf2e427af1d5e2750621dad90ad9953a919c188",
+    "candidate": "567fe2816b73406cf2418e19a9637eebb1417b9c819cdae0ade07164ae7de878",
+    "ducc": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+  },
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "dispatch": "Pulp V3 AVX2/FMA; 4 f64 lanes",
+  "cpu": "AMD Ryzen 9 5950X",
+  "affinity": {
+    "q1": [
+      0
+    ],
+    "q8": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "monitor_cpu": 8
+  },
+  "benchmark": "warm complete whole transform; plan setup excluded; 25 ms batches; paired parent/candidate/DUCC order interleaved",
+  "perf_counters": "unavailable: perf_event_paranoid=4; hardware events not accessible",
+  "cells": [
+    {
+      "case": "GL-T720-M720-even-s0-analysis",
+      "threads": 1,
+      "fixture_sha256": {
+        "map": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+        "alm": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831"
+      },
+      "pairs": 15,
+      "median_ms": {
+        "parent": 16.17661275,
+        "candidate": 15.549138,
+        "ducc": 14.444600000000001
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.962221863149007,
+          0.9502276550795699,
+          0.9743674675985052
+        ],
+        "candidate_ducc_ratio": [
+          1.0869462373582963,
+          1.0737006135276521,
+          1.1003552647936814
+        ],
+        "parent_ducc_ratio": [
+          1.1296212224913609,
+          1.1177855895855806,
+          1.1415821765746421
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 16.04937425,
+          "candidate": 15.61119525,
+          "ducc": 14.4282,
+          "candidate_parent_ratio": 0.9726980632905361,
+          "candidate_ducc_ratio": 1.081991880484052,
+          "parent_ducc_ratio": 1.1123615038604953,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 16.0601525,
+          "candidate": 15.50126475,
+          "ducc": 14.444600000000001,
+          "candidate_parent_ratio": 0.9652003460116584,
+          "candidate_ducc_ratio": 1.0731529256608006,
+          "parent_ducc_ratio": 1.1118447378259002,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 16.598450999999997,
+          "candidate": 15.43512475,
+          "ducc": 14.513,
+          "candidate_parent_ratio": 0.929913565428485,
+          "candidate_ducc_ratio": 1.0635378453800042,
+          "parent_ducc_ratio": 1.143695376558947,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 3,
+          "parent": 16.583209500000002,
+          "candidate": 15.49969175,
+          "ducc": 14.4475,
+          "candidate_parent_ratio": 0.9346617583285068,
+          "candidate_ducc_ratio": 1.0728286381726944,
+          "parent_ducc_ratio": 1.1478255407509952,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 4,
+          "parent": 16.436253999999998,
+          "candidate": 15.79042475,
+          "ducc": 14.478100000000001,
+          "candidate_parent_ratio": 0.9607070291077274,
+          "candidate_ducc_ratio": 1.0906420559327534,
+          "parent_ducc_ratio": 1.1352493766447254,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 5,
+          "parent": 15.99619375,
+          "candidate": 16.142195,
+          "ducc": 14.3574,
+          "candidate_parent_ratio": 1.0091272494120673,
+          "candidate_ducc_ratio": 1.1243118531210388,
+          "parent_ducc_ratio": 1.1141427939599091,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 6,
+          "parent": 16.082482249999998,
+          "candidate": 15.431132250000001,
+          "ducc": 14.59445,
+          "candidate_parent_ratio": 0.9594994112305022,
+          "candidate_ducc_ratio": 1.0573287962204811,
+          "parent_ducc_ratio": 1.1019587754249045,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 7,
+          "parent": 16.39327275,
+          "candidate": 15.549138,
+          "ducc": 14.41915,
+          "candidate_parent_ratio": 0.9485072466692167,
+          "candidate_ducc_ratio": 1.0783671714352094,
+          "parent_ducc_ratio": 1.1369097866379088,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 8,
+          "parent": 16.118801,
+          "candidate": 16.110029249999997,
+          "ducc": 14.45205,
+          "candidate_parent_ratio": 0.9994558062972547,
+          "candidate_ducc_ratio": 1.1147227728938107,
+          "parent_ducc_ratio": 1.1153297283084407,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 9,
+          "parent": 16.17661275,
+          "candidate": 15.3842035,
+          "ducc": 14.395800000000001,
+          "candidate_parent_ratio": 0.9510151313970225,
+          "candidate_ducc_ratio": 1.0686591575320579,
+          "parent_ducc_ratio": 1.1237036323094236,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 10,
+          "parent": 16.74134375,
+          "candidate": 16.00391325,
+          "ducc": 14.444600000000001,
+          "candidate_parent_ratio": 0.9559515346550364,
+          "candidate_ducc_ratio": 1.1079512932168423,
+          "parent_ducc_ratio": 1.1590036241917392,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 11,
+          "parent": 16.985656,
+          "candidate": 16.404864500000002,
+          "ducc": 14.3917,
+          "candidate_parent_ratio": 0.9658069432231527,
+          "candidate_ducc_ratio": 1.1398837176983958,
+          "parent_ducc_ratio": 1.1802397215061458,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 12,
+          "parent": 16.04828,
+          "candidate": 15.78425275,
+          "ducc": 14.43935,
+          "candidate_parent_ratio": 0.9835479409631438,
+          "candidate_ducc_ratio": 1.0931415022144348,
+          "parent_ducc_ratio": 1.111426760899902,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 13,
+          "parent": 16.35204225,
+          "candidate": 15.411430249999999,
+          "ducc": 14.35275,
+          "candidate_parent_ratio": 0.942477399115086,
+          "candidate_ducc_ratio": 1.0737614917001967,
+          "parent_ducc_ratio": 1.1392968072320635,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 14,
+          "parent": 16.101149999999997,
+          "candidate": 15.428605000000001,
+          "ducc": 14.450800000000001,
+          "candidate_parent_ratio": 0.9582300022048117,
+          "candidate_ducc_ratio": 1.0676644199629086,
+          "parent_ducc_ratio": 1.1142047499100394,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    },
+    {
+      "case": "GL-T720-M720-even-s0-analysis",
+      "threads": 8,
+      "fixture_sha256": {
+        "map": "f387a49bac4cbf71283171ed19e0be9d83ebcf4d02aeba5f841b7c2bb60ba939",
+        "alm": "4f4828d09b6f15610b4720d4bf43b47e1fe85a4dc621b65790d880cca0f5f831"
+      },
+      "pairs": 15,
+      "median_ms": {
+        "parent": 2.42999825,
+        "candidate": 2.34400505,
+        "ducc": 2.141245
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.9616425260305004,
+          0.9473126925599546,
+          0.9761891243865018
+        ],
+        "candidate_ducc_ratio": [
+          1.1052651984444402,
+          1.0858686724034996,
+          1.1250081984485945
+        ],
+        "parent_ducc_ratio": [
+          1.1493514154441467,
+          1.127947666654373,
+          1.1711613182389322
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 2.6305389999999997,
+          "candidate": 2.4033067225,
+          "ducc": 2.13239,
+          "candidate_parent_ratio": 0.9136175979523589,
+          "candidate_ducc_ratio": 1.127048392883103,
+          "parent_ducc_ratio": 1.2336106434564031,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 2.6082506875,
+          "candidate": 2.40079705,
+          "ducc": 2.177285,
+          "candidate_parent_ratio": 0.9204625389368367,
+          "candidate_ducc_ratio": 1.1026563127932265,
+          "parent_ducc_ratio": 1.1979371958654932,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 2.386568889,
+          "candidate": 2.3808032,
+          "ducc": 2.13265,
+          "candidate_parent_ratio": 0.9975841095446376,
+          "candidate_ducc_ratio": 1.1163590837690198,
+          "parent_ducc_ratio": 1.1190626164630857,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 3,
+          "parent": 2.4130231999999996,
+          "candidate": 2.3307886499999997,
+          "ducc": 2.145955,
+          "candidate_parent_ratio": 0.9659205307267663,
+          "candidate_ducc_ratio": 1.0861311863482692,
+          "parent_ducc_ratio": 1.1244519106877822,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 4,
+          "parent": 2.3984397225,
+          "candidate": 2.34400505,
+          "ducc": 2.141505,
+          "candidate_parent_ratio": 0.9773041315196112,
+          "candidate_ducc_ratio": 1.0945596904980375,
+          "parent_ducc_ratio": 1.1199785769820758,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 5,
+          "parent": 2.42999825,
+          "candidate": 2.32854085,
+          "ducc": 2.128565,
+          "candidate_parent_ratio": 0.9582479534707483,
+          "candidate_ducc_ratio": 1.0939486696436331,
+          "parent_ducc_ratio": 1.1416133639329784,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 6,
+          "parent": 2.44540945,
+          "candidate": 2.29261935,
+          "ducc": 2.2099,
+          "candidate_parent_ratio": 0.937519624781036,
+          "candidate_ducc_ratio": 1.037431263858093,
+          "parent_ducc_ratio": 1.1065701841712294,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 7,
+          "parent": 2.4002355,
+          "candidate": 2.4123509,
+          "ducc": 2.13477,
+          "candidate_parent_ratio": 1.005047588038757,
+          "candidate_ducc_ratio": 1.1300284808199477,
+          "parent_ducc_ratio": 1.1243532090108068,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 8,
+          "parent": 2.3990451999999998,
+          "candidate": 2.31594095,
+          "ducc": 2.1370500000000003,
+          "candidate_parent_ratio": 0.9653594480003962,
+          "candidate_ducc_ratio": 1.0837092955242038,
+          "parent_ducc_ratio": 1.1225966636250904,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 9,
+          "parent": 2.41924995,
+          "candidate": 2.3187929,
+          "ducc": 2.14245,
+          "candidate_parent_ratio": 0.9584759524331083,
+          "candidate_ducc_ratio": 1.0823089920418212,
+          "parent_ducc_ratio": 1.1291978575929427,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 10,
+          "parent": 2.3947912000000002,
+          "candidate": 2.3309043000000003,
+          "ducc": 2.1339,
+          "candidate_parent_ratio": 0.9733225593947398,
+          "candidate_ducc_ratio": 1.0923212427948827,
+          "parent_ducc_ratio": 1.1222602746145556,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 11,
+          "parent": 2.578777667,
+          "candidate": 2.556836864,
+          "ducc": 2.140465,
+          "candidate_parent_ratio": 0.9914917818310701,
+          "candidate_ducc_ratio": 1.1945240235182544,
+          "parent_ducc_ratio": 1.2047745078756253,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 12,
+          "parent": 2.582080091,
+          "candidate": 2.4565535499999998,
+          "ducc": 2.1551299999999998,
+          "candidate_parent_ratio": 0.9513854967405811,
+          "candidate_ducc_ratio": 1.1398632797093446,
+          "parent_ducc_ratio": 1.198108741004023,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 13,
+          "parent": 2.4916572219999997,
+          "candidate": 2.4107168335,
+          "ducc": 2.141245,
+          "candidate_parent_ratio": 0.9675154400110338,
+          "candidate_ducc_ratio": 1.125848202097378,
+          "parent_ducc_ratio": 1.1636488220637993,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 14,
+          "parent": 2.4534059445,
+          "candidate": 2.3217079445,
+          "ducc": 2.149345,
+          "candidate_parent_ratio": 0.9463203387538707,
+          "candidate_ducc_ratio": 1.080193242359882,
+          "parent_ducc_ratio": 1.1414667931393054,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    },
+    {
+      "case": "GL-T720-M180-even-s0-analysis",
+      "threads": 1,
+      "fixture_sha256": {
+        "map": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+        "alm": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21"
+      },
+      "pairs": 15,
+      "median_ms": {
+        "parent": 6.8146439999999995,
+        "candidate": 6.42159525,
+        "ducc": 5.94588
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.9374866563417056,
+          0.9122265797568606,
+          0.9634461989180396
+        ],
+        "candidate_ducc_ratio": [
+          1.0556603052989673,
+          0.9874647136384572,
+          1.1285655728169475
+        ],
+        "parent_ducc_ratio": [
+          1.1260536863728845,
+          1.0515621795838077,
+          1.2058220894705594
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 6.746597875,
+          "candidate": 7.124013,
+          "ducc": 5.91984,
+          "candidate_parent_ratio": 1.05594154742771,
+          "candidate_ducc_ratio": 1.2034130990026757,
+          "parent_ducc_ratio": 1.1396588210154328,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 6.6484232500000005,
+          "candidate": 6.3042045,
+          "ducc": 5.883134999999999,
+          "candidate_parent_ratio": 0.9482255059498506,
+          "candidate_ducc_ratio": 1.0715722994627865,
+          "parent_ducc_ratio": 1.1300817081369035,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 7.311855875,
+          "candidate": 6.365310125,
+          "ducc": 5.891955,
+          "candidate_parent_ratio": 0.870546443176439,
+          "candidate_ducc_ratio": 1.0803392295087113,
+          "parent_ducc_ratio": 1.2409897691004088,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 3,
+          "parent": 6.85895275,
+          "candidate": 6.299852375,
+          "ducc": 5.888755,
+          "candidate_parent_ratio": 0.9184860436602367,
+          "candidate_ducc_ratio": 1.0698105754102523,
+          "parent_ducc_ratio": 1.1647543071498137,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 4,
+          "parent": 6.8146439999999995,
+          "candidate": 6.45343175,
+          "ducc": 5.902265,
+          "candidate_parent_ratio": 0.9469946999432399,
+          "candidate_ducc_ratio": 1.0933822439351673,
+          "parent_ducc_ratio": 1.154581165027324,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 5,
+          "parent": 6.763908,
+          "candidate": 6.34815275,
+          "ducc": 5.97922,
+          "candidate_parent_ratio": 0.9385332783946795,
+          "candidate_ducc_ratio": 1.0617024879499333,
+          "parent_ducc_ratio": 1.1312358468161399,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 6,
+          "parent": 7.231292249999999,
+          "candidate": 6.386464999999999,
+          "ducc": 6.03756,
+          "candidate_parent_ratio": 0.8831706393832998,
+          "candidate_ducc_ratio": 1.0577890737317723,
+          "parent_ducc_ratio": 1.1977176624331682,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 7,
+          "parent": 6.8376858335,
+          "candidate": 6.52189875,
+          "ducc": 9.390115,
+          "candidate_parent_ratio": 0.9538166726010051,
+          "candidate_ducc_ratio": 0.6945494011521691,
+          "parent_ducc_ratio": 0.7281791366239924,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 8,
+          "parent": 7.226588375,
+          "candidate": 6.417805625,
+          "ducc": 5.98353,
+          "candidate_parent_ratio": 0.8880823553202585,
+          "candidate_ducc_ratio": 1.0725784988125737,
+          "parent_ducc_ratio": 1.2077466604161757,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 9,
+          "parent": 6.790857750000001,
+          "candidate": 6.437470375,
+          "ducc": 5.93068,
+          "candidate_parent_ratio": 0.9479613050354353,
+          "candidate_ducc_ratio": 1.0854523216562013,
+          "parent_ducc_ratio": 1.1450386380651125,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 10,
+          "parent": 6.804822874999999,
+          "candidate": 6.470045750000001,
+          "ducc": 5.9424399999999995,
+          "candidate_parent_ratio": 0.9508029626707957,
+          "candidate_ducc_ratio": 1.0887860457993688,
+          "parent_ducc_ratio": 1.1451226895012823,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 11,
+          "parent": 6.752257125,
+          "candidate": 6.38510125,
+          "ducc": 5.949085,
+          "candidate_parent_ratio": 0.9456247195266575,
+          "candidate_ducc_ratio": 1.07329131286576,
+          "parent_ducc_ratio": 1.135007673448942,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 12,
+          "parent": 6.806433375,
+          "candidate": 6.825763875,
+          "ducc": 5.977265,
+          "candidate_parent_ratio": 1.0028400336762275,
+          "candidate_ducc_ratio": 1.1419543679257989,
+          "parent_ducc_ratio": 1.138720363744957,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 13,
+          "parent": 7.194500125,
+          "candidate": 6.45129275,
+          "ducc": 6.10576,
+          "candidate_parent_ratio": 0.8966978438964167,
+          "candidate_ducc_ratio": 1.0565912761064962,
+          "parent_ducc_ratio": 1.1783136128835723,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 14,
+          "parent": 6.899542,
+          "candidate": 6.42159525,
+          "ducc": 5.94588,
+          "candidate_parent_ratio": 0.9307277570018415,
+          "candidate_ducc_ratio": 1.0800075430382046,
+          "parent_ducc_ratio": 1.1603903879661213,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "INCONCLUSIVE"
+    },
+    {
+      "case": "GL-T720-M180-even-s0-analysis",
+      "threads": 8,
+      "fixture_sha256": {
+        "map": "09d4745f9bc0806040586f74a7d8f74c129e15a350bf255cbaa23093e61b6be7",
+        "alm": "bb805df821646c07f612dbcd6e744546fc0bac992801da47e85d9849a20a5c21"
+      },
+      "pairs": 15,
+      "median_ms": {
+        "parent": 1.245707262,
+        "candidate": 1.188380472,
+        "ducc": 1.059
+      },
+      "paired_geomean_ratio_95pct_log_t_ci": {
+        "candidate_parent_ratio": [
+          0.9516777018612493,
+          0.9362016673239847,
+          0.9674095655145668
+        ],
+        "candidate_ducc_ratio": [
+          1.0955294980681793,
+          1.0688398046349752,
+          1.1228856522118373
+        ],
+        "parent_ducc_ratio": [
+          1.1511560015807778,
+          1.1273059695525838,
+          1.1755106206892403
+        ]
+      },
+      "pair_samples": [
+        {
+          "pair": 0,
+          "parent": 1.245707262,
+          "candidate": 1.1859283335,
+          "ducc": 1.05552,
+          "candidate_parent_ratio": 0.9520120574684423,
+          "candidate_ducc_ratio": 1.1235488986471123,
+          "parent_ducc_ratio": 1.1801834754433833,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 1,
+          "parent": 1.272744119,
+          "candidate": 1.191216853,
+          "ducc": 1.064885,
+          "candidate_parent_ratio": 0.9359437103004992,
+          "candidate_ducc_ratio": 1.1186342684890855,
+          "parent_ducc_ratio": 1.1951939589720955,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 2,
+          "parent": 1.274512533,
+          "candidate": 1.1919960685,
+          "ducc": 1.12832,
+          "candidate_parent_ratio": 0.9352564511030979,
+          "candidate_ducc_ratio": 1.056434405576432,
+          "parent_ducc_ratio": 1.1295665529282473,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 3,
+          "parent": 1.2521929740000002,
+          "candidate": 1.1885034724999999,
+          "ducc": 1.1035750000000002,
+          "candidate_parent_ratio": 0.9491376306827926,
+          "candidate_ducc_ratio": 1.076957590104886,
+          "parent_ducc_ratio": 1.1346695729787282,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 4,
+          "parent": 1.2617723820000002,
+          "candidate": 1.1990872045,
+          "ducc": 1.18824,
+          "candidate_parent_ratio": 0.9503197419802139,
+          "candidate_ducc_ratio": 1.0091287993166365,
+          "parent_ducc_ratio": 1.0618834427388408,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 5,
+          "parent": 1.2898581575,
+          "candidate": 1.284145031,
+          "ducc": 1.0732949999999999,
+          "candidate_parent_ratio": 0.9955707327454724,
+          "candidate_ducc_ratio": 1.1964511443731687,
+          "parent_ducc_ratio": 1.2017741231441499,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 6,
+          "parent": 1.245105882,
+          "candidate": 1.188380472,
+          "ducc": 1.0474100000000002,
+          "candidate_parent_ratio": 0.9544412962623848,
+          "candidate_ducc_ratio": 1.1345895800116474,
+          "parent_ducc_ratio": 1.1887473692250408,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 7,
+          "parent": 1.159828818,
+          "candidate": 1.1902805455,
+          "ducc": 1.02602,
+          "candidate_parent_ratio": 1.0262553637462732,
+          "candidate_ducc_ratio": 1.1600948768055206,
+          "parent_ducc_ratio": 1.1304154090563538,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 8,
+          "parent": 1.2163707105000001,
+          "candidate": 1.129841275,
+          "ducc": 0.9928455,
+          "candidate_parent_ratio": 0.9288626117407649,
+          "candidate_ducc_ratio": 1.1379829741888339,
+          "parent_ducc_ratio": 1.2251359456229596,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 9,
+          "parent": 1.2613184375,
+          "candidate": 1.1512972220000002,
+          "ducc": 1.0613000000000001,
+          "candidate_parent_ratio": 0.9127728476576719,
+          "candidate_ducc_ratio": 1.08479904079902,
+          "parent_ducc_ratio": 1.1884655022142654,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 10,
+          "parent": 1.20393869,
+          "candidate": 1.149980889,
+          "ducc": 1.059,
+          "candidate_parent_ratio": 0.9551822684592021,
+          "candidate_ducc_ratio": 1.0859120764872523,
+          "parent_ducc_ratio": 1.1368637299339,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 11,
+          "parent": 1.2567617355,
+          "candidate": 1.192445091,
+          "ducc": 1.09468,
+          "candidate_parent_ratio": 0.9488235178687933,
+          "candidate_ducc_ratio": 1.0893092876457044,
+          "parent_ducc_ratio": 1.148063119359082,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 12,
+          "parent": 1.0641239045,
+          "candidate": 0.9783939315000001,
+          "ducc": 0.9387730000000001,
+          "candidate_parent_ratio": 0.9194360989002669,
+          "candidate_ducc_ratio": 1.0422050181460267,
+          "parent_ducc_ratio": 1.1335263205269004,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 13,
+          "parent": 1.0512793125000002,
+          "candidate": 0.9952198864999999,
+          "ducc": 0.9473235,
+          "candidate_parent_ratio": 0.9466750412250691,
+          "candidate_ducc_ratio": 1.0505596942332793,
+          "parent_ducc_ratio": 1.1097363387480625,
+          "outputs_byte_equal_parent": true
+        },
+        {
+          "pair": 14,
+          "parent": 1.0512100525,
+          "candidate": 1.020072238,
+          "ducc": 0.943126,
+          "candidate_parent_ratio": 0.9703790746426485,
+          "candidate_ducc_ratio": 1.0815863818832265,
+          "parent_ducc_ratio": 1.1146019222246022,
+          "outputs_byte_equal_parent": true
+        }
+      ],
+      "parity_status": "GAP"
+    }
+  ]
+}
