@@ -1,0 +1,32 @@
+{
+  "parent_source_sha": "ded15d0aeaf8d20ef0961320468b07b600eb88c4",
+  "candidate_patch_sha256": "652f4b4b3e7fcfc966d55252d18025a6f9666a9fc4ab8b0e799e378d3b56de9e",
+  "method": "ignored test-only typed-route profile; zero map; recurrence geometry is T720 GL; q1 and q8 route counts are identical",
+  "counter_unit": "typed coefficient-pair accumulation invocation; not lane updates or cycles",
+  "cells": [
+    {
+      "mmax": 720,
+      "threads": 1,
+      "parent": {"tile": 256, "attempts": 1139, "successes": 1139, "normal_pairs": 111909, "scaled_pairs": 125629, "scaled_share": 0.52884},
+      "candidate": {"tile": 32, "attempts": 6437, "successes": 6437, "normal_pairs": 1067695, "scaled_pairs": 266685, "scaled_share": 0.19994}
+    },
+    {
+      "mmax": 720,
+      "threads": 8,
+      "parent": {"tile": 256, "attempts": 1139, "successes": 1139, "normal_pairs": 111909, "scaled_pairs": 125629, "scaled_share": 0.52884},
+      "candidate": {"tile": 32, "attempts": 6437, "successes": 6437, "normal_pairs": 1067695, "scaled_pairs": 266685, "scaled_share": 0.19994}
+    },
+    {
+      "mmax": 180,
+      "threads": 1,
+      "parent": {"tile": 256, "attempts": 362, "successes": 362, "normal_pairs": 61843, "scaled_pairs": 52459, "scaled_share": 0.45891},
+      "candidate": {"tile": 32, "attempts": 2119, "successes": 2119, "normal_pairs": 581344, "scaled_pairs": 89429, "scaled_share": 0.13340}
+    },
+    {
+      "mmax": 180,
+      "threads": 8,
+      "parent": {"tile": 256, "attempts": 362, "successes": 362, "normal_pairs": 61843, "scaled_pairs": 52459, "scaled_share": 0.45891},
+      "candidate": {"tile": 32, "attempts": 2119, "successes": 2119, "normal_pairs": 581344, "scaled_pairs": 89429, "scaled_share": 0.13340}
+    }
+  ]
+}

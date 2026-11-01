@@ -143,6 +143,7 @@ pub(crate) trait ShtScalar:
     + std::ops::SubAssign
 {
     const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
+    const ANALYSIS_PAIR_TILE_SIZE: usize = SCALAR_ANALYSIS_PAIR_TILE_SIZE;
 
     fn supports_scalar_ordered() -> bool {
         false
@@ -2087,6 +2088,8 @@ impl ShtScalar for f64 {
 }
 
 impl ShtScalar for f32 {
+    const ANALYSIS_PAIR_TILE_SIZE: usize = 32;
+
     type SpinInitial = spin_factors::SpinInitial<f32>;
 
     fn supports_scalar_ordered() -> bool {

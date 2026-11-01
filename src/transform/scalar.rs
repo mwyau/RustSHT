@@ -2141,7 +2141,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let lmax = self.harmonics.lmax();
         let pair_lane_count = latitude_count.div_ceil(2);
         let pair_block_size = if T::supports_paired_scalar() {
-            SCALAR_ANALYSIS_PAIR_TILE_SIZE
+            T::ANALYSIS_PAIR_TILE_SIZE
         } else {
             LATITUDE_BLOCK_SIZE
         };

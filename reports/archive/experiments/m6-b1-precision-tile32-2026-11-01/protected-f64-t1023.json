@@ -1,0 +1,26 @@
+{
+  "source_parent": "ded15d0aeaf8d20ef0961320468b07b600eb88c4",
+  "candidate_change": "native-f32 B1 tile 256 to 32; f64 tile remains 256",
+  "transform": "GL T1023 full-order f64 spin-1 synthesis",
+  "pairs": 3,
+  "parent_binary_sha256": "64478cc7badcc803a6b3a43766e3b9e5789d2f8636f6729d3a3d4f3b0834df7a",
+  "candidate_binary_sha256": "6df51b59518ed17458d21d5ec5f4132c5aef40fa1c323aff13cfa5536066523e",
+  "text_sha256_parent_candidate": "b235feee62c3bcdae1a14d3b1eccc8562b6bd2518947112124bc97ec93327241",
+  "output_bitwise_equal": true,
+  "repeat_and_reset": true,
+  "q1": {
+    "parent_median_ms": 90.1694895,
+    "candidate_median_ms": 90.8624155,
+    "candidate_parent_geomean": 1.00795,
+    "candidate_parent_ci95": [0.99097, 1.02522],
+    "status": "INCONCLUSIVE"
+  },
+  "q8": {
+    "parent_median_ms": 14.34292375,
+    "candidate_median_ms": 14.6453335,
+    "candidate_parent_geomean": 1.01457,
+    "candidate_parent_ci95": [0.99971, 1.02965],
+    "status": "INCONCLUSIVE"
+  },
+  "note": "Three-pair control only. Small timing differences are not attributed to the candidate because the f64 executable text is identical."
+}

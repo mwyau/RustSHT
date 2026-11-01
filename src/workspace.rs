@@ -14,9 +14,7 @@ use crate::grid::resampling::CCResamplingPlan;
 use crate::grid::resampling::CCResamplingWorkspace;
 #[cfg(feature = "parallel")]
 use crate::legendre::HEMISPHERE_PAIR_DEGREE_TILE;
-use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, ShtScalar, recurrence_scratch_len,
-};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, recurrence_scratch_len};
 
 const ANALYSIS_VECTOR_BUFFER_CAPACITY: usize = crate::legendre::SCALAR_ORDER_BATCH_SIZE;
 
@@ -926,7 +924,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                 })?;
         let recurrence_scratch_len = recurrence_scratch_len(latitude_count);
         let analysis_pair_block_size = if T::supports_paired_scalar() {
-            SCALAR_ANALYSIS_PAIR_TILE_SIZE
+            T::ANALYSIS_PAIR_TILE_SIZE
         } else {
             LATITUDE_BLOCK_SIZE
         };

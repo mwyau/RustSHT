@@ -1,0 +1,22 @@
+Compiler: rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1
+Flags: -C target-cpu=x86-64-v3 -Aunexpected_cfgs
+CPU: AMD Ryzen 9 5950X
+Runtime route: Pulp V3 AVX2/FMA; eight f32 lanes
+
+The current release binary's V3 FusedScalarAnalysisPairTyped<f32> symbol is
+22,379 bytes in both parent and candidate. The candidate instruction excerpt
+shows a YMM fused accumulation instruction:
+
+  239516: c4 c2 5d b8 44 13 e0  vfmadd231ps -0x20(%r11,%rdx,1),%ymm4,%ymm0
+
+The tile change is in analysis block scheduling and workspace range-cache
+sizing; the shared recurrence and precision-specific f32 SIMD source was not
+changed. Generated f64 executable .text hashes are identical for the scalar
+analysis parity worker and the protected T1023 spin-1 synthesis worker:
+
+  scalar analysis .text: a85a78adf6a88f2fd3b00a9b3945a061ac2a2af3a7e8f1e4c931a3622a3612a2
+  spin-1 synthesis .text: b235feee62c3bcdae1a14d3b1eccc8562b6bd2518947112124bc97ec93327241
+
+perf stat was denied CPU events and perf record failed to open cycles because
+perf_event_paranoid=4. No cycle count is inferred from Callgrind instruction
+counts.

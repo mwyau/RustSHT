@@ -6,14 +6,14 @@
 
 Target **Rust f32/DUCC f32 ≤1.0x** and **Rust f64/DUCC f64 ≤1.0x**, separately, for B1 on GL T720 full M720/reduced M180, q1/q8. These remain eventual precision-matched performance targets, not a mandate to reach parity in one iteration. **Rust f32/Rust f64 is diagnostic only**, never a parity gate; do not slow f64 to improve the ratio. Optimizing f64 first is explicitly encouraged if a shared algorithmic cost is found.
 
-| GL T720 B1 | f32/f64 (diagnostic) | f32/DUCC f32 | f64/DUCC f64 |
-|---|---:|---:|---:|
-| Full q1 | 3.064x | 4.143x | 1.310x |
-| Full q8 | 2.838x | 3.782x | 1.273x |
-| Reduced q1 | 2.480x | 3.242x | 1.278x |
-| Reduced q8 | 2.278x | 2.911x | 1.226x |
+| GL T720 B1 | Rust f32 / DUCC f32 | Rust f64 / DUCC f64 |
+|---|---:|---:|
+| Full q1 | 3.131x GAP | 1.310x GAP |
+| Full q8 | 2.929x GAP | 1.273x GAP |
+| Reduced q1 | 2.715x GAP | 1.278x GAP |
+| Reduced q8 | 2.451x GAP | 1.226x GAP |
 
-The f32 values are from a 15-pair hard-factor-classification fusion candidate against exact parent `acd7fe5b`; the candidate/parent intervals pass in all four cells. f64 was not modified and retains its existing matched 15-pair baseline. The f32/f64 column is diagnostic. All precision-matched DUCC cells remain GAP. See the [classification-fusion evidence package](../reports/archive/experiments/m6-b1-hard-factor-classification-fusion-2026-11-01/README.md), the [uniform-exponent package](../reports/archive/experiments/m6-b1-f32-uniform-exponent-vector-2026-11-01/README.md), and the earlier [range-predicate package](../reports/archive/experiments/m6-b1-f32-range-predicate-2026-11-01/README.md). Pinned DUCC 0.42.0: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+The f32 cells are a 15-pair tile-32 candidate screen against exact parent `ded15d0a`; candidate/parent 95% intervals are 0.756–0.766 full q1, 0.757–0.774 full q8, 0.832–0.842 reduced q1 and 0.830–0.854 reduced q8. The f32/DUCC ratios remain above 1.0 in every cell. f64 was not modified; its exact-source matched baseline remains unchanged. See the [tile-32 evidence package](../reports/archive/experiments/m6-b1-precision-tile32-2026-11-01/README.md) and prior [hard-factor-classification package](../reports/archive/experiments/m6-b1-hard-factor-classification-fusion-2026-11-01/README.md). Pinned DUCC 0.42.0: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
 
 ## Investigate before optimizing
 
@@ -33,4 +33,4 @@ During exploration **do not run** complete Rust/Python suites, all 16 cells, rep
 
 ## NEXT
 
-At parent `acd7fe5`, matched q1 Callgrind profiles counted 320.34M Rust f64 Ir and 1,178.62M Rust f32 Ir; Callgrind is an instruction simulator, not a cycle counter. The Rust fused pair block accounts for 65.05% of f64 Ir and 92.03% of f32 Ir inclusively. Phase probes at `410c9ec` put recurrence plus accumulation at 82–91% of f64 wall time and 94–97% of f32 wall time. The B1 f32 hard-factor-classification fusion reduces the four GL T720 cells by 9.5–10.4% versus exact parent, with bitwise-equal output; f32/DUCC remains 2.91–4.14x GAP. f64 is unchanged and remains 1.23–1.31x DUCC. Hardware `perf` remains blocked. See the [classification-fusion package](../reports/archive/experiments/m6-b1-hard-factor-classification-fusion-2026-11-01/README.md), [profile package](../reports/archive/experiments/m6-b1-profile-410c-2026-10-31/README.md), [f64 two-pair evidence](../reports/archive/experiments/m6-b1-two-pair-analysis-unroll-2026-11-01/README.md), [normalizer screen](../reports/archive/experiments/m6-b1-analysis-normalizer-result-short-circuit-2026-11-01/README.md), and [uniform-exponent package](../reports/archive/experiments/m6-b1-f32-uniform-exponent-vector-2026-11-01/README.md). **NEXT:** identify a larger B1 cost inside ordinary/scaled recurrence and accumulation, comparing f64 with DUCC f64 and f32 with DUCC f32. Do not repeat factor-fill, range-threshold, tile, sparse-index or rejected recurrence-fusion variants without new measured evidence. Keep B0/B2/B3 parked.
+At parent `acd7fe5`, matched q1 Callgrind profiles counted 320.34M Rust f64 Ir and 1,178.62M Rust f32 Ir; Callgrind is an instruction simulator, not a cycle counter. The Rust fused pair block accounts for 65.05% of f64 Ir and 92.03% of f32 Ir inclusively. Phase probes at `410c9ec` put recurrence plus accumulation at 82–91% of f64 wall time and 94–97% of f32 wall time. A new f32-only tile-32 schedule against exact `ded15d0a` cuts the four T720 whole calls by 15.8–23.9%; all candidate/parent 95% intervals are below 0.86, while f32/DUCC remains 2.45–3.13x GAP. The test-only route probe shows scaled accumulation share falls from 52.9% to 20.0% full and 45.9% to 13.3% reduced. f64 code and binary text remain unchanged at 1.23–1.31x DUCC. Hardware `perf` remains blocked (`perf_event_paranoid=4`). See the [tile-32 package](../reports/archive/experiments/m6-b1-precision-tile32-2026-11-01/README.md), [profile package](../reports/archive/experiments/m6-b1-profile-410c-2026-10-31/README.md), [classification-fusion package](../reports/archive/experiments/m6-b1-hard-factor-classification-fusion-2026-11-01/README.md), and [f64 two-pair evidence](../reports/archive/experiments/m6-b1-two-pair-analysis-unroll-2026-11-01/README.md). **NEXT:** profile remaining scaled recurrence and normalization under tile 32, and independently profile f64 against DUCC before selecting a new targeted B1 change. Do not repeat old tile, scale-threshold, factor-fill, sparse-index or recurrence-fusion variants without distinct measured evidence. Keep B0/B2/B3 parked.

@@ -14,8 +14,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use crate::error::{ShtError, check_len};
 use crate::grid::GridKind;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, SCALAR_ANALYSIS_PAIR_TILE_SIZE,
-    ShtScalar, longitude_phase, recurrence_scratch_len, sin_cos_from_f64,
+    LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, ShtScalar, longitude_phase,
+    recurrence_scratch_len, sin_cos_from_f64,
 };
 use crate::plan::{ScalarLatitudeGeometry, ShtPlan};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
