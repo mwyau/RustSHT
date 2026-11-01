@@ -74,6 +74,17 @@ pub(crate) trait FusedAnalysisPrecision: PairedScalarRecurrencePrecision {
 
     fn invalidate_scaled_state(state: &mut Self::ScaledState);
 
+    /// Range predicate for the scalar-analysis recurrence. The default keeps
+    /// other analysis routes on their existing precision-specific behavior.
+    #[inline(always)]
+    fn scalar_analysis_pair_needs_scaling<S: Simd>(
+        simd: S,
+        previous: &[Self],
+        current: &[Self],
+    ) -> bool {
+        Self::pair_state_needs_scaling(simd, previous, current)
+    }
+
     #[inline(always)]
     fn normalize_analysis_pair_state<S: Simd>(
         simd: S,
@@ -465,6 +476,15 @@ impl FusedAnalysisPrecision for f32 {
     }
 
     #[inline(always)]
+    fn scalar_analysis_pair_needs_scaling<S: Simd>(
+        simd: S,
+        previous: &[Self],
+        current: &[Self],
+    ) -> bool {
+        f32_scalar_analysis_pair_needs_scaling(simd, previous, current)
+    }
+
+    #[inline(always)]
     fn reduce_sum<S: Simd>(simd: S, value: Self::Vector<S>) -> Self {
         simd.reduce_sum_f32s(value)
     }
@@ -790,6 +810,66 @@ impl FusedAnalysisPrecision for f32 {
     fn invalidate_scaled_state(state: &mut Self::ScaledState) {
         state.valid = false;
     }
+}
+
+/// Uses a short SIMD range predicate for ordinary recurrence vectors, then
+/// applies the established exact predicate only to vectors that may need
+/// scaling. Scalar tails keep the original lane-wise rule.
+#[inline(always)]
+fn f32_scalar_analysis_pair_needs_scaling<S: Simd>(
+    simd: S,
+    previous: &[f32],
+    current: &[f32],
+) -> bool {
+    debug_assert_eq!(previous.len(), current.len());
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f32s(current);
+    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+    debug_assert_eq!(previous_tail.len(), current_tail.len());
+
+    let zero = simd.splat_f32s(0.0);
+    let small = simd.splat_f32s(<f32 as LegendrePrecision>::SMALL);
+    let big = simd.splat_f32s(<f32 as LegendrePrecision>::BIG);
+    for (&previous, &current) in previous_vectors.iter().zip(current_vectors) {
+        let previous_magnitude = simd.abs_f32s(previous);
+        let current_magnitude = simd.abs_f32s(current);
+        let maximum = simd.max_f32s(previous_magnitude, current_magnitude);
+        let valid = simd.and_m32s(
+            simd.less_than_or_equal_f32s(maximum, big),
+            simd.or_m32s(
+                simd.equal_f32s(maximum, zero),
+                simd.greater_than_or_equal_f32s(maximum, small),
+            ),
+        );
+        if simd.first_true_m32s(simd.not_m32s(valid)) == S::F32_LANES {
+            continue;
+        }
+
+        // Preserve the scalar-analysis single-NaN policy on exceptional
+        // vectors. This is the previous exact vector reduction, kept off the
+        // ordinary range path.
+        let previous_ordered = simd.equal_f32s(previous_magnitude, previous_magnitude);
+        let current_ordered = simd.equal_f32s(current_magnitude, current_magnitude);
+        let maximum = simd.max_f32s(previous_magnitude, current_magnitude);
+        let maximum = simd.select_f32s(current_ordered, maximum, previous_magnitude);
+        let maximum = simd.select_f32s(previous_ordered, maximum, current_magnitude);
+        let below_upper_bound = simd.less_than_or_equal_f32s(maximum, big);
+        let is_zero = simd.equal_f32s(maximum, zero);
+        let lower_check = simd.select_f32s(is_zero, big, maximum);
+        let in_range = simd.select_f32s(below_upper_bound, lower_check, zero);
+        if simd.reduce_min_f32s(in_range) < <f32 as LegendrePrecision>::SMALL {
+            return true;
+        }
+    }
+
+    previous_tail
+        .iter()
+        .zip(current_tail)
+        .any(|(&previous, &current)| {
+            let maximum = previous.abs().max(current.abs());
+            !(maximum <= <f32 as LegendrePrecision>::BIG
+                && (maximum == 0.0 || maximum >= <f32 as LegendrePrecision>::SMALL))
+        })
 }
 
 impl FusedAnalysisPrecision for f64 {
@@ -1438,7 +1518,7 @@ impl<T: FusedAnalysisPrecision> WithSimd for FusedScalarAnalysisPairTyped<'_, T>
             let check_range = !range_check_is_proven_safe || !normal_range;
             if check_range {
                 *range_check_was_exercised = true;
-                if T::pair_state_needs_scaling(simd, previous_slice, current_slice) {
+                if T::scalar_analysis_pair_needs_scaling(simd, previous_slice, current_slice) {
                     if previous_slice
                         .iter()
                         .chain(current_slice.iter())

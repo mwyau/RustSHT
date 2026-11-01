@@ -9,6 +9,96 @@ fn insignificant_prefix_uses_ducc_threshold_at_all_latitude_counts() {
     }
 }
 
+struct F32LaneCount;
+
+impl WithSimd for F32LaneCount {
+    type Output = usize;
+
+    fn with_simd<S: Simd>(self, _: S) -> Self::Output {
+        S::F32_LANES
+    }
+}
+
+struct F32PairRangeCheck<'a> {
+    previous: &'a [f32],
+    current: &'a [f32],
+}
+
+impl WithSimd for F32PairRangeCheck<'_> {
+    type Output = bool;
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let expected =
+            numeric::f32_pair_lanes_need_scaling::<S, true>(simd, self.previous, self.current);
+        let actual = f32_scalar_analysis_pair_needs_scaling(simd, self.previous, self.current);
+        assert_eq!(actual, expected);
+        actual
+    }
+}
+
+#[test]
+fn b1_f32_fast_range_predicate_matches_exact_predicate_at_boundaries_and_tails() {
+    let arch = Arch::new();
+    let lane_count = arch.dispatch(F32LaneCount);
+    let small = <f32 as LegendrePrecision>::SMALL;
+    let big = <f32 as LegendrePrecision>::BIG;
+    let values = [
+        0.0,
+        -0.0,
+        small.next_down(),
+        small,
+        -small,
+        big,
+        -big,
+        big.next_up(),
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        f32::NAN,
+        0.75,
+        -1.25,
+    ];
+
+    for length in [
+        1,
+        lane_count.saturating_sub(1).max(1),
+        lane_count,
+        lane_count + 3,
+        67,
+    ] {
+        for previous_value in values {
+            for current_value in values {
+                let mut previous = vec![0.75; length];
+                let mut current = vec![-1.25; length];
+                let lane = length.saturating_sub(1);
+                previous[lane] = previous_value;
+                current[lane] = current_value;
+                arch.dispatch(F32PairRangeCheck {
+                    previous: &previous,
+                    current: &current,
+                });
+            }
+        }
+    }
+
+    let mut state = 0x9e37_79b9_u32;
+    for length in [lane_count * 2 + 3, 67, 127] {
+        let mut previous = Vec::with_capacity(length);
+        let mut current = Vec::with_capacity(length);
+        for _ in 0..length {
+            state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            let bits = (state & 0x807f_ffff) | (((state >> 24) % 0x96) << 23);
+            previous.push(f32::from_bits(bits));
+            state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            let bits = (state & 0x807f_ffff) | (((state >> 24) % 0x96) << 23);
+            current.push(f32::from_bits(bits));
+        }
+        arch.dispatch(F32PairRangeCheck {
+            previous: &previous,
+            current: &current,
+        });
+    }
+}
+
 struct F64LaneCount;
 
 impl WithSimd for F64LaneCount {
