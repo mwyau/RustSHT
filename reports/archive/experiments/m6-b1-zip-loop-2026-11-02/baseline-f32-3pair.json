@@ -1,0 +1,669 @@
+{
+  "metadata": {
+    "rust_source_sha": "792c8f363ad73cd839a0df73965714b74623ac6e",
+    "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs; release; runtime Pulp AVX2/FMA",
+    "ducc_flags": "pinned benchmark binaries; documented DUCC build -O3 -march=x86-64-v3 -ffp-contract=fast",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "q1_cpu": "2",
+    "q8_cpus": "0,1,2,3,4,5,6,7",
+    "pairs": 3,
+    "binary_sha256": {
+      "rust_f32": "57b564b9453ad431daaf1d8f59c51a4e01582cd834a74e5e13889fa92f5f6d6b",
+      "ducc_f32": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8",
+      "rust_f64": "82d83a856d5f5aa55c4d5077c28b63ea64c19601d8148f1407a8afa09905174a",
+      "ducc_f64": "7a698915281354f62fde7afa0fc2ccec66201a33a80f6e8f08170fdd7818cc11"
+    },
+    "ducc_checkout_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b"
+  },
+  "cells": [
+    {
+      "case_id": "f32-GL-T720-M720-q1",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "longitude_mode": "even",
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 1
+      },
+      "affinity": "2",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 44.53785499999999,
+            "ducc": 15.446513249999999
+          },
+          "rust_over_ducc": 2.883359777003396,
+          "output_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            46.267083,
+            44.667292999999994,
+            44.680628,
+            44.842181000000004,
+            44.105869999999996,
+            44.358724,
+            44.408417,
+            45.506747,
+            44.333257,
+            44.107504
+          ],
+          "ducc_batch_ms": [
+            16.110576,
+            16.082363,
+            18.651419,
+            15.0994655,
+            15.712765,
+            15.07255,
+            15.0962295,
+            15.1802615,
+            15.1753425,
+            17.8164685
+          ]
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "rust"
+          ],
+          "median_ms": {
+            "ducc": 15.088084,
+            "rust": 41.5025505
+          },
+          "rust_over_ducc": 2.750683950327954,
+          "output_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            42.33475,
+            41.74797,
+            42.212021,
+            41.419304,
+            41.582981,
+            41.201616,
+            40.985371,
+            40.936419,
+            41.658262,
+            41.42212
+          ],
+          "ducc_batch_ms": [
+            14.919423,
+            15.3098145,
+            14.998396,
+            15.021599,
+            14.91534,
+            14.9095395,
+            16.892231,
+            15.154569,
+            15.249141,
+            15.479057
+          ]
+        },
+        {
+          "pair": 3,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 42.732291000000004,
+            "ducc": 15.54735225
+          },
+          "rust_over_ducc": 2.748525299540956,
+          "output_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            41.481049999999996,
+            41.555289,
+            41.850263,
+            42.396777,
+            42.506052000000004,
+            43.361205,
+            42.95853,
+            46.739086,
+            45.130462,
+            44.368273
+          ],
+          "ducc_batch_ms": [
+            14.954098,
+            14.978684,
+            15.0807505,
+            17.4681655,
+            15.4202315,
+            17.9961755,
+            15.472274,
+            16.056404,
+            15.6224305,
+            16.0026785
+          ]
+        }
+      ],
+      "median_pair_ratio": 2.750683950327954,
+      "rust_median_ms": 42.732291000000004,
+      "ducc_median_ms": 15.446513249999999
+    },
+    {
+      "case_id": "f32-GL-T720-M720-q8",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "lmax": 720,
+        "mmax": 720,
+        "longitude": "even",
+        "longitude_mode": "even",
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 8
+      },
+      "affinity": "0,1,2,3,4,5,6,7",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 6.785088,
+            "ducc": 2.4304115
+          },
+          "rust_over_ducc": 2.791744525566967,
+          "output_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            6.81046175,
+            6.67752775,
+            6.75971425,
+            7.550096,
+            7.445034,
+            6.991293499999999,
+            6.662825,
+            7.609735000000001,
+            6.30894925,
+            6.3449040000000005
+          ],
+          "ducc_batch_ms": [
+            2.4245826666666668,
+            2.3939326666666667,
+            2.278481166666667,
+            2.4794405,
+            2.4341923333333333,
+            2.3214785,
+            2.4266306666666666,
+            2.5703158333333334,
+            2.7252879166666664,
+            2.6065454166666666
+          ]
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "rust"
+          ],
+          "median_ms": {
+            "ducc": 2.416407,
+            "rust": 6.824019874999999
+          },
+          "rust_over_ducc": 2.8240357998466314,
+          "output_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            7.69561375,
+            6.671371,
+            6.91895525,
+            6.60585575,
+            7.26281725,
+            6.769723,
+            6.915967,
+            6.701440000000001,
+            6.7918294999999995,
+            6.856210249999999
+          ],
+          "ducc_batch_ms": [
+            2.335488090909091,
+            2.309155090909091,
+            2.6341097272727274,
+            2.562600272727273,
+            2.359737181818182,
+            2.427413181818182,
+            2.428139909090909,
+            2.423483,
+            2.409331,
+            2.340788090909091
+          ]
+        },
+        {
+          "pair": 3,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 6.1169818750000005,
+            "ducc": 2.411198636363636
+          },
+          "rust_over_ducc": 2.536904999343028,
+          "output_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            6.2362405,
+            5.970675,
+            5.9145122500000005,
+            6.0365185,
+            5.98001775,
+            5.912861749999999,
+            6.19744525,
+            6.2826075,
+            6.98541975,
+            6.34283775
+          ],
+          "ducc_batch_ms": [
+            2.3795907272727272,
+            2.346258272727273,
+            2.350284909090909,
+            2.308473818181818,
+            2.3080976363636365,
+            2.442806545454545,
+            2.7344168181818183,
+            2.4574285454545457,
+            2.4705868181818182,
+            2.4571917272727273
+          ]
+        }
+      ],
+      "median_pair_ratio": 2.791744525566967,
+      "rust_median_ms": 6.785088,
+      "ducc_median_ms": 2.416407
+    },
+    {
+      "case_id": "f32-GL-T720-M180-q1",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "longitude_mode": "even",
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 1
+      },
+      "affinity": "2",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 14.909013250000001,
+            "ducc": 6.30826925
+          },
+          "rust_over_ducc": 2.3634078792689452,
+          "output_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            14.3950945,
+            14.457292,
+            14.3953005,
+            15.0030395,
+            15.455668000000001,
+            17.017961500000002,
+            14.814987,
+            15.5006575,
+            14.770093,
+            15.021139
+          ],
+          "ducc_batch_ms": [
+            6.595812,
+            6.231101,
+            6.17809875,
+            6.96588575,
+            6.3854375,
+            6.132065,
+            6.145142,
+            6.62502425,
+            6.43621775,
+            6.16049325
+          ]
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "rust"
+          ],
+          "median_ms": {
+            "ducc": 6.213496624999999,
+            "rust": 15.422436
+          },
+          "rust_over_ducc": 2.482086485401447,
+          "output_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            15.6227465,
+            15.9040685,
+            14.67525,
+            14.8887405,
+            14.324803000000001,
+            15.222125499999999,
+            15.658313,
+            15.0583235,
+            15.905902,
+            16.010408
+          ],
+          "ducc_batch_ms": [
+            6.488536,
+            6.18631175,
+            6.163672,
+            6.4673535,
+            6.23182225,
+            6.135136,
+            6.5105145,
+            6.195171,
+            6.1850495,
+            6.34951025
+          ]
+        },
+        {
+          "pair": 3,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 15.71652225,
+            "ducc": 6.530468125
+          },
+          "rust_over_ducc": 2.4066455802508036,
+          "output_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            15.361396500000001,
+            15.647082,
+            14.9792705,
+            15.7859625,
+            15.2730855,
+            15.214902,
+            16.2858645,
+            17.697801499999997,
+            18.4712465,
+            17.076667
+          ],
+          "ducc_batch_ms": [
+            6.55887525,
+            6.48503175,
+            6.47345,
+            6.5455,
+            6.70378425,
+            6.5337155,
+            6.473941,
+            6.81074975,
+            6.444,
+            6.52722075
+          ]
+        }
+      ],
+      "median_pair_ratio": 2.4066455802508036,
+      "rust_median_ms": 15.422436,
+      "ducc_median_ms": 6.30826925
+    },
+    {
+      "case_id": "f32-GL-T720-M180-q8",
+      "case": {
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 378,
+        "lmax": 720,
+        "mmax": 180,
+        "longitude": "even",
+        "longitude_mode": "even",
+        "spin": 0,
+        "operation": "analysis",
+        "threads": 8
+      },
+      "affinity": "0,1,2,3,4,5,6,7",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 2.501625125,
+            "ducc": 1.1066670357142856
+          },
+          "rust_over_ducc": 2.260503877198578,
+          "output_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            2.807848625,
+            2.4738662500000004,
+            2.4517336249999997,
+            2.4766465,
+            2.5282744999999998,
+            2.53626825,
+            2.4139827499999997,
+            2.51338025,
+            2.6431848749999998,
+            2.48987
+          ],
+          "ducc_batch_ms": [
+            1.0347361428571429,
+            1.0999955714285714,
+            1.0929402142857143,
+            1.0632925714285715,
+            1.1282270714285714,
+            1.104466142857143,
+            1.1088679285714285,
+            1.116890142857143,
+            1.169926,
+            1.2776729285714286
+          ]
+        },
+        {
+          "pair": 2,
+          "order": [
+            "ducc",
+            "rust"
+          ],
+          "median_ms": {
+            "ducc": 1.0814696041666667,
+            "rust": 2.4942662777777773
+          },
+          "rust_over_ducc": 2.3063674357262682,
+          "output_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            2.622961444444444,
+            2.6524667777777777,
+            2.5347838888888887,
+            2.4389643333333333,
+            2.522131333333333,
+            2.627298444444444,
+            2.364419,
+            2.3600206666666668,
+            2.2840617777777776,
+            2.4664012222222222
+          ],
+          "ducc_batch_ms": [
+            1.0243327083333333,
+            1.045062,
+            1.0555779583333333,
+            1.115302,
+            1.0523039166666666,
+            1.0784762916666668,
+            1.10428175,
+            1.0844629166666666,
+            1.1030089583333333,
+            1.0957753749999999
+          ]
+        },
+        {
+          "pair": 3,
+          "order": [
+            "rust",
+            "ducc"
+          ],
+          "median_ms": {
+            "rust": 2.0815442777777777,
+            "ducc": 1.310714947368421
+          },
+          "rust_over_ducc": 1.5880983748274056,
+          "output_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_batch_ms": [
+            2.7381206666666666,
+            2.6494166666666668,
+            2.579680222222222,
+            2.3290716666666667,
+            2.0207125555555554,
+            2.0670537777777778,
+            2.0960347777777777,
+            2.0344604444444445,
+            2.0407723333333334,
+            2.042569
+          ],
+          "ducc_batch_ms": [
+            1.3774974736842105,
+            1.3435543684210525,
+            1.4455028947368422,
+            1.2179015263157895,
+            1.1014057368421053,
+            1.3149149473684212,
+            1.3360345263157896,
+            1.306514947368421,
+            1.0731243157894736,
+            1.1663706842105264
+          ]
+        }
+      ],
+      "median_pair_ratio": 2.260503877198578,
+      "rust_median_ms": 2.4942662777777773,
+      "ducc_median_ms": 1.1066670357142856
+    }
+  ]
+}

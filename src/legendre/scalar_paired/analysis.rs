@@ -1397,25 +1397,35 @@ fn accumulate_two_normal_scalar_analysis_pairs<T: FusedAnalysisPrecision, S: Sim
     let mut same_im1 = zero;
     let mut opposite_re1 = zero;
     let mut opposite_im1 = zero;
-    for index in 0..current_vectors.len() {
-        let previous0 = previous_vectors[index];
-        let basis0 = current_vectors[index];
-        same_re0 = T::simd_fma(simd, same_re_vectors[index], basis0, same_re0);
-        same_im0 = T::simd_fma(simd, same_im_vectors[index], basis0, same_im0);
-        opposite_re0 = T::simd_fma(simd, opposite_re_vectors[index], basis0, opposite_re0);
-        opposite_im0 = T::simd_fma(simd, opposite_im_vectors[index], basis0, opposite_im0);
+    for (((((((basis0, previous0), same_re), same_im), opposite_re), opposite_im), cos2), next) in
+        current_vectors
+            .iter()
+            .zip(previous_vectors.iter_mut())
+            .zip(same_re_vectors.iter())
+            .zip(same_im_vectors.iter())
+            .zip(opposite_re_vectors.iter())
+            .zip(opposite_im_vectors.iter())
+            .zip(cos2_vectors.iter())
+            .zip(next_vectors.iter_mut())
+    {
+        let previous_state = *previous0;
+        let basis0 = *basis0;
+        same_re0 = T::simd_fma(simd, *same_re, basis0, same_re0);
+        same_im0 = T::simd_fma(simd, *same_im, basis0, same_im0);
+        opposite_re0 = T::simd_fma(simd, *opposite_re, basis0, opposite_re0);
+        opposite_im0 = T::simd_fma(simd, *opposite_im, basis0, opposite_im0);
 
-        let leading0 = T::simd_fma(simd, a0, cos2_vectors[index], b0);
-        let basis1 = T::simd_fma(simd, leading0, basis0, previous0);
-        next_vectors[index] = basis1;
-        same_re1 = T::simd_fma(simd, same_re_vectors[index], basis1, same_re1);
-        same_im1 = T::simd_fma(simd, same_im_vectors[index], basis1, same_im1);
-        opposite_re1 = T::simd_fma(simd, opposite_re_vectors[index], basis1, opposite_re1);
-        opposite_im1 = T::simd_fma(simd, opposite_im_vectors[index], basis1, opposite_im1);
+        let leading0 = T::simd_fma(simd, a0, *cos2, b0);
+        let basis1 = T::simd_fma(simd, leading0, basis0, previous_state);
+        *next = basis1;
+        same_re1 = T::simd_fma(simd, *same_re, basis1, same_re1);
+        same_im1 = T::simd_fma(simd, *same_im, basis1, same_im1);
+        opposite_re1 = T::simd_fma(simd, *opposite_re, basis1, opposite_re1);
+        opposite_im1 = T::simd_fma(simd, *opposite_im, basis1, opposite_im1);
 
         if advance_after_second_pair {
-            let leading1 = T::simd_fma(simd, a1, cos2_vectors[index], b1);
-            previous_vectors[index] = T::simd_fma(simd, leading1, basis1, basis0);
+            let leading1 = T::simd_fma(simd, a1, *cos2, b1);
+            *previous0 = T::simd_fma(simd, leading1, basis1, basis0);
         }
     }
 

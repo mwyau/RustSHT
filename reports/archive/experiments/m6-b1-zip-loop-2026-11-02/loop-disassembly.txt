@@ -1,0 +1,41 @@
+Rust 1.99.1 / LLVM 23.1.1, release, x86-64-v3, runtime Pulp V3 AVX2/FMA.
+Object: parent/candidate binaries and full assembly listed in results.json metadata.
+
+f32 parent, hot 8-lane loop. The four `cmp` / conditional branches at 1e77f5,
+1e77fe, 1e780c and 1e7888 are slice/loop bounds. Stack slots are reloaded
+between recurrence/accumulation FMAs (for example 1e7822, 1e7831, 1e783c,
+1e784a, 1e7859, 1e7883, 1e7896 and 1e78aa):
+
+  1e77f5: cmp    %r10,%rdi
+  1e77f8: je     fallback
+  1e77fe: cmp    %r10,0x98(%rsp)
+  1e7806: je     fallback
+  1e780c: cmp    %r10,%rsi
+  1e780f: je     fallback
+  1e7815: vmovups 0x0(%r13,%rdx,1),%ymm12
+  1e781c: vfmadd231ps (%r9,%rdx,1),%ymm12,%ymm4
+  1e7822: mov    0xa0(%rsp),%r13
+  1e782a: vfmadd231ps 0x0(%r13,%rdx,1),%ymm12,%ymm5
+  ...
+  1e7883: mov    0x40(%rsp),%rcx
+  1e7888: cmp    0xb0(%rsp),%rcx
+  1e7890: jae    loop
+
+f32 candidate, same FMA recurrence/accumulation, one loop check, persistent
+base pointers in registers in the hot vector loop:
+
+  1e797d: vmovups (%rcx,%rdx,1),%ymm12
+  1e7982: vfmadd231ps 0x0(%rbp,%rdx,1),%ymm12,%ymm4
+  1e7989: vfmadd231ps (%rsi,%rdx,1),%ymm12,%ymm5
+  1e798f: vfmadd231ps 0x0(%r13,%rdx,1),%ymm12,%ymm6
+  1e7996: vfmadd231ps (%rbx,%rdx,1),%ymm12,%ymm8
+  1e799c: vmovups (%r10,%rdx,1),%ymm13
+  1e79a2: vfmadd213ps %ymm0,%ymm3,%ymm13
+  1e79a7: vfmadd213ps (%r8,%rdx,1),%ymm12,%ymm13
+  ...
+  1e79cd: cmp    %rdi,%r9
+  1e79d0: jae    loop
+
+f64 candidate uses 4-lane YMM `vfmadd*pd`; its hot loop similarly has one
+bound compare. Neither hot vector loop spills YMM values to the stack. This
+is generated-code evidence, not a standalone claim about cycles.

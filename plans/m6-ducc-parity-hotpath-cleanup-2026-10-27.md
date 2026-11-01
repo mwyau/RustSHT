@@ -1,33 +1,27 @@
-# M6 — f64 scalar and spin-1 analysis performance
+# M6 — B1 scalar-analysis hot path
 
-**Owner direction (2026-11-01): work on f64 B1 scalar analysis and f64 B3 spin-1 analysis.** Both are active, with one bounded experiment at a time. Do not continue B1 f32 performance tuning, attempt f32/f64 timing equality, or reopen B0 scalar synthesis or B2 spin-1 synthesis. This is the **only active M6 plan**; read [AGENTS.md](../AGENTS.md) and update the [live ledger](../reports/DUCC_PARITY_M6.md). The [B1-only plan](../reports/archive/plans/m6-b1-only-before-f64-b1-b3-focus-2026-11-01.md) and earlier three-way-parity plan are archived and superseded.
+**Owner direction (2026-11-02): focus exclusively on B1 scalar analysis.** Improve native f32 against DUCC f32 and native f64 against DUCC f64; f32/f64 timing equality is not a target. B0, B2 and B3 are parked during this investigation. This supersedes the earlier B1-f64/B3-f64 execution order. See [AGENTS.md](../AGENTS.md), the [live parity ledger](../reports/DUCC_PARITY_M6.md), and the [current B1 zipped-loop evidence](../reports/archive/experiments/m6-b1-zip-loop-2026-11-02/README.md).
 
-## Targets and source-specific baselines
+## Workload and acceptance
 
-Compare warm native Rust f64 whole transforms to **pinned DUCC 0.42.0 f64** (`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`) on GL T720, full M720/reduced M180, q1/q8. Target Rust f64 / DUCC f64 ≤1.00 **per cell**, with paired uncertainty. Do not interpret a geometric-mean improvement as universal parity. The reference measurements come from separate source revisions; refresh a B3 control before inferring an effect from B1 changes.
+Use GL T720, full M720/reduced M180, q1/q8, warm complete transforms including FFT and scheduling. Pin DUCC to `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Compare each Rust precision to matching DUCC on the same geometry, fixture, ISA, affinity and thread count. Three interleaved pairs screen; consequential claims require 15+ paired observations, uncertainty, hashes and output comparison. Do not slow f64 or weaken numerical tests to improve a ratio.
 
-| Family | Full q1 | Full q8 | Reduced q1 | Reduced q8 | Evidence |
-|---|---:|---:|---:|---:|---|
-| B1 scalar analysis f64 / DUCC f64 | 1.136 | 1.132 | 1.142 | 1.111 | 15 pairs; SIMD seed-init candidate based on `80959a30` |
-| B3 spin-1 analysis f64 / DUCC f64 | 1.213 | 1.346 | 1.236 | 1.295 | 15 pairs; older B3 fusion screen against `95bcbecc` |
+Current exact parent is `792c8f363ad73cd839a0df73965714b74623ac6e`. The zipped ordinary-loop candidate changes only SIMD slice traversal in `accumulate_two_normal_scalar_analysis_pairs`: f32 improves three cells with paired intervals below one, full q1 is inconclusive; f64 changes are inconclusive in all four cells and show no resolved regression. DUCC parity remains a gap. Results and provenance are in the linked evidence package.
 
-B1's vectorized f64 seed initialization saved 8.3–10.6% whole-transform time and 6.5–7.6x in the isolated seed microbenchmark. The B3 fused scaled recurrence at `094d3162` changed **f32** only; it did not close B3's f64 gap. Older results remain valid for their source, not automatically for the current `dev` binary.
+## Profile findings and next work
 
-## Execution order
+Parent Callgrind full-q1 attributes 94.32% of f32 and 81.37% of f64 instructions to B1's symmetric order group; the fused paired block is 86.28%/59.81%, and FFT is 5.68%/18.61%. The candidate Callgrind run reduces whole-call Ir by 3.42%/4.82%. AVX2/FMA disassembly shows redundant per-vector slice bounds and repeated stack base loads in the parent ordinary kernel; zipped traversal emits one loop guard with the same FMA sequence. Hardware PMU events are unavailable (`perf_event_paranoid=4`), so Callgrind Ir is not cycles. Current evidence does not split recurrence, ordinary/scaled accumulation and exceptional fallback into elapsed-time shares; continue that diagnosis without double-counting inclusive phases.
 
-1. **B1 f64: bounded finishing investigation.** Profile the current f64 ordinary two-pair recurrence/accumulation, remaining initialization, reduction, and SIMD tails against DUCC f64's corresponding kernel. Try at most one or two evidence-backed changes before reassessing. Do not chase the last 11–14% indefinitely.
-2. **B3 f64: main follow-on effort.** Refresh a small current-source baseline, then inspect the executed spin-1 analysis hot path, scalar/spin recurrence reuse, two-channel accumulation, normal/scaled transitions, seed initialization, memory layout, and q8 scheduling. Compare to DUCC f64. Favor an optimization that removes a substantial measured cost rather than multiplying fine-grained special cases.
-3. **Shared f64 improvement:** if a B1 change is mathematically and architecturally applicable to B3, test that hypothesis against B3's actual path. Do not assume scalar and spin-1 use identical work/dispatch. Retain shared generic f32/f64 mathematical algorithms, with only justified narrow f64 SIMD specializations.
-4. **Optional SIMD-tail experiment:** first measure recurrence-weighted tail frequency on actual B1/B3 grids. Only if tails consume meaningful time, microbenchmark greedy AVX-512 8→4→2 and AVX2 4→2→scalar f64 strategies (or a correctly masked partial vector) against the existing scalar tail. Verify inactive lanes do not enter reductions or scale checks. Do not implement a global width policy on speculation.
+1. Keep the zipped-loop change if current CI and focused numerical checks remain green; refresh the four-cell timing on a quieter host before claiming an f64 gain.
+2. Profile representative nonzero f32/f64 T720 routes to separate ordinary recurrence/accumulation, scaled accumulation, exponent normalization, exceptional fallback, FFT and scheduling. Use paired microbenchmarks and disassembly; use PMU counters only if available.
+3. Form one distinct, profile-backed B1 candidate at a time. Recheck all four B1 cells and output correctness; preserve analytic, adjoint, high-order, exceptional, SIMD-tail and workspace-reset behavior.
 
-## How to work
+## Engineering constraints
 
-- **Investigate first:** use pinned short microbenchmarks, `perf` cycle counters if available, direct wall-time phase instrumentation, and AVX2/FMA disassembly. Current host previously denied hardware PMU access (`perf_event_paranoid=4`); report this limitation rather than treating Callgrind Ir as cycles. Compare exact Rust and DUCC f64 paths, kernel bytes, SIMD lanes, spills, branch structure and usable work per degree/ring.
-- **Screen narrowly:** use an isolated worktree, an explicit bottleneck hypothesis, affected correctness tests and approximately three interleaved warm whole-call f64 pairs against the exact parent and matching DUCC. Reject non-winners quickly; do not repeat rejected f32 tile, factor fill, recurrence-fusion, scaled-accumulator or suffix-screen variants without new evidence.
-- **Promote deliberately:** only a candidate worth retaining needs 15+ paired warm f64 B1 or B3 whole-transform measurements for full/reduced q1/q8, uncertainty, hashes and output comparisons; formatting, strict Clippy, relevant Rust/Python regression suites, exceptional/adjoint/reset tests, protected f64 T1023 spin-1 synthesis and CI. For shared source changes, run focused f32 regressions too. Preserve all current numerical tolerances.
-- **Keep other families parked:** B0 scalar synthesis already beats precision-matched DUCC. B2 spin-1 synthesis f64 is near parity in older three-pair screens; do not retune it now. f32 performance of B1/B3 and f32/f64 timing comparisons are **deferred**, not failed acceptance gates.
-- **CI hygiene:** Ubuntu has previously failed `f32_uniform_minus_80_simd_scaling_matches_exact_scalar_scaling_and_tail` when eight exceptional lanes take the scalar tail on a 16-wide backend. If still failing, fix this narrow SIMD-width nonfinite contract and add targeted tests, without turning it into a separate f32 performance project.
+- Keep the shared generic f32/f64 algorithm and native SIMD/FFT paths; no f32-to-f64 transform backend or duplicate recurrence.
+- Use isolated worktrees for risky candidate code. Preserve unrelated dirty worktrees and scratch; never reset or clean shared work.
+- Promote only after full relevant Rust/Python checks, strict Clippy, formatting, CI, and protected numerical/performance controls. Push coherent work to the existing `dev` branch after fetching and reconciling remote updates.
 
 ## NEXT
 
-Fetch/reconcile `dev`, verify current B1/B3 f64 paths and exact-source benchmark provenance, then **screen one or two bounded B1 f64 hot-loop/tail improvements and proceed to B3 f64 profiling**. Use short measurements and disassembly before broad validation. Push only verified improvements and concise updated findings to the existing `dev` branch, without subagents or history rewrites.
+The zipped traversal is ready for `dev` after the final source/ledger reconciliation. Then profile scaled and exceptional B1 costs separately and repeat f64 whole-call measurements under quieter conditions. Leave B0/B2/B3 untouched.
