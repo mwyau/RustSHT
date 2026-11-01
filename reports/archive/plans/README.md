@@ -1,11 +1,12 @@
 # Superseded execution plans
 
 These dated plans were moved out of `plans/` when the owner established one
-active direction: [B1 scalar-analysis performance investigation](../../../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
+active direction: [f64 scalar and spin-1 analysis optimization](../../../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
 Their historical results and hypotheses remain useful context, but their
 implementation steps, model policies, priorities and NEXT sections are
 superseded.
 
+- [Previous B1-only scalar-analysis plan (2026-11-01)](m6-b1-only-before-f64-b1-b3-focus-2026-11-01.md)
 - [Previous M6 three-way parity plan (2026-10-31)](m6-three-way-parity-before-b1-focus-2026-10-31.md)
 - [M6 pre-breadth-port native-generic plan (2026-10-30)](m6-native-generic-pre-breadth-port-2026-10-30.md)
 - [M6 pre-native-generic plan snapshot](m6-pre-native-generic-2026-10-29.md)
