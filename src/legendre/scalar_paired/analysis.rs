@@ -29,6 +29,33 @@ pub(crate) trait FusedAnalysisPrecision: PairedScalarRecurrencePrecision {
     type ScaledState;
     const USE_EXISTING_SCALED_BLOCK: bool = false;
     const TWO_PAIR_ANALYSIS_UNROLL: bool = false;
+    const USE_SIMD_ANALYSIS_SEED_INIT: bool = false;
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Precision-specific scalar-analysis seed setup uses the existing recurrence scratch explicitly."
+    )]
+    #[inline(always)]
+    fn try_initialize_analysis_pair_state(
+        _arch: Arch,
+        m: usize,
+        _lmax: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        <Self as PairedScalarRecurrencePrecision>::initialize_pair_state(
+            m,
+            sin_theta,
+            sectoral_norm,
+            previous,
+            current,
+            exponents,
+        )?;
+        Ok(true)
+    }
 
     fn as_simd<S: Simd>(values: &[Self]) -> (&[Self::Vector<S>], &[Self]);
     fn as_mut_simd<S: Simd>(values: &mut [Self]) -> (&mut [Self::Vector<S>], &mut [Self]);
@@ -940,6 +967,44 @@ impl FusedAnalysisPrecision for f64 {
     type ScaledState = ();
     const USE_EXISTING_SCALED_BLOCK: bool = true;
     const TWO_PAIR_ANALYSIS_UNROLL: bool = true;
+    const USE_SIMD_ANALYSIS_SEED_INIT: bool = true;
+
+    #[inline(always)]
+    fn try_initialize_analysis_pair_state(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        sectoral_norm: Self,
+        previous: &mut [Self],
+        current: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        if lmax < SIMD_SECTORAL_INIT_MIN_LMAX {
+            <Self as PairedScalarRecurrencePrecision>::initialize_pair_state(
+                m,
+                sin_theta,
+                sectoral_norm,
+                previous,
+                current,
+                exponents,
+            )?;
+            return Ok(true);
+        }
+        let initialization = initialize_normal_analysis_sectoral_dispatched(
+            arch,
+            m,
+            sin_theta,
+            sectoral_norm,
+            &mut current[..sin_theta.len()],
+        )?;
+        if !initialization.complete {
+            return Ok(false);
+        }
+        previous[..sin_theta.len()].fill(0.0);
+        exponents[..sin_theta.len()].fill(0);
+        Ok(true)
+    }
 
     #[inline(always)]
     fn prepare_scaled_state(
@@ -1213,14 +1278,33 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_typed<T: FusedAnalysi
     }
     #[cfg(all(test, feature = "parallel"))]
     super::record_typed_scalar_analysis_block(true, false, false, false);
-    T::initialize_pair_state(
-        m,
-        sin_theta,
-        sectoral_norm,
-        &mut previous[..lane_count],
-        &mut current[..lane_count],
-        &mut exponents[..lane_count],
-    )?;
+    let initialized = if T::USE_SIMD_ANALYSIS_SEED_INIT {
+        T::try_initialize_analysis_pair_state(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            sectoral_norm,
+            &mut previous[..lane_count],
+            &mut current[..lane_count],
+            &mut exponents[..lane_count],
+        )?
+    } else {
+        T::initialize_pair_state(
+            m,
+            sin_theta,
+            sectoral_norm,
+            &mut previous[..lane_count],
+            &mut current[..lane_count],
+            &mut exponents[..lane_count],
+        )?;
+        true
+    };
+    if !initialized {
+        #[cfg(all(test, feature = "parallel"))]
+        super::record_typed_scalar_analysis_block(false, true, false, false);
+        return Ok(false);
+    }
     if T::USE_EXISTING_SCALED_BLOCK
         && exponents[..lane_count]
             .iter()

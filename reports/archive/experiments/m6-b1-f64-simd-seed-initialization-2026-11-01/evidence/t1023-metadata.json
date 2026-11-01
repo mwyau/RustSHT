@@ -1,0 +1,132 @@
+{
+  "case": {
+    "case_id": "GL-T1023-m1023-n1024-exact-p2048-even-smooth",
+    "grid": "GL",
+    "lmax": 1023,
+    "mmax": 1023,
+    "ntheta": 1024,
+    "nphi": 2048
+  },
+  "rust_parent_source": "80959a30d6965a6b0765aabbab7a37d16be402d2",
+  "candidate_source_parent": "80959a30d6965a6b0765aabbab7a37d16be402d2",
+  "candidate_production_patch_sha256": "6f68e74d4746db18b13c88dc192625e5e6bd8274ad3943581735c0f69dd5aa50",
+  "candidate_current_file_sha256": "a23b7e73a806adcaa2a51b1758b1d8c56ff6d999ea83731dd06dddb3de429d4f",
+  "candidate_spin1_worker_sha256": "e1eca529ce003d5da5b049669fd7d09c960f15cbf9a131d09101a0494eccafae",
+  "parent_spin1_worker_sha256": "64cad989acd8e5789a0f6c49e3e47a136980212a81af83aecc67b1e6e44f9252",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "dispatch": "Rust runtime V3 AVX2/FMA; T1023 spin synthesis uses f64 worker",
+  "affinity": {
+    "q1": [
+      0
+    ],
+    "q8": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "fixture_sha256": {
+    "map0": "ac5d2fb64b8c1e1209bbd28e671d1de806bd8029de694636aa899ccb7b1a13c2",
+    "map1": "bffa936e27f79bbe1b4f57a9b5c957352e23c864b9945d643115c5208801cf3e",
+    "e": "ed3f4aed63ef39381bae2990056559058caf178a92e514976a1f770dd1f3b43b",
+    "b": "b2b220caff95dd2f262e4d4bd705d71dc7f39068bc56b9c2860bd297536de24f"
+  },
+  "ratios": {
+    "q1": {
+      "pair_ratios": [
+        0.9975150364933285,
+        0.9927315068927828,
+        1.0064005883506804
+      ],
+      "median_ratio": 0.9975150364933285,
+      "geomean_ratio": 0.998866342447262,
+      "paired_t_ci95": [
+        0.9817999116154826,
+        1.0162294356212254
+      ],
+      "bitwise_equal": true
+    },
+    "q8": {
+      "pair_ratios": [
+        1.173509276549756,
+        1.0000272187742478,
+        0.9883491827042852
+      ],
+      "median_ratio": 1.0000272187742478,
+      "geomean_ratio": 1.0506778702801134,
+      "paired_t_ci95": [
+        0.8278951218567082,
+        1.3334104259735224
+      ],
+      "bitwise_equal": true
+    }
+  },
+  "pair_output_sha256": [
+    {
+      "candidate": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      },
+      "parent": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      }
+    },
+    {
+      "parent": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      },
+      "candidate": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      }
+    },
+    {
+      "candidate": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      },
+      "parent": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      }
+    },
+    {
+      "candidate": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      },
+      "parent": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      }
+    },
+    {
+      "parent": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      },
+      "candidate": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      }
+    },
+    {
+      "candidate": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      },
+      "parent": {
+        "map0": "ffd3cad654025dea4cde6b426c119b841ca0344866c995f923d8e8b21b3af653",
+        "map1": "de57299a38f80bf5690123156a61d3ed011c6549a711cbcf89fe1afe56bcf570"
+      }
+    }
+  ]
+}
