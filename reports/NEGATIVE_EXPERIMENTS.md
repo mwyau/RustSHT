@@ -1,6 +1,6 @@
 # RustSHT f64 performance — tried approaches to avoid repeating unchanged
 
-**Reference only; not an active plan or a permanent blacklist.** This file records why implementations were removed from the production fast path. **A revert is not the same as a failed hypothesis**: when numerical checks passed and matched instructions fell, or timings were noisy/near-neutral, preserve the source and evidence in [PERFORMANCE_CANDIDATES.md](PERFORMANCE_CANDIDATES.md). Reevaluate with new source, compiler or a fresh profile instead of repeating an unchanged regression. See [active plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md). Original detailed evidence is preserved in [dated archive](archive/retired-active-docs-2026-10-24/README.md), older archives and `reports/data/`.
+**Reference only; not an active plan or a permanent blacklist.** This file records why implementations were removed from the production fast path. **A revert is not the same as a failed hypothesis**: when numerical checks passed and matched instructions fell, or timings were noisy/near-neutral, preserve the source and evidence in [PERFORMANCE_CANDIDATES.md](PERFORMANCE_CANDIDATES.md). Reevaluate with new source, compiler or a fresh profile instead of repeating an unchanged regression. See [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md). Original detailed evidence is preserved in [dated archive](archive/retired-active-docs-2026-10-24/README.md), older archives and `reports/data/`.
 
 ## Recent trials and clarified boundaries (2026-10-25)
 
