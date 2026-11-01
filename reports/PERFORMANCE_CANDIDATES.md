@@ -1,6 +1,6 @@
 # RustSHT performance candidate backlog — recoverable experiments
 
-**Created:** 2026-10-25 UTC. **Scope:** historical f64 spin-0/spin-1 SHT investigations, particularly GL T720 spin-1 analysis, deferred cross-workload leads, and recoverable native-f32 M6 screens. **Pinned DUCC:** 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. This is an **experiment backlog, not an accepted-performance ledger or approval to change production behavior**. See [accepted performance](../PERFORMANCE_STATUS.md), [rolling progress](PROGRESS.md), [negative experiments](NEGATIVE_EXPERIMENTS.md), [active plan](../plans/f64-ducc-parity-all-cases-2026-10-24.md).
+**Created:** 2026-10-25 UTC. **Scope:** historical f64 spin-0/spin-1 SHT investigations, particularly GL T720 spin-1 analysis, deferred cross-workload leads, and recoverable native-f32 M6 screens. **Pinned DUCC:** 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. This is an **experiment backlog, not an accepted-performance ledger or approval to change production behavior**. See [accepted performance](../PERFORMANCE_STATUS.md), [rolling progress](PROGRESS.md), [negative experiments](NEGATIVE_EXPERIMENTS.md), [active plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
 
 ## Policy: do not discard inconclusive but credible work
 
