@@ -1,0 +1,69 @@
+{
+  "rust_source_commit": "252a839c038fb93a68d5ae40a9166b728b0f2ce0",
+  "ducc_source_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "candidate_patch_sha256_uncompressed": "02706adaf65aa828a685f19583b5434953f1b8bc34e15fc8210c81a6f98e45f8",
+  "test_binary_sha256": "56c3f31a8c3b1bf6f531bcc9ace4aa69715959ebb531743273383915257c5dde",
+  "cpu": "AMD Ryzen 9 5950X",
+  "affinity": "single pinned physical core; exact logical ID retained with local raw log",
+  "simd": "Pulp V3 AVX2/FMA, f32 eight lanes",
+  "iterations_per_sample": 2000,
+  "samples": 9,
+  "cases": [
+    {
+      "m": 1,
+      "degree": 1,
+      "kind": "ordinary accumulator baseline",
+      "lanes": 256,
+      "median_ns_per_pair": 23.559,
+      "sample_batch_us": [47.008, 47.039, 47.049, 47.099, 47.119, 47.269, 47.280, 47.380, 47.399]
+    },
+    {
+      "m": 192,
+      "degree": 720,
+      "ring_start": 29,
+      "kind": "scaled accumulator baseline",
+      "lanes": 256,
+      "scaled_prefix_lanes": 216,
+      "ordinary_suffix_lanes": 40,
+      "hard_vector_groups": 11,
+      "hard_scalar_lanes": 0,
+      "median_ns_per_pair": 177.876,
+      "sample_batch_us": [353.499, 353.759, 355.002, 355.262, 355.753, 357.446, 358.348, 359.981, 360.472]
+    },
+    {
+      "m": 8,
+      "degree": 8,
+      "ring_start": 0,
+      "kind": "zero_exponent_suffix candidate",
+      "lanes": 256,
+      "scaled_prefix_lanes": 8,
+      "ordinary_suffix_lanes": 248,
+      "baseline_ns_per_pair": 39.960,
+      "candidate_ns_per_pair": 42.535,
+      "baseline_over_candidate": 0.939,
+      "candidate_over_baseline": 1.064,
+      "candidate_sample_batch_us": [82.235, 82.246, 82.366, 82.526, 85.071, 85.081, 85.091, 85.091, 85.091],
+      "baseline_sample_batch_us": [79.510, 79.550, 79.571, 79.891, 79.921, 79.951, 79.951, 80.883, 83.188],
+      "result_difference": "bitwise equal"
+    },
+    {
+      "m": 192,
+      "degree": 720,
+      "ring_start": 29,
+      "kind": "manual suffix split diagnostic",
+      "lanes": 256,
+      "scaled_prefix_lanes": 216,
+      "ordinary_suffix_lanes": 40,
+      "hard_vector_groups": 11,
+      "baseline_ns_per_pair": 176.534,
+      "candidate_ns_per_pair": 182.505,
+      "baseline_over_candidate": 0.967,
+      "candidate_over_baseline": 1.034,
+      "candidate_sample_batch_us": [342.007, 359.319, 362.816, 363.527, 365.010, 366.313, 368.768, 370.511, 373.005],
+      "baseline_sample_batch_us": [352.177, 352.477, 352.647, 352.887, 353.068, 355.953, 357.546, 358.468, 530.914],
+      "relative_error": 5.066e-8
+    }
+  ],
+  "decision": "reject; no whole-transform candidate run",
+  "raw_console_output": "kept in local experiment scratch; not committed"
+}
