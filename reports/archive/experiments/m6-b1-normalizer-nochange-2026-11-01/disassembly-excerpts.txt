@@ -1,0 +1,70 @@
+parent-f32: V3 FusedScalarAnalysisPairTyped<f32>::with_simd body size=22307 bytes (0x5723)
+  decoded instructions=4448; vfmadd instructions=204; entry frame allocation: 1e66ba:	sub    $0x1000,%rsp
+  first normalizer-vector excerpt:
+    1e68f1:	vmovups (%rsi,%rcx,1),%ymm2
+    1e68f6:	lea    (%rbx,%rcx,1),%r9
+    1e68fa:	vmovups (%rbx,%rcx,1),%ymm14
+    1e68ff:	vandps %ymm3,%ymm2,%ymm0
+    1e6903:	vandps %ymm3,%ymm14,%ymm1
+    1e6907:	vmaxps %ymm1,%ymm0,%ymm0
+    1e690b:	vbroadcastss -0x1c1a0c(%rip),%ymm1        # 24f08 <__abi_tag+0x24c0c>
+    1e6914:	vcmple_oqps %ymm1,%ymm0,%ymm1
+    1e6919:	vcmpeqps %ymm2,%ymm2,%ymm15
+    1e691e:	vcmpeqps %ymm14,%ymm14,%ymm4
+    1e6924:	vandps %ymm4,%ymm15,%ymm4
+    1e6928:	vandps %ymm1,%ymm4,%ymm1
+    1e692c:	vptest %ymm5,%ymm1
+    1e6931:	jae    1e6fec <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x93c>
+    1e6937:	shl    $0x3,%r8
+    1e693b:	jmp    1e6961 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x2b1>
+    1e693d:	nopl   (%rax)
+    1e6940:	vmulps %ymm2,%ymm13,%ymm0
+    1e6944:	vblendvps %ymm15,%ymm0,%ymm2,%ymm2
+    1e694a:	vmulps %ymm13,%ymm14,%ymm0
+    1e694f:	vblendvps %ymm15,%ymm0,%ymm14,%ymm14
+    1e6955:	vandps %ymm3,%ymm2,%ymm0
+    1e6959:	vandps %ymm3,%ymm14,%ymm1
+    1e695d:	vmaxps %ymm1,%ymm0,%ymm0
+    1e6961:	vcmpgt_oqps %ymm6,%ymm0,%ymm15
+
+candidate-f32: V3 FusedScalarAnalysisPairTyped<f32>::with_simd body size=23043 bytes (0x5a03)
+  decoded instructions=4578; vfmadd instructions=204; entry frame allocation: 280f0a:	sub    $0x1000,%rsp
+  first normalizer-vector excerpt:
+    28113a:	vmovups (%rsi,%rcx,1),%ymm2
+    28113f:	mov    0x50(%rsp),%rsi
+    281144:	lea    (%rsi,%rcx,1),%r9
+    281148:	vmovups (%rsi,%rcx,1),%ymm13
+    28114d:	vandps %ymm3,%ymm2,%ymm0
+    281151:	vandps %ymm3,%ymm13,%ymm1
+    281155:	vmaxps %ymm1,%ymm0,%ymm0
+    281159:	vcmple_oqps %ymm4,%ymm0,%ymm1
+    28115e:	vcmpeqps %ymm2,%ymm2,%ymm14
+    281163:	vcmpeqps %ymm13,%ymm13,%ymm15
+    281169:	vandps %ymm15,%ymm14,%ymm14
+    28116e:	vandps %ymm1,%ymm14,%ymm1
+    281172:	vptest %ymm5,%ymm1
+    281177:	jae    2816aa <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x7aa>
+    28117d:	vcmpgt_oqps %ymm6,%ymm0,%ymm14
+    281182:	vcmpeqps %ymm7,%ymm0,%ymm1
+    281187:	vcmplt_oqps %ymm8,%ymm0,%ymm15
+    28118d:	vandnps %ymm15,%ymm1,%ymm1
+    281192:	vorps  %ymm1,%ymm14,%ymm1
+    281196:	vptest %ymm1,%ymm1
+    28119b:	je     281380 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x480>
+    2811a1:	shl    $0x3,%r8
+    2811a5:	jmp    2811d6 <<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::analysis::FusedScalarAnalysisPairTyped<f32>>>+0x2d6>
+    2811a7:	nopw   0x0(%rax,%rax,1)
+    2811b0:	vmulps %ymm2,%ymm12,%ymm0
+
+parent-f64: V3 FusedScalarAnalysisPairTyped<f64>::with_simd body size=7227 bytes (0x1c3b)
+  decoded instructions=1388; vfmadd instructions=88; entry frame allocation: 1c3dba:	sub    $0x1f8,%rsp
+candidate-f64: V3 FusedScalarAnalysisPairTyped<f64>::with_simd body size=7227 bytes (0x1c3b)
+  decoded instructions=1388; vfmadd instructions=88; entry frame allocation: 1fd32a:	sub    $0x1f8,%rsp
+f64 normalized instruction body identical: True (1388 instructions each; symbols 7227 bytes each)
+
+Candidate no-change branch (source: src/legendre/scalar.rs, normalize_pair_lanes_with_state_f32_simd_impl):
+  vmaxps magnitude; vcmple_oqps/vcmpeqps finite classification; vcmpgt_oqps plus vcmplt_oqps range mask;
+  vptest + conditional branch skips changed-vector loops and writeback when all lanes already lie in range.
+Parent proceeds from the large-value check to the small-value check and writes vectors back after the scale loops.
+Candidate f32 kernel is 736 bytes larger (+3.3%), keeps the 6,120-byte frame, and leaves its 204 vfmadd instructions unchanged.
+This proves machine-code execution shape only; it does not imply fewer whole-transform cycles.

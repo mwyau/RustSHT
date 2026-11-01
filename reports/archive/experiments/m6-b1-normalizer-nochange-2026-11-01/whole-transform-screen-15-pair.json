@@ -1,0 +1,2331 @@
+{
+  "purpose": "fifteen-pair native-f32 B1 no-change-normalizer-bypass screen",
+  "parent_source_sha": "d4cc76bfe22410ec410bfffac7f00d7b677fb928",
+  "candidate_patch_sha256": "de204bb35853e0e7fb86d5613524d4c4c6c6c720803f2215f71ac37a90042866",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "binary_sha256": {
+    "parent": "4222a0395df1271a96ffd062cf1e3a2fd9df8d8e750e623ad1c7de7ba5f90ca9",
+    "candidate": "c38598d82c485ca66ff9a39b8409edf99e1d2d808181e0d538a07312311639af",
+    "ducc_f32": "a191b94696361fbbb2ca665715870024243c5fbc9577f6a13cccfe0206be18c8"
+  },
+  "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "affinity": {
+    "q1": "2",
+    "q8": "0,1,2,3,4,5,6,7"
+  },
+  "target_ms": 25.0,
+  "process_pairs": 15,
+  "input_precision": "deterministic f32 map and harmonic fixtures",
+  "results": [
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1,
+      "case_id": "GL-T720-M720-analysis-q1",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 41.9360755,
+            "ducc": 15.566111750000001,
+            "candidate": 41.002988
+          },
+          "candidate_parent_ratio": 0.9777497658310922,
+          "candidate_ducc_ratio": 2.634118825467124,
+          "parent_ducc_ratio": 2.6940623434750814,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 41.236295999999996,
+            "parent": 40.8461485,
+            "ducc": 14.9077225
+          },
+          "candidate_parent_ratio": 1.009551634960148,
+          "candidate_ducc_ratio": 2.766103004667547,
+          "parent_ducc_ratio": 2.7399321727379884,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 15.520709,
+            "candidate": 41.2264325,
+            "parent": 39.711042000000006
+          },
+          "candidate_parent_ratio": 1.038160431549492,
+          "candidate_ducc_ratio": 2.6562209561431764,
+          "parent_ducc_ratio": 2.558584276014711,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 42.081218,
+            "ducc": 15.1465815,
+            "candidate": 39.0731635
+          },
+          "candidate_parent_ratio": 0.9285178841543987,
+          "candidate_ducc_ratio": 2.579668785329548,
+          "parent_ducc_ratio": 2.778265049443665,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 5,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 39.4216375,
+            "parent": 40.118722,
+            "ducc": 15.578237
+          },
+          "candidate_parent_ratio": 0.9826244589745408,
+          "candidate_ducc_ratio": 2.530558335965745,
+          "parent_ducc_ratio": 2.5753056652046054,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 15.551607,
+            "candidate": 41.16935,
+            "parent": 42.141681500000004
+          },
+          "candidate_parent_ratio": 0.9769270834624859,
+          "candidate_ducc_ratio": 2.647273043872572,
+          "parent_ducc_ratio": 2.7097959394164217,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 40.7533185,
+            "ducc": 15.046145,
+            "candidate": 40.3281555
+          },
+          "candidate_parent_ratio": 0.9895674017319597,
+          "candidate_ducc_ratio": 2.680298209275532,
+          "parent_ducc_ratio": 2.7085554804901855,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 8,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 40.573306,
+            "parent": 39.143831000000006,
+            "ducc": 14.48455775
+          },
+          "candidate_parent_ratio": 1.0365185257416423,
+          "candidate_ducc_ratio": 2.8011422026330077,
+          "parent_ducc_ratio": 2.702452617167411,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 9,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 14.70735125,
+            "candidate": 38.580387,
+            "parent": 39.1982835
+          },
+          "candidate_parent_ratio": 0.984236643933656,
+          "candidate_ducc_ratio": 2.6232042972387704,
+          "parent_ducc_ratio": 2.665217062793683,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 39.0321965,
+            "ducc": 14.576327500000001,
+            "candidate": 39.1968855
+          },
+          "candidate_parent_ratio": 1.0042193116136828,
+          "candidate_ducc_ratio": 2.689078267485414,
+          "parent_ducc_ratio": 2.677779879739941,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 11,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 39.678059,
+            "parent": 42.2372715,
+            "ducc": 14.9691505
+          },
+          "candidate_parent_ratio": 0.9394086689524914,
+          "candidate_ducc_ratio": 2.6506553595008615,
+          "parent_ducc_ratio": 2.8216211400907487,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 14.699955,
+            "candidate": 38.9124665,
+            "parent": 71.0449035
+          },
+          "candidate_parent_ratio": 0.5477165086162725,
+          "candidate_ducc_ratio": 2.6471146680380997,
+          "parent_ducc_ratio": 4.833001427555391,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 109.9520095,
+            "ducc": 21.63472475,
+            "candidate": 66.452132
+          },
+          "candidate_parent_ratio": 0.6043739655344817,
+          "candidate_ducc_ratio": 3.0715496854195017,
+          "parent_ducc_ratio": 5.082200525800542,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 14,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 69.542827,
+            "parent": 71.47688,
+            "ducc": 24.213273
+          },
+          "candidate_parent_ratio": 0.9729415581653817,
+          "candidate_ducc_ratio": 2.872095276008328,
+          "parent_ducc_ratio": 2.9519710119321743,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 15,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 21.2508145,
+            "candidate": 59.040859499999996,
+            "parent": 70.98777849999999
+          },
+          "candidate_parent_ratio": 0.8317045658781955,
+          "candidate_ducc_ratio": 2.778286898132775,
+          "parent_ducc_ratio": 3.340473302799758,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        }
+      ],
+      "median_candidate_parent_ratio": 0.9777497658310922,
+      "median_candidate_ducc_ratio": 2.6562209561431764,
+      "paired_candidate_parent": {
+        "geometric_mean": 0.9074559450365937,
+        "ci95_low": 0.8153310192774083,
+        "ci95_high": 1.009990142300814
+      },
+      "paired_candidate_ducc": {
+        "geometric_mean": 2.7055196037615996,
+        "ci95_low": 2.634488705710458,
+        "ci95_high": 2.778465631859423
+      },
+      "paired_parent_ducc": {
+        "geometric_mean": 2.981433554498889,
+        "ci95_low": 2.6453057114237994,
+        "ci95_high": 3.3602717453430087
+      }
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 1458,
+      "lmax": 720,
+      "mmax": 720,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8,
+      "case_id": "GL-T720-M720-analysis-q8",
+      "fixture_sha256": {
+        "map0": "d282e16a4680897b36f95290cf2770608319a248de24b497ef20bc6de4e57795",
+        "map1": "181a61994a53d997dbf8b9ed522561908bcc70eb4faa8e1378dcf00afb57c48d",
+        "alm0": "03cc74b6eb5508e6c1c85f427ac183ece8177d7b36a31aefc3bfe4ece62beb96",
+        "alm1": "de3e88bd53b5fbce4de6662fd615df0a25273ce6c29d958ac61f9b77764e42b5"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 51.511863,
+            "ducc": 16.286513,
+            "candidate": 5.466896299999999
+          },
+          "candidate_parent_ratio": 0.1061288794777234,
+          "candidate_ducc_ratio": 0.3356701523524403,
+          "parent_ducc_ratio": 3.1628540130106426,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.41609125,
+            "parent": 6.7499769999999994,
+            "ducc": 2.45056825
+          },
+          "candidate_parent_ratio": 0.9505352758979773,
+          "candidate_ducc_ratio": 2.618205491726256,
+          "parent_ducc_ratio": 2.7544537884223383,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.444511909090909,
+            "candidate": 6.625637125000001,
+            "parent": 6.46380325
+          },
+          "candidate_parent_ratio": 1.0250369432268844,
+          "candidate_ducc_ratio": 2.710413109610913,
+          "parent_ducc_ratio": 2.644210169711886,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 6.510898000000001,
+            "ducc": 2.49153725,
+            "candidate": 6.489191
+          },
+          "candidate_parent_ratio": 0.9966660512881632,
+          "candidate_ducc_ratio": 2.6044928688102096,
+          "parent_ducc_ratio": 2.61320516078979,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 5,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.043085625,
+            "parent": 6.933307625,
+            "ducc": 2.4308284545454546
+          },
+          "candidate_parent_ratio": 0.8716021200631494,
+          "candidate_ducc_ratio": 2.486018959379842,
+          "parent_ducc_ratio": 2.8522406062983467,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.42901335,
+            "candidate": 6.105715625,
+            "parent": 6.68351225
+          },
+          "candidate_parent_ratio": 0.9135489539949598,
+          "candidate_ducc_ratio": 2.5136607935892985,
+          "parent_ducc_ratio": 2.751533765757195,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 6.827133125,
+            "ducc": 2.420772318181818,
+            "candidate": 6.573643375
+          },
+          "candidate_parent_ratio": 0.9628702494357761,
+          "candidate_ducc_ratio": 2.71551493117589,
+          "parent_ducc_ratio": 2.8202293432236902,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 8,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.467152166666666,
+            "parent": 6.408106125,
+            "ducc": 2.31973055
+          },
+          "candidate_parent_ratio": 1.0092142733773257,
+          "candidate_ducc_ratio": 2.787889380801863,
+          "parent_ducc_ratio": 2.762435544507529,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 9,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.3430308636363635,
+            "candidate": 6.1542305,
+            "parent": 6.2018257000000006
+          },
+          "candidate_parent_ratio": 0.9923256146976203,
+          "candidate_ducc_ratio": 2.6266109403478737,
+          "parent_ducc_ratio": 2.646924458508763,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 6.424593375000001,
+            "ducc": 2.343695875,
+            "candidate": 6.231860125000001
+          },
+          "candidate_parent_ratio": 0.9700007084105926,
+          "candidate_ducc_ratio": 2.6589883915719232,
+          "parent_ducc_ratio": 2.7412231439798056,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 11,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.272499833333333,
+            "parent": 6.046202625,
+            "ducc": 2.420865681818182
+          },
+          "candidate_parent_ratio": 1.0374279894950316,
+          "candidate_ducc_ratio": 2.591015222547331,
+          "parent_ducc_ratio": 2.497537418292048,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.3558257727272727,
+            "candidate": 5.5686184,
+            "parent": 5.7258721249999995
+          },
+          "candidate_parent_ratio": 0.9725362841560141,
+          "candidate_ducc_ratio": 2.3637649542959913,
+          "parent_ducc_ratio": 2.4305159538055823,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 5.924412625,
+            "ducc": 2.300014136363637,
+            "candidate": 6.08337375
+          },
+          "candidate_parent_ratio": 1.0268315418020026,
+          "candidate_ducc_ratio": 2.6449288523147607,
+          "parent_ducc_ratio": 2.575815744492163,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 14,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 6.127143375,
+            "parent": 6.278495125,
+            "ducc": 2.3762173333333334
+          },
+          "candidate_parent_ratio": 0.9758936262612771,
+          "candidate_ducc_ratio": 2.5785281880781947,
+          "parent_ducc_ratio": 2.642222593415978,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 15,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 2.396863772727273,
+            "candidate": 5.8038783,
+            "parent": 6.533784625
+          },
+          "candidate_parent_ratio": 0.88828736071171,
+          "candidate_ducc_ratio": 2.4214468782245615,
+          "parent_ducc_ratio": 2.725972455900374,
+          "candidate_parent_error": {
+            "output_values": 520562,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015668230126658555,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 520562,
+            "relative_l2": 1.8390751126253984e-05,
+            "absolute_l2": 2.0790067303606924e-05,
+            "max_absolute": 3.475579433143139e-07,
+            "reference_rms": 0.0015668239333598852,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        }
+      ],
+      "median_candidate_parent_ratio": 0.9725362841560141,
+      "median_candidate_ducc_ratio": 2.6044928688102096,
+      "paired_candidate_parent": {
+        "geometric_mean": 0.8366859892909589,
+        "ci95_low": 0.6090185089009308,
+        "ci95_high": 1.1494616903173085
+      },
+      "paired_candidate_ducc": {
+        "geometric_mean": 2.2617473059024484,
+        "ci95_low": 1.6868657868506438,
+        "ci95_high": 3.032547648801128
+      },
+      "paired_parent_ducc": {
+        "geometric_mean": 2.703221202280611,
+        "ci95_low": 2.61246863297017,
+        "ci95_high": 2.7971263563656614
+      }
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1,
+      "case_id": "GL-T720-M180-analysis-q1",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 13.10586125,
+            "ducc": 5.93635375,
+            "candidate": 13.110111999999999
+          },
+          "candidate_parent_ratio": 1.0003243396156052,
+          "candidate_ducc_ratio": 2.2084452093172513,
+          "parent_ducc_ratio": 2.2077291552916636,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 13.1791865,
+            "parent": 13.31026,
+            "ducc": 6.002163625
+          },
+          "candidate_parent_ratio": 0.9901524463083367,
+          "candidate_ducc_ratio": 2.1957392905962307,
+          "parent_ducc_ratio": 2.217576999160865,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 6.2759605,
+            "candidate": 13.637550000000001,
+            "parent": 14.3037135
+          },
+          "candidate_parent_ratio": 0.9534272341235023,
+          "candidate_ducc_ratio": 2.172982127596246,
+          "parent_ducc_ratio": 2.2791273941255685,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 13.62859575,
+            "ducc": 6.033912,
+            "candidate": 13.65021375
+          },
+          "candidate_parent_ratio": 1.0015862235843338,
+          "candidate_ducc_ratio": 2.2622493914395836,
+          "parent_ducc_ratio": 2.2586666411442526,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 5,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 13.927179,
+            "parent": 14.009771749999999,
+            "ducc": 6.34081225
+          },
+          "candidate_parent_ratio": 0.9941046327182312,
+          "candidate_ducc_ratio": 2.1964345340772393,
+          "parent_ducc_ratio": 2.2094601129374234,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 6.426550625,
+            "candidate": 13.012268,
+            "parent": 13.16808575
+          },
+          "candidate_parent_ratio": 0.988167015847387,
+          "candidate_ducc_ratio": 2.024767057678006,
+          "parent_ducc_ratio": 2.0490129959880305,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 13.734998000000001,
+            "ducc": 6.129684375,
+            "candidate": 13.92131775
+          },
+          "candidate_parent_ratio": 1.0135653277852679,
+          "candidate_ducc_ratio": 2.2711312521698965,
+          "parent_ducc_ratio": 2.24073494811876,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 8,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 13.410753999999999,
+            "parent": 14.032815,
+            "ducc": 6.416617125
+          },
+          "candidate_parent_ratio": 0.9556709754956507,
+          "candidate_ducc_ratio": 2.0900037728213365,
+          "parent_ducc_ratio": 2.18694909274332,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 9,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 6.397342125,
+            "candidate": 13.78621675,
+            "parent": 14.00911525
+          },
+          "candidate_parent_ratio": 0.9840890380282936,
+          "candidate_ducc_ratio": 2.1549913199303843,
+          "parent_ducc_ratio": 2.1898336803426783,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 13.84340675,
+            "ducc": 6.025869375,
+            "candidate": 13.627561
+          },
+          "candidate_parent_ratio": 0.98440804681261,
+          "candidate_ducc_ratio": 2.261509526996675,
+          "parent_ducc_ratio": 2.297329379132119,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 11,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 13.73886775,
+            "parent": 13.802772749999999,
+            "ducc": 6.208176875
+          },
+          "candidate_parent_ratio": 0.9953701331495153,
+          "candidate_ducc_ratio": 2.213027757847186,
+          "parent_ducc_ratio": 2.223321440080587,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 6.06283,
+            "candidate": 13.84350925,
+            "parent": 13.82560325
+          },
+          "candidate_parent_ratio": 1.0012951333606366,
+          "candidate_ducc_ratio": 2.2833411542134616,
+          "parent_ducc_ratio": 2.280387747965884,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 13.709698,
+            "ducc": 6.016072250000001,
+            "candidate": 13.72844325
+          },
+          "candidate_parent_ratio": 1.001367298535679,
+          "candidate_ducc_ratio": 2.2819611666066675,
+          "parent_ducc_ratio": 2.2788453047584323,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 14,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 13.11703,
+            "parent": 13.411918499999999,
+            "ducc": 6.0625595
+          },
+          "candidate_parent_ratio": 0.978012951689201,
+          "candidate_ducc_ratio": 2.1636125798023094,
+          "parent_ducc_ratio": 2.2122535044810694,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 15,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 6.027893125,
+            "candidate": 13.1675445,
+            "parent": 13.4948845
+          },
+          "candidate_parent_ratio": 0.9757434011384092,
+          "candidate_ducc_ratio": 2.184435627332062,
+          "parent_ducc_ratio": 2.2387398416258417,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        }
+      ],
+      "median_candidate_parent_ratio": 0.9901524463083367,
+      "median_candidate_ducc_ratio": 2.1964345340772393,
+      "paired_candidate_parent": {
+        "geometric_mean": 0.9876841525236465,
+        "ci95_low": 0.978354440240758,
+        "ci95_high": 0.9971028341285939
+      },
+      "paired_candidate_ducc": {
+        "geometric_mean": 2.196502416516689,
+        "ci95_low": 2.156120077486463,
+        "ci95_high": 2.2376410832313414
+      },
+      "paired_parent_ducc": {
+        "geometric_mean": 2.2238915253468154,
+        "ci95_low": 2.1902886168157663,
+        "ci95_high": 2.258009962038435
+      }
+    },
+    {
+      "grid": "GL",
+      "ntheta": 721,
+      "nphi": 378,
+      "lmax": 720,
+      "mmax": 180,
+      "longitude": "even",
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8,
+      "case_id": "GL-T720-M180-analysis-q8",
+      "fixture_sha256": {
+        "map0": "7a79ce1d70652e175a80290d997bf7164470cc5b4d18e5387fc3d36b298dcba5",
+        "map1": "b434932efaaa605b74673efef18bed5d83ddedff88151636d5d9d2337ce0bda1",
+        "alm0": "8412a3736f96cf641aeb4fa6e4a170cd7c57247f02479e59f396493a2b51cc7a",
+        "alm1": "97d93d3198a532a5bd831d0e1e3d55541a3dd61ed90663af004bf05e54f132ec"
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 2.260118416666667,
+            "ducc": 1.1967693125,
+            "candidate": 2.194286909090909
+          },
+          "candidate_parent_ratio": 0.9708725405313722,
+          "candidate_ducc_ratio": 1.833508668857106,
+          "parent_ducc_ratio": 1.8885163523665023,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 2,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.122753454545454,
+            "parent": 2.2482396363636363,
+            "ducc": 1.03239592
+          },
+          "candidate_parent_ratio": 0.9441846946435181,
+          "candidate_ducc_ratio": 2.056142816358141,
+          "parent_ducc_ratio": 2.1776913224953818,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 3,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.0456189583333333,
+            "candidate": 2.238078272727273,
+            "parent": 2.234728772727273
+          },
+          "candidate_parent_ratio": 1.001498839609029,
+          "candidate_ducc_ratio": 2.1404339074863974,
+          "parent_ducc_ratio": 2.137230541696876,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 4,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 2.208847958333333,
+            "ducc": 1.0085239038461538,
+            "candidate": 2.3417559500000005
+          },
+          "candidate_parent_ratio": 1.060170728892971,
+          "candidate_ducc_ratio": 2.3219637542247344,
+          "parent_ducc_ratio": 2.1901790824288523,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 5,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.2287637083333336,
+            "parent": 2.2049075384615384,
+            "ducc": 1.0242563333333334
+          },
+          "candidate_parent_ratio": 1.0108195783522245,
+          "candidate_ducc_ratio": 2.1759823550029305,
+          "parent_ducc_ratio": 2.1526911444969064,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 6,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.0126341153846155,
+            "candidate": 2.1558104166666667,
+            "parent": 2.233663375
+          },
+          "candidate_parent_ratio": 0.9651456171933995,
+          "candidate_ducc_ratio": 2.128913478139983,
+          "parent_ducc_ratio": 2.2057951051270055,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 7,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 2.1750867727272727,
+            "ducc": 1.024275847826087,
+            "candidate": 2.225353125
+          },
+          "candidate_parent_ratio": 1.023110044575233,
+          "candidate_ducc_ratio": 2.1726111474004464,
+          "parent_ducc_ratio": 2.123536132716256,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 8,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.299983590909091,
+            "parent": 2.1939935384615383,
+            "ducc": 1.02017938
+          },
+          "candidate_parent_ratio": 1.0483091907927289,
+          "candidate_ducc_ratio": 2.2544893927468825,
+          "parent_ducc_ratio": 2.1505958476258735,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 9,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.0540286153846155,
+            "candidate": 2.3044713999999997,
+            "parent": 2.325662846153846
+          },
+          "candidate_parent_ratio": 0.9908879972912271,
+          "candidate_ducc_ratio": 2.1863461450324073,
+          "parent_ducc_ratio": 2.2064513355789783,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 10,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 2.259524416666667,
+            "ducc": 1.04934854,
+            "candidate": 2.246689
+          },
+          "candidate_parent_ratio": 0.994319416700262,
+          "candidate_ducc_ratio": 2.1410321874560383,
+          "parent_ducc_ratio": 2.153263982877097,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 11,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.245442541666667,
+            "parent": 2.27458425,
+            "ducc": 1.0638022708333332
+          },
+          "candidate_parent_ratio": 0.9871881165389528,
+          "candidate_ducc_ratio": 2.110770585127339,
+          "parent_ducc_ratio": 2.1381644995156823,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 12,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.0194271599999998,
+            "candidate": 2.19954535,
+            "parent": 2.2166853636363637
+          },
+          "candidate_parent_ratio": 0.9922677282407611,
+          "candidate_ducc_ratio": 2.157628751033081,
+          "parent_ducc_ratio": 2.1744421284953446,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 13,
+          "order": [
+            "parent",
+            "ducc",
+            "candidate"
+          ],
+          "median_ms": {
+            "parent": 2.1535714500000003,
+            "ducc": 1.0863521666666667,
+            "candidate": 2.2091330833333336
+          },
+          "candidate_parent_ratio": 1.025799763148482,
+          "candidate_ducc_ratio": 2.033533094624165,
+          "parent_ducc_ratio": 1.9823879549188548,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 14,
+          "order": [
+            "candidate",
+            "parent",
+            "ducc"
+          ],
+          "median_ms": {
+            "candidate": 2.5054494,
+            "parent": 2.1853882000000002,
+            "ducc": 1.0886647826086957
+          },
+          "candidate_parent_ratio": 1.1464550783242993,
+          "candidate_ducc_ratio": 2.301396573145644,
+          "parent_ducc_ratio": 2.0074023105287733,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        },
+        {
+          "pair": 15,
+          "order": [
+            "ducc",
+            "candidate",
+            "parent"
+          ],
+          "median_ms": {
+            "ducc": 1.0180386041666667,
+            "candidate": 2.110366136363636,
+            "parent": 2.2117250384615383
+          },
+          "candidate_parent_ratio": 0.9541720149045259,
+          "candidate_ducc_ratio": 2.0729726041097556,
+          "parent_ducc_ratio": 2.1725355299978872,
+          "candidate_parent_error": {
+            "output_values": 228422,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0029028632612545556,
+            "finite": true
+          },
+          "candidate_ducc_error": {
+            "output_values": 228422,
+            "relative_l2": 2.220446789070277e-05,
+            "absolute_l2": 3.0806062857220496e-05,
+            "max_absolute": 1.005362719297409e-06,
+            "reference_rms": 0.0029028651541686016,
+            "finite": true
+          },
+          "simd": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "f32_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true
+        }
+      ],
+      "median_candidate_parent_ratio": 0.994319416700262,
+      "median_candidate_ducc_ratio": 2.1410321874560383,
+      "paired_candidate_parent": {
+        "geometric_mean": 1.006552928220494,
+        "ci95_low": 0.9798736604743978,
+        "ci95_high": 1.033958599130773
+      },
+      "paired_candidate_ducc": {
+        "geometric_mean": 2.1360375431563194,
+        "ci95_low": 2.0700378953381464,
+        "ci95_high": 2.2041414778196433
+      },
+      "paired_parent_ducc": {
+        "geometric_mean": 2.1221313686232723,
+        "ci95_low": 2.0703537252635225,
+        "ci95_high": 2.1752039232434393
+      }
+    }
+  ]
+}

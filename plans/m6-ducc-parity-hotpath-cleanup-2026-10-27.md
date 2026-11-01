@@ -14,9 +14,11 @@ Parent Callgrind full-q1 attributes 94.32% of f32 and 81.37% of f64 instructions
 
 An isolated exact f32 output-scale shortcut passed its helper bit-equivalence check and improved that synthetic helper benchmark, but the 3-pair whole-call intervals crossed 1.0 in every cell; the point estimate was slower in three f32 cells and the monomorphized function grew 5.8% with 52 additional branches. It is rejected and remains outside production. See the [scale-path profile and screen](../reports/archive/experiments/m6-b1-scale-output-fast-path-2026-11-02/README.md). The current evidence points to scaled recurrence/accumulation as the main f32 work, and to typed-seed decline/fallback as a possible f64 cost, but it does not assign elapsed cycles to either.
 
+A separate f32 no-change normalizer bypass was screened on exact base `d4cc76b`; its isolated mixed-vector helper improved 11.6%, but only reduced-q1 whole-call timing resolved a gain (1.2%). The other three cells are inconclusive, and the f32 fused body grew 736 bytes. It is rejected. The paired data, disassembly and patch are in the [no-change normalizer package](../reports/archive/experiments/m6-b1-normalizer-nochange-2026-11-01/README.md).
+
 1. Keep the accepted zipped traversal; do not claim a resolved f64 timing gain. Its local correctness and build checks passed. The GitHub CLI is unauthenticated in this session, so workflow status was not refreshed for this diagnostic update.
-2. On source `8560bcae`, microbenchmark the scaled pair step and exponent normalization separately for nonzero f32 orders, and isolate f64 typed-seed decline/fallback. Use non-overlapping measurements and inspect actual disassembly.
-3. Form one bounded candidate only after a material avoidable cost is measured. Screen all four B1 cells and output correctness; preserve analytic, adjoint, high-order, exceptional, SIMD-tail and workspace-reset behavior.
+2. Do not repeat the f32 no-change normalizer or f64 seed-decline tests: the former did not resolve across whole calls, and actual f64 GL declines occur at vector zero with about 0.7% synthetic sequence overhead.
+3. Use test-only, non-overlapping region gates on source `8560bcae` to separate f32 factor materialization, scaled accumulation, normalization and hard-lane recovery. Compare f64 full-q8 fused-kernel and FFT time with matching DUCC. Select one new candidate only when a materially larger whole-call opportunity is supported by measured region time.
 
 ## Engineering constraints
 
@@ -26,4 +28,4 @@ An isolated exact f32 output-scale shortcut passed its helper bit-equivalence ch
 
 ## NEXT
 
-**NEXT:** isolate the elapsed cost of scaled pair updates and exponent normalization in f32, and typed-seed decline/fallback in f64. The output-scale shortcut is rejected. Leave B0/B2/B3 untouched, and do not infer cycle savings from route counts or Callgrind Ir.
+**NEXT:** on exact production source `8560bcae`, add test-only non-overlapping Callgrind gates and warm wall-phase measurements for f32 factor materialization, scaled accumulation, normalization and hard-lane recovery; separately measure f64 full-q8 fused-kernel and FFT phases against DUCC. Keep Callgrind Ir distinct from elapsed time because PMU cycle access is blocked. Do not repeat rejected output-scale, no-change-normalizer or seed-decline candidates. Leave B0/B2/B3 untouched.

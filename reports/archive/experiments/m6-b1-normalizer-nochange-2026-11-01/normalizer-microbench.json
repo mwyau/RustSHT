@@ -1,0 +1,132 @@
+{
+  "source_base": "d4cc76bfe22410ec410bfffac7f00d7b677fb928",
+  "candidate_patch_sha256": "de204bb35853e0e7fb86d5613524d4c4c6c6c720803f2215f71ac37a90042866",
+  "method": "Release ignored Rust test microbenchmark; parent and candidate run separately, each pinned to CPU 2; target-cpu=x86-64-v3; V3 dispatch; 15 samples of 512 blocks; candidate test-only atomic counter operations removed during timing and restored afterward.",
+  "lane_tile": 256,
+  "simd_lanes": 8,
+  "samples": 15,
+  "medians_ns_per_block": {
+    "all_normal": {
+      "parent": 105.98046875,
+      "candidate": 79.69921875,
+      "candidate_over_parent": 0.7520179868047621
+    },
+    "one_small_lane_per_vector": {
+      "parent": 166.484375,
+      "candidate": 177.6171875,
+      "candidate_over_parent": 1.0668700140778977
+    },
+    "mixed_29_percent_changed_vectors": {
+      "parent": 107.390625,
+      "candidate": 94.904296875,
+      "candidate_over_parent": 0.8837298123090354
+    }
+  },
+  "candidate_samples_ns_per_block": {
+    "all_normal": [
+      97.134765625,
+      80.404296875,
+      79.642578125,
+      79.935546875,
+      79.69921875,
+      82.7734375,
+      80.912109375,
+      493.740234375,
+      79.34765625,
+      79.251953125,
+      79.23046875,
+      79.328125,
+      79.328125,
+      81.423828125,
+      79.30859375
+    ],
+    "one_small_lane_per_vector": [
+      180.103515625,
+      177.736328125,
+      176.935546875,
+      178.94921875,
+      177.443359375,
+      176.150390625,
+      176.9921875,
+      186.736328125,
+      179.26171875,
+      175.818359375,
+      176.150390625,
+      185.19140625,
+      177.6171875,
+      177.658203125,
+      176.306640625
+    ],
+    "mixed_29_percent_changed_vectors": [
+      95.6875,
+      95.294921875,
+      142.23828125,
+      166.328125,
+      115.373046875,
+      94.7890625,
+      96.5859375,
+      94.669921875,
+      94.845703125,
+      94.296875,
+      97.4296875,
+      94.7109375,
+      94.767578125,
+      94.904296875,
+      94.767578125
+    ]
+  },
+  "parent_samples_ns_per_block": {
+    "all_normal": [
+      108.89453125,
+      107.876953125,
+      107.60546875,
+      107.583984375,
+      107.505859375,
+      105.62890625,
+      105.529296875,
+      105.78515625,
+      105.802734375,
+      105.84375,
+      105.98046875,
+      105.939453125,
+      106.0390625,
+      105.9609375,
+      114.21875
+    ],
+    "one_small_lane_per_vector": [
+      165.662109375,
+      165.818359375,
+      166.484375,
+      166.603515625,
+      165.408203125,
+      166.93359375,
+      165.9765625,
+      166.50390625,
+      196.0703125,
+      176.07421875,
+      165.583984375,
+      188.322265625,
+      166.484375,
+      166.6796875,
+      165.64453125
+    ],
+    "mixed_29_percent_changed_vectors": [
+      108.1328125,
+      106.822265625,
+      107.52734375,
+      107.72265625,
+      107.505859375,
+      107.390625,
+      107.427734375,
+      107.291015625,
+      113.53515625,
+      107.017578125,
+      107.115234375,
+      106.998046875,
+      106.9765625,
+      107.271484375,
+      107.7421875
+    ]
+  },
+  "interpretation": "The bypass accelerates all-normal vectors and the synthetic mixed workload, but is slower when each vector needs a small-lane scale update. These isolated benefits did not produce stable whole-call wins in three of four cells."
+}

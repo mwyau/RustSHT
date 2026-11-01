@@ -1,0 +1,8 @@
+Focused checks in the isolated candidate worktree:
+- `f32_analysis_normalizer_short_circuit_preserves_all_lane_updates` — passed.
+- `f32_simd_pair_normalization_matches_scalar_epochs_and_bits` — passed.
+- `fused_scalar_analysis_block_transitions_scaled_lanes_to_ordinary_simd` — passed.
+- Manual parent and candidate release normalizer microbench — each one ignored test passed.
+- Whole-call screen — parent/candidate outputs bitwise equal, finite, repeat/reset consistent in all 60 pairs.
+
+No full suite was run because the candidate was rejected at the focused screen.
