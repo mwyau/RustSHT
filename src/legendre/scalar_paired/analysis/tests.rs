@@ -7,16 +7,30 @@ struct B1F32FactorFillCheck<'a> {
 }
 
 impl WithSimd for B1F32FactorFillCheck<'_> {
-    type Output = (Vec<f32>, Vec<f32>);
+    type Output = (Vec<f32>, Vec<f32>, usize, usize);
 
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
         let mut actual = vec![f32::NAN; self.exponents.len()];
-        fill_b1_f32_analysis_factors::<S>(
+        let cos_theta = vec![1.0; self.exponents.len()];
+        let mut hard_factors = vec![0.0; self.exponents.len()];
+        let mut hard_scale_exponents = vec![0; self.exponents.len()];
+        let mut hard_scalar_indices = vec![0; self.exponents.len()];
+        let mut hard_scalar_count = 0;
+        let mut hard_vector_indices = vec![0; self.exponents.len()];
+        let mut hard_vector_count = 0;
+        fill_b1_f32_analysis_factors::<S, true>(
             simd,
             self.exponents,
             self.common_exponent,
             self.shift,
+            &cos_theta,
             &mut actual,
+            &mut hard_factors,
+            &mut hard_scale_exponents,
+            &mut hard_scalar_indices,
+            &mut hard_scalar_count,
+            &mut hard_vector_indices,
+            &mut hard_vector_count,
         );
         let expected = self
             .exponents
@@ -32,12 +46,12 @@ impl WithSimd for B1F32FactorFillCheck<'_> {
                 }
             })
             .collect();
-        (actual, expected)
+        (actual, expected, hard_scalar_count, hard_vector_count)
     }
 }
 
 #[test]
-fn b1_f32_uniform_factor_vector_fill_matches_per_lane_scaling() {
+fn b1_f32_factor_fill_collects_hard_vectors_and_matches_per_lane_scaling() {
     let arch = Arch::new();
     let width = arch.dispatch(F32LaneCount);
     for length in [1, width - 1, width, width + 1, 63, 64, 67] {
@@ -47,16 +61,17 @@ fn b1_f32_uniform_factor_vector_fill_matches_per_lane_scaling() {
             let value = match vector % 4 {
                 0 => 12 + vector as i64,
                 1 => 12 + vector as i64 + (lane % width) as i64,
-                2 => -90 + (lane % width) as i64,
+                2 => -200 + (lane % width) as i64,
                 _ => 12 + vector as i64,
             };
             exponents.push(value);
         }
-        let (actual, expected) = arch.dispatch(B1F32FactorFillCheck {
-            exponents: &exponents,
-            common_exponent: 10,
-            shift: 78,
-        });
+        let (actual, expected, hard_scalar_count, hard_vector_count) =
+            arch.dispatch(B1F32FactorFillCheck {
+                exponents: &exponents,
+                common_exponent: 10,
+                shift: 78,
+            });
         assert_eq!(
             actual
                 .iter()
@@ -68,6 +83,9 @@ fn b1_f32_uniform_factor_vector_fill_matches_per_lane_scaling() {
                 .collect::<Vec<_>>(),
             "length {length}",
         );
+        let expected_hard_vectors = (0..length / width).filter(|vector| vector % 4 == 2).count();
+        assert_eq!(hard_scalar_count, 0, "length {length}");
+        assert_eq!(hard_vector_count, expected_hard_vectors, "length {length}");
     }
 }
 

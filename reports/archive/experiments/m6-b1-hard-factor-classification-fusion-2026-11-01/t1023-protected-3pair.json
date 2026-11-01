@@ -1,0 +1,118 @@
+{
+  "source_parent": "acd7fe5b2f68f4423c6904caed99c10545764bf3",
+  "candidate_source": "acd7fe5 + f32-only B1 helper change",
+  "binary_sha256": {
+    "candidate": "64478cc7badcc803a6b3a43766e3b9e5789d2f8636f6729d3a3d4f3b0834df7a",
+    "parent": "88927b796d073538f94f5640e043c90d60db64dbe19fcaa7663d5005a4e48cd4"
+  },
+  "fixture_sha256": {
+    "map0.f64": "836647f0111366d35f4a4aae8d5ad741ec8346cd1ae6095a625362ee9767fee2",
+    "map1.f64": "27a5e6cb7d2a15d52cd405d24cf15a7cfd69027f486a8c10423e0cdbdae0fb70",
+    "e.f64": "f85822f3a0ca9e72ca153e5669d5bc322049acb5caac81f00b970d48a4e3f6b1",
+    "b.f64": "3d2be31213af5bfca37f777bfb343396963925d43cc80abe4e52f551235f7995"
+  },
+  "cells": [
+    {
+      "case_id": "GL-T1023-M1023-s1-synthesis-q1",
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "candidate",
+            "parent"
+          ],
+          "candidate_ms": 89.968907,
+          "parent_ms": 90.008257,
+          "ratio": 0.9995628178868079,
+          "bitwise_equal": true,
+          "candidate_reset": true,
+          "parent_reset": true,
+          "simd_arch": null
+        },
+        {
+          "pair": 2,
+          "order": [
+            "parent",
+            "candidate"
+          ],
+          "candidate_ms": 90.54242249999999,
+          "parent_ms": 90.0596495,
+          "ratio": 1.0053605915932415,
+          "bitwise_equal": true,
+          "candidate_reset": true,
+          "parent_reset": true,
+          "simd_arch": null
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent"
+          ],
+          "candidate_ms": 89.90599399999999,
+          "parent_ms": 89.892107,
+          "ratio": 1.0001544851985724,
+          "bitwise_equal": true,
+          "candidate_reset": true,
+          "parent_reset": true,
+          "simd_arch": null
+        }
+      ],
+      "median_candidate_ms": 89.968907,
+      "median_parent_ms": 90.008257,
+      "median_ratio": 1.0001544851985724,
+      "all_bitwise_equal": true
+    },
+    {
+      "case_id": "GL-T1023-M1023-s1-synthesis-q8",
+      "pairs": [
+        {
+          "pair": 1,
+          "order": [
+            "candidate",
+            "parent"
+          ],
+          "candidate_ms": 14.36793475,
+          "parent_ms": 14.341802999999999,
+          "ratio": 1.0018220686757446,
+          "bitwise_equal": true,
+          "candidate_reset": true,
+          "parent_reset": true,
+          "simd_arch": null
+        },
+        {
+          "pair": 2,
+          "order": [
+            "parent",
+            "candidate"
+          ],
+          "candidate_ms": 14.2325915,
+          "parent_ms": 14.282774,
+          "ratio": 0.9964865018518111,
+          "bitwise_equal": true,
+          "candidate_reset": true,
+          "parent_reset": true,
+          "simd_arch": null
+        },
+        {
+          "pair": 3,
+          "order": [
+            "candidate",
+            "parent"
+          ],
+          "candidate_ms": 14.25851275,
+          "parent_ms": 14.34748875,
+          "ratio": 0.9937984966184413,
+          "bitwise_equal": true,
+          "candidate_reset": true,
+          "parent_reset": true,
+          "simd_arch": null
+        }
+      ],
+      "median_candidate_ms": 14.25851275,
+      "median_parent_ms": 14.341802999999999,
+      "median_ratio": 0.9964865018518111,
+      "all_bitwise_equal": true
+    }
+  ]
+}

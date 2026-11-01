@@ -399,17 +399,33 @@ fn accumulate_scaled_f32_impl<S: Simd, const OPPOSITE_PREWEIGHTED: bool, const A
 }
 
 #[inline(always)]
-fn fill_b1_f32_analysis_factors<S: Simd>(
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Factor materialization and hard-lane classification share the exponent scan."
+)]
+fn fill_b1_f32_analysis_factors<S: Simd, const OPPOSITE_PREWEIGHTED: bool>(
     simd: S,
     exponents: &[i64],
     common_exponent: i64,
     shift: i64,
+    cos_theta: &[f32],
     factors: &mut [f32],
+    hard_factors: &mut [f32],
+    hard_scale_exponents: &mut [i64],
+    hard_scalar_indices: &mut [u8],
+    hard_scalar_count: &mut usize,
+    hard_vector_indices: &mut [u8],
+    hard_vector_count: &mut usize,
 ) {
     debug_assert_eq!(exponents.len(), factors.len());
+    debug_assert_eq!(cos_theta.len(), factors.len());
     let width = S::F32_LANES;
     let vector_count = factors.len() / width;
-    for vector_index in 0..vector_count {
+    for (vector_index, hard_scale_exponent) in hard_scale_exponents
+        .iter_mut()
+        .take(vector_count)
+        .enumerate()
+    {
         let lane_start = vector_index * width;
         let lane_end = lane_start + width;
         let first_exponent = exponents[lane_start];
@@ -421,34 +437,88 @@ fn fill_b1_f32_analysis_factors<S: Simd>(
         } else {
             numeric::scale_binary_f32(1.0, factor_exponent)
         };
+        let mut hard_common = None::<i64>;
         if exponents[lane_start..lane_end]
             .iter()
             .all(|&exponent| exponent == first_exponent)
         {
             simd.partial_store_f32s(&mut factors[lane_start..lane_end], simd.splat_f32s(factor));
+            if factor == 0.0 {
+                hard_common = Some(first_exponent);
+            }
         } else {
             factors[lane_start] = factor;
+            if factor == 0.0 {
+                hard_common = Some(first_exponent);
+            }
             for lane in lane_start + 1..lane_end {
                 let factor_exponent = exponents[lane]
                     .saturating_sub(common_exponent)
                     .saturating_add(shift);
-                factors[lane] = if factor_exponent < -86 {
+                let factor = if factor_exponent < -86 {
                     0.0
                 } else {
                     numeric::scale_binary_f32(1.0, factor_exponent)
                 };
+                factors[lane] = factor;
+                if factor == 0.0 {
+                    hard_common = Some(
+                        hard_common.map_or(exponents[lane], |maximum| maximum.max(exponents[lane])),
+                    );
+                }
             }
+        }
+
+        let Some(hard_common) = hard_common else {
+            continue;
+        };
+        *hard_scale_exponent = hard_common.saturating_sub(shift);
+        let mut grouped_lanes = false;
+        for lane in lane_start..lane_end {
+            if factors[lane] != 0.0 {
+                continue;
+            }
+            let factor_exponent = exponents[lane]
+                .saturating_sub(hard_common)
+                .saturating_add(shift);
+            let cosine_is_safe = OPPOSITE_PREWEIGHTED
+                || cos_theta[lane] == 0.0
+                || cos_theta[lane].abs() >= f32::from_bits(87_u32 << 23);
+            let factor_floor = if OPPOSITE_PREWEIGHTED || cos_theta[lane] == 0.0 {
+                -45
+            } else {
+                -5
+            };
+            if factor_exponent < factor_floor || !cosine_is_safe {
+                debug_assert!(lane <= u8::MAX as usize);
+                hard_scalar_indices[*hard_scalar_count] = lane as u8;
+                *hard_scalar_count += 1;
+            } else {
+                hard_factors[lane] = numeric::scale_binary_f32(1.0, factor_exponent);
+                grouped_lanes = true;
+            }
+        }
+        if grouped_lanes {
+            debug_assert!(vector_index <= u8::MAX as usize);
+            hard_vector_indices[*hard_vector_count] = vector_index as u8;
+            *hard_vector_count += 1;
         }
     }
     for lane in vector_count * width..factors.len() {
         let factor_exponent = exponents[lane]
             .saturating_sub(common_exponent)
             .saturating_add(shift);
-        factors[lane] = if factor_exponent < -86 {
+        let factor = if factor_exponent < -86 {
             0.0
         } else {
             numeric::scale_binary_f32(1.0, factor_exponent)
         };
+        factors[lane] = factor;
+        if factor == 0.0 {
+            debug_assert!(lane <= u8::MAX as usize);
+            hard_scalar_indices[*hard_scalar_count] = lane as u8;
+            *hard_scalar_count += 1;
+        }
     }
 }
 
@@ -638,82 +708,23 @@ impl FusedAnalysisPrecision for f32 {
             };
             let shift_budget = 126 - *maximum_coefficient_exponent - 40 - lane_bits;
             *shift = i64::from(shift_budget.clamp(0, 78));
-            fill_b1_f32_analysis_factors::<S>(
+            hard_factors.fill(0.0);
+            *hard_scalar_count = 0;
+            *hard_vector_count = 0;
+            fill_b1_f32_analysis_factors::<S, OPPOSITE_PREWEIGHTED>(
                 simd,
                 exponents,
                 *common_exponent,
                 *shift,
+                cos_theta,
                 &mut factors[..basis.len()],
+                hard_factors,
+                hard_scale_exponents,
+                hard_scalar_indices,
+                hard_scalar_count,
+                hard_vector_indices,
+                hard_vector_count,
             );
-            hard_factors.fill(0.0);
-            *hard_scalar_count = 0;
-            *hard_vector_count = 0;
-            let vector_width = S::F32_LANES;
-            let vector_count = basis.len() / vector_width;
-            for (vector_index, hard_scale_exponent) in hard_scale_exponents
-                .iter_mut()
-                .take(vector_count)
-                .enumerate()
-            {
-                let lane_start = vector_index * vector_width;
-                let lane_end = lane_start + vector_width;
-                let mut hard_common = None::<i64>;
-                for lane in lane_start..lane_end {
-                    if factors[lane] == 0.0 {
-                        hard_common = Some(
-                            hard_common
-                                .map_or(exponents[lane], |maximum| maximum.max(exponents[lane])),
-                        );
-                    }
-                }
-                let Some(hard_common) = hard_common else {
-                    continue;
-                };
-                *hard_scale_exponent = hard_common.saturating_sub(*shift);
-                let mut grouped_lanes = false;
-                for lane in lane_start..lane_end {
-                    if factors[lane] != 0.0 {
-                        continue;
-                    }
-                    let factor_exponent = exponents[lane]
-                        .saturating_sub(hard_common)
-                        .saturating_add(*shift);
-                    let cosine_is_safe = OPPOSITE_PREWEIGHTED
-                        || cos_theta[lane] == 0.0
-                        || cos_theta[lane].abs() >= f32::from_bits(87_u32 << 23);
-                    let factor_floor = if OPPOSITE_PREWEIGHTED || cos_theta[lane] == 0.0 {
-                        -45
-                    } else {
-                        -5
-                    };
-                    if factor_exponent < factor_floor || !cosine_is_safe {
-                        debug_assert!(lane <= u8::MAX as usize);
-                        hard_scalar_indices[*hard_scalar_count] = lane as u8;
-                        *hard_scalar_count += 1;
-                    } else {
-                        hard_factors[lane] = numeric::scale_binary_f32(1.0, factor_exponent);
-                        grouped_lanes = true;
-                    }
-                }
-                if grouped_lanes {
-                    debug_assert!(vector_index <= u8::MAX as usize);
-                    hard_vector_indices[*hard_vector_count] = vector_index as u8;
-                    *hard_vector_count += 1;
-                }
-            }
-            for (lane, factor) in factors
-                .iter()
-                .copied()
-                .enumerate()
-                .take(basis.len())
-                .skip(vector_count * vector_width)
-            {
-                if factor == 0.0 {
-                    debug_assert!(lane <= u8::MAX as usize);
-                    hard_scalar_indices[*hard_scalar_count] = lane as u8;
-                    *hard_scalar_count += 1;
-                }
-            }
             *lane_count = basis.len();
             *valid = true;
         }

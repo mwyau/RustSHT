@@ -1,0 +1,56 @@
+{
+  "purpose": "Direct microbenchmark of factor construction plus hard-lane classification, old separate scan versus candidate fused scan.",
+  "source_parent": "acd7fe5b2f68f4423c6904caed99c10545764bf3",
+  "candidate_patch_sha256": "be17b7a0e8d02e8108d1416bdb4c3f58967d6a8dc6f8277ca30fe14031d3bc3e",
+  "simd": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+  "cpu": "AMD Ryzen 9 5950X",
+  "iterations_per_sample": 20000,
+  "interleaved_pairs": 9,
+  "fixture": "64 exponents: five ordinary uniform vectors, one mixed ordinary vector, and two vectors containing factors requiring the hard path; cos(theta)=1.0. Synthetic helper probe, not a whole-transform fixture.",
+  "baseline_ns": [
+    1501360,
+    1630685,
+    1599776,
+    1601761,
+    1605908,
+    1594386,
+    1603654,
+    1607992,
+    1627259
+  ],
+  "candidate_ns": [
+    978412,
+    979643,
+    980746,
+    981116,
+    1124538,
+    983922,
+    981217,
+    986106,
+    988099
+  ],
+  "paired_candidate_over_parent": [
+    0.6516838066819417,
+    0.6007555107209547,
+    0.6130520772908207,
+    0.6125233414972646,
+    0.7002505747527256,
+    0.6171165577219068,
+    0.611863282229209,
+    0.613253051010204,
+    0.6072167983093042
+  ],
+  "median_baseline_ns": 1603654,
+  "median_candidate_ns": 981217,
+  "median_candidate_over_parent": 0.6130520772908207,
+  "geometric_paired_candidate_over_parent": 0.6246312328406788,
+  "paired_log_t_95ci": [
+    0.6017725700191559,
+    0.6483581945711591
+  ],
+  "outputs_equal": true,
+  "hard_scalar_lanes": 0,
+  "hard_vectors": 2,
+  "source": "microbenchmark-snippet.rs (temporary test-only probe; removed from worktree after measurement)",
+  "pinning": "one physical core; logical ID omitted"
+}

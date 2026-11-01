@@ -1,0 +1,34 @@
+
+
+
+Disassembly of section .text:
+
+0000000000229e90 <_RINvNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis50fused_scalar_analysis_pair_block_preweighted_typedfEB8_+0x1e60>:
+  229e90:	c4 e2 7d 18 d0       	vbroadcastss ymm2,xmm0
+  229e95:	c4 e2 7d 18 d9       	vbroadcastss ymm3,xmm1
+  229e9a:	31 c0                	xor    eax,eax
+  229e9c:	48 8b 8c 24 10 01 00 	mov    rcx,QWORD PTR [rsp+0x110]
+  229ea3:	00
+  229ea4:	c5 fc 10 64 05 00    	vmovups ymm4,YMMWORD PTR [rbp+rax*1+0x0]
+  229eaa:	c4 e2 6d a8 e3       	vfmadd213ps ymm4,ymm2,ymm3
+  229eaf:	c5 fc 10 6c 05 20    	vmovups ymm5,YMMWORD PTR [rbp+rax*1+0x20]
+  229eb5:	c4 e2 6d a8 eb       	vfmadd213ps ymm5,ymm2,ymm3
+  229eba:	c5 fc 10 74 05 40    	vmovups ymm6,YMMWORD PTR [rbp+rax*1+0x40]
+  229ec0:	c4 e2 6d a8 f3       	vfmadd213ps ymm6,ymm2,ymm3
+  229ec5:	c5 fc 10 7c 05 60    	vmovups ymm7,YMMWORD PTR [rbp+rax*1+0x60]
+  229ecb:	c4 e2 6d a8 fb       	vfmadd213ps ymm7,ymm2,ymm3
+  229ed0:	c4 41 7c 10 44 05 00 	vmovups ymm8,YMMWORD PTR [r13+rax*1+0x0]
+  229ed7:	c4 41 7c 10 4c 05 20 	vmovups ymm9,YMMWORD PTR [r13+rax*1+0x20]
+  229ede:	c4 41 7c 10 54 05 40 	vmovups ymm10,YMMWORD PTR [r13+rax*1+0x40]
+  229ee5:	c4 41 7c 10 5c 05 60 	vmovups ymm11,YMMWORD PTR [r13+rax*1+0x60]
+  229eec:	c4 42 5d a8 04 04    	vfmadd213ps ymm8,ymm4,YMMWORD PTR [r12+rax*1]
+  229ef2:	c4 42 55 a8 4c 04 20 	vfmadd213ps ymm9,ymm5,YMMWORD PTR [r12+rax*1+0x20]
+  229ef9:	c4 42 4d a8 54 04 40 	vfmadd213ps ymm10,ymm6,YMMWORD PTR [r12+rax*1+0x40]
+  229f00:	c4 42 45 a8 5c 04 60 	vfmadd213ps ymm11,ymm7,YMMWORD PTR [r12+rax*1+0x60]
+  229f07:	c4 41 7c 11 04 07    	vmovups YMMWORD PTR [r15+rax*1],ymm8
+  229f0d:	c4 41 7c 11 4c 07 20 	vmovups YMMWORD PTR [r15+rax*1+0x20],ymm9
+  229f14:	c4 41 7c 11 54 07 40 	vmovups YMMWORD PTR [r15+rax*1+0x40],ymm10
+  229f1b:	c4 41 7c 11 5c 07 60 	vmovups YMMWORD PTR [r15+rax*1+0x60],ymm11
+  229f22:	48 83 e8 80          	sub    rax,0xffffffffffffff80
+  229f26:	48 39 c1             	cmp    rcx,rax
+  229f29:	0f 85 75 ff ff ff    	jne    229ea4 <_RINvNtNtNtCs7F2oEptmHw6_7rustsht8legendre13scalar_paired8analysis50fused_scalar_analysis_pair_block_preweighted_typedfEB8_+0x1e74>

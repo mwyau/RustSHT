@@ -1,0 +1,45 @@
+{
+  "source_base": "acd7fe5b2f68f4423c6904caed99c10545764bf3",
+  "rust_candidate": "acd7fe5 + B1 hard-classification patch, with Callgrind region hooks in isolated profile worktree",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "workload": "GL T720, M720, full, q1, nonzero deterministic f32/f64 analysis fixtures; same plan geometry and pinned execution",
+  "events": "Callgrind Ir/Dr/Dw only; hardware cycles unavailable; do not interpret Ir as cycles.",
+  "rust_f64": {
+    "total_ir": 320340465,
+    "analyze_symmetric_order_group_inclusive_ir": 268449751,
+    "analyze_symmetric_order_group_percent": 83.8,
+    "fused_scalar_analysis_pair_block_inclusive_ir": 208379177,
+    "fused_scalar_analysis_pair_block_percent": 65.05
+  },
+  "rust_f32": {
+    "total_ir": 1178624087,
+    "analyze_symmetric_order_group_inclusive_ir": 1137957060,
+    "analyze_symmetric_order_group_percent": 96.55,
+    "fused_scalar_analysis_pair_block_inclusive_ir": 1084728447,
+    "fused_scalar_analysis_pair_block_percent": 92.03
+  },
+  "ducc_f64": {
+    "total_ir": 219956436,
+    "inner_loop_m2a_double_inclusive_ir": 137905652,
+    "inner_loop_m2a_double_percent": 62.7
+  },
+  "ducc_f32": {
+    "total_ir": 214194628,
+    "leg2alm_internal_float_inclusive_ir": 157845479,
+    "leg2alm_internal_float_percent": 73.69,
+    "note": "DUCC callgrind symbols do not expose an inner_loop_m2a entry for this float build; the source path in pinned sht.cc uses complex<double> work arrays in the standard analysis route."
+  },
+  "candidate_helper_region_ir": 423520152,
+  "candidate_helper_region_note": "Instrumented factor construction plus hard classification region across full-q1 execution; region hooks are diagnostic and this inclusive region is not additive to enclosing functions.",
+  "hardware_perf": {
+    "available": false,
+    "reason": "/proc/sys/kernel/perf_event_paranoid=4; perf capabilities unavailable"
+  },
+  "profile_sha256_source_files": {
+    "rust-f32-q1.callgrind.gz": "8742fc323991651c7ac40a8753ff199c435b3ee89c7c9c7e64001836e7d86b9b",
+    "rust-f64-q1.callgrind.gz": "e1cacb7c3ca408aca2bb9f437c894643f963bc9f9c018b5e67a24533ee0ef825",
+    "ducc-f32-q1.callgrind.gz": "0f357f42841a8dc2c2cf5edec68c946296c4b39dc7e5c5a94efb82437100adf0",
+    "ducc-f64-q1.callgrind.gz": "e3fab4066f48ca4c12aa635bbcf3412c33cc0e7c55d796e1887710d6f1d8eed8"
+  },
+  "callgrind_instrumentation_patch_sha256": "f91cc86cd245180edf0b20322fa273c8e80f902cab9859c5b3dc05835dc8e6a7"
+}
