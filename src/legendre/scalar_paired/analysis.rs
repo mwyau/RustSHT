@@ -525,6 +525,7 @@ fn fill_b1_f32_analysis_factors<S: Simd, const OPPOSITE_PREWEIGHTED: bool>(
 impl FusedAnalysisPrecision for f32 {
     type Vector<S: Simd> = S::f32s;
     type ScaledState = F32ScaledAnalysisState;
+    const TWO_PAIR_ANALYSIS_UNROLL: bool = true;
 
     #[inline(always)]
     fn normalize_analysis_pair_state<S: Simd>(

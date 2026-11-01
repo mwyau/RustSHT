@@ -1,0 +1,39 @@
+Captured V3 AVX2/FMA analysis kernel codegen
+===========================================
+
+Parent f32 specialization
+-------------------------
+
+Typed function size: 19,820 bytes
+Instruction-byte SHA-256: e8dc1ba144572b2c2dc07f7c5a293b5dd0a0455483ad3df97f6429bb56916e5a
+
+Candidate f32 specialization
+----------------------------
+
+Typed function size: 22,532 bytes
+Instruction-byte SHA-256: 42a975b2067583be5a139ec9b34d7e4c15eafdc2e935c0244946dedbffc77d17
+
+The ordinary candidate loop carries four accumulators for the first pair and
+four for the second. It loads one basis vector, applies four channel FMAs,
+advances the recurrence, then applies four more channel FMAs:
+
+  vmovups ymm12, YMMWORD PTR [r13+rdx]
+  vfmadd231ps ymm4, ymm12, YMMWORD PTR [r9+rdx]
+  vfmadd231ps ymm5, ymm12, YMMWORD PTR [r13+rdx]
+  vfmadd231ps ymm6, ymm12, YMMWORD PTR [r15+rdx]
+  vfmadd231ps ymm8, ymm12, YMMWORD PTR [rbx+rdx]
+  vmovups ymm13, YMMWORD PTR [rcx+rdx]
+  vfmadd213ps ymm13, ymm3, ymm0
+  vfmadd213ps ymm13, ymm12, YMMWORD PTR [rcx+rdx]
+  vmovups YMMWORD PTR [r11+rdx], ymm13
+  vfmadd231ps ymm7, ymm13, YMMWORD PTR [r9+rdx]
+  vfmadd231ps ymm9, ymm13, YMMWORD PTR [r13+rdx]
+  vfmadd231ps ymm10, ymm13, YMMWORD PTR [r15+rdx]
+  vfmadd231ps ymm11, ymm13, YMMWORD PTR [rbx+rdx]
+
+No YMM stack loads or stores occur in this hot loop. The f64 V3 function is
+7,236 bytes in both builds and its instruction-byte SHA-256 is identical:
+
+  2fc89da041c30b0986c1deb0b91f3089d30f8a9d6e2f89cc4e521e1f8d9ae77c
+
+The AVX2 excerpt describes emitted instructions, not cycle attribution.
