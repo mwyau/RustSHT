@@ -4554,7 +4554,6 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
     )
 }
 
-#[allow(unexpected_cfgs)]
 #[inline(always)]
 fn fused_analysis_two_pair_steps_with_simd<
     S: Simd,
@@ -4625,15 +4624,9 @@ fn fused_analysis_two_pair_steps_with_simd<
     }
 
     let zero = simd.splat_f64s(0.0);
-    // The experiment re-materializes coefficient splats at the recurrence
-    // expressions; the default keeps the established broadcast lifetimes.
-    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let first_a = simd.splat_f64s(first_coefficient_a);
-    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let first_b = simd.splat_f64s(first_coefficient_b);
-    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let second_a = simd.splat_f64s(second_coefficient_a);
-    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let second_b = simd.splat_f64s(second_coefficient_b);
     let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
     let mut first_same_re = zero;
@@ -4645,7 +4638,6 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut second_opposite_re = zero;
     let mut second_opposite_im = zero;
     let mut vector_states_in_range = simd.equal_f64s(zero, zero);
-    let mut scalar_states_in_range = true;
     let mut tails_in_range = true;
 
     macro_rules! update_analysis_pair_vector {
@@ -4674,13 +4666,6 @@ fn fused_analysis_two_pair_steps_with_simd<
                 }
             }
 
-            #[cfg(rustsht_rematerialize_analysis_coefficients)]
-            let first_leading = simd.mul_add_f64s(
-                simd.splat_f64s(first_coefficient_a),
-                *($cosine_squared),
-                simd.splat_f64s(first_coefficient_b),
-            );
-            #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
             let first_leading = simd.mul_add_f64s(first_a, *($cosine_squared), first_b);
             let first_next = simd.mul_add_f64s(first_leading, current_value, previous_value);
 
@@ -4704,13 +4689,6 @@ fn fused_analysis_two_pair_steps_with_simd<
                 }
             }
 
-            #[cfg(rustsht_rematerialize_analysis_coefficients)]
-            let second_leading = simd.mul_add_f64s(
-                simd.splat_f64s(second_coefficient_a),
-                *($cosine_squared),
-                simd.splat_f64s(second_coefficient_b),
-            );
-            #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
             let second_leading = simd.mul_add_f64s(second_a, *($cosine_squared), second_b);
             let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
             if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
@@ -4725,13 +4703,7 @@ fn fused_analysis_two_pair_steps_with_simd<
                     simd.greater_than_or_equal_f64s(current_magnitude, minimum),
                 );
                 let states_in_range = simd.and_m64s(previous_in_range, current_in_range);
-                // The scalar-reduction candidate shortens the vector-mask live
-                // range at the cost of one horizontal reduction per vector chunk.
-                if cfg!(rustsht_scalar_fused_analysis_pair_range_check) {
-                    scalar_states_in_range &= analysis_mask_all(simd, states_in_range);
-                } else {
-                    vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
-                }
+                vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
             }
             if ROTATE_SEQUENTIAL_STATES {
                 *($snapshot) = first_next;
@@ -4877,11 +4849,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     }
 
     let states_in_range = if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
-        let vectors_in_range = if cfg!(rustsht_scalar_fused_analysis_pair_range_check) {
-            scalar_states_in_range
-        } else {
-            analysis_mask_all(simd, vector_states_in_range)
-        };
+        let vectors_in_range = analysis_mask_all(simd, vector_states_in_range);
         let tails_in_range = if ROTATE_SEQUENTIAL_STATES {
             tails_in_range
         } else {
@@ -4910,7 +4878,6 @@ fn fused_analysis_two_pair_steps_with_simd<
 /// register-heavy accumulation pass has completed. This keeps the safety
 /// check out of the multi-accumulator loop while preserving fallback on any
 /// nonzero subnormal lane.
-#[allow(unexpected_cfgs)]
 #[inline(always)]
 fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], current: &[f64]) -> bool {
     if previous.len() != current.len() {
@@ -4925,62 +4892,13 @@ fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], curren
 
     let zero = simd.splat_f64s(0.0);
     let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
-    #[cfg(not(rustsht_split_analysis_range_masks))]
     let mut vectors_in_range = simd.equal_f64s(zero, zero);
-    #[cfg(not(rustsht_split_analysis_range_masks))]
     for (&previous_value, &current_value) in previous_vectors.iter().zip(current_vectors) {
         vectors_in_range = simd.and_m64s(
             vectors_in_range,
             analysis_pair_state_range_mask(simd, previous_value, current_value, zero, minimum),
         );
     }
-    // Keep two independent mask chains in the scan loop. The AVX2 loop used
-    // one loop-carried YMM AND chain after checking each recurrence group.
-    #[cfg(rustsht_split_analysis_range_masks)]
-    let mut first_vectors_in_range = simd.equal_f64s(zero, zero);
-    #[cfg(rustsht_split_analysis_range_masks)]
-    let mut second_vectors_in_range = simd.equal_f64s(zero, zero);
-    #[cfg(rustsht_split_analysis_range_masks)]
-    for pair in 0..previous_vectors.len() / 2 {
-        let first = pair * 2;
-        first_vectors_in_range = simd.and_m64s(
-            first_vectors_in_range,
-            analysis_pair_state_range_mask(
-                simd,
-                previous_vectors[first],
-                current_vectors[first],
-                zero,
-                minimum,
-            ),
-        );
-        let second = first + 1;
-        second_vectors_in_range = simd.and_m64s(
-            second_vectors_in_range,
-            analysis_pair_state_range_mask(
-                simd,
-                previous_vectors[second],
-                current_vectors[second],
-                zero,
-                minimum,
-            ),
-        );
-    }
-    #[cfg(rustsht_split_analysis_range_masks)]
-    if previous_vectors.len() % 2 != 0 {
-        let last = previous_vectors.len() - 1;
-        first_vectors_in_range = simd.and_m64s(
-            first_vectors_in_range,
-            analysis_pair_state_range_mask(
-                simd,
-                previous_vectors[last],
-                current_vectors[last],
-                zero,
-                minimum,
-            ),
-        );
-    }
-    #[cfg(rustsht_split_analysis_range_masks)]
-    let vectors_in_range = simd.and_m64s(first_vectors_in_range, second_vectors_in_range);
     if !analysis_mask_all(simd, vectors_in_range) {
         return false;
     }
