@@ -1,0 +1,9 @@
+3e15b4fdfb2d3d57adb4e8b1f4ef0980769bb3e564a3b1d0e0753e26445e5dde  ./README.md
+ac6a48a79db6e2e9f2782a33b5ab95e56208fbfe74825eb0a584d361dc9742ff  ./ducc-stage-summary.json
+2245c431c3b591e5b73f7e729db35aaf5b3e192ae33c2410b5a6612b8f8d4237  ./patches/ducc-b3-stage-profile.patch.gz
+21bd5d6535511382b4a5973748db935a0f07ed690dbab96c89a790d172d04e6b  ./patches/rejected-native-leaf-route.patch.gz
+91aa0a1739828c0faf9e61c175ab1a57257a2c49cfc7520d18decce2cfc9d445  ./patches/rejected-separate-channel-route.patch.gz
+e74cc7c88d83cba59b3a468b609913eb8e93d3e5fa844d83948ed3d59aa282be  ./raw/rust-active-weighted-v3.asm.gz
+72bc6756220af222283a88630c9f4f179d9ba716e8c4d0f47a04bff76f406ac9  ./rejected-native-leaf-3pair.json
+64e14f181c3d8b4b6282de819f9206615d07d58a2a72ebed65ab28bd853f2ca5  ./rejected-separate-channel-3pair.json
+41e3906f66fd384bd50efe8ec60384366ac2264787c1962f228cb80cc495ea8b  ./rust-route-trace.json

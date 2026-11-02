@@ -1,0 +1,128 @@
+{
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "instrumented_binary_sha256": "dbae1d68c9fa3b2a6a492d9f3ef53ba22c16cccf24eb15b2fe4fee06ca4975e1",
+  "uninstrumented_binary_sha256": "5dacb5987ee621a5115fed405775dc85231361ab703b3eae1694d086a5a7bdf8",
+  "measurement": "Three instrumented/plain pairs; stage medians use calls 1 and 2 from each instrumented run. For q8, worker stages come from the worker with the largest worker_ms in each call. Branch time is execDynamic wall time.",
+  "cells": [
+    {
+      "cell": "full-q1",
+      "lmax": 720,
+      "mmax": 720,
+      "threads": 1,
+      "stage_median_ms": {
+        "branch_wall": 22.678041,
+        "critical_worker_total": 22.676719,
+        "prepare": 1.436699,
+        "workspace_clear": 0.087759,
+        "channel0": 9.150461,
+        "channel1": 8.939403,
+        "normalize": 0.139993,
+        "spin0to1": 2.443752,
+        "output": 0.401497,
+        "ring_fill_both_channels": 3.302368,
+        "recurrence_accumulation_both_channels": 14.249439,
+        "post_correction_both_channels": 0.373708
+      },
+      "work_median_per_channel": {
+        "active_lanes_per_channel": 194197.0,
+        "ordinary_updates_per_channel": 40541801.0,
+        "vector_slots_per_channel": 40786596.0,
+        "scaled_prefix_updates_per_channel": 0.0,
+        "scaled_exceptional_updates_per_channel": 0.0,
+        "calc_map2alm_calls_per_channel": 1140.0
+      },
+      "profiled_to_plain_call_ratio_median": 0.99531,
+      "profiled_and_plain_outputs_equal": true
+    },
+    {
+      "cell": "full-q8",
+      "lmax": 720,
+      "mmax": 720,
+      "threads": 8,
+      "stage_median_ms": {
+        "branch_wall": 3.555854,
+        "critical_worker_total": 3.542133,
+        "prepare": 0.183847,
+        "workspace_clear": 0.011675,
+        "channel0": 1.451102,
+        "channel1": 1.453707,
+        "normalize": 0.017917,
+        "spin0to1": 0.313749,
+        "output": 0.062554,
+        "ring_fill_both_channels": 0.53438,
+        "recurrence_accumulation_both_channels": 2.299815,
+        "post_correction_both_channels": 0.048691
+      },
+      "work_median_per_channel": {
+        "active_lanes_per_channel": 194197.0,
+        "ordinary_updates_per_channel": 40541801.0,
+        "vector_slots_per_channel": 40786596.0,
+        "scaled_prefix_updates_per_channel": 0.0,
+        "scaled_exceptional_updates_per_channel": 0.0,
+        "calc_map2alm_calls_per_channel": 1140.0
+      },
+      "profiled_to_plain_call_ratio_median": 1.005615,
+      "profiled_and_plain_outputs_equal": true
+    },
+    {
+      "cell": "reduced-q1",
+      "lmax": 720,
+      "mmax": 180,
+      "threads": 1,
+      "stage_median_ms": {
+        "branch_wall": 10.134859,
+        "critical_worker_total": 10.134177,
+        "prepare": 0.631656,
+        "workspace_clear": 0.036113,
+        "channel0": 4.097176,
+        "channel1": 4.047002,
+        "normalize": 0.054863,
+        "spin0to1": 1.073779,
+        "output": 0.141734,
+        "ring_fill_both_channels": 0.799115,
+        "recurrence_accumulation_both_channels": 7.132445,
+        "post_correction_both_channels": 0.159332
+      },
+      "work_median_per_channel": {
+        "active_lanes_per_channel": 64364.0,
+        "ordinary_updates_per_channel": 20386534.0,
+        "vector_slots_per_channel": 20522448.0,
+        "scaled_prefix_updates_per_channel": 0.0,
+        "scaled_exceptional_updates_per_channel": 0.0,
+        "calc_map2alm_calls_per_channel": 362.0
+      },
+      "profiled_to_plain_call_ratio_median": 1.005631,
+      "profiled_and_plain_outputs_equal": true
+    },
+    {
+      "cell": "reduced-q8",
+      "lmax": 720,
+      "mmax": 180,
+      "threads": 8,
+      "stage_median_ms": {
+        "branch_wall": 1.579337,
+        "critical_worker_total": 1.5685,
+        "prepare": 0.0822,
+        "workspace_clear": 0.005096,
+        "channel0": 0.652428,
+        "channel1": 0.647243,
+        "normalize": 0.007684,
+        "spin0to1": 0.137658,
+        "output": 0.022244,
+        "ring_fill_both_channels": 0.126151,
+        "recurrence_accumulation_both_channels": 1.14495,
+        "post_correction_both_channels": 0.02118
+      },
+      "work_median_per_channel": {
+        "active_lanes_per_channel": 64364.0,
+        "ordinary_updates_per_channel": 20386534.0,
+        "vector_slots_per_channel": 20522448.0,
+        "scaled_prefix_updates_per_channel": 0.0,
+        "scaled_exceptional_updates_per_channel": 0.0,
+        "calc_map2alm_calls_per_channel": 362.0
+      },
+      "profiled_to_plain_call_ratio_median": 1.018545,
+      "profiled_and_plain_outputs_equal": true
+    }
+  ]
+}

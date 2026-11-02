@@ -1,0 +1,96 @@
+{
+  "source_sha": "a254923e4a26247f3a39ba51a43ee20937f43b95",
+  "b3_hot_source_parent": "31c7cd5046d2389d5f0de230577dc147ff37f873",
+  "binary_sha256": "3364b487f4d9fa1caa8a7de485c602fdc135620ef98376e80f5893b0207104ba",
+  "gdb": "GNU gdb (Ubuntu 16.3-1ubuntu2) 16.3",
+  "breakpoint_patterns": {
+    "NativeFusedAnalysisPairChannels": "all f64 V3/V4 variants",
+    "FusedScalarAnalysisPair": "all f64 V3/V4 variants"
+  },
+  "weighted_leaf_breakpoint_ids": {
+    "13": "AVX2 FusedScalarAnalysisPair<true,true,false,true,true> (weighted checked two-channel)",
+    "15": "AVX2 FusedScalarAnalysisPair<true,false,false,true,true> (weighted unchecked two-channel)"
+  },
+  "route_traces": [
+    {
+      "geometry": "reduced",
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 1,
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "native_breakpoints_hit": [],
+      "weighted_scalar_leaf_breakpoints_hit": [
+        13,
+        15
+      ],
+      "ordinary_fused_leaf_hit": true,
+      "native_fused_leaf_hit": false,
+      "worker_repeat_consistent": true,
+      "workspace_reset_consistent": true
+    },
+    {
+      "geometry": "reduced",
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 8,
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "native_breakpoints_hit": [],
+      "weighted_scalar_leaf_breakpoints_hit": [
+        13,
+        15
+      ],
+      "ordinary_fused_leaf_hit": true,
+      "native_fused_leaf_hit": false,
+      "worker_repeat_consistent": true,
+      "workspace_reset_consistent": true
+    },
+    {
+      "geometry": "full",
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 1,
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "native_breakpoints_hit": [],
+      "weighted_scalar_leaf_breakpoints_hit": [
+        13,
+        15
+      ],
+      "ordinary_fused_leaf_hit": true,
+      "native_fused_leaf_hit": false,
+      "worker_repeat_consistent": true,
+      "workspace_reset_consistent": true
+    },
+    {
+      "geometry": "full",
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 8,
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "native_breakpoints_hit": [],
+      "weighted_scalar_leaf_breakpoints_hit": [
+        13,
+        15
+      ],
+      "ordinary_fused_leaf_hit": true,
+      "native_fused_leaf_hit": false,
+      "worker_repeat_consistent": true,
+      "workspace_reset_consistent": true
+    }
+  ]
+}
