@@ -1,0 +1,88 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index b0077a72..8e9839b4 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -1361,6 +1361,65 @@ fn accumulate_two_normal_scalar_analysis_pairs<T: FusedAnalysisPrecision, S: Sim
+     previous: &mut [T],
+     current: &mut [T],
+     next: &mut [T],
++) {
++    if advance_after_second_pair {
++        accumulate_two_normal_scalar_analysis_pairs_impl::<T, S, true>(
++            simd,
++            pair_index,
++            same_real,
++            same_imag,
++            opposite_real,
++            opposite_imag,
++            cos_theta_squared,
++            coefficient_a,
++            coefficient_b,
++            staged_coefficients,
++            previous,
++            current,
++            next,
++        );
++    } else {
++        accumulate_two_normal_scalar_analysis_pairs_impl::<T, S, false>(
++            simd,
++            pair_index,
++            same_real,
++            same_imag,
++            opposite_real,
++            opposite_imag,
++            cos_theta_squared,
++            coefficient_a,
++            coefficient_b,
++            staged_coefficients,
++            previous,
++            current,
++            next,
++        );
++    }
++}
++
++#[inline(always)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The two-pair block receives preweighted spectra and recurrence buffers explicitly."
++)]
++fn accumulate_two_normal_scalar_analysis_pairs_impl<
++    T: FusedAnalysisPrecision,
++    S: Simd,
++    const ADVANCE_AFTER_SECOND_PAIR: bool,
++>(
++    simd: S,
++    pair_index: usize,
++    same_real: &[T],
++    same_imag: &[T],
++    opposite_real: &[T],
++    opposite_imag: &[T],
++    cos_theta_squared: &[T],
++    coefficient_a: &[T],
++    coefficient_b: &[T],
++    staged_coefficients: &mut [Complex<T>],
++    previous: &mut [T],
++    current: &mut [T],
++    next: &mut [T],
+ ) {
+     let (same_re_vectors, same_re_tail) = T::as_simd::<S>(same_real);
+     let (same_im_vectors, same_im_tail) = T::as_simd::<S>(same_imag);
+@@ -1423,7 +1482,7 @@ fn accumulate_two_normal_scalar_analysis_pairs<T: FusedAnalysisPrecision, S: Sim
+         opposite_re1 = T::simd_fma(simd, *opposite_re, basis1, opposite_re1);
+         opposite_im1 = T::simd_fma(simd, *opposite_im, basis1, opposite_im1);
+ 
+-        if advance_after_second_pair {
++        if ADVANCE_AFTER_SECOND_PAIR {
+             let leading1 = T::simd_fma(simd, a1, *cos2, b1);
+             *previous0 = T::simd_fma(simd, leading1, basis1, basis0);
+         }
+@@ -1456,7 +1515,7 @@ fn accumulate_two_normal_scalar_analysis_pairs<T: FusedAnalysisPrecision, S: Sim
+         sums[6] = opposite_re_tail[lane].mul_add(basis1, sums[6]);
+         sums[7] = opposite_im_tail[lane].mul_add(basis1, sums[7]);
+ 
+-        if advance_after_second_pair {
++        if ADVANCE_AFTER_SECOND_PAIR {
+             let leading1 = coefficient_a[pair_index + 1]
+                 .mul_add(cos2_tail[lane], coefficient_b[pair_index + 1]);
+             previous_tail[lane] = leading1.mul_add(basis1, basis0);

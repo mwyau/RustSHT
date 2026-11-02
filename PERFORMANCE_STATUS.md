@@ -16,6 +16,6 @@ The source-specific 15-pair results against DUCC f64 at parent `792c8f36` were 1
 
 ## Correctness and validation limits
 
-The intermittent native-f32 nonfinite SIMD-tail issue remains unresolved; no independently validated fix is recorded. Existing tests and references pass only for their documented coverage, which does not establish complete numerical correctness or DUCC parity. The latest CI run checked at source `41caa81ab01f32fd28630d4a1e1ebe748454e6f8` passed: [Rust CI run 41455708541](https://github.com/mwyau/RustSHT/actions/runs/41455708541). Comprehensive tests and benchmarks were not rerun for this wind-down.
+The intermittent native-f32 nonfinite SIMD-tail issue remains unresolved; no independently validated fix is recorded. Existing tests and references pass only for their documented coverage, which does not establish complete numerical correctness or DUCC parity. CI run [41461057158](https://github.com/mwyau/RustSHT/actions/runs/41461057158) for source `7856604f8ba97a4b91a47c9eccc1c3e813c51c40` completed with the `Test` step failed; the previous run [41455708541](https://github.com/mwyau/RustSHT/actions/runs/41455708541) at `41caa81ab01f32fd28630d4a1e1ebe748454e6f8` passed. The public log endpoint did not provide the failing test detail, and no rerun or repair was started during wind-down. Comprehensive tests and benchmarks were not rerun.
 
 Future research, if separately authorized, can return to measured B1/B3 cycle attribution and the ordinary fused B3 recurrence/channel work. No automatic NEXT is set.

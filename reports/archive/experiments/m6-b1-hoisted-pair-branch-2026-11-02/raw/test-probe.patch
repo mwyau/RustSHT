@@ -1,0 +1,73 @@
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index db7618b0..c55fe9eb 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -1420,7 +1420,11 @@ fn relative_l2_complex(actual: &[Complex64], expected: &[Complex64]) -> f64 {
+ #[ignore = "manual active-pair tile utilization report"]
+ fn report_scalar_analysis_pair_tile_utilization() {
+     for (lmax, mmax, ntheta, nphi) in [(720, 720, 721, 1443), (300, 150, 301, 603)] {
+-        let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
++        let phi0 = std::env::var("RUSTSHT_PROFILE_PHI0")
++            .ok()
++            .map(|value| value.parse::<f64>().expect("invalid profile phi0"))
++            .unwrap_or(0.37);
++        let plan = make_plan(lmax, mmax, ntheta, nphi, phi0);
+         let mut workspace = plan.workspace().unwrap();
+         prepare_scalar_latitudes(&plan, &mut workspace);
+         for ring in 0..ntheta {
+@@ -2097,12 +2101,16 @@ fn scalar_analysis_phase_profile_selected() {
+         .map(|value| value.parse::<usize>().expect("invalid mmax"));
+ 
+     for lmax in lmax_values {
+-        let (ntheta, nphi) = match lmax {
+-            720 => (721, 1442),
++        let (ntheta, default_nphi) = match lmax {
++            720 => (721, 1458),
+             2047 => (2049, 4096),
+             3072 => (3073, 6174),
+             _ => panic!("unsupported focused profile case T{lmax}"),
+         };
++        let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
++            .ok()
++            .map(|value| value.parse::<usize>().expect("invalid profile nphi"))
++            .unwrap_or(default_nphi);
+         let mmax = mmax_override.unwrap_or(lmax);
+         assert!(mmax <= lmax);
+         let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
+@@ -2114,12 +2122,30 @@ fn scalar_analysis_phase_profile_selected() {
+         pool.install(|| plan.prepare_workspace(&mut workspace, thread_count))
+             .unwrap();
+         let probe = workspace.observe_transform_phases();
+-        let map = (0..plan.sample_count)
+-            .map(|index| {
+-                let index = index as f64;
+-                (index * 0.000173).sin() + 0.2 * (index * 0.000071).cos()
+-            })
+-            .collect::<Vec<_>>();
++        let map = if let Ok(path) = std::env::var("RUSTSHT_PROFILE_MAP_IN") {
++            let bytes = std::fs::read(path).expect("read matched phase-profile map");
++            assert_eq!(bytes.len(), plan.sample_count * std::mem::size_of::<f64>());
++            bytes
++                .as_chunks::<8>()
++                .0
++                .iter()
++                .map(|chunk| f64::from_le_bytes(*chunk))
++                .collect::<Vec<_>>()
++        } else {
++            (0..plan.sample_count)
++                .map(|index| {
++                    let index = index as f64;
++                    (index * 0.000173).sin() + 0.2 * (index * 0.000071).cos()
++                })
++                .collect::<Vec<_>>()
++        };
++        if let Ok(path) = std::env::var("RUSTSHT_PROFILE_MAP_OUT") {
++            let mut bytes = Vec::with_capacity(map.len() * std::mem::size_of::<f64>());
++            for value in &map {
++                bytes.extend_from_slice(&value.to_le_bytes());
++            }
++            std::fs::write(path, bytes).expect("write deterministic phase-profile map");
++        }
+         let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+ 
+         pool.install(|| {
