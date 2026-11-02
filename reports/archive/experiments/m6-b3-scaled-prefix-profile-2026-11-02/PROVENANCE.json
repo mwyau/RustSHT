@@ -1,0 +1,20 @@
+{
+  "base_commit": "cc60dbdc386fb04e8571966c38a7e65db86605de",
+  "worktree_diff_sha256": "76560fb460c0703d536742068e799920e7d8cd9325c7f9934f884235ba3e60d4",
+  "test_only_profile_binary_sha256": "ad7cbb0db7022bea8779c9b615048a50aa5a487f51f935429f3e642ad3251a98",
+  "three_pair_candidate_results": "results.json",
+  "candidate_production_patch": "candidate.patch",
+  "candidate_production_patch_sha256": "71265726a807f1eccb9bf94fe7a3d09df5dbc60e54445f0681623f0e14db6629",
+  "profile_patch": "route-profile-and-candidate.patch",
+  "profile_json": "scaled-route-profile.json",
+  "profile_patch_sha256": "76560fb460c0703d536742068e799920e7d8cd9325c7f9934f884235ba3e60d4",
+  "profile_json_sha256": "9cadd9b07c6476b713f3a8aab00525310bba33f88b9432a29a7efce17a69c36c",
+  "candidate_results_sha256": "2f0984b9ed9fc72473cd044226f96a25652d27ace285c6878cb98ffcd890469a",
+  "candidate_patch_sha256": "71265726a807f1eccb9bf94fe7a3d09df5dbc60e54445f0681623f0e14db6629",
+  "parent_binary_sha256": "23bea81177ba96f2077293499514a15f6d8aaf6b3f517b948fd2f569333cdc2d",
+  "ducc_binary_sha256": "eaab3710c1cc03e18b8ef3958f068ff590a871ec1722df985e6333c9c5efe745",
+  "disassembly": {
+    "scaled-leaf-v3.asm.gz": "b517af4e1dc7dcb833bf4a9c2222cb3ee2835118c18d05bbf13f602fc91c9e33",
+    "ordinary-leaf-v3.asm.gz": "99f99e5ce6eb21d7736279de89f9bfbfd0b46a8b10659e41206f8583614905a6"
+  }
+}

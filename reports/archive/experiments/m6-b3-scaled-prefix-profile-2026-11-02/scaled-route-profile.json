@@ -1,0 +1,225 @@
+{
+  "source_parent": "cc60dbdc386fb04e8571966c38a7e65db86605de",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cpu_model": "AMD Ryzen 9 5950X",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "profile_binary_sha256": "ad7cbb0db7022bea8779c9b615048a50aa5a487f51f935429f3e642ad3251a98",
+  "fixture_sha256": {
+    "full_map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+    "full_map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+    "reduced_map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+    "reduced_map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+  },
+  "sampler": "test-only std::time::Instant around current dispatch and scaled-prefix/ordinary-suffix paths; q8 is per-worker accumulated time, not transform wall contribution",
+  "full": {
+    "scaled_blocks": 599,
+    "ordinary_blocks": 2980,
+    "scaled_prefix_steps": 27332,
+    "ordinary_suffix_steps": 100904,
+    "scaled_transitions": 577,
+    "scaled_no_transition": 22,
+    "non_normal_seed_lanes": 9442,
+    "all_scaled_block_lanes": 26204,
+    "lane_histogram_non_normal_count": {
+      "1": 26,
+      "2": 23,
+      "3": 23,
+      "4": 23,
+      "5": 21,
+      "6": 22,
+      "7": 21,
+      "8": 22,
+      "9": 17,
+      "10": 12,
+      "11": 12,
+      "12": 9,
+      "13": 12,
+      "14": 11,
+      "15": 15,
+      "16": 17,
+      "17": 21,
+      "18": 22,
+      "19": 20,
+      "20": 21,
+      "21": 22,
+      "22": 22,
+      "23": 22,
+      "24": 27,
+      "25": 25,
+      "26": 27,
+      "27": 31,
+      "28": 28,
+      "29": 22,
+      "30": 3
+    },
+    "q1_ms": {
+      "whole_instrumented": 37.243468,
+      "whole_plain_samples": [
+        36.655876,
+        37.869574,
+        37.596105
+      ],
+      "ordinary_dispatch": 13.547227,
+      "scaled_dispatch": 6.533021,
+      "scaled_prefix": 4.514831,
+      "ordinary_suffix_after_scaled": 1.952835
+    },
+    "q8_ms": {
+      "whole_instrumented": 5.292267,
+      "whole_plain_samples": [
+        5.226282,
+        5.264864,
+        5.208558
+      ],
+      "ordinary_per_worker": [
+        1.764187,
+        1.772086,
+        1.782508,
+        1.770152,
+        1.770879,
+        1.757568,
+        1.775465,
+        1.749034
+      ],
+      "scaled_per_worker": [
+        0.868581,
+        0.872626,
+        0.868401,
+        0.890358,
+        0.884922,
+        0.890467,
+        0.86794,
+        0.899153
+      ],
+      "scaled_prefix_per_worker": [
+        0.596728,
+        0.602692,
+        0.596753,
+        0.623259,
+        0.620776,
+        0.623469,
+        0.601047,
+        0.633254
+      ],
+      "ordinary_suffix_per_worker": [
+        0.261329,
+        0.259449,
+        0.261073,
+        0.256539,
+        0.253677,
+        0.256543,
+        0.255982,
+        0.254888
+      ]
+    },
+    "exceptional_seed_lane_fraction": 0.360326667684323,
+    "average_non_normal_lanes_per_scaled_block": 15.762938230383973,
+    "scaled_route_time_share_of_dispatch": 0.3253456331814229,
+    "scaled_prefix_share_of_scaled_dispatch": 0.6910785990126161
+  },
+  "reduced": {
+    "scaled_blocks": 132,
+    "ordinary_blocks": 954,
+    "scaled_prefix_steps": 16916,
+    "ordinary_suffix_steps": 23212,
+    "scaled_transitions": 110,
+    "scaled_no_transition": 22,
+    "non_normal_seed_lanes": 1883,
+    "all_scaled_block_lanes": 7471,
+    "lane_histogram_non_normal_count": {
+      "1": 8,
+      "2": 6,
+      "3": 5,
+      "4": 4,
+      "5": 4,
+      "6": 3,
+      "7": 3,
+      "8": 3,
+      "9": 3,
+      "10": 3,
+      "11": 3,
+      "12": 2,
+      "13": 3,
+      "14": 2,
+      "15": 6,
+      "16": 9,
+      "17": 10,
+      "18": 7,
+      "19": 7,
+      "20": 8,
+      "21": 8,
+      "22": 7,
+      "23": 9,
+      "24": 9
+    },
+    "q1_ms": {
+      "whole_instrumented": 15.07963,
+      "whole_plain_samples": [
+        15.067007,
+        15.001712,
+        15.089489
+      ],
+      "ordinary_dispatch": 6.867549,
+      "scaled_dispatch": 3.171836,
+      "scaled_prefix": 2.640048,
+      "ordinary_suffix_after_scaled": 0.518389
+    },
+    "q8_ms": {
+      "whole_instrumented": 2.144558,
+      "whole_plain_samples": [
+        2.124862,
+        2.088433,
+        2.125232
+      ],
+      "ordinary_per_worker": [
+        0.877227,
+        0.887064,
+        0.885371,
+        0.88585,
+        0.881705,
+        0.850003,
+        0.849631,
+        0.844826
+      ],
+      "scaled_per_worker": [
+        0.409116,
+        0.408794,
+        0.393568,
+        0.416708,
+        0.425377,
+        0.41124,
+        0.410285,
+        0.414506
+      ],
+      "scaled_prefix_per_worker": [
+        0.337922,
+        0.336548,
+        0.327543,
+        0.346207,
+        0.353315,
+        0.34359,
+        0.341004,
+        0.348389
+      ],
+      "ordinary_suffix_per_worker": [
+        0.069002,
+        0.069869,
+        0.063569,
+        0.068007,
+        0.069581,
+        0.06531,
+        0.066984,
+        0.063992
+      ]
+    },
+    "exceptional_seed_lane_fraction": 0.2520412260741534,
+    "average_non_normal_lanes_per_scaled_block": 14.265151515151516,
+    "scaled_route_time_share_of_dispatch": 0.31593927317260967,
+    "scaled_prefix_share_of_scaled_dispatch": 0.8323406380405545
+  },
+  "limitations": [
+    "PMU perf events unavailable; elapsed probes are instrumented and q8 values are per-worker sums.",
+    "scaled_seed_lane_histogram buckets count blocks by number of lanes outside exponent-zero normal range; it does not establish that lane compaction will improve time."
+  ],
+  "worktree_diff_sha256": "76560fb460c0703d536742068e799920e7d8cd9325c7f9934f884235ba3e60d4"
+}

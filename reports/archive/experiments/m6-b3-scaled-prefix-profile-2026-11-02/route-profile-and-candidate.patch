@@ -1,0 +1,570 @@
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 4044ed8f..fbde8d5d 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -47,7 +47,7 @@ pub(crate) static ANALYSIS_PAIR_GROUP_RANGE_DECLINES: std::sync::atomic::AtomicU
+     std::sync::atomic::AtomicUsize::new(0);
+ 
+ #[cfg(all(test, feature = "parallel"))]
+-#[derive(Clone, Copy, Debug, Default)]
++#[derive(Clone, Copy, Debug)]
+ pub(crate) struct ScalarAnalysisRouteCounts {
+     pub(crate) normal_seed_blocks: usize,
+     pub(crate) prefix_enabled_scaled_blocks: usize,
+@@ -61,6 +61,19 @@ pub(crate) struct ScalarAnalysisRouteCounts {
+     pub(crate) typed_recurrence_declines: usize,
+     pub(crate) typed_normal_pair_accumulations: usize,
+     pub(crate) typed_scaled_pair_accumulations: usize,
++    pub(crate) ordinary_route_ns_by_thread: [u64; 64],
++    pub(crate) scaled_route_ns_by_thread: [u64; 64],
++    pub(crate) ordinary_route_blocks: usize,
++    pub(crate) scaled_route_blocks: usize,
++    pub(crate) scaled_prefix_ns_by_thread: [u64; 64],
++    pub(crate) ordinary_suffix_ns_by_thread: [u64; 64],
++    pub(crate) scaled_prefix_pair_steps: usize,
++    pub(crate) ordinary_suffix_pair_steps: usize,
++    pub(crate) scaled_route_transitions: usize,
++    pub(crate) scaled_route_no_transitions: usize,
++    pub(crate) scaled_seed_lane_histogram: [usize; 65],
++    pub(crate) scaled_seed_non_normal_lanes: usize,
++    pub(crate) scaled_seed_total_lanes: usize,
+ }
+ 
+ #[cfg(all(test, feature = "parallel"))]
+@@ -103,6 +116,45 @@ static SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS: std::sync::atomic::Atomi
+ static SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS: std::sync::atomic::AtomicUsize =
+     std::sync::atomic::AtomicUsize::new(0);
+ #[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_ORDINARY_ROUTE_NS: [std::sync::atomic::AtomicU64; 64] =
++    [const { std::sync::atomic::AtomicU64::new(0) }; 64];
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_ROUTE_NS: [std::sync::atomic::AtomicU64; 64] =
++    [const { std::sync::atomic::AtomicU64::new(0) }; 64];
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_ORDINARY_ROUTE_BLOCKS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_ROUTE_BLOCKS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_PREFIX_NS: [std::sync::atomic::AtomicU64; 64] =
++    [const { std::sync::atomic::AtomicU64::new(0) }; 64];
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_ORDINARY_SUFFIX_NS: [std::sync::atomic::AtomicU64; 64] =
++    [const { std::sync::atomic::AtomicU64::new(0) }; 64];
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_PREFIX_PAIR_STEPS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_ORDINARY_SUFFIX_PAIR_STEPS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_ROUTE_TRANSITIONS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_ROUTE_NO_TRANSITIONS: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_SEED_LANE_HISTOGRAM: [std::sync::atomic::AtomicUsize; 65] =
++    [const { std::sync::atomic::AtomicUsize::new(0) }; 65];
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_SEED_NON_NORMAL_LANES: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
++static SCALAR_ANALYSIS_SCALED_SEED_TOTAL_LANES: std::sync::atomic::AtomicUsize =
++    std::sync::atomic::AtomicUsize::new(0);
++#[cfg(all(test, feature = "parallel"))]
+ pub(crate) fn begin_scalar_analysis_route_profile() {
+     use std::sync::atomic::Ordering;
+ 
+@@ -119,6 +171,25 @@ pub(crate) fn begin_scalar_analysis_route_profile() {
+     SCALAR_ANALYSIS_TYPED_RECURRENCE_DECLINES.store(0, Ordering::Relaxed);
+     SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS.store(0, Ordering::Relaxed);
+     SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS.store(0, Ordering::Relaxed);
++    for slot in SCALAR_ANALYSIS_ORDINARY_ROUTE_NS
++        .iter()
++        .chain(&SCALAR_ANALYSIS_SCALED_ROUTE_NS)
++        .chain(&SCALAR_ANALYSIS_SCALED_PREFIX_NS)
++        .chain(&SCALAR_ANALYSIS_ORDINARY_SUFFIX_NS)
++    {
++        slot.store(0, Ordering::Relaxed);
++    }
++    SCALAR_ANALYSIS_ORDINARY_ROUTE_BLOCKS.store(0, Ordering::Relaxed);
++    SCALAR_ANALYSIS_SCALED_ROUTE_BLOCKS.store(0, Ordering::Relaxed);
++    SCALAR_ANALYSIS_SCALED_PREFIX_PAIR_STEPS.store(0, Ordering::Relaxed);
++    SCALAR_ANALYSIS_ORDINARY_SUFFIX_PAIR_STEPS.store(0, Ordering::Relaxed);
++    SCALAR_ANALYSIS_SCALED_ROUTE_TRANSITIONS.store(0, Ordering::Relaxed);
++    SCALAR_ANALYSIS_SCALED_ROUTE_NO_TRANSITIONS.store(0, Ordering::Relaxed);
++    for slot in &SCALAR_ANALYSIS_SCALED_SEED_LANE_HISTOGRAM {
++        slot.store(0, Ordering::Relaxed);
++    }
++    SCALAR_ANALYSIS_SCALED_SEED_NON_NORMAL_LANES.store(0, Ordering::Relaxed);
++    SCALAR_ANALYSIS_SCALED_SEED_TOTAL_LANES.store(0, Ordering::Relaxed);
+     SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.store(true, Ordering::Release);
+ }
+ 
+@@ -147,9 +218,110 @@ pub(crate) fn finish_scalar_analysis_route_profile() -> ScalarAnalysisRouteCount
+             .load(Ordering::Relaxed),
+         typed_scaled_pair_accumulations: SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS
+             .load(Ordering::Relaxed),
++        ordinary_route_ns_by_thread: std::array::from_fn(|index| {
++            SCALAR_ANALYSIS_ORDINARY_ROUTE_NS[index].load(Ordering::Relaxed)
++        }),
++        scaled_route_ns_by_thread: std::array::from_fn(|index| {
++            SCALAR_ANALYSIS_SCALED_ROUTE_NS[index].load(Ordering::Relaxed)
++        }),
++        ordinary_route_blocks: SCALAR_ANALYSIS_ORDINARY_ROUTE_BLOCKS.load(Ordering::Relaxed),
++        scaled_route_blocks: SCALAR_ANALYSIS_SCALED_ROUTE_BLOCKS.load(Ordering::Relaxed),
++        scaled_prefix_ns_by_thread: std::array::from_fn(|index| {
++            SCALAR_ANALYSIS_SCALED_PREFIX_NS[index].load(Ordering::Relaxed)
++        }),
++        ordinary_suffix_ns_by_thread: std::array::from_fn(|index| {
++            SCALAR_ANALYSIS_ORDINARY_SUFFIX_NS[index].load(Ordering::Relaxed)
++        }),
++        scaled_prefix_pair_steps: SCALAR_ANALYSIS_SCALED_PREFIX_PAIR_STEPS.load(Ordering::Relaxed),
++        ordinary_suffix_pair_steps: SCALAR_ANALYSIS_ORDINARY_SUFFIX_PAIR_STEPS
++            .load(Ordering::Relaxed),
++        scaled_route_transitions: SCALAR_ANALYSIS_SCALED_ROUTE_TRANSITIONS.load(Ordering::Relaxed),
++        scaled_route_no_transitions: SCALAR_ANALYSIS_SCALED_ROUTE_NO_TRANSITIONS
++            .load(Ordering::Relaxed),
++        scaled_seed_lane_histogram: std::array::from_fn(|index| {
++            SCALAR_ANALYSIS_SCALED_SEED_LANE_HISTOGRAM[index].load(Ordering::Relaxed)
++        }),
++        scaled_seed_non_normal_lanes: SCALAR_ANALYSIS_SCALED_SEED_NON_NORMAL_LANES
++            .load(Ordering::Relaxed),
++        scaled_seed_total_lanes: SCALAR_ANALYSIS_SCALED_SEED_TOTAL_LANES.load(Ordering::Relaxed),
+     }
+ }
+ 
++#[cfg(all(test, feature = "parallel"))]
++#[inline(always)]
++pub(crate) fn start_scalar_analysis_route_timer() -> Option<std::time::Instant> {
++    SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED
++        .load(std::sync::atomic::Ordering::Acquire)
++        .then(std::time::Instant::now)
++}
++
++#[cfg(all(test, feature = "parallel"))]
++#[inline(always)]
++pub(crate) fn record_scalar_analysis_seed_lane_mix(non_normal_lanes: usize, lane_count: usize) {
++    use std::sync::atomic::Ordering;
++
++    if SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.load(Ordering::Acquire) {
++        SCALAR_ANALYSIS_SCALED_SEED_LANE_HISTOGRAM[non_normal_lanes.min(64)]
++            .fetch_add(1, Ordering::Relaxed);
++        SCALAR_ANALYSIS_SCALED_SEED_NON_NORMAL_LANES.fetch_add(non_normal_lanes, Ordering::Relaxed);
++        SCALAR_ANALYSIS_SCALED_SEED_TOTAL_LANES.fetch_add(lane_count, Ordering::Relaxed);
++    }
++}
++
++#[cfg(all(test, feature = "parallel"))]
++#[inline(always)]
++pub(crate) fn record_scalar_analysis_route_substage(
++    scaled_prefix: bool,
++    started: Option<std::time::Instant>,
++    pair_steps: usize,
++    transitioned_to_normal: bool,
++) {
++    use std::sync::atomic::Ordering;
++
++    let Some(started) = started else { return };
++    let elapsed = started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
++    let index = rayon::current_thread_index().unwrap_or(0).min(63);
++    if scaled_prefix {
++        SCALAR_ANALYSIS_SCALED_PREFIX_NS[index].fetch_add(elapsed, Ordering::Relaxed);
++        SCALAR_ANALYSIS_SCALED_PREFIX_PAIR_STEPS.fetch_add(pair_steps, Ordering::Relaxed);
++        let transitions = if transitioned_to_normal {
++            &SCALAR_ANALYSIS_SCALED_ROUTE_TRANSITIONS
++        } else {
++            &SCALAR_ANALYSIS_SCALED_ROUTE_NO_TRANSITIONS
++        };
++        transitions.fetch_add(1, Ordering::Relaxed);
++    } else {
++        SCALAR_ANALYSIS_ORDINARY_SUFFIX_NS[index].fetch_add(elapsed, Ordering::Relaxed);
++        SCALAR_ANALYSIS_ORDINARY_SUFFIX_PAIR_STEPS.fetch_add(pair_steps, Ordering::Relaxed);
++    }
++}
++
++#[cfg(all(test, feature = "parallel"))]
++#[inline(always)]
++pub(crate) fn finish_scalar_analysis_route_timer(
++    scaled: bool,
++    started: Option<std::time::Instant>,
++) {
++    use std::sync::atomic::Ordering;
++
++    let Some(started) = started else { return };
++    let elapsed = started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
++    let index = rayon::current_thread_index().unwrap_or(0).min(63);
++    let (counters, blocks) = if scaled {
++        (
++            &SCALAR_ANALYSIS_SCALED_ROUTE_NS,
++            &SCALAR_ANALYSIS_SCALED_ROUTE_BLOCKS,
++        )
++    } else {
++        (
++            &SCALAR_ANALYSIS_ORDINARY_ROUTE_NS,
++            &SCALAR_ANALYSIS_ORDINARY_ROUTE_BLOCKS,
++        )
++    };
++    counters[index].fetch_add(elapsed, Ordering::Relaxed);
++    blocks.fetch_add(1, Ordering::Relaxed);
++}
++
+ #[cfg(all(test, feature = "parallel"))]
+ #[inline(always)]
+ pub(crate) fn record_typed_scalar_analysis_pair_accumulation(normal_range: bool) {
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index baa5cee6..9cee17eb 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -3694,9 +3694,22 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+         let mut next = next;
+         let pair_count = (lmax - m + 2) / 2;
+         let mut normal_range = false;
++        #[cfg(all(test, feature = "parallel"))]
++        let scaled_prefix_timer = super::start_scalar_analysis_route_timer();
++        #[cfg(all(test, feature = "parallel"))]
++        let mut scaled_prefix_pair_steps = 0;
+ 
+         for pair_index in 0..pair_count {
+             if normal_range {
++                #[cfg(all(test, feature = "parallel"))]
++                super::record_scalar_analysis_route_substage(
++                    true,
++                    scaled_prefix_timer,
++                    scaled_prefix_pair_steps,
++                    true,
++                );
++                #[cfg(all(test, feature = "parallel"))]
++                let ordinary_suffix_timer = super::start_scalar_analysis_route_timer();
+                 let recurrence_succeeded = FusedScalarAnalysisPair::<
+                     true,
+                     CHECK_PAIR_GROUP_RANGE,
+@@ -3729,6 +3742,13 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+                     next,
+                 }
+                 .with_simd(simd);
++                #[cfg(all(test, feature = "parallel"))]
++                super::record_scalar_analysis_route_substage(
++                    false,
++                    ordinary_suffix_timer,
++                    pair_count - pair_index,
++                    false,
++                );
+                 return Ok(recurrence_succeeded);
+             }
+ 
+@@ -3751,6 +3771,16 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+                     staged_first[offset + 1] = channel_sums[0].1;
+                     staged_second[offset + 1] = channel_sums[1].1;
+                 }
++                #[cfg(all(test, feature = "parallel"))]
++                {
++                    scaled_prefix_pair_steps += 1;
++                    super::record_scalar_analysis_route_substage(
++                        true,
++                        scaled_prefix_timer,
++                        scaled_prefix_pair_steps,
++                        false,
++                    );
++                }
+                 return Ok(true);
+             }
+ 
+@@ -3769,8 +3799,22 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+                 basis_next: next,
+             }
+             .with_simd(simd) else {
++                #[cfg(all(test, feature = "parallel"))]
++                {
++                    scaled_prefix_pair_steps += 1;
++                    super::record_scalar_analysis_route_substage(
++                        true,
++                        scaled_prefix_timer,
++                        scaled_prefix_pair_steps,
++                        false,
++                    );
++                }
+                 return Ok(false);
+             };
++            #[cfg(all(test, feature = "parallel"))]
++            {
++                scaled_prefix_pair_steps += 1;
++            }
+             staged_first[offset] = channel_sums[0].0;
+             staged_second[offset] = channel_sums[1].0;
+             if l < lmax {
+@@ -3783,6 +3827,13 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+             normal_range = ready;
+         }
+ 
++        #[cfg(all(test, feature = "parallel"))]
++        super::record_scalar_analysis_route_substage(
++            true,
++            scaled_prefix_timer,
++            scaled_prefix_pair_steps,
++            false,
++        );
+         Ok(true)
+     }
+ }
+@@ -6092,6 +6143,53 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_native<T: B3ScaledRecurr
+     Ok(succeeded)
+ }
+ 
++#[cfg(rustsht_b3_scaled_channels_sequential)]
++#[allow(unexpected_cfgs)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "This diagnostic route dispatches one scaled channel using shared block scratch."
++)]
++fn dispatch_fused_checked_scaled_analysis_channel<const CHECK_PAIR_GROUP_RANGE: bool>(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    range_check_was_exercised: &mut bool,
++    cos_theta: &[f64],
++    cos_theta_squared: &[f64],
++    coefficient_a: &[f64],
++    coefficient_b: &[f64],
++    same_real: &[f64],
++    same_imag: &[f64],
++    opposite_real: &[f64],
++    opposite_imag: &[f64],
++    staged_coefficients: &mut [Complex64],
++    previous: &mut [f64],
++    current: &mut [f64],
++    next: &mut [f64],
++    exponents: &mut [i64],
++) -> Result<bool, ShtError> {
++    arch.dispatch(
++        FusedCheckedScaledScalarAnalysisPair::<true, CHECK_PAIR_GROUP_RANGE> {
++            m,
++            lmax,
++            range_check_was_exercised,
++            cos_theta,
++            cos_theta_squared,
++            coefficient_a,
++            coefficient_b,
++            same_real,
++            same_imag,
++            opposite_real,
++            opposite_imag,
++            staged_coefficients,
++            previous,
++            current,
++            next,
++            exponents,
++        },
++    )
++}
++
+ #[expect(
+     clippy::too_many_arguments,
+     reason = "The checked shared-recurrence trial stages both scalar channels independently."
+@@ -6155,6 +6253,78 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
+         &mut exponents[..sin_theta.len()],
+     )?;
+     if !initialized_normal {
++        #[cfg(all(test, feature = "parallel"))]
++        super::record_scalar_analysis_seed_lane_mix(
++            (0..sin_theta.len())
++                .filter(|&lane| {
++                    exponents[lane] != 0
++                        || !scalar_value_in_normal_range(previous[lane])
++                        || !scalar_value_in_normal_range(current[lane])
++                })
++                .count(),
++            sin_theta.len(),
++        );
++        #[cfg(all(test, feature = "parallel"))]
++        let route_timer = super::start_scalar_analysis_route_timer();
++        #[cfg(rustsht_b3_scaled_channels_sequential)]
++        let recurrence_succeeded = {
++            macro_rules! run_scaled_channel {
++                ($channel:literal, $staged:expr, $check:literal) => {
++                    dispatch_fused_checked_scaled_analysis_channel::<$check>(
++                        arch,
++                        m,
++                        lmax,
++                        range_check_was_exercised,
++                        cos_theta,
++                        &cos_theta_squared[..sin_theta.len()],
++                        coefficient_a,
++                        coefficient_b,
++                        same_real[$channel],
++                        same_imag[$channel],
++                        if $channel == 0 {
++                            &q_opposite_real[..sin_theta.len()]
++                        } else {
++                            &u_opposite_real[..sin_theta.len()]
++                        },
++                        if $channel == 0 {
++                            &q_opposite_imag[..sin_theta.len()]
++                        } else {
++                            &u_opposite_imag[..sin_theta.len()]
++                        },
++                        $staged,
++                        &mut previous[..sin_theta.len()],
++                        &mut current[..sin_theta.len()],
++                        &mut next[..sin_theta.len()],
++                        &mut exponents[..sin_theta.len()],
++                    )
++                };
++            }
++            let first_succeeded = if range_check_is_proven_safe {
++                run_scaled_channel!(0, staged_first, false)?
++            } else {
++                run_scaled_channel!(0, staged_first, true)?
++            };
++            if !first_succeeded {
++                false
++            } else {
++                let _ = initialize_analysis_sectoral_lanes(
++                    arch,
++                    m,
++                    lmax,
++                    sin_theta,
++                    sectoral_norm,
++                    &mut previous[..sin_theta.len()],
++                    &mut current[..sin_theta.len()],
++                    &mut exponents[..sin_theta.len()],
++                )?;
++                if range_check_is_proven_safe {
++                    run_scaled_channel!(1, staged_second, false)?
++                } else {
++                    run_scaled_channel!(1, staged_second, true)?
++                }
++            }
++        };
++        #[cfg(not(rustsht_b3_scaled_channels_sequential))]
+         let recurrence_succeeded = if range_check_is_proven_safe {
+             arch.dispatch(FusedCheckedScaledAnalysisPairChannels::<false> {
+                 m,
+@@ -6208,6 +6378,8 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
+                 exponents: &mut exponents[..sin_theta.len()],
+             })?
+         };
++        #[cfg(all(test, feature = "parallel"))]
++        super::finish_scalar_analysis_route_timer(true, route_timer);
+         let pair_count = (lmax - m + 2) / 2;
+         let single_pair_tail_writes_next = !pair_count.saturating_sub(1).is_multiple_of(2);
+         let state_within_upper_bound = previous[..sin_theta.len()]
+@@ -6222,6 +6394,8 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
+     }
+ 
+     let mut shared_range_check_was_exercised = false;
++    #[cfg(all(test, feature = "parallel"))]
++    let route_timer = super::start_scalar_analysis_route_timer();
+     let recurrence_succeeded = if range_check_is_proven_safe {
+         dispatch_fused_scalar_analysis_pair_two_channels::<true, false>(
+             arch,
+@@ -6274,6 +6448,8 @@ fn try_fused_scalar_analysis_pair_shared_recurrence(
+             &mut next[..sin_theta.len()],
+         )
+     };
++    #[cfg(all(test, feature = "parallel"))]
++    super::finish_scalar_analysis_route_timer(false, route_timer);
+     *range_check_was_exercised |= shared_range_check_was_exercised;
+ 
+     let pair_count = (lmax - m + 2) / 2;
+diff --git a/src/transform/spin/tests.rs b/src/transform/spin/tests.rs
+index 375edf23..d9f8f52a 100644
+--- a/src/transform/spin/tests.rs
++++ b/src/transform/spin/tests.rs
+@@ -10953,3 +10953,94 @@ fn profile_spin1_standard_analysis_phases() {
+         }
+     }
+ }
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "one-off diagnostic route timer"]
++fn m6_b3_f64_route_timing_probe() {
++    use std::time::Instant;
++
++    let q = std::env::var("RUSTSHT_M6_Q")
++        .unwrap()
++        .parse::<usize>()
++        .unwrap();
++    let reduced = std::env::var("RUSTSHT_M6_REDUCED").unwrap() == "1";
++    rayon::ThreadPoolBuilder::new()
++        .num_threads(q)
++        .build_global()
++        .unwrap();
++    let ntheta = 721;
++    let mmax = if reduced { 180 } else { 720 };
++    let nphi = if reduced { 378 } else { 1458 };
++    let read_map = |name: &str| {
++        std::fs::read(std::env::var(name).unwrap())
++            .unwrap()
++            .as_chunks::<8>()
++            .0
++            .iter()
++            .map(|chunk| f64::from_le_bytes(*chunk))
++            .collect::<Vec<_>>()
++    };
++    let map0 = read_map("RUSTSHT_M6_MAP0");
++    let map1 = read_map("RUSTSHT_M6_MAP1");
++    assert_eq!(map0.len(), ntheta * nphi);
++    assert_eq!(map1.len(), ntheta * nphi);
++    let plan: ShtPlan<f64> = ShtPlan::new(
++        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.23).unwrap(),
++        HarmonicSpec::new(720, mmax, 1).unwrap(),
++    )
++    .unwrap();
++    let mut workspace = plan.workspace().unwrap();
++    plan.prepare_workspace(&mut workspace, q).unwrap();
++    let count = plan.harmonics().nalm();
++    let mut e = vec![Complex64::new(0.0, 0.0); count];
++    let mut b = vec![Complex64::new(0.0, 0.0); count];
++    plan.analysis_spin_into(&map0, &map1, &mut e, &mut b, &mut workspace)
++        .unwrap();
++    let mut plain_wall_ns = Vec::new();
++    for _ in 0..3 {
++        let started = Instant::now();
++        plan.analysis_spin_into(&map0, &map1, &mut e, &mut b, &mut workspace)
++            .unwrap();
++        plain_wall_ns.push(started.elapsed().as_nanos());
++    }
++    crate::legendre::begin_scalar_analysis_route_profile();
++    let started = Instant::now();
++    plan.analysis_spin_into(&map0, &map1, &mut e, &mut b, &mut workspace)
++        .unwrap();
++    let wall_ns = started.elapsed().as_nanos();
++    let counts = crate::legendre::finish_scalar_analysis_route_profile();
++    let nonzero = |times: &[u64; 64]| {
++        times
++            .iter()
++            .enumerate()
++            .filter_map(|(index, &ns)| (ns > 0).then_some((index, ns)))
++            .collect::<Vec<_>>()
++    };
++    eprintln!(
++        "M6_B3_ROUTE_TIMING reduced={reduced} q={q} wall_ns={wall_ns} plain_wall_ns={plain_wall_ns:?} normal_seed_blocks={} prefix_scaled_blocks={} checked_scaled_blocks={} ordinary_route_blocks={} scaled_route_blocks={} ordinary_pair_accumulations={} scaled_pair_accumulations={} scaled_prefix_steps={} ordinary_suffix_steps={} scaled_transitions={} scaled_no_transition={} ordinary_threads={:?} scaled_threads={:?} scaled_prefix_threads={:?} ordinary_suffix_threads={:?} scaled_seed_lane_histogram={:?} scaled_seed_non_normal_lanes={} scaled_seed_total_lanes={}",
++        counts.normal_seed_blocks,
++        counts.prefix_enabled_scaled_blocks,
++        counts.checked_scaled_blocks,
++        counts.ordinary_route_blocks,
++        counts.scaled_route_blocks,
++        counts.typed_normal_pair_accumulations,
++        counts.typed_scaled_pair_accumulations,
++        counts.scaled_prefix_pair_steps,
++        counts.ordinary_suffix_pair_steps,
++        counts.scaled_route_transitions,
++        counts.scaled_route_no_transitions,
++        nonzero(&counts.ordinary_route_ns_by_thread),
++        nonzero(&counts.scaled_route_ns_by_thread),
++        nonzero(&counts.scaled_prefix_ns_by_thread),
++        nonzero(&counts.ordinary_suffix_ns_by_thread),
++        counts
++            .scaled_seed_lane_histogram
++            .iter()
++            .enumerate()
++            .filter_map(|(index, &count)| (count > 0).then_some((index, count)))
++            .collect::<Vec<_>>(),
++        counts.scaled_seed_non_normal_lanes,
++        counts.scaled_seed_total_lanes,
++    );
++}
