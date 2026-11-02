@@ -1,0 +1,388 @@
+{
+  "date": "2026-11-02",
+  "purpose": "No-debug-codegen Callgrind cache and branch simulation for one warm RustSHT B3 f64 spin-1 analysis transform versus pinned DUCC.",
+  "provenance": {
+    "rust_source_sha": "fb3ace0f87fdf542ae26d43213f24ac48b13e65d",
+    "rust_b3_source_blobs": {
+      "src/transform/spin/analysis.rs": "88a30c434410d8e44f4b690321380fa3671110ed",
+      "src/legendre/scalar_paired/analysis.rs": "a8a8f18842af6d7507d1c5174be4aa0331e893c3",
+      "src/legendre/spin_fast.rs": "64f3e94db724b8fdfc0d71c9d96a6ae6d5f33ba3"
+    },
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+    "callgrind": "3.26.0",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs; release, no debug info",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+    "simd": "Pulp V3, AVX2/FMA active leaf; q1 pinned to CPU 0, q8 pinned to CPUs 0-7",
+    "cache_model": {
+      "I1_bytes": 32768,
+      "D1_bytes": 32768,
+      "LL_bytes": 67108864,
+      "line_bytes": 64,
+      "I1_ways": 8,
+      "D1_ways": 8,
+      "LL_associativity": "direct-mapped"
+    },
+    "rust_harness_binary_sha256": "16e23f1590acc09c16813e2b5203cbac5804bbde9c20af4991df2a5868ff6951",
+    "official_rust_benchmark_binary_sha256": "121e72638ea3038a0ab7db0d7ea6a08c81d405a37ac7df96986707786ec31ee5",
+    "ducc_instrumented_harness_binary_sha256": "237d425c3e142566a127d2de5110081c17263dd56a453c9d6e8b9edc123aae9a",
+    "ducc_harness_driver_sha256": "db7f1cb63d030a05f955f1873336801c51a0659b391ce351eecea27fcf7a0f22",
+    "executed_leaf_match": {
+      "function": "FusedScalarAnalysisPair<true,false,true,true>, Pulp V3",
+      "bytes": 11160,
+      "instructions": 2227,
+      "instruction_bytes_sha256": "8da541e7f4207570321326aa904381d02884b37e7ad4f6b2454af003625ac119",
+      "matches_official_release_leaf": true
+    },
+    "superseded_debug_build_leaf": {
+      "bytes": 11029,
+      "instructions": 2216,
+      "reason": "debug-info Callgrind harness changed codegen; do not use for production-codegen attribution"
+    },
+    "perf_event_paranoid": 4,
+    "fixture_sha256": {
+      "full_map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+      "full_map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+      "reduced_map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+      "reduced_map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+    },
+    "outputs": "finite, repeatable and workspace-reset consistent; map inputs identical by hash",
+    "ducc_source_tree_note": {
+      "base_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "sht_cc_pristine_sha256": "6ec04499ef514fb4582f207516cc5e643698ca6b964aac231572d43ab417ec33",
+      "sht_cc_worktree_sha256": "9faed7c676c8231937befa49f40335b1c0c36f11543b1aba60cda6df6bdb46e5",
+      "working_tree_delta": "Conditional DUCC_B1_STAGE_PROFILE timers only; compile definitions were -DDUCC0_NAMESPACE=ducc0 -DPKGNAME=ducc0 -DPKGVERSION=0.42.0 and did not define DUCC_B1_STAGE_PROFILE, so the added sht.cc blocks preprocess out.",
+      "source_code_effect": "The profiled DUCC B3 SHT path was compiled from the pinned revision with the B1-only conditional instrumentation disabled."
+    }
+  },
+  "events": [
+    "Ir",
+    "Dr",
+    "Dw",
+    "I1mr",
+    "D1mr",
+    "D1mw",
+    "ILmr",
+    "DLmr",
+    "DLmw",
+    "Bc",
+    "Bcm",
+    "Bi",
+    "Bim"
+  ],
+  "rust_program_totals": {
+    "full_q1": {
+      "Ir": 577655418,
+      "Dr": 167707974,
+      "Dw": 46154580,
+      "I1mr": 245991,
+      "D1mr": 3589615,
+      "D1mw": 2250427,
+      "ILmr": 1121,
+      "DLmr": 264152,
+      "DLmw": 395532,
+      "Bc": 57036139,
+      "Bcm": 1061303,
+      "Bi": 87378,
+      "Bim": 1235
+    },
+    "full_q8": {
+      "Ir": 581926866,
+      "Dr": 168913116,
+      "Dw": 46284546,
+      "I1mr": 300855,
+      "D1mr": 3689659,
+      "D1mw": 2261850,
+      "ILmr": 2809,
+      "DLmr": 349248,
+      "DLmw": 398857,
+      "Bc": 58143801,
+      "Bcm": 1061579,
+      "Bi": 88794,
+      "Bim": 1278
+    },
+    "reduced_q1": {
+      "Ir": 235073509,
+      "Dr": 73129015,
+      "Dw": 18823605,
+      "I1mr": 63883,
+      "D1mr": 1355347,
+      "D1mw": 827335,
+      "ILmr": 959,
+      "DLmr": 68611,
+      "DLmw": 127291,
+      "Bc": 22296672,
+      "Bcm": 443074,
+      "Bi": 27147,
+      "Bim": 300
+    },
+    "reduced_q8": {
+      "Ir": 236229103,
+      "Dr": 73450768,
+      "Dw": 18871797,
+      "I1mr": 77923,
+      "D1mr": 1375984,
+      "D1mw": 827894,
+      "ILmr": 1294,
+      "DLmr": 68891,
+      "DLmw": 128378,
+      "Bc": 22587402,
+      "Bcm": 443922,
+      "Bi": 27711,
+      "Bim": 336
+    }
+  },
+  "ducc_program_totals": {
+    "full_q1": {
+      "Ir": 429390701,
+      "Dr": 373808092,
+      "Dw": 60510800,
+      "I1mr": 1124,
+      "D1mr": 2972019,
+      "D1mw": 1361988,
+      "ILmr": 1087,
+      "DLmr": 360666,
+      "DLmw": 392310,
+      "Bc": 41131133,
+      "Bcm": 408523,
+      "Bi": 26868,
+      "Bim": 2970
+    },
+    "full_q8": {
+      "Ir": 429584661,
+      "Dr": 373872850,
+      "Dw": 60631988,
+      "I1mr": 1442,
+      "D1mr": 2929565,
+      "D1mw": 1377690,
+      "ILmr": 1257,
+      "DLmr": 270154,
+      "DLmw": 397688,
+      "Bc": 41254683,
+      "Bcm": 409476,
+      "Bi": 27747,
+      "Bim": 3131
+    },
+    "reduced_q1": {
+      "Ir": 173174609,
+      "Dr": 174092278,
+      "Dw": 17274613,
+      "I1mr": 1211,
+      "D1mr": 806930,
+      "D1mw": 350540,
+      "ILmr": 1135,
+      "DLmr": 68515,
+      "DLmw": 124475,
+      "Bc": 10528445,
+      "Bcm": 199043,
+      "Bi": 100125,
+      "Bim": 7291
+    },
+    "reduced_q8": {
+      "Ir": 173314108,
+      "Dr": 174107966,
+      "Dw": 17347084,
+      "I1mr": 1485,
+      "D1mr": 810802,
+      "D1mw": 356079,
+      "ILmr": 1255,
+      "DLmr": 68790,
+      "DLmw": 126616,
+      "Bc": 10605263,
+      "Bcm": 198401,
+      "Bi": 100943,
+      "Bim": 7434
+    }
+  },
+  "whole_program_ratios": {
+    "full_q1": {
+      "rust_over_ducc_Ir": 1.3452909358649572,
+      "rust_over_ducc_Bc": 1.3866901988817084,
+      "rust_Bcm_rate": 0.018607553361913224,
+      "ducc_Bcm_rate": 0.00993220877236715,
+      "rust_D1mr_per_Dr": 0.021403961388264104,
+      "ducc_D1mr_per_Dr": 0.007950654529972026
+    },
+    "full_q8": {
+      "rust_over_ducc_Ir": 1.3546267332855257,
+      "rust_over_ducc_Bc": 1.4093866870822884,
+      "rust_Bcm_rate": 0.018257819092356898,
+      "ducc_Bcm_rate": 0.009925564086869848,
+      "rust_D1mr_per_Dr": 0.021843531676959887,
+      "ducc_D1mr_per_Dr": 0.007835725434462546
+    },
+    "reduced_q1": {
+      "rust_over_ducc_Ir": 1.3574363491128194,
+      "rust_over_ducc_Bc": 2.117755471012101,
+      "rust_Bcm_rate": 0.019871754852024553,
+      "ducc_Bcm_rate": 0.018905260938343698,
+      "rust_D1mr_per_Dr": 0.018533642221216846,
+      "ducc_D1mr_per_Dr": 0.0046350706031889595
+    },
+    "reduced_q8": {
+      "rust_over_ducc_Ir": 1.3630113885477806,
+      "rust_over_ducc_Bc": 2.1298295006922507,
+      "rust_Bcm_rate": 0.01965352190570655,
+      "ducc_Bcm_rate": 0.01870778687902412,
+      "rust_D1mr_per_Dr": 0.01873341882551861,
+      "ducc_D1mr_per_Dr": 0.004656892034451772
+    }
+  },
+  "kernel_attribution": {
+    "note": "Rust fused range-proof block and DUCC map2alm_kernel are inclusive Callgrind costs; do not sum these entries with program totals or with nested leaf entries.",
+    "rust_fused_range_proof_block": {
+      "full_q1": {
+        "Ir": 345634404,
+        "Dr": 118762033,
+        "Dw": 23052902,
+        "I1mr": 151166,
+        "D1mr": 234349,
+        "D1mw": 1006589,
+        "ILmr": 590,
+        "DLmr": 11,
+        "DLmw": 606,
+        "Bc": 25047033,
+        "Bcm": 814503,
+        "Bi": 52886,
+        "Bim": 609
+      },
+      "full_q8": {
+        "Ir": 346023949,
+        "Dr": 118926667,
+        "Dw": 23203220,
+        "I1mr": 168967,
+        "D1mr": 249917,
+        "D1mw": 1021427,
+        "ILmr": 1439,
+        "DLmr": 191,
+        "DLmw": 528,
+        "Bc": 25068507,
+        "Bcm": 811988,
+        "Bi": 52886,
+        "Bim": 609
+      },
+      "reduced_q1": {
+        "Ir": 162986022,
+        "Dr": 57285108,
+        "Dw": 10803126,
+        "I1mr": 39104,
+        "D1mr": 111272,
+        "D1mw": 448042,
+        "ILmr": 456,
+        "DLmr": 11,
+        "DLmw": 485,
+        "Bc": 10875090,
+        "Bcm": 356389,
+        "Bi": 15386,
+        "Bim": 142
+      },
+      "reduced_q8": {
+        "Ir": 162988194,
+        "Dr": 57285108,
+        "Dw": 10803126,
+        "I1mr": 43306,
+        "D1mr": 108579,
+        "D1mw": 446324,
+        "ILmr": 454,
+        "DLmr": 11,
+        "DLmw": 485,
+        "Bc": 10875090,
+        "Bcm": 355414,
+        "Bi": 15386,
+        "Bim": 142
+      }
+    },
+    "ducc_map2alm_kernel": {
+      "full_q1": {
+        "Ir": 223149132,
+        "Dr": 318004454,
+        "Dw": 20927894,
+        "I1mr": 12,
+        "D1mr": 476243,
+        "D1mw": 0,
+        "ILmr": 12,
+        "DLmr": 0,
+        "DLmw": 0,
+        "Bc": 10703348,
+        "Bcm": 233054,
+        "Bi": 0,
+        "Bim": 0
+      },
+      "full_q8": {
+        "Ir": 223149132,
+        "Dr": 318004454,
+        "Dw": 20927894,
+        "I1mr": 12,
+        "D1mr": 478714,
+        "D1mw": 0,
+        "ILmr": 12,
+        "DLmr": 360,
+        "DLmw": 0,
+        "Bc": 10703348,
+        "Bcm": 233052,
+        "Bi": 0,
+        "Bim": 0
+      },
+      "reduced_q1": {
+        "Ir": 112045316,
+        "Dr": 159894944,
+        "Dw": 10509372,
+        "I1mr": 12,
+        "D1mr": 219701,
+        "D1mw": 0,
+        "ILmr": 12,
+        "DLmr": 0,
+        "DLmw": 0,
+        "Bc": 5369532,
+        "Bcm": 116333,
+        "Bi": 0,
+        "Bim": 0
+      },
+      "reduced_q8": {
+        "Ir": 112045316,
+        "Dr": 159894944,
+        "Dw": 10509372,
+        "I1mr": 12,
+        "D1mr": 221088,
+        "D1mw": 0,
+        "ILmr": 12,
+        "DLmr": 0,
+        "DLmw": 0,
+        "Bc": 5369532,
+        "Bcm": 116333,
+        "Bi": 0,
+        "Bim": 0
+      }
+    },
+    "rust_over_ducc_kernel_Ir": {
+      "full_q1": 1.5488942345516272,
+      "full_q8": 1.5506399056932025,
+      "reduced_q1": 1.4546437800220047,
+      "reduced_q8": 1.4546631650358324
+    },
+    "rust_vector_leaf_Ir": {
+      "full_q1": 262903740,
+      "full_q8": 262903740,
+      "reduced_q1": 135177007,
+      "reduced_q8": 135177007
+    },
+    "rust_exceptional_leaf_Ir": {
+      "full_q1": 54735327,
+      "full_q8": 54735327,
+      "reduced_q1": 19198166,
+      "reduced_q8": 19198166
+    }
+  },
+  "raw_profile_sha256": {
+    "ducc-nodbg-cachebranch-full-q1.callgrind.out": "6c08a8899df59dc4080b0d5e97c7e8f9bdd495ac725ebfa664fdd976139c8d41",
+    "ducc-nodbg-cachebranch-full-q8.callgrind.out": "d6c64de9918bac753bbe936c58d1c9e8280310df2a317b942c019297126639e1",
+    "ducc-nodbg-cachebranch-reduced-q1.callgrind.out": "edc0387cbea20adb5eea288e1bafc2d5c1eb1fdecd2a6f602b25f2b153401661",
+    "ducc-nodbg-cachebranch-reduced-q8.callgrind.out": "a4a948223c528c748c7bf152631e38c9c5986af50b14708e956688ef38aff5e9",
+    "nodbg-cachebranch-full-q1.callgrind.out": "6e7454e4da08a3ff45a06eac20384e71667af6e55f320e7ec5704ba0d70bf1a4",
+    "nodbg-cachebranch-full-q8.callgrind.out": "1d654e31982e895b9f7d73476cf6f411339e79d9c8b53aed81a4970216c2ef4b",
+    "nodbg-cachebranch-reduced-q1.callgrind.out": "394369f1af167d9b4750e0630acb02813fa2a6ca8bd137f6100831403537e351",
+    "nodbg-cachebranch-reduced-q8.callgrind.out": "21bacfd6994aaa17d2fd07e27b0fe005237a14ea45ac79a770218c8dc928f347"
+  },
+  "interpretation": "Callgrind Ir, cache misses, branch counts and branch mispredicts are simulation events, not hardware cycles. They identify additional instruction work and possible branch/L1-locality hypotheses but cannot assign the elapsed-time gap to front-end, execution dependency, or memory latency. perf_event_paranoid=4 blocks PMU events on this host."
+}
