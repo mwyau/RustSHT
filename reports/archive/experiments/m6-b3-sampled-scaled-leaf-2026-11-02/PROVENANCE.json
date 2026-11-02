@@ -1,0 +1,58 @@
+{
+  "experiment": "M6 B3 sampled scaled-leaf profile",
+  "base_commit": "f956320cfd26bd9959dee7bfa42770ae510a0d43",
+  "base_files": {
+    "src/legendre/scalar_paired/analysis.rs": "baa5cee6c64ac43aa54828ab4c15055e8d23532e",
+    "src/transform/spin/analysis.rs": "88a30c434410d8e44f4b690321380fa3671110ed"
+  },
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "diagnostic_patch": {
+    "path": "patches/test-only-sampled-profile.patch.gz",
+    "sha256_gzip": "aa63b73d0d67ac37e3f5384a5875c601b48cd51036b6934449226b76ceaf5abf",
+    "sha256_uncompressed": "3f44db6ac5f60f8553e4ce3e41f0bfad5b1113f755bb27df1a722adcc9cc1aac"
+  },
+  "instrumented_source_sha256": {
+    "src/legendre/scalar_paired/analysis.rs": "5121ba20381bc21528883977271f126a0fc05bd82c26a33ab02b71f32e7fb537",
+    "src/legendre/scalar_paired/analysis/tests.rs": "6116b6245ede438eab275f2eddff3a55125ce9b611c9dba7388de4cd4e5d5098"
+  },
+  "build": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "llvm": "23.1.1",
+    "profile": "release",
+    "features": ["parallel"],
+    "target_cpu": "x86-64-v3",
+    "plain_rustflags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "profile_rustflags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs --cfg rustsht_b3_sampled_profile",
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "simd_route": "Pulp V3 AVX2/FMA",
+    "affinity": "q1 one physical core; q8 eight physical cores (identifiers held in local scratch)"
+  },
+  "test_binaries": {
+    "plain_sha256": "8e624759902d5a6dabc0e22c5ad37cf9b765658f26cca635840e0efb87ecd995",
+    "profile_sha256": "87543513baf025054920d261a6f7ca2d58c30f296af1b1d950bad8702e398e83"
+  },
+  "fixtures": {
+    "geometry": {
+      "grid": "GL",
+      "ntheta": 721,
+      "phi0": 0.23,
+      "full": {"lmax": 720, "mmax": 720, "nphi": 1458},
+      "reduced": {"lmax": 720, "mmax": 180, "nphi": 378}
+    },
+    "full_map0_sha256": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+    "full_map1_sha256": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+    "reduced_map0_sha256": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+    "reduced_map1_sha256": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+  },
+  "measurements": {
+    "warm_calls_per_process": 5,
+    "profile_plain_process_pairs_per_cell": 3,
+    "sample_rate": "1/64 scaled recurrence steps",
+    "hardware_perf": "unavailable: perf_event_paranoid=4"
+  },
+  "disassembly": {
+    "path": "data/production-v3-disassembly.txt.gz",
+    "sha256": "4099c950bbd25c8d11e48e5c85d0387dce87a4e0cb8b732e7850a761a8a5f071",
+    "plain_binary_function": "FusedCheckedScaledAnalysisPairChannels<false> / Pulp V3"
+  }
+}
