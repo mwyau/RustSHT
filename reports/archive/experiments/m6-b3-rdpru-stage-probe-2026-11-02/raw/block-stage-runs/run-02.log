@@ -1,0 +1,23 @@
+M6_RDPRU_B3 total=175608171 fft=30046020 prep=89589 legendre=142919559 cleanup=8834 order_setup=6172585 block_prep=17561693 fused=106497914 post=10221425 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154304103 fft=29677140 prep=76868 legendre=123301791 cleanup=6394 order_setup=6144234 block_prep=17248002 fused=87515241 post=9984888 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=157888851 fft=33154808 prep=78907 legendre=123338001 cleanup=8787 order_setup=6152955 block_prep=17220509 fused=87385277 post=10076558 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=155312484 fft=29796038 prep=75722 legendre=124157542 cleanup=7885 order_setup=6149393 block_prep=17305167 fused=87910033 post=10341904 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=155529884 fft=29761784 prep=73560 legendre=124575916 cleanup=6504 order_setup=6124038 block_prep=18195034 fused=87453904 post=10377971 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=155513604 fft=29580837 prep=72526 legendre=124711764 cleanup=6343 order_setup=6091295 block_prep=18645142 fused=87309104 post=10250955 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154996814 fft=29573196 prep=72879 legendre=124368254 cleanup=6707 order_setup=6149790 block_prep=17756230 fused=87733283 post=10264590 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154343680 fft=29548507 prep=72944 legendre=123735681 cleanup=6371 order_setup=6283698 block_prep=17358264 fused=87444583 post=10197315 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154429008 fft=29492471 prep=72860 legendre=123933106 cleanup=6663 order_setup=6138568 block_prep=17738850 fused=87433762 post=10194891 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=155473000 fft=29747500 prep=74145 legendre=124659489 cleanup=6560 order_setup=6154702 block_prep=17913908 fused=87885616 post=10273346 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=153576791 fft=29556487 prep=72133 legendre=123029203 cleanup=6337 order_setup=6137593 block_prep=17035681 fused=87310014 post=10128644 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154761002 fft=29496956 prep=72213 legendre=124311603 cleanup=6687 order_setup=6174651 block_prep=17602021 fused=87896246 post=10213394 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=156802665 fft=29546006 prep=72601 legendre=126128132 cleanup=6506 order_setup=6177400 block_prep=18404268 fused=88615565 post=10479848 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=155413691 fft=29627465 prep=73030 legendre=124587436 cleanup=6510 order_setup=6327380 block_prep=17922770 fused=87594269 post=10301295 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154793690 fft=29537160 prep=73100 legendre=124147182 cleanup=6748 order_setup=6131137 block_prep=18038497 fused=87301059 post=10269707 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=155461806 fft=29817035 prep=72129 legendre=124493995 cleanup=6635 order_setup=6097650 block_prep=18121895 fused=87497125 post=10298117 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154181730 fft=29615408 prep=72310 legendre=123438716 cleanup=6366 order_setup=6090197 block_prep=17471845 fused=87330179 post=10138300 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154261160 fft=29716707 prep=72317 legendre=123542601 cleanup=6936 order_setup=6169113 block_prep=17381036 fused=87357518 post=10200968 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154494907 fft=29517968 prep=73408 legendre=123941544 cleanup=7408 order_setup=6166849 block_prep=17274863 fused=87872874 post=10177548 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=153973086 fft=29751758 prep=72374 legendre=123251315 cleanup=6531 order_setup=6114501 block_prep=17035193 fused=87501701 post=10179646 blocks=3579 fused_blocks=3579
+M6_RDPRU_B3 total=154141772 fft=29657790 prep=73094 legendre=123470019 cleanup=6680 order_setup=6119493 block_prep=17081356 fused=87674674 post=10161653 blocks=3579 fused_blocks=3579
+RDPRU_DONE B3 f64 GL T720 M720 q=1 finite=true calls=21
+M6_WALL_B3 f64 GL T720 M720 q=1 mean_ms=33.245579 measured_calls=20

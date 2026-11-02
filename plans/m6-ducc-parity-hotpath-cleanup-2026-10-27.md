@@ -1,6 +1,6 @@
 # M6 — close f64 B1/B3 analysis gaps against DUCC
 
-**Owner direction (2026-11-01):** B1 f64 scalar analysis and B3 f64 spin-1 analysis are both active. Give B1 **at most two** bounded, measured attempts, then make **B3 f64 the primary target**. Do not park B3, resume f32 performance work, or pursue f32/f64 timing equality without a new owner instruction. B0 scalar synthesis and B2 spin-1 synthesis are protected controls. See [AGENTS.md](../AGENTS.md), the [per-cell ledger](../reports/DUCC_PARITY_M6.md) and [progress](../reports/PROGRESS.md).
+**Status (2026-11-02): PAUSED.** This plan records completed B1/B3 investigation and evidence. Do not start an experiment from the procedures or historical NEXT statements below without a new owner instruction. There is no automatic NEXT. See [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md), the [per-cell ledger](../reports/DUCC_PARITY_M6.md) and [progress](../reports/PROGRESS.md).
 
 ## Source-specific starting evidence
 

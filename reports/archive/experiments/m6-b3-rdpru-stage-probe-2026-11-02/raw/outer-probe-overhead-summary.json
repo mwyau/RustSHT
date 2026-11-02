@@ -1,0 +1,53 @@
+{
+  "source_commit": "41caa81ab01f32fd28630d4a1e1ebe748454e6f8",
+  "pairs": [
+    {
+      "plain": 32.472761,
+      "probe": 32.688567,
+      "ratio_probe_plain": 1.006645754575658
+    },
+    {
+      "probe": 32.496022,
+      "plain": 32.659141,
+      "ratio_probe_plain": 0.9950054105832118
+    },
+    {
+      "plain": 32.791721,
+      "probe": 32.708045,
+      "ratio_probe_plain": 0.9974482583576506
+    },
+    {
+      "probe": 33.2746,
+      "plain": 32.452012,
+      "ratio_probe_plain": 1.0253478274320864
+    },
+    {
+      "plain": 32.906821,
+      "probe": 32.27297,
+      "ratio_probe_plain": 0.9807380056554232
+    },
+    {
+      "probe": 33.039736,
+      "plain": 33.081443,
+      "ratio_probe_plain": 0.9987392629759227
+    },
+    {
+      "plain": 33.709133,
+      "probe": 32.764682,
+      "ratio_probe_plain": 0.9719823408095367
+    },
+    {
+      "probe": 33.397572,
+      "plain": 33.263258,
+      "ratio_probe_plain": 1.004037908734015
+    },
+    {
+      "plain": 33.140946,
+      "probe": 33.08773,
+      "ratio_probe_plain": 0.9983942522340793
+    }
+  ],
+  "median_probe_plain": 0.9983942522340793,
+  "probe_sha256": "eb42a493569db643446584c3d9213340dcc327283e4bad8f08075304816a3314",
+  "plain_sha256": "eef227c13dc277ffc968380fc6c7890e4bd1934f20c8faaca2f8229a416942b5"
+}
