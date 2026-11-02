@@ -1,6 +1,6 @@
 # RustSHT — current performance status
 
-**Current outcome (2026-11-02):** B1's bounded attempts and B3's kernel candidates produced no credible whole-call improvement. Exact-current B3 profiling confirms the fused AVX2 leaf is the dominant instruction-count hotspot but identifies no removable operation or cycle-level cause. Do not add another kernel candidate without that evidence. B0/B2 are controls and f32 performance is deferred. See the [active plan](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md), [M6 ledger](reports/DUCC_PARITY_M6.md), and [progress](reports/PROGRESS.md).
+**Current outcome (2026-11-02):** B1's bounded attempts and B3's kernel candidates produced no credible whole-call improvement. Exact-current B3 profiling confirms the fused AVX2 leaf is the dominant instruction-count hotspot but identifies no removable operation or cycle-level cause. Later phase-fold and code-outline screens did not produce a candidate; do not add another kernel without a profile that distinguishes front-end pressure from recurrence or accumulation throughput. B0/B2 are controls and f32 performance is deferred. See the [active plan](plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md), [M6 ledger](reports/DUCC_PARITY_M6.md), and [progress](reports/PROGRESS.md).
 
 ## B3 f64 production baseline
 
@@ -21,6 +21,8 @@ An exact-current `4a558596` three-pair screen gives a separate, small-sample con
 All four intervals remain above parity; full q8 is wide. This screen does not replace the 15-pair seed-handoff results above. The exact-current production-path Callgrind rerun reproduces the prior q1 counts (577.66M/235.07M full/reduced Rust instructions); the 11,160-byte AVX2/FMA ordinary leaf has no YMM stack traffic and exceeds DUCC's kernel by 1.178×/1.207× in instruction count. Hardware PMU access is blocked, so this does not attribute cycles or justify another kernel change. [Full results, profiles and hashes](reports/archive/experiments/m6-b3-second-channel-attribution-2026-11-02/README.md).
 
 Current profile evidence puts 45.5%/57.5% of full/reduced q1 Rust instructions in the ordinary fused leaf; that leaf has no YMM stack traffic, while hardware PMU access is blocked. A test-only second-channel skip shortened instrumented full/reduced T720 calls by 19–24%, but the skipped accumulation is required output math also present in DUCC; this does not identify removable work. Scaled-prefix sampled phase estimates rank exceptional recovery above recurrence/normalization and masked accumulation, but they are not cycle attribution. Native-leaf selection, duplicate scalar passes and per-degree fusion all lost whole-call screens. B3 has reached the bounded stop rule: no more kernel edits before a different source-matched profile identifies recoverable excess.
+
+The follow-up ring-scale fold had a small reduced-q1 gain only (candidate/parent 0.9944 [0.9905, 0.9984] over 30 pairs); other cells were inconclusive and candidate/DUCC remained 1.088–1.141×. Two code-outline direct-leaf screens were neutral without a tail and 1.180–1.199× slower in the tested cases. These results do not change the stop decision; details are in the [ring-phase](reports/archive/experiments/m6-b3-ring-phase-fold-2026-11-02/README.md) and [tail-outline](reports/archive/experiments/m6-b3-tail-outline-2026-11-02/README.md) reports.
 
 ## B1 f64 status
 

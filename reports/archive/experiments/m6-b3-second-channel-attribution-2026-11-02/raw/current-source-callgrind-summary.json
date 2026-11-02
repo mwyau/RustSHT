@@ -12,7 +12,6 @@
   },
   "provenance": {
     "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
-    "q1_affinity": [0],
     "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
     "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
     "ducc_compiler": "g++ 15.2.0",
@@ -23,7 +22,9 @@
       "full_map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
       "reduced_map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
       "reduced_map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
-    }
+    },
+    "q1_worker_count": 1,
+    "placement_policy": "Pinned to one logical CPU; exact CPU index is omitted from committed results."
   },
   "whole_transform_screen": {
     "geometry": "GL T720, ntheta=721, phi0=0.23; full M720/nphi=1458, reduced M180/nphi=378",
@@ -33,33 +34,61 @@
       "full_q1": {
         "rust_ms_median": 33.106,
         "ducc_ms_median": 30.587,
-        "paired_process_ratios": [1.0773816037117363, 1.0824004339697744, 1.0720989643192163],
+        "paired_process_ratios": [
+          1.0773816037117363,
+          1.0824004339697744,
+          1.0720989643192163
+        ],
         "rust_over_ducc": 1.077,
-        "ci95": [1.065, 1.090],
+        "ci95": [
+          1.065,
+          1.09
+        ],
         "status": "GAP"
       },
       "full_q8": {
         "rust_ms_median": 4.881,
         "ducc_ms_median": 4.256,
-        "paired_process_ratios": [1.1268267945935801, 1.1263403520981792, 1.1806284250927161],
+        "paired_process_ratios": [
+          1.1268267945935801,
+          1.1263403520981792,
+          1.1806284250927161
+        ],
         "rust_over_ducc": 1.144,
-        "ci95": [1.070, 1.224],
+        "ci95": [
+          1.07,
+          1.224
+        ],
         "status": "GAP; wide screen interval"
       },
       "reduced_q1": {
         "rust_ms_median": 12.783,
         "ducc_ms_median": 11.652,
-        "paired_process_ratios": [1.109281142758878, 1.0918280467583479, 1.093541927267888],
+        "paired_process_ratios": [
+          1.109281142758878,
+          1.0918280467583479,
+          1.093541927267888
+        ],
         "rust_over_ducc": 1.098,
-        "ci95": [1.075, 1.122],
+        "ci95": [
+          1.075,
+          1.122
+        ],
         "status": "GAP"
       },
       "reduced_q8": {
         "rust_ms_median": 1.933,
         "ducc_ms_median": 1.738,
-        "paired_process_ratios": [1.094625360378237, 1.1174470577702622, 1.1173647066651289],
-        "rust_over_ducc": 1.110,
-        "ci95": [1.077, 1.143],
+        "paired_process_ratios": [
+          1.094625360378237,
+          1.1174470577702622,
+          1.1173647066651289
+        ],
+        "rust_over_ducc": 1.11,
+        "ci95": [
+          1.077,
+          1.143
+        ],
         "status": "GAP"
       }
     }
@@ -106,8 +135,14 @@
       }
     },
     "instruction_ratios": {
-      "total_rust_over_ducc": {"full_q1": 1.334, "reduced_q1": 1.345},
-      "rust_fused_leaf_over_ducc_map2alm_kernel": {"full_q1": 1.178, "reduced_q1": 1.207}
+      "total_rust_over_ducc": {
+        "full_q1": 1.334,
+        "reduced_q1": 1.345
+      },
+      "rust_fused_leaf_over_ducc_map2alm_kernel": {
+        "full_q1": 1.178,
+        "reduced_q1": 1.207
+      }
     },
     "codegen": {
       "rust_leaf_bytes": 11160,

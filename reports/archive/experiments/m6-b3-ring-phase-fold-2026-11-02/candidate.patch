@@ -1,0 +1,45 @@
+diff --git a/src/transform/spin/analysis.rs b/src/transform/spin/analysis.rs
+index 88a30c43..d4464aa4 100644
+--- a/src/transform/spin/analysis.rs
++++ b/src/transform/spin/analysis.rs
+@@ -670,25 +670,24 @@ impl<T: ShtScalar> ShtPlan<T> {
+ 
+                 let north_spectrum_start = north_ring * spectrum_len + m;
+                 let south_spectrum_start = south_ring * spectrum_len + m;
+-                let north_q = if north_active {
+-                    q_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
+-                } else {
+-                    Complex::new(T::zero(), T::zero())
+-                };
+-                let south_q = if south_active {
+-                    q_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
+-                } else {
+-                    Complex::new(T::zero(), T::zero())
+-                };
+-                let north_u = if north_active {
+-                    u_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
++                let zero = Complex::new(T::zero(), T::zero());
++                let (north_q, north_u) = if north_active {
++                    let weighted_phase = phase * ring_scales[north_ring];
++                    (
++                        q_spectra[north_spectrum_start] * weighted_phase,
++                        u_spectra[north_spectrum_start] * weighted_phase,
++                    )
+                 } else {
+-                    Complex::new(T::zero(), T::zero())
++                    (zero, zero)
+                 };
+-                let south_u = if south_active {
+-                    u_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
++                let (south_q, south_u) = if south_active {
++                    let weighted_phase = phase * ring_scales[south_ring];
++                    (
++                        q_spectra[south_spectrum_start] * weighted_phase,
++                        u_spectra[south_spectrum_start] * weighted_phase,
++                    )
+                 } else {
+-                    Complex::new(T::zero(), T::zero())
++                    (zero, zero)
+                 };
+ 
+                 recurrence.analysis_same_real[lane] = north_q.re;

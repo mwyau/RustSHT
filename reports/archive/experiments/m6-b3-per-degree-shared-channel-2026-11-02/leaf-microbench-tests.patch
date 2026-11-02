@@ -1,0 +1,192 @@
+diff --git a/src/legendre/scalar_paired/analysis/tests.rs b/src/legendre/scalar_paired/analysis/tests.rs
+index 1e7caa91..5eb110f1 100644
+--- a/src/legendre/scalar_paired/analysis/tests.rs
++++ b/src/legendre/scalar_paired/analysis/tests.rs
+@@ -3241,3 +3241,187 @@ fn native_f32_spin_analysis_fused_scaled_seed_matches_checked_recurrence() {
+         assert!((actual.im - expected.im).abs() <= 3.0e-6);
+     }
+ }
++
++struct B3OrdinaryLeafBenchCall<'a> {
++    m: usize,
++    lmax: usize,
++    cos_theta: &'a [f64],
++    cos_theta_squared: &'a [f64],
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    first_same_real: &'a [f64],
++    first_same_imag: &'a [f64],
++    first_opposite_real: &'a [f64],
++    first_opposite_imag: &'a [f64],
++    second_same_real: &'a [f64],
++    second_same_imag: &'a [f64],
++    second_opposite_real: &'a [f64],
++    second_opposite_imag: &'a [f64],
++    first_staged: &'a mut [Complex64],
++    second_staged: &'a mut [Complex64],
++    previous: &'a mut [f64],
++    current: &'a mut [f64],
++    next: &'a mut [f64],
++}
++
++impl WithSimd for B3OrdinaryLeafBenchCall<'_> {
++    type Output = bool;
++
++    fn with_simd<S: Simd>(self, _simd: S) -> Self::Output {
++        let simd = _simd;
++        let mut range_check_was_exercised = false;
++        FusedScalarAnalysisPair::<true, false, false, true, true> {
++            m: self.m,
++            lmax: self.lmax,
++            range_check_was_exercised: &mut range_check_was_exercised,
++            pair_start: 0,
++            cos_theta: self.cos_theta,
++            cos_theta_squared: self.cos_theta_squared,
++            coefficient_a: self.coefficient_a,
++            coefficient_b: self.coefficient_b,
++            same_real: self.first_same_real,
++            same_imag: self.first_same_imag,
++            opposite_real: self.first_opposite_real,
++            opposite_imag: self.first_opposite_imag,
++            staged_coefficients: self.first_staged,
++            second_channel: Some(FusedScalarAnalysisPairSecondChannel {
++                same_real: self.second_same_real,
++                same_imag: self.second_same_imag,
++                opposite_real: self.second_opposite_real,
++                opposite_imag: self.second_opposite_imag,
++                staged_coefficients: self.second_staged,
++            }),
++            previous: self.previous,
++            current: self.current,
++            next: self.next,
++        }
++        .with_simd(simd)
++    }
++}
++
++#[test]
++#[ignore = "bounded B3 production-leaf versus per-degree helper timing probe"]
++#[allow(unexpected_cfgs)]
++fn b3_ordinary_leaf_microbenchmark() {
++    use std::hint::black_box;
++    use std::time::Instant;
++
++    let calls: usize = std::env::var("RUSTSHT_B3_LEAF_BENCH_CALLS")
++        .unwrap_or_else(|_| "1000".to_owned())
++        .parse()
++        .unwrap();
++    let samples: usize = std::env::var("RUSTSHT_B3_LEAF_BENCH_SAMPLES")
++        .unwrap_or_else(|_| "9".to_owned())
++        .parse()
++        .unwrap();
++    let m: usize = 16;
++    let lmax: usize = 720;
++    let lane_count: usize = 256;
++    let coefficient_count = lmax - m + 1;
++    let pair_count = coefficient_count.div_ceil(2);
++    let spectra = (0..8)
++        .map(|channel| {
++            (0..lane_count)
++                .map(|lane| {
++                    let mantissa = (1 + (lane * 7 + channel * 13) % 37) as f64;
++                    let sign = if (lane + channel) % 2 == 0 { 1.0 } else { -1.0 };
++                    sign * mantissa * 1.0e-5
++                })
++                .collect::<Vec<_>>()
++        })
++        .collect::<Vec<_>>();
++    let cos_theta = (0..lane_count)
++        .map(|lane| 0.1 + (lane % 97) as f64 * 0.008)
++        .collect::<Vec<_>>();
++    let cos_theta_squared = cos_theta
++        .iter()
++        .map(|value| value * value)
++        .collect::<Vec<_>>();
++    let coefficient_a = (0..pair_count)
++        .map(|pair| 0.8 + (pair % 13) as f64 * 1.0e-4)
++        .collect::<Vec<_>>();
++    let coefficient_b = (0..pair_count)
++        .map(|pair| -0.25 * coefficient_a[pair] + ((pair % 3) as f64 - 1.0) * 1.0e-5)
++        .collect::<Vec<_>>();
++    let initial_previous = vec![1.0e-6; lane_count];
++    let initial_current = vec![2.0e-6; lane_count];
++    let mut previous = initial_previous.clone();
++    let mut current = initial_current.clone();
++    let mut next = vec![0.0; lane_count];
++    let mut first_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
++    let mut second_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
++    let arch = Arch::new();
++    let candidate = cfg!(rustsht_b3_per_degree_shared_channel);
++
++    for _ in 0..3 {
++        previous.copy_from_slice(&initial_previous);
++        current.copy_from_slice(&initial_current);
++        next.fill(0.0);
++        assert!(arch.dispatch(B3OrdinaryLeafBenchCall {
++            m,
++            lmax,
++            cos_theta: &cos_theta,
++            cos_theta_squared: &cos_theta_squared,
++            coefficient_a: &coefficient_a,
++            coefficient_b: &coefficient_b,
++            first_same_real: &spectra[0],
++            first_same_imag: &spectra[1],
++            first_opposite_real: &spectra[2],
++            first_opposite_imag: &spectra[3],
++            second_same_real: &spectra[4],
++            second_same_imag: &spectra[5],
++            second_opposite_real: &spectra[6],
++            second_opposite_imag: &spectra[7],
++            first_staged: &mut first_staged,
++            second_staged: &mut second_staged,
++            previous: &mut previous,
++            current: &mut current,
++            next: &mut next,
++        }));
++    }
++
++    for sample in 0..samples {
++        let mut elapsed_ns = 0u128;
++        for _ in 0..calls {
++            previous.copy_from_slice(&initial_previous);
++            current.copy_from_slice(&initial_current);
++            next.fill(0.0);
++            let start = Instant::now();
++            assert!(arch.dispatch(B3OrdinaryLeafBenchCall {
++                m,
++                lmax,
++                cos_theta: &cos_theta,
++                cos_theta_squared: &cos_theta_squared,
++                coefficient_a: &coefficient_a,
++                coefficient_b: &coefficient_b,
++                first_same_real: &spectra[0],
++                first_same_imag: &spectra[1],
++                first_opposite_real: &spectra[2],
++                first_opposite_imag: &spectra[3],
++                second_same_real: &spectra[4],
++                second_same_imag: &spectra[5],
++                second_opposite_real: &spectra[6],
++                second_opposite_imag: &spectra[7],
++                first_staged: &mut first_staged,
++                second_staged: &mut second_staged,
++                previous: &mut previous,
++                current: &mut current,
++                next: &mut next,
++            }));
++            elapsed_ns += start.elapsed().as_nanos();
++            black_box((&first_staged, &second_staged, &previous, &current, &next));
++        }
++        let ns_per_call = elapsed_ns as f64 / calls as f64;
++        eprintln!(
++            "B3_LEAF_BENCH candidate={candidate} sample={sample} ns_per_call={ns_per_call:.3} checksum={:.17e}",
++            first_staged
++                .iter()
++                .map(|value| value.re + value.im)
++                .sum::<f64>()
++                + second_staged
++                    .iter()
++                    .map(|value| value.re + value.im)
++                    .sum::<f64>()
++        );
++    }
++}

@@ -1,0 +1,57 @@
+{
+  "rust_source": "ead3f5232d47d7fedffaabd218cbfc56feeb6297",
+  "rust_analysis_rs_parent_blob": "b0077a7236f7e2315fe0c6b07da74f3eb4e845ba",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "parent_binary_sha256": "48d03a63642bcd18da730789bbbdf088b3c3bfe0060a0e5a0f5345d6477c46ba",
+  "tail_outline_candidate_binary_sha256": "c1ddf474148f4bf13ad75f9b6c75f2a18b26da16124072a44f35ea4129b6af36",
+  "tail_outline_patch_sha256": "ca9e1d50da74cd7a09b4eb91385626c6047492c2f695ef31e67b6caf1b11959d",
+  "component_probe_patch_sha256": "e39a15df65f5c473df8c292043831299c9984937fe1ccb500bcc17d8c913b906",
+  "measurement": {
+    "test": "benchmark_b3_spin_analysis_leaf_components",
+    "route": "q_plus_u",
+    "m": 1,
+    "lmax": 720,
+    "ring_start": 256,
+    "repetitions_per_sample": 1000,
+    "sample_count": 5,
+    "arch": "V3 AVX2/FMA",
+    "units": "adjusted nanoseconds per direct leaf call; reset time excluded",
+    "cases": [
+      {
+        "lanes": 64,
+        "tail_lanes": 0,
+        "parent_median_ns": 8469.798,
+        "candidate_median_ns": 8356.174,
+        "candidate_over_parent": 0.986584804,
+        "status": "INCONCLUSIVE"
+      },
+      {
+        "lanes": 65,
+        "tail_lanes": 1,
+        "parent_median_ns": 9242.09,
+        "candidate_median_ns": 10908.014,
+        "candidate_over_parent": 1.180254033,
+        "status": "REJECTED_SLOWER"
+      }
+    ]
+  },
+  "related_accumulator_outline": {
+    "candidate_change": "AnalysisTwoBasisAccumulation::with_simd inline(always) -> inline(never)",
+    "reported_leaf_size_parent_bytes": 11160,
+    "reported_leaf_size_candidate_bytes": 10172,
+    "direct_leaf_parent_median_ns": 8469.063,
+    "direct_leaf_candidate_median_ns": 10152.404,
+    "candidate_over_parent": 1.198763547,
+    "status": "REJECTED_SLOWER",
+    "candidate_binary_sha256": "391f412a1a470100169711e24648a7cce54eac83917fb87edc2689d1c5f8e20c",
+    "patch_sha256": "95ea9232d98b84eeb05673515537e81c89693be222b5164889d59ea2ccdd58d4"
+  },
+  "whole_transform_screen": "not run; neither direct leaf candidate established a gain",
+  "production_change": false,
+  "hardware_pmu_available": false,
+  "perf_event_paranoid": 4,
+  "placement_policy": "One pinned logical CPU; exact CPU index is omitted from committed results."
+}

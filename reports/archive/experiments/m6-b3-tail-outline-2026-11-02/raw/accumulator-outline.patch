@@ -1,0 +1,13 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index b0077a72..6acccaa3 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -6708,7 +6708,7 @@ struct AnalysisTwoBasisAccumulation<'a> {
+ impl WithSimd for AnalysisTwoBasisAccumulation<'_> {
+     type Output = [(Complex64, Complex64); 2];
+ 
+-    #[inline(always)]
++    #[inline(never)]
+     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+         let (same_real_vectors, same_real_tail) = S::as_simd_f64s(self.same_real);
+         let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(self.same_imag);

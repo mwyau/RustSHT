@@ -1,0 +1,136 @@
+{
+  "candidate_binary_sha256": "2b41ed720a336882770c401a886d93252e7e447a570628fd472e29ff6b65574d",
+  "parent_binary_sha256": "10f6bb2ad807287c7e14ee88e3a4699ba78402e9107dbd8c486f35ed0968c7c2",
+  "cpu": "0",
+  "calls_per_process": 1000,
+  "paired_runs": [
+    {
+      "pair": 1,
+      "backend": "candidate",
+      "ns_per_call": 41022.619,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 1,
+      "backend": "parent",
+      "ns_per_call": 30500.266,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 2,
+      "backend": "parent",
+      "ns_per_call": 28052.763,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 2,
+      "backend": "candidate",
+      "ns_per_call": 41384.411,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 3,
+      "backend": "candidate",
+      "ns_per_call": 39745.62,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 3,
+      "backend": "parent",
+      "ns_per_call": 29438.718,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 4,
+      "backend": "parent",
+      "ns_per_call": 27947.672,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 4,
+      "backend": "candidate",
+      "ns_per_call": 39527.075,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 5,
+      "backend": "candidate",
+      "ns_per_call": 42107.859,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 5,
+      "backend": "parent",
+      "ns_per_call": 28711.734,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 6,
+      "backend": "parent",
+      "ns_per_call": 27943.357,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 6,
+      "backend": "candidate",
+      "ns_per_call": 41237.13,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 7,
+      "backend": "candidate",
+      "ns_per_call": 39557.093,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 7,
+      "backend": "parent",
+      "ns_per_call": 29412.395,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 8,
+      "backend": "parent",
+      "ns_per_call": 27910.716,
+      "checksum": "-3.84564740271913094e21"
+    },
+    {
+      "pair": 8,
+      "backend": "candidate",
+      "ns_per_call": 40208.406,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 9,
+      "backend": "candidate",
+      "ns_per_call": 43418.76,
+      "checksum": "-3.84564740271912885e21"
+    },
+    {
+      "pair": 9,
+      "backend": "parent",
+      "ns_per_call": 28472.512,
+      "checksum": "-3.84564740271913094e21"
+    }
+  ],
+  "candidate_parent_ratios": [
+    1.3449921715436841,
+    1.4752347567332316,
+    1.3501138194944495,
+    1.414324420295186,
+    1.4665731787568106,
+    1.4757400121968165,
+    1.3449123405285426,
+    1.440608187908902,
+    1.5249360506020686
+  ],
+  "geomean_ratio": 1.424989651865179,
+  "95pct_log_t_interval": [
+    1.3745008072719027,
+    1.4773330777107014
+  ],
+  "median_ns": {
+    "parent": 28472.512,
+    "candidate": 41022.619
+  }
+}
