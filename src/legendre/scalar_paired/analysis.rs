@@ -2571,7 +2571,6 @@ fn integer_power_vector<S: Simd>(simd: S, mut base: S::f64s, mut exponent: usize
     reason = "The fused scalar analysis block receives parity spectra and worker-owned recurrence scratch explicitly."
 )]
 #[cfg(test)]
-#[allow(unexpected_cfgs)]
 pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
     arch: Arch,
     m: usize,
@@ -2638,7 +2637,6 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
 /// the caller's responsibility.
 /// `range_check_was_exercised` reports whether the checked ordinary recurrence
 /// group scan ran for this block, including after scaled-to-ordinary promotion.
-#[allow(unexpected_cfgs)]
 pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     arch: Arch,
     m: usize,
@@ -2898,19 +2896,6 @@ fn fused_scalar_analysis_pair_block_impl<
 
 #[inline(always)]
 pub(super) fn analysis_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
-    #[cfg(all(target_arch = "x86_64", rustsht_avx2_mask_all))]
-    if const {
-        S::F64_LANES == 4
-            && core::mem::size_of::<S::m64s>() == core::mem::size_of::<std::arch::x86_64::__m256d>()
-    } {
-        // SAFETY: the four-lane Pulp mask is the AVX2 lane mask selected only
-        // by the V3 dispatch path. Its size check above permits a bitwise copy.
-        let mask = unsafe { core::mem::transmute_copy(&mask) };
-        // SAFETY: the Pulp V3 specialization is dispatched only when AVX2 is
-        // supported by the current CPU.
-        return unsafe { analysis_mask_all_avx2(mask) };
-    }
-
     simd.reduce_min_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
 }
 
@@ -2929,17 +2914,6 @@ fn analysis_mask_lane_bits<S: Simd>(mask: S::m64s) -> Option<u8> {
 
     let _ = mask;
     None
-}
-
-#[allow(dead_code, unexpected_cfgs)]
-#[cfg(all(target_arch = "x86_64", rustsht_avx2_mask_all))]
-#[target_feature(enable = "avx2")]
-#[inline]
-unsafe fn analysis_mask_all_avx2(mask: std::arch::x86_64::__m256d) -> bool {
-    use std::arch::x86_64::_mm256_movemask_pd;
-
-    // Pulp comparison masks use an all-ones lane for true and zero for false.
-    _mm256_movemask_pd(mask) == 0b1111
 }
 
 #[allow(dead_code)]
@@ -3662,7 +3636,6 @@ struct FusedCheckedScaledAnalysisPairChannels<'a, const CHECK_PAIR_GROUP_RANGE: 
     exponents: &'a mut [i64],
 }
 
-#[allow(unexpected_cfgs)]
 impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
     for FusedCheckedScaledAnalysisPairChannels<'_, CHECK_PAIR_GROUP_RANGE>
 {
@@ -3714,53 +3687,12 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
                 *exponent = 0;
             }
             previous.fill(0.0);
-            return Ok(FusedScalarAnalysisPair::<
-                true,
-                CHECK_PAIR_GROUP_RANGE,
-                { cfg!(rustsht_fused_analysis_pair_range_check) },
-                true,
-                true,
-            > {
-                m,
-                lmax,
-                range_check_was_exercised,
-                pair_start: 0,
-                cos_theta,
-                cos_theta_squared,
-                coefficient_a,
-                coefficient_b,
-                same_real: same_real[0],
-                same_imag: same_imag[0],
-                opposite_real: ordinary_opposite_real[0],
-                opposite_imag: ordinary_opposite_imag[0],
-                staged_coefficients: staged_first,
-                second_channel: Some(FusedScalarAnalysisPairSecondChannel {
-                    same_real: same_real[1],
-                    same_imag: same_imag[1],
-                    opposite_real: ordinary_opposite_real[1],
-                    opposite_imag: ordinary_opposite_imag[1],
-                    staged_coefficients: staged_second,
-                }),
-                previous,
-                current,
-                next,
-            }
-            .with_simd(simd));
-        }
-
-        for pair_index in 0..pair_count {
-            if normal_range {
-                let recurrence_succeeded = FusedScalarAnalysisPair::<
-                    true,
-                    CHECK_PAIR_GROUP_RANGE,
-                    { cfg!(rustsht_fused_analysis_pair_range_check) },
-                    true,
-                    true,
-                > {
+            return Ok(
+                FusedScalarAnalysisPair::<true, CHECK_PAIR_GROUP_RANGE, true, true> {
                     m,
                     lmax,
                     range_check_was_exercised,
-                    pair_start: pair_index,
+                    pair_start: 0,
                     cos_theta,
                     cos_theta_squared,
                     coefficient_a,
@@ -3781,7 +3713,39 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
                     current,
                     next,
                 }
-                .with_simd(simd);
+                .with_simd(simd),
+            );
+        }
+
+        for pair_index in 0..pair_count {
+            if normal_range {
+                let recurrence_succeeded =
+                    FusedScalarAnalysisPair::<true, CHECK_PAIR_GROUP_RANGE, true, true> {
+                        m,
+                        lmax,
+                        range_check_was_exercised,
+                        pair_start: pair_index,
+                        cos_theta,
+                        cos_theta_squared,
+                        coefficient_a,
+                        coefficient_b,
+                        same_real: same_real[0],
+                        same_imag: same_imag[0],
+                        opposite_real: ordinary_opposite_real[0],
+                        opposite_imag: ordinary_opposite_imag[0],
+                        staged_coefficients: staged_first,
+                        second_channel: Some(FusedScalarAnalysisPairSecondChannel {
+                            same_real: same_real[1],
+                            same_imag: same_imag[1],
+                            opposite_real: ordinary_opposite_real[1],
+                            opposite_imag: ordinary_opposite_imag[1],
+                            staged_coefficients: staged_second,
+                        }),
+                        previous,
+                        current,
+                        next,
+                    }
+                    .with_simd(simd);
                 return Ok(recurrence_succeeded);
             }
 
@@ -4127,7 +4091,6 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
 {
     type Output = Result<bool, ShtError>;
 
-    #[allow(unexpected_cfgs)]
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
         let FusedScaledScalarAnalysisPair {
@@ -4307,16 +4270,12 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
     }
 }
 
-#[allow(unexpected_cfgs)]
 struct FusedScalarAnalysisPair<
     'a,
     const OPPOSITE_COSINE_WEIGHTED: bool,
-    // The custom cfg supports whole-transform A/B builds. Production also
-    // selects the unchecked specialization after a cached checked validation.
+    // Whole-transform A/B builds may select unchecked scans; production does
+    // so only after a cached checked validation.
     const CHECK_PAIR_GROUP_RANGE: bool = { !cfg!(rustsht_unchecked_analysis_pair_range) },
-    // Experimental checked mode folds the group-state reduction into the
-    // recurrence traversal instead of rereading the resulting state arrays.
-    const FUSE_PAIR_GROUP_RANGE_CHECK: bool = { cfg!(rustsht_fused_analysis_pair_range_check) },
     // Test-only source attribution compiles the same loop without coefficient
     // products; the production specialization always keeps accumulation.
     const ACCUMULATE: bool = true,
@@ -4370,7 +4329,6 @@ struct FusedAnalysisPairGroup {
     first_opposite: Complex64,
     second_same: Complex64,
     second_opposite: Complex64,
-    states_in_range: bool,
     tails_in_range: bool,
 }
 
@@ -4558,8 +4516,6 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
 fn fused_analysis_two_pair_steps_with_simd<
     S: Simd,
     const OPPOSITE_COSINE_WEIGHTED: bool,
-    const CHECK_GROUP_RANGE: bool,
-    const TRACK_STATE_RANGE: bool,
     const ACCUMULATE: bool,
     const ROTATE_SEQUENTIAL_STATES: bool,
 >(
@@ -4628,7 +4584,6 @@ fn fused_analysis_two_pair_steps_with_simd<
     let first_b = simd.splat_f64s(first_coefficient_b);
     let second_a = simd.splat_f64s(second_coefficient_a);
     let second_b = simd.splat_f64s(second_coefficient_b);
-    let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
     let mut first_same_re = zero;
     let mut first_same_im = zero;
     let mut first_opposite_re = zero;
@@ -4637,7 +4592,6 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut second_same_im = zero;
     let mut second_opposite_re = zero;
     let mut second_opposite_im = zero;
-    let mut vector_states_in_range = simd.equal_f64s(zero, zero);
     let mut tails_in_range = true;
 
     macro_rules! update_analysis_pair_vector {
@@ -4691,20 +4645,6 @@ fn fused_analysis_two_pair_steps_with_simd<
 
             let second_leading = simd.mul_add_f64s(second_a, *($cosine_squared), second_b);
             let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
-            if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
-                let previous_magnitude = simd.abs_f64s(first_next);
-                let current_magnitude = simd.abs_f64s(second_next);
-                let previous_in_range = simd.or_m64s(
-                    simd.equal_f64s(previous_magnitude, zero),
-                    simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
-                );
-                let current_in_range = simd.or_m64s(
-                    simd.equal_f64s(current_magnitude, zero),
-                    simd.greater_than_or_equal_f64s(current_magnitude, minimum),
-                );
-                let states_in_range = simd.and_m64s(previous_in_range, current_in_range);
-                vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
-            }
             if ROTATE_SEQUENTIAL_STATES {
                 *($snapshot) = first_next;
                 *($previous) = second_next;
@@ -4848,28 +4788,11 @@ fn fused_analysis_two_pair_steps_with_simd<
         }
     }
 
-    let states_in_range = if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
-        let vectors_in_range = analysis_mask_all(simd, vector_states_in_range);
-        let tails_in_range = if ROTATE_SEQUENTIAL_STATES {
-            tails_in_range
-        } else {
-            previous_tail.iter().zip(current_tail.iter()).all(
-                |(&previous_value, &current_value)| {
-                    (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)
-                        && (current_value == 0.0 || current_value.abs() >= f64::MIN_POSITIVE)
-                },
-            )
-        };
-        vectors_in_range && tails_in_range
-    } else {
-        true
-    };
     Some(FusedAnalysisPairGroup {
         first_same: Complex64::new(first_same_re_sum, first_same_im_sum),
         first_opposite: Complex64::new(first_opposite_re_sum, first_opposite_im_sum),
         second_same: Complex64::new(second_same_re_sum, second_same_im_sum),
         second_opposite: Complex64::new(second_opposite_re_sum, second_opposite_im_sum),
-        states_in_range,
         tails_in_range,
     })
 }
@@ -4950,7 +4873,6 @@ fn store_analysis_pair(
 impl<
     const OPPOSITE_COSINE_WEIGHTED: bool,
     const CHECK_PAIR_GROUP_RANGE: bool,
-    const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
     const ACCUMULATE: bool,
     const SEQUENTIAL_SECOND_CHANNEL: bool,
 > WithSimd
@@ -4958,7 +4880,6 @@ impl<
         '_,
         OPPOSITE_COSINE_WEIGHTED,
         CHECK_PAIR_GROUP_RANGE,
-        FUSE_PAIR_GROUP_RANGE_CHECK,
         ACCUMULATE,
         SEQUENTIAL_SECOND_CHANNEL,
     >
@@ -5028,8 +4949,6 @@ impl<
             let Some(group) = fused_analysis_two_pair_steps_with_simd::<
                 S,
                 OPPOSITE_COSINE_WEIGHTED,
-                CHECK_PAIR_GROUP_RANGE,
-                FUSE_PAIR_GROUP_RANGE_CHECK,
                 ACCUMULATE,
                 SEQUENTIAL_SECOND_CHANNEL,
             >(
@@ -5066,18 +4985,13 @@ impl<
                 std::mem::swap(&mut previous, &mut next);
                 std::mem::swap(&mut current, &mut next);
             }
-            if CHECK_PAIR_GROUP_RANGE {
-                let group_in_range = if FUSE_PAIR_GROUP_RANGE_CHECK {
-                    group.states_in_range
-                } else {
-                    analysis_pair_group_state_in_range(simd, previous, current)
-                };
-                if !group_in_range {
-                    #[cfg(test)]
-                    ANALYSIS_PAIR_GROUP_RANGE_DECLINES
-                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    return false;
-                }
+            if CHECK_PAIR_GROUP_RANGE
+                && !analysis_pair_group_state_in_range(simd, previous, current)
+            {
+                #[cfg(test)]
+                ANALYSIS_PAIR_GROUP_RANGE_DECLINES
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                return false;
             }
             all_tails_in_range &= group.tails_in_range;
 
@@ -5356,7 +5270,6 @@ fn dispatch_fused_scalar_analysis_pair_weighted<
     clippy::too_many_arguments,
     reason = "The shared recurrence keeps Q inputs and staged U reductions in separate channel rows."
 )]
-#[allow(unexpected_cfgs)]
 #[inline(always)]
 fn dispatch_fused_scalar_analysis_pair_two_channels<
     const OPPOSITE_COSINE_WEIGHTED: bool,
@@ -5387,7 +5300,6 @@ fn dispatch_fused_scalar_analysis_pair_two_channels<
     arch.dispatch(FusedScalarAnalysisPair::<
         OPPOSITE_COSINE_WEIGHTED,
         CHECK_PAIR_GROUP_RANGE,
-        { cfg!(rustsht_fused_analysis_pair_range_check) },
         true,
         true,
     > {

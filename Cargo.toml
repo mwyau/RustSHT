@@ -32,7 +32,6 @@ parallel = ["dep:rayon"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(rustsht_avx2_mask_all)',
     'cfg(rustsht_disable_analysis_pair_range_cache)',
     'cfg(rustsht_disable_paired_odd_fft)',
     'cfg(rustsht_profile_spin32_normalizer)',

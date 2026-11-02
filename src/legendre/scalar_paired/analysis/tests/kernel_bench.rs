@@ -467,11 +467,7 @@ fn read_f64s(file: &mut File, count: usize) -> Vec<f64> {
     clippy::too_many_arguments,
     reason = "The test-only direct-kernel helper forwards fixture and worker-owned state explicitly."
 )]
-fn time_fused_scalar_analysis_pair<
-    const CHECK_PAIR_GROUP_RANGE: bool,
-    const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
-    const ACCUMULATE: bool,
->(
+fn time_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool, const ACCUMULATE: bool>(
     arch: Arch,
     m: usize,
     lmax: usize,
@@ -488,30 +484,28 @@ fn time_fused_scalar_analysis_pair<
 
     let mut range_check_was_exercised = false;
     let started = Instant::now();
-    let succeeded = arch.dispatch(FusedScalarAnalysisPair::<
-        true,
-        CHECK_PAIR_GROUP_RANGE,
-        FUSE_PAIR_GROUP_RANGE_CHECK,
-        ACCUMULATE,
-    > {
-        m,
-        lmax,
-        range_check_was_exercised: &mut range_check_was_exercised,
-        pair_start: 0,
-        cos_theta: &fixture.cosine,
-        cos_theta_squared: &fixture.cosine_squared,
-        coefficient_a: &fixture.coefficient_a,
-        coefficient_b: &fixture.coefficient_b,
-        same_real: &fixture.same_real,
-        same_imag: &fixture.same_imag,
-        opposite_real: &fixture.opposite_real,
-        opposite_imag: &fixture.opposite_imag,
-        staged_coefficients: staged,
-        second_channel: None,
-        previous,
-        current,
-        next,
-    });
+    let succeeded =
+        arch.dispatch(
+            FusedScalarAnalysisPair::<true, CHECK_PAIR_GROUP_RANGE, ACCUMULATE> {
+                m,
+                lmax,
+                range_check_was_exercised: &mut range_check_was_exercised,
+                pair_start: 0,
+                cos_theta: &fixture.cosine,
+                cos_theta_squared: &fixture.cosine_squared,
+                coefficient_a: &fixture.coefficient_a,
+                coefficient_b: &fixture.coefficient_b,
+                same_real: &fixture.same_real,
+                same_imag: &fixture.same_imag,
+                opposite_real: &fixture.opposite_real,
+                opposite_imag: &fixture.opposite_imag,
+                staged_coefficients: staged,
+                second_channel: None,
+                previous,
+                current,
+                next,
+            },
+        );
     let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
     assert!(
         succeeded,
@@ -537,7 +531,6 @@ impl WithSimd for AnalysisRangeCheckLoop<'_> {
     }
 }
 
-#[allow(unexpected_cfgs)]
 fn run_analysis_pair_component<const ACCUMULATE: bool>(
     arch: Arch,
     fixture: &Fixture,
@@ -549,11 +542,9 @@ fn run_analysis_pair_component<const ACCUMULATE: bool>(
     if ACCUMULATE {
         run_fused_scalar_analysis_pair::<false>(arch, fixture, staged, previous, current, next)
     } else {
-        run_fused_scalar_analysis_pair_variant::<
-            false,
-            { cfg!(rustsht_fused_analysis_pair_range_check) },
-            false,
-        >(arch, fixture, staged, previous, current, next)
+        run_fused_scalar_analysis_pair_variant::<false, false>(
+            arch, fixture, staged, previous, current, next,
+        )
     }
 }
 
@@ -1206,7 +1197,6 @@ fn reset_fused_scalar_analysis_pair(
     staged.fill(Complex64::new(0.0, 0.0));
 }
 
-#[allow(unexpected_cfgs)]
 #[inline(always)]
 fn run_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     arch: Arch,
@@ -1216,17 +1206,14 @@ fn run_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     current: &mut [f64],
     next: &mut [f64],
 ) -> bool {
-    run_fused_scalar_analysis_pair_variant::<
-        CHECK_PAIR_GROUP_RANGE,
-        { cfg!(rustsht_fused_analysis_pair_range_check) },
-        true,
-    >(arch, fixture, staged, previous, current, next)
+    run_fused_scalar_analysis_pair_variant::<CHECK_PAIR_GROUP_RANGE, true>(
+        arch, fixture, staged, previous, current, next,
+    )
 }
 
 #[inline(never)]
 fn run_fused_scalar_analysis_pair_variant<
     const CHECK_PAIR_GROUP_RANGE: bool,
-    const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
     const ACCUMULATE: bool,
 >(
     arch: Arch,
@@ -1237,30 +1224,27 @@ fn run_fused_scalar_analysis_pair_variant<
     next: &mut [f64],
 ) -> bool {
     let mut range_check_was_exercised = false;
-    arch.dispatch(FusedScalarAnalysisPair::<
-        true,
-        CHECK_PAIR_GROUP_RANGE,
-        FUSE_PAIR_GROUP_RANGE_CHECK,
-        ACCUMULATE,
-    > {
-        m: BENCH_ORDER,
-        lmax: BENCH_LMAX,
-        range_check_was_exercised: &mut range_check_was_exercised,
-        pair_start: 0,
-        cos_theta: &fixture.cosine,
-        cos_theta_squared: &fixture.cosine_squared,
-        coefficient_a: &fixture.coefficient_a,
-        coefficient_b: &fixture.coefficient_b,
-        same_real: &fixture.same_real,
-        same_imag: &fixture.same_imag,
-        opposite_real: &fixture.opposite_real,
-        opposite_imag: &fixture.opposite_imag,
-        staged_coefficients: std::hint::black_box(staged),
-        second_channel: None,
-        previous: std::hint::black_box(previous),
-        current: std::hint::black_box(current),
-        next: std::hint::black_box(next),
-    })
+    arch.dispatch(
+        FusedScalarAnalysisPair::<true, CHECK_PAIR_GROUP_RANGE, ACCUMULATE> {
+            m: BENCH_ORDER,
+            lmax: BENCH_LMAX,
+            range_check_was_exercised: &mut range_check_was_exercised,
+            pair_start: 0,
+            cos_theta: &fixture.cosine,
+            cos_theta_squared: &fixture.cosine_squared,
+            coefficient_a: &fixture.coefficient_a,
+            coefficient_b: &fixture.coefficient_b,
+            same_real: &fixture.same_real,
+            same_imag: &fixture.same_imag,
+            opposite_real: &fixture.opposite_real,
+            opposite_imag: &fixture.opposite_imag,
+            staged_coefficients: std::hint::black_box(staged),
+            second_channel: None,
+            previous: std::hint::black_box(previous),
+            current: std::hint::black_box(current),
+            next: std::hint::black_box(next),
+        },
+    )
 }
 
 #[inline(never)]
@@ -1708,13 +1692,12 @@ fn reset_inclusive_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
 }
 
 #[test]
-fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
+fn checked_group_range_matches_unchecked_for_zero_cancellation_and_tails() {
     let arch = Arch::new();
     for lane_count in [1, 3, 5, 7, 9, 17] {
         let mut fixture = Fixture::new(lane_count);
         let coefficient_count = BENCH_LMAX - BENCH_ORDER + 1;
-        let mut scanned_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let mut fused_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut checked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
         let mut unchecked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
         let mut previous = vec![0.0; lane_count];
         let mut current = vec![0.0; lane_count];
@@ -1728,27 +1711,17 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
                 fixture.opposite_real[lane] = value;
                 fixture.opposite_imag[lane] = value * 0.5;
             }
-            let _ = time_fused_scalar_analysis_pair::<true, false, true>(
+            let _ = time_fused_scalar_analysis_pair::<true, true>(
                 arch,
                 BENCH_ORDER,
                 BENCH_LMAX,
                 &fixture,
-                &mut scanned_staged,
+                &mut checked_staged,
                 &mut previous,
                 &mut current,
                 &mut next,
             );
-            let _ = time_fused_scalar_analysis_pair::<true, true, true>(
-                arch,
-                BENCH_ORDER,
-                BENCH_LMAX,
-                &fixture,
-                &mut fused_staged,
-                &mut previous,
-                &mut current,
-                &mut next,
-            );
-            let _ = time_fused_scalar_analysis_pair::<false, false, true>(
+            let _ = time_fused_scalar_analysis_pair::<false, true>(
                 arch,
                 BENCH_ORDER,
                 BENCH_LMAX,
@@ -1758,45 +1731,29 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
                 &mut current,
                 &mut next,
             );
-            assert_eq!(scanned_staged, fused_staged);
-            assert_eq!(scanned_staged, unchecked_staged);
+            assert_eq!(checked_staged, unchecked_staged);
         }
 
-        // A subnormal recurrence state must take the same fallback decision
-        // whether the final group state is checked in place or reread after
-        // the recurrence pass.
+        // The production post-group range check must decline when a recurrence
+        // state is subnormal.
         fixture.previous.fill(0.0);
         fixture.current.fill(f64::from_bits(1));
         previous.copy_from_slice(&fixture.previous);
         current.copy_from_slice(&fixture.current);
         next.fill(0.0);
-        scanned_staged.fill(Complex64::new(0.0, 0.0));
-        fused_staged.fill(Complex64::new(0.0, 0.0));
-        let scanned_succeeded = run_fused_scalar_analysis_pair_variant::<true, false, true>(
+        checked_staged.fill(Complex64::new(0.0, 0.0));
+        let checked_succeeded = run_fused_scalar_analysis_pair_variant::<true, true>(
             arch,
             &fixture,
-            &mut scanned_staged,
+            &mut checked_staged,
             &mut previous,
             &mut current,
             &mut next,
         );
-        previous.copy_from_slice(&fixture.previous);
-        current.copy_from_slice(&fixture.current);
-        next.fill(0.0);
-        let fused_succeeded = run_fused_scalar_analysis_pair_variant::<true, true, true>(
-            arch,
-            &fixture,
-            &mut fused_staged,
-            &mut previous,
-            &mut current,
-            &mut next,
-        );
-        assert_eq!(scanned_succeeded, fused_succeeded);
         assert!(
-            !fused_succeeded,
+            !checked_succeeded,
             "subnormal state did not decline fast route"
         );
-        assert_eq!(scanned_staged, fused_staged);
     }
 }
 
