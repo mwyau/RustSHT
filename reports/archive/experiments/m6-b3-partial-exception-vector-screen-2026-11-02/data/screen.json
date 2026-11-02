@@ -1,0 +1,52 @@
+{
+  "base_source_sha": "3d4c6150c50ff8a2b399eaa22c83f50406b83c20",
+  "ducc_whole_call": "not_run_candidate_rejected_at_helper_gate",
+  "fixture": "deterministic four-lane arrays embedded in the test-only patch",
+  "candidate_and_microbench_patch_sha256_uncompressed": "d8988d36c756b633798038a8b3fdacca0aa375c912c1eb9487b8d98a7ab2827a",
+  "candidate_and_microbench_patch_sha256_compressed": "52bf439e22c31504ac1747deeaa985d747132fa675513f3deced1c32ec2271f9",
+  "hardware": "AMD Ryzen 9 5950X 16-Core Processor",
+  "paired_ratio_definition": "candidate SIMD helper ns / existing scalar fallback ns",
+  "paired_runs": [
+    {
+      "candidate_ns_per_call": [
+        36.99736, 38.21556, 38.70318, 36.78526, 37.12871,
+        36.79478, 37.46123, 38.13330, 36.82524
+      ],
+      "control_ns_per_call": [
+        14.52062, 13.73333, 12.68816, 13.52384, 12.79626,
+        12.73835, 12.72774, 12.70499, 13.30342
+      ],
+      "paired_ratios": [
+        2.5479187527805287, 2.7826870831764765, 3.0503382681176787,
+        2.720030701339265, 2.9015282590381877, 2.8885043981363365,
+        2.943274296929384, 3.0014427402146713, 2.7681032396180836
+      ]
+    },
+    {
+      "candidate_ns_per_call": [
+        36.25465, 36.54601, 36.39432, 36.67765, 36.69690,
+        36.40774, 36.24765, 36.29202, 36.21008
+      ],
+      "control_ns_per_call": [
+        12.56853, 12.47716, 12.80067, 12.78013, 12.82662,
+        12.63726, 14.62060, 12.62734, 12.65449
+      ],
+      "paired_ratios": [
+        2.8845577008608005, 2.9290327286017015, 2.843157428478353,
+        2.869896472101614, 2.8609953362616185, 2.8809836942501774,
+        2.479217679165014, 2.8740827442675974, 2.861441274994093
+      ]
+    }
+  ],
+  "paired_ratio_geometric_mean": 2.835,
+  "paired_ratio_95_percent_t_interval_log_scale": [2.763, 2.908],
+  "paired_ratio_median": 2.872,
+  "repetitions_per_sample": 100000,
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs; release; features=parallel",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "simd": "Pulp dispatch; S::F64_LANES=4; x86-64-v3 AVX2/FMA",
+  "test_binary_sha256": "a3f1fd2f05755699cf0494ab40ec5c8451fb253f46b343d91e0b4ca3952a99d0",
+  "thread_affinity": "single-core pinned",
+  "warmups": "two 10000-call batches per route",
+  "whole_transform": "not_run_candidate_rejected_at_helper_gate"
+}
