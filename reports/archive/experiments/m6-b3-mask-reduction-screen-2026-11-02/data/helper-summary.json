@@ -1,0 +1,45 @@
+{
+  "source": "test-only captured-state helper variants; 9 interleaved trials per category; four-lane AVX2 f64 vectors",
+  "variants": [
+    "baseline",
+    "combined_finite_in_range",
+    "combined_finite_in_range_and_zero_exponent"
+  ],
+  "measurements_ns_per_vector": {
+    "full_q1": {
+      "zero_exponent": [
+        3.095,
+        2.699,
+        2.388
+      ],
+      "nonzero_stable": [
+        2.731,
+        2.31,
+        3.219
+      ],
+      "exponent_changing": [
+        17.492,
+        17.737,
+        17.794
+      ]
+    },
+    "reduced_q1": {
+      "zero_exponent": [
+        2.656,
+        2.202,
+        1.902
+      ],
+      "nonzero_stable": [
+        2.606,
+        2.188,
+        3.136
+      ],
+      "exponent_changing": [
+        18.49,
+        18.637,
+        18.709
+      ]
+    }
+  },
+  "notes": "The production candidate corresponds to combined_finite_in_range. The all-predicate variant is a test-only upper-bound probe and regresses nonzero-exponent stable groups. Changed-group cost did not improve."
+}

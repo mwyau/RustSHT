@@ -1,0 +1,2140 @@
+{
+  "source_parent": "be8f72d7fc55c420da5cf12b843b9353d2316eec",
+  "source_candidate_base": "be8f72d7fc55c420da5cf12b843b9353d2316eec",
+  "candidate_change": "combine finite and in-range SIMD lane predicates before the common-path horizontal reduction; retain finite fallback and scaling logic",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "parent_binary_sha256": "d401668c6aa462fe2e81725672cdd5e097d30bdfd6f8271268398af79005f25d",
+  "candidate_binary_sha256": "da012dfd269fdbaec6f0c478cdcefc07bf3247535a96fe2e331b4a14637f3f82",
+  "ducc_binary_sha256": "5dacb5987ee621a5115fed405775dc85231361ab703b3eae1694d086a5a7bdf8",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "cpu_features": [
+    "3dnowprefetch",
+    "abm",
+    "adx",
+    "aes",
+    "aperfmperf",
+    "apic",
+    "arat",
+    "avic",
+    "avx",
+    "avx2",
+    "bmi1",
+    "bmi2",
+    "bpext",
+    "cat_l3",
+    "cdp_l3",
+    "clflush",
+    "clflushopt",
+    "clwb",
+    "clzero",
+    "cmov",
+    "cmp_legacy",
+    "constant_tsc",
+    "cpb",
+    "cpuid",
+    "cqm",
+    "cqm_llc",
+    "cqm_mbm_local",
+    "cqm_mbm_total",
+    "cqm_occup_llc",
+    "cr8_legacy",
+    "cx16",
+    "cx8",
+    "de",
+    "debug_swap",
+    "decodeassists",
+    "erms",
+    "extapic",
+    "extd_apicid",
+    "f16c",
+    "flushbyasid",
+    "fma",
+    "fpu",
+    "fsgsbase",
+    "fsrm",
+    "fxsr",
+    "fxsr_opt",
+    "ht",
+    "hw_pstate",
+    "ibpb",
+    "ibrs",
+    "ibs",
+    "invpcid",
+    "irperf",
+    "lahf_lm",
+    "lbrv",
+    "lm",
+    "mba",
+    "mca",
+    "mce",
+    "misalignsse",
+    "mmx",
+    "mmxext",
+    "monitor",
+    "movbe",
+    "msr",
+    "mtrr",
+    "mwaitx",
+    "nonstop_tsc",
+    "nopl",
+    "npt",
+    "nrip_save",
+    "nx",
+    "ospke",
+    "osvw",
+    "overflow_recov",
+    "pae",
+    "pat",
+    "pausefilter",
+    "pclmulqdq",
+    "pdpe1gb",
+    "perfctr_core",
+    "perfctr_llc",
+    "perfctr_nb",
+    "pfthreshold",
+    "pge",
+    "pku",
+    "pni",
+    "popcnt",
+    "pse",
+    "pse36",
+    "rapl",
+    "rdpid",
+    "rdpru",
+    "rdrand",
+    "rdseed",
+    "rdt_a",
+    "rdtscp",
+    "rep_good",
+    "sep",
+    "sha_ni",
+    "skinit",
+    "smap",
+    "smca",
+    "smep",
+    "ssbd",
+    "sse",
+    "sse2",
+    "sse4_1",
+    "sse4_2",
+    "sse4a",
+    "ssse3",
+    "stibp",
+    "succor",
+    "svm",
+    "svm_lock",
+    "syscall",
+    "tce",
+    "topoext",
+    "tsc",
+    "tsc_scale",
+    "umip",
+    "user_shstk",
+    "v_spec_ctrl",
+    "v_vmsave_vmload",
+    "vaes",
+    "vgif",
+    "vmcb_clean",
+    "vme",
+    "vmmcall",
+    "vpclmulqdq",
+    "wbnoinvd",
+    "wdt",
+    "x2apic",
+    "xgetbv1",
+    "xsave",
+    "xsavec",
+    "xsaveerptr",
+    "xsaveopt",
+    "xsaves",
+    "xtopology"
+  ],
+  "allowed_physical_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "q1_cpus": [
+    0
+  ],
+  "q8_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_flags": "SHT -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+  "target_ms": 25.0,
+  "process_pairs": 3,
+  "geometry": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "lmax": 720
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "lmax": 720
+    }
+  ],
+  "results": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 1,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 14.827012,
+        "candidate": 14.777984499999999,
+        "ducc": 11.7095255
+      },
+      "candidate_parent_ratio": 0.9966933661347276,
+      "candidate_ducc_ratio": 1.2620481077563732,
+      "parent_ducc_ratio": 1.2662350835650855,
+      "parent_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "worker_measurements": {
+        "parent": {
+          "first_ms": 16.637759,
+          "warmup_ms": 14.793811999999999,
+          "setup_ms": 1.790216,
+          "fixture_load_ms": 5.99555,
+          "pool_ms": 0.091573,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            14.842774499999999,
+            14.8941615,
+            14.8112495,
+            14.7730025,
+            14.883136,
+            14.868613,
+            14.783968,
+            14.746843,
+            14.9068055,
+            14.801957
+          ],
+          "batch_total_ms": [
+            29.685548999999998,
+            29.788323,
+            29.622499,
+            29.546005,
+            29.766272,
+            29.737226,
+            29.567936,
+            29.493686,
+            29.813611,
+            29.603914
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 16.516481,
+          "warmup_ms": 14.704042000000001,
+          "setup_ms": 1.7146329999999999,
+          "fixture_load_ms": 6.303663,
+          "pool_ms": 0.101873,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            14.776318999999999,
+            14.720593000000001,
+            14.8454195,
+            14.7833065,
+            14.736834,
+            14.751486499999999,
+            14.814195,
+            14.743796999999999,
+            14.8510195,
+            14.77965
+          ],
+          "batch_total_ms": [
+            29.552637999999998,
+            29.441186000000002,
+            29.690839,
+            29.566613,
+            29.473668,
+            29.502972999999997,
+            29.62839,
+            29.487593999999998,
+            29.702039,
+            29.5593
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 13.843875,
+          "warmup_ms": 13.431184,
+          "setup_ms": 6.188897,
+          "fixture_load_ms": 5.706634,
+          "pool_ms": null,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            11.736659,
+            11.6726985,
+            11.6380975,
+            11.6490985,
+            11.7733335,
+            11.7209145,
+            11.6981365,
+            11.7430165,
+            11.69223,
+            11.8179885
+          ],
+          "batch_total_ms": [
+            23.473318,
+            23.345397,
+            23.276195,
+            23.298197,
+            23.546667,
+            23.441829,
+            23.396273,
+            23.486033,
+            23.38446,
+            23.635977
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 1,
+      "pair": 1,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "times_ms": {
+        "ducc": 11.682983,
+        "candidate": 14.765175,
+        "parent": 14.8669075
+      },
+      "candidate_parent_ratio": 0.993157117578084,
+      "candidate_ducc_ratio": 1.2638189236430455,
+      "parent_ducc_ratio": 1.2725266740523375,
+      "parent_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "worker_measurements": {
+        "ducc": {
+          "first_ms": 13.768472,
+          "warmup_ms": 13.439741,
+          "setup_ms": 6.538137,
+          "fixture_load_ms": 5.794049,
+          "pool_ms": null,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            11.761927,
+            11.7473495,
+            11.6438335,
+            11.622879,
+            11.6615575,
+            11.754779,
+            11.7038625,
+            11.6621035,
+            11.7387585,
+            11.6569785
+          ],
+          "batch_total_ms": [
+            23.523854,
+            23.494699,
+            23.287667,
+            23.245758,
+            23.323115,
+            23.509558,
+            23.407725,
+            23.324207,
+            23.477517,
+            23.313957
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 16.539343000000002,
+          "warmup_ms": 14.745691,
+          "setup_ms": 1.6833239999999998,
+          "fixture_load_ms": 6.142868999999999,
+          "pool_ms": 0.10022,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            14.771314,
+            14.7481605,
+            14.8540305,
+            14.752378499999999,
+            14.748937,
+            14.8539455,
+            14.8341985,
+            14.759036,
+            14.660224,
+            14.8850195
+          ],
+          "batch_total_ms": [
+            29.542628,
+            29.496321,
+            29.708061,
+            29.504756999999998,
+            29.497874,
+            29.707891,
+            29.668397,
+            29.518072,
+            29.320448,
+            29.770039
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 16.613923999999997,
+          "warmup_ms": 14.804582,
+          "setup_ms": 1.713701,
+          "fixture_load_ms": 6.206739,
+          "pool_ms": 0.10035999999999999,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            15.026146500000001,
+            14.8575275,
+            14.865838,
+            14.835415500000002,
+            14.927665,
+            14.867977,
+            14.838877,
+            15.0526065,
+            14.910843,
+            14.8613145
+          ],
+          "batch_total_ms": [
+            30.052293000000002,
+            29.715055,
+            29.731676,
+            29.670831000000003,
+            29.85533,
+            29.735954,
+            29.677754,
+            30.105213,
+            29.821686,
+            29.722629
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 1,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "parent",
+        "ducc"
+      ],
+      "times_ms": {
+        "candidate": 14.90331375,
+        "parent": 14.9115895,
+        "ducc": 11.79032075
+      },
+      "candidate_parent_ratio": 0.9994450122168398,
+      "candidate_ducc_ratio": 1.2640295430469948,
+      "parent_ducc_ratio": 1.264731453552695,
+      "parent_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "worker_measurements": {
+        "candidate": {
+          "first_ms": 16.684739,
+          "warmup_ms": 14.801857,
+          "setup_ms": 1.7099039999999999,
+          "fixture_load_ms": 6.347595999999999,
+          "pool_ms": 0.10897599999999999,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            14.936672,
+            14.882379499999999,
+            14.8497725,
+            14.9553475,
+            14.899511500000001,
+            14.8809515,
+            14.907116,
+            14.960021000000001,
+            14.910102,
+            14.868483
+          ],
+          "batch_total_ms": [
+            29.873344,
+            29.764758999999998,
+            29.699545,
+            29.910695,
+            29.799023000000002,
+            29.761903,
+            29.814232,
+            29.920042000000002,
+            29.820204,
+            29.736966
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 16.622911000000002,
+          "warmup_ms": 14.763415,
+          "setup_ms": 1.726265,
+          "fixture_load_ms": 6.250533,
+          "pool_ms": 0.099538,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            14.8587495,
+            14.9243585,
+            14.886332000000001,
+            14.856189500000001,
+            14.89076,
+            15.01246,
+            14.927910500000001,
+            14.8988205,
+            15.062164,
+            14.945558499999999
+          ],
+          "batch_total_ms": [
+            29.717499,
+            29.848717,
+            29.772664000000002,
+            29.712379000000002,
+            29.78152,
+            30.02492,
+            29.855821000000002,
+            29.797641,
+            30.124328,
+            29.891116999999998
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 13.806515,
+          "warmup_ms": 13.326005,
+          "setup_ms": 6.232648,
+          "fixture_load_ms": 5.734577,
+          "pool_ms": null,
+          "repetitions_per_batch": 2,
+          "batch_ms": [
+            12.022936,
+            11.869661,
+            11.917742,
+            11.773008,
+            11.8076335,
+            11.7489575,
+            11.671476,
+            11.6573695,
+            11.6599345,
+            11.894488
+          ],
+          "batch_total_ms": [
+            24.045872,
+            23.739322,
+            23.835484,
+            23.546016,
+            23.615267,
+            23.497915,
+            23.342952,
+            23.314739,
+            23.319869,
+            23.788976
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 8,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 2.248044363636364,
+        "candidate": 2.19975525,
+        "ducc": 1.7276821666666666
+      },
+      "candidate_parent_ratio": 0.9785195014753832,
+      "candidate_ducc_ratio": 1.2732406992682779,
+      "parent_ducc_ratio": 1.3011909291010781,
+      "parent_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "worker_measurements": {
+        "parent": {
+          "first_ms": 3.116114,
+          "warmup_ms": 2.423364,
+          "setup_ms": 2.3831680000000004,
+          "fixture_load_ms": 6.355702,
+          "pool_ms": 0.30944499999999997,
+          "repetitions_per_batch": 11,
+          "batch_ms": [
+            2.172154,
+            2.168437818181818,
+            2.2796118181818184,
+            2.2534787272727272,
+            2.2427238181818185,
+            2.1853890000000002,
+            2.2038594545454546,
+            2.3078488181818178,
+            2.2613745454545455,
+            2.253364909090909
+          ],
+          "batch_total_ms": [
+            23.893694,
+            23.852815999999997,
+            25.07573,
+            24.788266,
+            24.669962,
+            24.039279,
+            24.242454,
+            25.386336999999997,
+            24.87512,
+            24.787014
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 3.094083,
+          "warmup_ms": 2.607873,
+          "setup_ms": 2.5386219999999997,
+          "fixture_load_ms": 6.406849,
+          "pool_ms": 0.30902399999999997,
+          "repetitions_per_batch": 10,
+          "batch_ms": [
+            2.2580750000000003,
+            2.2122955,
+            2.1514423000000003,
+            2.1993029,
+            2.1532036999999997,
+            2.3370735,
+            2.1526667,
+            2.166585,
+            2.2302064,
+            2.2002075999999997
+          ],
+          "batch_total_ms": [
+            22.580750000000002,
+            22.122955,
+            21.514423,
+            21.993029,
+            21.532037,
+            23.370735,
+            21.526667,
+            21.66585,
+            22.302064,
+            22.002076
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 4.655836,
+          "warmup_ms": 3.56371,
+          "setup_ms": 6.264229,
+          "fixture_load_ms": 5.796283,
+          "pool_ms": null,
+          "repetitions_per_batch": 15,
+          "batch_ms": [
+            1.7163363999999999,
+            1.7160865333333333,
+            1.7378470666666668,
+            1.7281473333333333,
+            1.7308137333333333,
+            1.7219262666666666,
+            1.7395256000000001,
+            1.7908099333333332,
+            1.722319,
+            1.727217
+          ],
+          "batch_total_ms": [
+            25.745046,
+            25.741298,
+            26.067706,
+            25.92221,
+            25.962206,
+            25.828894,
+            26.092884,
+            26.862149,
+            25.834785,
+            25.908255
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "times_ms": {
+        "ducc": 1.7393268333333332,
+        "candidate": 2.1870134545454545,
+        "parent": 2.2557080999999997
+      },
+      "candidate_parent_ratio": 0.9695463054574547,
+      "candidate_ducc_ratio": 1.2573907402751627,
+      "parent_ducc_ratio": 1.2968857012784927,
+      "parent_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "worker_measurements": {
+        "ducc": {
+          "first_ms": 4.490654,
+          "warmup_ms": 3.581595,
+          "setup_ms": 6.600665,
+          "fixture_load_ms": 5.872066,
+          "pool_ms": null,
+          "repetitions_per_batch": 15,
+          "batch_ms": [
+            1.7343998666666667,
+            1.7254322,
+            1.7335923333333334,
+            1.8401058,
+            1.7497101333333334,
+            1.7323820666666667,
+            1.7256386666666665,
+            1.9076636,
+            1.7678103333333333,
+            1.7442537999999999
+          ],
+          "batch_total_ms": [
+            26.015998,
+            25.881483,
+            26.003885,
+            27.601587,
+            26.245652,
+            25.985731,
+            25.88458,
+            28.614954,
+            26.517155,
+            26.163807
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 3.091578,
+          "warmup_ms": 2.3559560000000004,
+          "setup_ms": 2.6542610000000004,
+          "fixture_load_ms": 6.486188,
+          "pool_ms": 0.322831,
+          "repetitions_per_batch": 11,
+          "batch_ms": [
+            2.1791927272727274,
+            2.3072713636363638,
+            2.194551818181818,
+            2.1748145454545456,
+            2.179475090909091,
+            2.203813909090909,
+            2.2324416363636366,
+            2.1764995454545453,
+            2.210296090909091,
+            2.171349727272727
+          ],
+          "batch_total_ms": [
+            23.97112,
+            25.379985,
+            24.140069999999998,
+            23.92296,
+            23.974226,
+            24.241953,
+            24.556858000000002,
+            23.941495,
+            24.313257,
+            23.884847
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 3.043106,
+          "warmup_ms": 2.773506,
+          "setup_ms": 2.342441,
+          "fixture_load_ms": 6.611706,
+          "pool_ms": 0.313673,
+          "repetitions_per_batch": 10,
+          "batch_ms": [
+            2.2214517000000003,
+            2.191416,
+            2.217338,
+            2.2646915,
+            2.3947505,
+            2.2627759999999997,
+            2.2486401999999996,
+            2.2018277,
+            2.3827589,
+            2.328881
+          ],
+          "batch_total_ms": [
+            22.214517,
+            21.91416,
+            22.173379999999998,
+            22.646915,
+            23.947505,
+            22.62776,
+            22.486402,
+            22.018276999999998,
+            23.827589,
+            23.28881
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "threads": 8,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "parent",
+        "ducc"
+      ],
+      "times_ms": {
+        "candidate": 2.2644746500000004,
+        "parent": 2.2542733,
+        "ducc": 1.7319926666666667
+      },
+      "candidate_parent_ratio": 1.0045253386091209,
+      "candidate_ducc_ratio": 1.3074389364235186,
+      "parent_ducc_ratio": 1.301548986543053,
+      "parent_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 2.2234738217862106e-15,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      },
+      "worker_measurements": {
+        "candidate": {
+          "first_ms": 3.606611,
+          "warmup_ms": 2.512783,
+          "setup_ms": 2.672014,
+          "fixture_load_ms": 6.9297070000000005,
+          "pool_ms": 0.405046,
+          "repetitions_per_batch": 10,
+          "batch_ms": [
+            2.176124,
+            2.2666954,
+            2.2622539,
+            2.2439522999999997,
+            2.3041833,
+            2.2754158,
+            2.4087910999999997,
+            2.2416829999999996,
+            2.2702601,
+            2.1723689
+          ],
+          "batch_total_ms": [
+            21.76124,
+            22.666954,
+            22.622539,
+            22.439522999999998,
+            23.041833,
+            22.754158,
+            24.087911,
+            22.416829999999997,
+            22.702600999999998,
+            21.723689
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 3.0973580000000003,
+          "warmup_ms": 2.556245,
+          "setup_ms": 2.308757,
+          "fixture_load_ms": 6.389335,
+          "pool_ms": 0.283466,
+          "repetitions_per_batch": 10,
+          "batch_ms": [
+            2.2204248,
+            2.2964015,
+            2.2985216,
+            2.1906325000000004,
+            2.1960918,
+            2.392335,
+            2.2881218,
+            2.18405,
+            2.2111943,
+            2.3205081
+          ],
+          "batch_total_ms": [
+            22.204248,
+            22.964015,
+            22.985215999999998,
+            21.906325000000002,
+            21.960918,
+            23.92335,
+            22.881217999999997,
+            21.8405,
+            22.111943,
+            23.205081
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 4.696503,
+          "warmup_ms": 3.47354,
+          "setup_ms": 6.169189,
+          "fixture_load_ms": 5.9582,
+          "pool_ms": null,
+          "repetitions_per_batch": 15,
+          "batch_ms": [
+            1.7220130666666666,
+            1.72457,
+            1.7256820666666668,
+            1.7567501333333333,
+            1.7167144666666667,
+            1.7268596,
+            1.7509137333333333,
+            1.8071936000000002,
+            1.7371257333333332,
+            1.7577460666666667
+          ],
+          "batch_total_ms": [
+            25.830196,
+            25.86855,
+            25.885231,
+            26.351252,
+            25.750717,
+            25.902894,
+            26.263706,
+            27.107904,
+            26.056886,
+            26.366191
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 1,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 36.8584515,
+        "candidate": 36.487184,
+        "ducc": 29.6190785
+      },
+      "candidate_parent_ratio": 0.9899272084178576,
+      "candidate_ducc_ratio": 1.2318811336416153,
+      "parent_ducc_ratio": 1.2444158753959884,
+      "parent_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "worker_measurements": {
+        "parent": {
+          "first_ms": 40.526854,
+          "warmup_ms": 36.59114,
+          "setup_ms": 6.6144810000000005,
+          "fixture_load_ms": 18.953269,
+          "pool_ms": 0.12162,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            36.654489999999996,
+            36.560973,
+            36.964867999999996,
+            36.935121,
+            36.840592,
+            37.040841,
+            36.843097,
+            36.682753999999996,
+            37.037695,
+            36.873806
+          ],
+          "batch_total_ms": [
+            36.654489999999996,
+            36.560973,
+            36.964867999999996,
+            36.935121,
+            36.840592,
+            37.040841,
+            36.843097,
+            36.682753999999996,
+            37.037695,
+            36.873806
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 40.485105,
+          "warmup_ms": 36.698593,
+          "setup_ms": 6.411887,
+          "fixture_load_ms": 19.549768,
+          "pool_ms": 0.125909,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            36.276976000000005,
+            36.112275,
+            36.608824,
+            36.500108000000004,
+            36.550093,
+            36.528031000000006,
+            36.496871999999996,
+            36.477495999999995,
+            36.444893,
+            36.367407
+          ],
+          "batch_total_ms": [
+            36.276976000000005,
+            36.112275,
+            36.608824,
+            36.500108000000004,
+            36.550093,
+            36.528031000000006,
+            36.496871999999996,
+            36.477495999999995,
+            36.444893,
+            36.367407
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 37.183992,
+          "warmup_ms": 35.393435,
+          "setup_ms": 20.638797,
+          "fixture_load_ms": 17.733823,
+          "pool_ms": null,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            29.68074,
+            29.619845,
+            29.83948,
+            29.504557,
+            29.337911,
+            29.656104,
+            29.738759,
+            29.618312,
+            29.323023,
+            29.513824
+          ],
+          "batch_total_ms": [
+            29.68074,
+            29.619845,
+            29.83948,
+            29.504557,
+            29.337911,
+            29.656104,
+            29.738759,
+            29.618312,
+            29.323023,
+            29.513824
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 1,
+      "pair": 1,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "times_ms": {
+        "ducc": 29.5828395,
+        "candidate": 36.927561999999995,
+        "parent": 37.218051
+      },
+      "candidate_parent_ratio": 0.9921949432548198,
+      "candidate_ducc_ratio": 1.2482764543275164,
+      "parent_ducc_ratio": 1.258095964723062,
+      "parent_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "worker_measurements": {
+        "ducc": {
+          "first_ms": 36.677334,
+          "warmup_ms": 36.417903,
+          "setup_ms": 21.071325,
+          "fixture_load_ms": 17.581836,
+          "pool_ms": null,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            29.528802,
+            29.805546,
+            29.605527,
+            29.560152,
+            29.685769,
+            29.46929,
+            29.53297,
+            29.548249,
+            29.736214,
+            29.78105
+          ],
+          "batch_total_ms": [
+            29.528802,
+            29.805546,
+            29.605527,
+            29.560152,
+            29.685769,
+            29.46929,
+            29.53297,
+            29.548249,
+            29.736214,
+            29.78105
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 41.147689,
+          "warmup_ms": 37.208509,
+          "setup_ms": 6.1142449999999995,
+          "fixture_load_ms": 19.48765,
+          "pool_ms": 0.120118,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            37.294961,
+            37.104201,
+            36.937345,
+            36.884575000000005,
+            36.917778999999996,
+            36.895717000000005,
+            37.026243,
+            36.878543,
+            36.950379,
+            36.884946
+          ],
+          "batch_total_ms": [
+            37.294961,
+            37.104201,
+            36.937345,
+            36.884575000000005,
+            36.917778999999996,
+            36.895717000000005,
+            37.026243,
+            36.878543,
+            36.950379,
+            36.884946
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 41.152909,
+          "warmup_ms": 37.429085,
+          "setup_ms": 6.415685,
+          "fixture_load_ms": 19.636211,
+          "pool_ms": 0.120258,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            37.013549,
+            37.13542,
+            37.145689000000004,
+            37.170837,
+            37.302336,
+            37.204971,
+            37.231131,
+            37.520286999999996,
+            37.27756900000001,
+            37.253634
+          ],
+          "batch_total_ms": [
+            37.013549,
+            37.13542,
+            37.145689000000004,
+            37.170837,
+            37.302336,
+            37.204971,
+            37.231131,
+            37.520286999999996,
+            37.27756900000001,
+            37.253634
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 1,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "parent",
+        "ducc"
+      ],
+      "times_ms": {
+        "candidate": 35.9507845,
+        "parent": 36.9072685,
+        "ducc": 29.396332
+      },
+      "candidate_parent_ratio": 0.9740841292549189,
+      "candidate_ducc_ratio": 1.2229683791841783,
+      "parent_ducc_ratio": 1.255505908016007,
+      "parent_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "worker_measurements": {
+        "candidate": {
+          "first_ms": 40.142228,
+          "warmup_ms": 36.206673,
+          "setup_ms": 6.119244,
+          "fixture_load_ms": 19.234721999999998,
+          "pool_ms": 0.126079,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            35.854988,
+            35.921073,
+            35.982749,
+            35.975797,
+            35.960888000000004,
+            35.858445,
+            35.956821,
+            35.944748,
+            35.978522,
+            35.923227000000004
+          ],
+          "batch_total_ms": [
+            35.854988,
+            35.921073,
+            35.982749,
+            35.975797,
+            35.960888000000004,
+            35.858445,
+            35.956821,
+            35.944748,
+            35.978522,
+            35.923227000000004
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 40.70414,
+          "warmup_ms": 36.908721,
+          "setup_ms": 6.203755,
+          "fixture_load_ms": 19.801694,
+          "pool_ms": 0.120468,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            36.827227,
+            36.933386999999996,
+            36.870779,
+            36.932676,
+            36.881861,
+            36.736626,
+            36.949849,
+            36.960389000000006,
+            36.788043,
+            36.942274
+          ],
+          "batch_total_ms": [
+            36.827227,
+            36.933386999999996,
+            36.870779,
+            36.932676,
+            36.881861,
+            36.736626,
+            36.949849,
+            36.960389000000006,
+            36.788043,
+            36.942274
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 37.169144,
+          "warmup_ms": 35.878583,
+          "setup_ms": 21.171956,
+          "fixture_load_ms": 17.34119,
+          "pool_ms": null,
+          "repetitions_per_batch": 1,
+          "batch_ms": [
+            29.780859,
+            29.642047,
+            29.305339,
+            29.360313,
+            29.704675,
+            29.344834,
+            29.363029,
+            29.429635,
+            29.626517,
+            29.246097
+          ],
+          "batch_total_ms": [
+            29.780859,
+            29.642047,
+            29.305339,
+            29.360313,
+            29.704675,
+            29.344834,
+            29.363029,
+            29.429635,
+            29.626517,
+            29.246097
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 8,
+      "pair": 0,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "times_ms": {
+        "parent": 5.2653672,
+        "candidate": 5.689953299999999,
+        "ducc": 4.255179249999999
+      },
+      "candidate_parent_ratio": 1.0806375099537215,
+      "candidate_ducc_ratio": 1.3371829870621783,
+      "parent_ducc_ratio": 1.2374019731366195,
+      "parent_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "worker_measurements": {
+        "parent": {
+          "first_ms": 7.470860999999999,
+          "warmup_ms": 5.942801,
+          "setup_ms": 7.274099,
+          "fixture_load_ms": 19.263526,
+          "pool_ms": 0.347888,
+          "repetitions_per_batch": 5,
+          "batch_ms": [
+            5.2603878,
+            5.1914814,
+            5.3662019999999995,
+            5.2201696,
+            5.261612,
+            5.311817,
+            5.3819116000000005,
+            5.379541000000001,
+            5.232312599999999,
+            5.2691224
+          ],
+          "batch_total_ms": [
+            26.301939,
+            25.957407,
+            26.83101,
+            26.100848,
+            26.30806,
+            26.559085,
+            26.909558,
+            26.897705000000002,
+            26.161562999999997,
+            26.345612
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 7.85632,
+          "warmup_ms": 5.737642,
+          "setup_ms": 7.779053,
+          "fixture_load_ms": 20.048500999999998,
+          "pool_ms": 0.352516,
+          "repetitions_per_batch": 5,
+          "batch_ms": [
+            5.7330278,
+            5.807348200000001,
+            5.5847412,
+            5.887898600000001,
+            5.598934,
+            5.677033799999999,
+            5.5938626,
+            5.7028728,
+            5.5439620000000005,
+            6.086232
+          ],
+          "batch_total_ms": [
+            28.665139,
+            29.036741000000003,
+            27.923706,
+            29.439493000000002,
+            27.99467,
+            28.385168999999998,
+            27.969313,
+            28.514364,
+            27.719810000000003,
+            30.43116
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 8.779636,
+          "warmup_ms": 7.117472,
+          "setup_ms": 20.489515,
+          "fixture_load_ms": 18.310433,
+          "pool_ms": null,
+          "repetitions_per_batch": 6,
+          "batch_ms": [
+            4.2023,
+            4.264434333333333,
+            4.312899333333333,
+            4.222137666666667,
+            4.285996666666667,
+            4.245946,
+            4.319787333333333,
+            4.208431833333333,
+            4.2644125,
+            4.228367833333333
+          ],
+          "batch_total_ms": [
+            25.2138,
+            25.586606,
+            25.877396,
+            25.332826,
+            25.71598,
+            25.475676,
+            25.918724,
+            25.250591,
+            25.586475,
+            25.370207
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 8,
+      "pair": 1,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "times_ms": {
+        "ducc": 4.267787333333334,
+        "candidate": 5.2676716,
+        "parent": 5.282714
+      },
+      "candidate_parent_ratio": 0.9971525242517387,
+      "candidate_ducc_ratio": 1.2342863382289744,
+      "parent_ducc_ratio": 1.237810974961108,
+      "parent_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "worker_measurements": {
+        "ducc": {
+          "first_ms": 8.779687,
+          "warmup_ms": 7.383365,
+          "setup_ms": 21.191583,
+          "fixture_load_ms": 17.858128,
+          "pool_ms": null,
+          "repetitions_per_batch": 6,
+          "batch_ms": [
+            4.269363666666666,
+            4.269133166666667,
+            4.2749075,
+            4.223687166666667,
+            4.226621166666667,
+            4.2776995,
+            4.2664415,
+            4.246844333333333,
+            4.238138,
+            4.3115635
+          ],
+          "batch_total_ms": [
+            25.616182,
+            25.614799,
+            25.649445,
+            25.342123,
+            25.359727,
+            25.666197,
+            25.598649,
+            25.481066,
+            25.428828,
+            25.869381
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "candidate": {
+          "first_ms": 7.483655,
+          "warmup_ms": 5.615321000000001,
+          "setup_ms": 7.316248,
+          "fixture_load_ms": 19.633706,
+          "pool_ms": 0.371673,
+          "repetitions_per_batch": 5,
+          "batch_ms": [
+            5.177755400000001,
+            5.227225,
+            5.2655996,
+            5.2947548,
+            5.256311999999999,
+            5.2697436,
+            5.272915599999999,
+            5.2916288,
+            5.259995,
+            5.32395
+          ],
+          "batch_total_ms": [
+            25.888777,
+            26.136125,
+            26.327997999999997,
+            26.473774,
+            26.28156,
+            26.348718,
+            26.364577999999998,
+            26.458144,
+            26.299975,
+            26.61975
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 7.58723,
+          "warmup_ms": 5.893307,
+          "setup_ms": 7.450081,
+          "fixture_load_ms": 19.039351999999997,
+          "pool_ms": 0.380129,
+          "repetitions_per_batch": 5,
+          "batch_ms": [
+            5.2302788,
+            5.232487000000001,
+            5.2961896,
+            5.3406096,
+            5.269238400000001,
+            5.2105274,
+            5.3523678,
+            5.3269918,
+            5.263024799999999,
+            5.3130071999999995
+          ],
+          "batch_total_ms": [
+            26.151394,
+            26.162435000000002,
+            26.480948,
+            26.703048,
+            26.346192000000002,
+            26.052637,
+            26.761839,
+            26.634959,
+            26.315123999999997,
+            26.565036
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "threads": 8,
+      "pair": 2,
+      "order": [
+        "candidate",
+        "parent",
+        "ducc"
+      ],
+      "times_ms": {
+        "candidate": 5.3301247,
+        "parent": 5.371205399999999,
+        "ducc": 4.259934166666667
+      },
+      "candidate_parent_ratio": 0.9923516795689847,
+      "candidate_ducc_ratio": 1.2512223174027923,
+      "parent_ducc_ratio": 1.2608658232394434,
+      "parent_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "candidate_ducc_error": {
+        "absolute_max": 1.2958384365546749e-15,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "near_zero_reference_count": 2,
+        "metrics_finite": true
+      },
+      "fixture_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      },
+      "worker_measurements": {
+        "candidate": {
+          "first_ms": 7.818719,
+          "warmup_ms": 5.759824,
+          "setup_ms": 8.398545,
+          "fixture_load_ms": 19.072354999999998,
+          "pool_ms": 0.38074,
+          "repetitions_per_batch": 5,
+          "batch_ms": [
+            5.2058506,
+            5.358339,
+            5.2771794,
+            5.3555658,
+            5.231868,
+            5.5331176,
+            5.413874,
+            5.5224516,
+            5.3046836,
+            5.2989706
+          ],
+          "batch_total_ms": [
+            26.029252999999997,
+            26.791695,
+            26.385897,
+            26.777829,
+            26.15934,
+            27.665588,
+            27.06937,
+            27.612258,
+            26.523418,
+            26.494853
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "parent": {
+          "first_ms": 7.62405,
+          "warmup_ms": 5.980192,
+          "setup_ms": 7.739338999999999,
+          "fixture_load_ms": 19.723526000000003,
+          "pool_ms": 0.35990099999999997,
+          "repetitions_per_batch": 5,
+          "batch_ms": [
+            5.346500600000001,
+            5.2882604,
+            5.403792999999999,
+            5.8150008,
+            5.271565000000001,
+            5.412219,
+            5.2839204,
+            5.387979,
+            5.459855,
+            5.3544317999999995
+          ],
+          "batch_total_ms": [
+            26.732503,
+            26.441302,
+            27.018964999999998,
+            29.075004,
+            26.357825000000002,
+            27.061095,
+            26.419602,
+            26.939895,
+            27.299275,
+            26.772159
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        },
+        "ducc": {
+          "first_ms": 8.980025,
+          "warmup_ms": 7.108335,
+          "setup_ms": 20.98904,
+          "fixture_load_ms": 17.644544,
+          "pool_ms": null,
+          "repetitions_per_batch": 6,
+          "batch_ms": [
+            4.251862166666666,
+            4.260757333333333,
+            4.290012833333333,
+            4.259476666666667,
+            4.230418333333334,
+            4.2548078333333335,
+            4.253906,
+            4.260391666666666,
+            4.288954166666667,
+            4.297708833333333
+          ],
+          "batch_total_ms": [
+            25.511173,
+            25.564544,
+            25.740077,
+            25.55686,
+            25.38251,
+            25.528847,
+            25.523436,
+            25.56235,
+            25.733725,
+            25.786253
+          ],
+          "repeat_consistent": true,
+          "reset_consistent": true
+        }
+      }
+    }
+  ],
+  "summary": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 1,
+      "ratio": "candidate_parent_ratio",
+      "geomean": 0.9964285073377231,
+      "ci95_t_log": [
+        0.9886268052186875,
+        1.0042917762235437
+      ],
+      "paired": [
+        0.9966933661347276,
+        0.993157117578084,
+        0.9994450122168398
+      ]
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 1,
+      "ratio": "candidate_ducc_ratio",
+      "geomean": 1.2632985455415762,
+      "ci95_t_log": [
+        1.2605971163966123,
+        1.2660057637838895
+      ],
+      "paired": [
+        1.2620481077563732,
+        1.2638189236430455,
+        1.2640295430469948
+      ]
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 1,
+      "ratio": "parent_ducc_ratio",
+      "geomean": 1.267826578865032,
+      "ci95_t_log": [
+        1.2576024843812152,
+        1.2781337934995423
+      ],
+      "paired": [
+        1.2662350835650855,
+        1.2725266740523375,
+        1.264731453552695
+      ]
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 8,
+      "ratio": "candidate_parent_ratio",
+      "geomean": 0.9840858315787653,
+      "ci95_t_log": [
+        0.9401389643203569,
+        1.0300869984834227
+      ],
+      "paired": [
+        0.9785195014753832,
+        0.9695463054574547,
+        1.0045253386091209
+      ]
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 8,
+      "ratio": "candidate_ducc_ratio",
+      "geomean": 1.2791870718319966,
+      "ci95_t_log": [
+        1.217397703126441,
+        1.3441125776234253
+      ],
+      "paired": [
+        1.2732406992682779,
+        1.2573907402751627,
+        1.3074389364235186
+      ]
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "threads": 8,
+      "ratio": "parent_ducc_ratio",
+      "geomean": 1.2998734772756575,
+      "ci95_t_log": [
+        1.293438543307903,
+        1.3063404254240496
+      ],
+      "paired": [
+        1.3011909291010781,
+        1.2968857012784927,
+        1.301548986543053
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 1,
+      "ratio": "candidate_parent_ratio",
+      "geomean": 0.9853690397172377,
+      "ci95_t_log": [
+        0.9610934001713853,
+        1.01025784201632
+      ],
+      "paired": [
+        0.9899272084178576,
+        0.9921949432548198,
+        0.9740841292549189
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 1,
+      "ratio": "candidate_ducc_ratio",
+      "geomean": 1.2343309069600354,
+      "ci95_t_log": [
+        1.2028929631775995,
+        1.2665904901896394
+      ],
+      "paired": [
+        1.2318811336416153,
+        1.2482764543275164,
+        1.2229683791841783
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 1,
+      "ratio": "parent_ducc_ratio",
+      "geomean": 1.2526585037766562,
+      "ci95_t_log": [
+        1.2347090726069945,
+        1.270868872592653
+      ],
+      "paired": [
+        1.2444158753959884,
+        1.258095964723062,
+        1.255505908016007
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 8,
+      "ratio": "candidate_parent_ratio",
+      "geomean": 1.022592053283543,
+      "ci95_t_log": [
+        0.9079227455178944,
+        1.1517439260123072
+      ],
+      "paired": [
+        1.0806375099537215,
+        0.9971525242517387,
+        0.9923516795689847
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 8,
+      "ratio": "candidate_ducc_ratio",
+      "geomean": 1.2734456537331065,
+      "ci95_t_log": [
+        1.1448742024134058,
+        1.416455912442831
+      ],
+      "paired": [
+        1.3371829870621783,
+        1.2342863382289744,
+        1.2512223174027923
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "threads": 8,
+      "ratio": "parent_ducc_ratio",
+      "geomean": 1.24531150975022,
+      "ci95_t_log": [
+        1.2124900215211667,
+        1.2790214589731366
+      ],
+      "paired": [
+        1.2374019731366195,
+        1.237810974961108,
+        1.2608658232394434
+      ]
+    }
+  ]
+}
