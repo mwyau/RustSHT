@@ -1,0 +1,6 @@
+c4a4aed1d52b68df6f6724b3f617d7e14288e3f7bd39ae25ae483dd7bfc57cbb  ./README.md
+c8476ee3ce0e66497f4e5e4010ed27cc6465afbc50b5992e3a31099e7fce0b40  ./codegen/ducc-map2alm-kernel.asm.gz
+82201430e5e3b346ccfdc4f591255f7006f81c7f260299182e0f42e872e779c1  ./codegen/rust-v3-ordinary.asm.gz
+7fd3cb367273040521ec3c14eb11b80241460dafb83f20918100a9e7e5394813  ./repro/m6_b3_analysis_callgrind_f64.rs
+6caa936803f86a346742c49fc205e4cc2c63053e1bd6dda70d478abba8e282ee  ./repro/m6_callgrind.c
+5c17ba3f95850b37a4145a16b01a55f37cdd435d461092313444fe7cd64c720f  ./results/summary.json

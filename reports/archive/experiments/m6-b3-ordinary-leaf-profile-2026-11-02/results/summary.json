@@ -1,0 +1,35 @@
+{
+  "rust_source": "f43443531a2cfa247b1cae6a97e7cc7dcd75de45",
+  "rust_b3_analysis_blob": "b0077a7236f7e2315fe0c6b07da74f3eb4e845ba",
+  "rust_profile_binary_sha256": "dc2a5f16e5bff0c20289b9ac122aa9697e3632cad4a8f3881e14b50549fa4181",
+  "ducc_source": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_binary_sha256": "b646183e9df8aac030f796e2357b8d92e3b4a194d21be98b460eae043ab63443",
+  "callgrind_version": "3.26.0",
+  "cpu": "AMD Ryzen 9 5950X",
+  "threads": 1,
+  "rust_region_calls": 1,
+  "ducc_transform_calls_per_profile": 8,
+  "cells": {
+    "full_q1": {
+      "rust_total": {"Ir": 577657480, "Dr": 167708661, "Dw": 46155268, "D1mr": 3587182, "D1mw": 2250405, "LLdr": 264140, "LLdw": 395519},
+      "rust_ordinary_leaf": {"Ir": 262903740, "share": 0.4551},
+      "ducc_total_per_transform": {"Ir": 432908836.5, "Dr": 374778651.0, "Dw": 61140640.625, "D1mr": 3128208.0, "D1mw": 1652821.375, "LLdr": 281930.25, "LLdw": 258768.0},
+      "ducc_map2alm_kernel_per_transform": {"Ir": 223149132.0},
+      "rust_to_ducc_ir": 1.3341,
+      "rust_leaf_to_ducc_kernel_ir": 1.1781
+    },
+    "reduced_q1": {
+      "rust_total": {"Ir": 235073514, "Dr": 73129014, "Dw": 18823609, "D1mr": 1351565, "D1mw": 825975, "LLdr": 68610, "LLdw": 127291},
+      "rust_ordinary_leaf": {"Ir": 135177007, "share": 0.5750},
+      "ducc_total_per_transform": {"Ir": 174757071.625, "Dr": 174543994.25, "Dw": 17514027.125, "D1mr": 869283.875, "D1mw": 449889.625, "LLdr": 1652.375, "LLdw": 71806.125},
+      "ducc_map2alm_kernel_per_transform": {"Ir": 112045316.0},
+      "rust_to_ducc_ir": 1.3454,
+      "rust_leaf_to_ducc_kernel_ir": 1.2065
+    }
+  },
+  "notes": [
+    "DUCC whole-process profiles contain eight transforms and were divided by eight; the function total includes both scalar-channel map2alm calls.",
+    "Callgrind instruction and cache counts are not CPU cycles.",
+    "The Rust profile uses a client-request region around one warm transform; plan creation, fixture reads and warm/reset calls are excluded."
+  ]
+}
