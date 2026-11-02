@@ -1,0 +1,20 @@
+{
+  "rust_source_revision": "4a55859649d5f74603ad458890edc6a34adf3b6f",
+  "ducc_source_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "probe_binary_sha256": "fd1bb5718761324cffb155b64ab61bf5d3b6301a9333e58b9ddf134f38e9db84",
+  "test_only_source_patch_sha256": "ba865bc59ab648f425a2a289f6cf10479cffe2afd2faebb4ecc64dbe24a14491",
+  "diagnostic": "Skip only ordinary AnalysisTwoBasisAccumulation and coefficient stores; recurrence, state rotation, scaled paths and fallback remain. Outputs are intentionally incomplete.",
+  "repetitions_per_cell": 10,
+  "cells": {
+    "full_q1": {"normal_ms": 34.684, "skip_ms": 27.952, "saved_ms": 6.733, "saved_total_pct": 19.4, "saved_recurrence_accum_phase_pct": 35.3},
+    "full_q8": {"normal_ms": 5.362, "skip_ms": 4.310, "saved_ms": 1.052, "saved_total_pct": 19.2, "saved_recurrence_accum_phase_pct": 35.3},
+    "reduced_q1": {"normal_ms": 14.062, "skip_ms": 10.735, "saved_ms": 3.327, "saved_total_pct": 23.6, "saved_recurrence_accum_phase_pct": 35.3},
+    "reduced_q8": {"normal_ms": 1.969, "skip_ms": 1.509, "saved_ms": 0.459, "saved_total_pct": 23.2, "saved_recurrence_accum_phase_pct": 36.6}
+  },
+  "interpretation": "Attribution only. The omitted second-channel work is required output math and is present in DUCC. This does not establish redundant Rust work or an optimization candidate.",
+  "limitations": [
+    "Instrumented diagnostic times are not production benchmark results.",
+    "q8 absolute paired deltas were noisy; the q1 paired full-call deltas were stable at 6.55-6.88 ms.",
+    "The complete raw capture contains local paths and remains outside the committed evidence package."
+  ]
+}

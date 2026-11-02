@@ -1,0 +1,598 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index 509b2108..b758cc9a 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -6,6 +6,8 @@ pub mod pointwise;
+ mod scalar;
+ pub(crate) mod scalar_ordered;
+ mod scalar_paired;
++#[cfg(all(test, feature = "parallel"))]
++pub(crate) use scalar_paired::set_b3_ordinary_leaf_skip_second_channel;
+ mod scalar_table;
+ mod spin;
+ mod spin_factors;
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 4044ed8f..891775c7 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -102,6 +102,28 @@ static SCALAR_ANALYSIS_TYPED_NORMAL_PAIR_ACCUMULATIONS: std::sync::atomic::Atomi
+ #[cfg(all(test, feature = "parallel"))]
+ static SCALAR_ANALYSIS_TYPED_SCALED_PAIR_ACCUMULATIONS: std::sync::atomic::AtomicUsize =
+     std::sync::atomic::AtomicUsize::new(0);
++
++#[cfg(all(test, feature = "parallel"))]
++static B3_ORDINARY_LEAF_SKIP_SECOND_CHANNEL: std::sync::atomic::AtomicBool =
++    std::sync::atomic::AtomicBool::new(false);
++
++#[cfg(all(test, feature = "parallel"))]
++pub(crate) fn set_b3_ordinary_leaf_skip_second_channel(skip: bool) {
++    B3_ORDINARY_LEAF_SKIP_SECOND_CHANNEL.store(skip, std::sync::atomic::Ordering::Relaxed);
++}
++
++#[cfg(all(test, feature = "parallel"))]
++#[inline(always)]
++fn b3_ordinary_leaf_skip_second_channel() -> bool {
++    B3_ORDINARY_LEAF_SKIP_SECOND_CHANNEL.load(std::sync::atomic::Ordering::Relaxed)
++}
++
++#[cfg(not(all(test, feature = "parallel")))]
++#[inline(always)]
++fn b3_ordinary_leaf_skip_second_channel() -> bool {
++    false
++}
++
+ #[cfg(all(test, feature = "parallel"))]
+ pub(crate) fn begin_scalar_analysis_route_profile() {
+     use std::sync::atomic::Ordering;
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index b0077a72..62615b28 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -5072,6 +5072,8 @@ impl<
+         let mut current = current;
+         let mut next = next;
+         let mut second_channel = second_channel;
++        let skip_second_channel =
++            SEQUENTIAL_SECOND_CHANNEL && super::b3_ordinary_leaf_skip_second_channel();
+         let lane_count = current.len();
+         if previous.len() != lane_count
+             || next.len() != lane_count
+@@ -5182,17 +5184,17 @@ impl<
+                 group.second_same,
+                 group.second_opposite,
+             );
+-            if let Some(second) = second_channel.as_mut() {
+-                let [(first_same, first_opposite), (second_same, second_opposite)] =
+-                    AnalysisTwoBasisAccumulation {
+-                        same_real: second.same_real,
+-                        same_imag: second.same_imag,
+-                        opposite_real: second.opposite_real,
+-                        opposite_imag: second.opposite_imag,
+-                        first_basis: next,
+-                        second_basis: previous,
+-                    }
+-                    .with_simd(simd);
++            if !skip_second_channel && let Some(second) = second_channel.as_mut() {
++                let second_sums = AnalysisTwoBasisAccumulation {
++                    same_real: second.same_real,
++                    same_imag: second.same_imag,
++                    opposite_real: second.opposite_real,
++                    opposite_imag: second.opposite_imag,
++                    first_basis: next,
++                    second_basis: previous,
++                }
++                .with_simd(simd);
++                let [(first_same, first_opposite), (second_same, second_opposite)] = second_sums;
+                 store_analysis_pair(
+                     second.staged_coefficients,
+                     first_offset,
+@@ -5214,17 +5216,17 @@ impl<
+         while pair_index < recurrence_stop {
+             let l = m + 2 * pair_index;
+             let offset = l - m;
+-            if let Some(second) = second_channel.as_mut() {
+-                let (same_sum, opposite_sum) =
+-                    AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
+-                        same_real: second.same_real,
+-                        same_imag: second.same_imag,
+-                        opposite_real: second.opposite_real,
+-                        opposite_imag: second.opposite_imag,
+-                        basis: current,
+-                        cos_theta,
+-                    }
+-                    .with_simd(simd);
++            if !skip_second_channel && let Some(second) = second_channel.as_mut() {
++                let second_sums = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
++                    same_real: second.same_real,
++                    same_imag: second.same_imag,
++                    opposite_real: second.opposite_real,
++                    opposite_imag: second.opposite_imag,
++                    basis: current,
++                    cos_theta,
++                }
++                .with_simd(simd);
++                let (same_sum, opposite_sum) = second_sums;
+                 store_analysis_pair(
+                     second.staged_coefficients,
+                     offset,
+@@ -5291,8 +5293,8 @@ impl<
+             let zero = Complex64::new(0.0, 0.0);
+             (zero, zero)
+         };
+-        if let Some(second) = second_channel.as_mut() {
+-            let (same_sum, opposite_sum) = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
++        if !skip_second_channel && let Some(second) = second_channel.as_mut() {
++            let second_sums = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
+                 same_real: second.same_real,
+                 same_imag: second.same_imag,
+                 opposite_real: second.opposite_real,
+@@ -5301,6 +5303,7 @@ impl<
+                 cos_theta,
+             }
+             .with_simd(simd);
++            let (same_sum, opposite_sum) = second_sums;
+             store_analysis_pair(
+                 second.staged_coefficients,
+                 offset,
+@@ -5316,7 +5319,8 @@ impl<
+             same_sum,
+             opposite_sum,
+         );
+-        analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
++        let all_in_range = analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range;
++        all_in_range
+     }
+ }
+ 
+diff --git a/src/transform/spin/analysis.rs b/src/transform/spin/analysis.rs
+index 88a30c43..1c651c12 100644
+--- a/src/transform/spin/analysis.rs
++++ b/src/transform/spin/analysis.rs
+@@ -637,6 +637,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+         let range_cache_block_count = theta_sin.len().div_ceil(2).div_ceil(LATITUDE_BLOCK_SIZE);
+         #[cfg(all(test, feature = "parallel"))]
+         let profiling = recurrence.analysis_leaf_profile_enabled();
++        #[cfg(all(test, feature = "parallel"))]
++        let detailed_profiling = recurrence.b3_profile_enabled;
++        #[cfg(all(test, feature = "parallel"))]
++        let factor_started = detailed_profiling.then(std::time::Instant::now);
+         recurrence.fast_scalar_first[m..scalar_coefficient_count]
+             .fill(Complex::new(T::zero(), T::zero()));
+         recurrence.fast_scalar_second[m..scalar_coefficient_count]
+@@ -651,13 +655,24 @@ impl<T: ShtScalar> ShtPlan<T> {
+             &mut recurrence.spin_coefficient_b,
+         );
+         debug_assert!(paired_factors_ready);
++        #[cfg(all(test, feature = "parallel"))]
++        if let Some(started) = factor_started {
++            recurrence.b3_profile_factor_ns += started.elapsed().as_nanos();
++        }
+ 
+         let pair_count = (ring_end - ring_start).div_ceil(2);
+         let compaction_enabled = self.harmonics.lmax() >= 127;
+         for block_start in (0..pair_count).step_by(LATITUDE_BLOCK_SIZE) {
+             let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_count);
+             let block_len = block_end - block_start;
++            #[cfg(all(test, feature = "parallel"))]
++            {
++                recurrence.b3_profile_blocks += 1;
++                recurrence.b3_profile_total_pairs += block_len as u128;
++            }
+             let mut active_lanes = 0;
++            #[cfg(all(test, feature = "parallel"))]
++            let spectrum_pack_started = detailed_profiling.then(std::time::Instant::now);
+             for lane in 0..block_len {
+                 let pair_index = block_start + lane;
+                 let north_ring = ring_start + pair_index;
+@@ -700,6 +715,13 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 recurrence.spin_previous_minus[lane] = south_u.re;
+                 recurrence.spin_current_minus[lane] = south_u.im;
+             }
++            #[cfg(all(test, feature = "parallel"))]
++            {
++                recurrence.b3_profile_active_pairs += active_lanes as u128;
++                if let Some(started) = spectrum_pack_started {
++                    recurrence.b3_profile_spectrum_pack_ns += started.elapsed().as_nanos();
++                }
++            }
+             if active_lanes == 0 {
+                 continue;
+             }
+@@ -717,6 +739,8 @@ impl<T: ShtScalar> ShtPlan<T> {
+             let block_ring_start = ring_start + block_start;
+             let block_ring_end = ring_start + block_end;
+             let all_cosines = &theta_cos[block_ring_start..block_ring_end];
++            #[cfg(all(test, feature = "parallel"))]
++            let input_safety_started = detailed_profiling.then(std::time::Instant::now);
+             let q_inputs_safe = T::scalar_analysis_products_safe(
+                 &recurrence.analysis_same_real[..block_len],
+                 &recurrence.analysis_same_imag[..block_len],
+@@ -731,11 +755,21 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 &recurrence.spin_current_minus[..block_len],
+                 all_cosines,
+             );
++            #[cfg(all(test, feature = "parallel"))]
++            if let Some(started) = input_safety_started {
++                recurrence.b3_profile_input_safety_ns += started.elapsed().as_nanos();
++            }
+             if !q_inputs_safe || !u_inputs_safe {
+                 return Ok(false);
+             }
+ 
+             let compact = compaction_enabled && active_lanes < block_len;
++            #[cfg(all(test, feature = "parallel"))]
++            if compact {
++                recurrence.b3_profile_compacted_blocks += 1;
++            }
++            #[cfg(all(test, feature = "parallel"))]
++            let reflection_pack_started = detailed_profiling.then(std::time::Instant::now);
+             let mut compact_len = 0;
+             for lane in 0..block_len {
+                 let pair_index = block_start + lane;
+@@ -770,6 +804,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 }
+                 compact_len += 1;
+             }
++            #[cfg(all(test, feature = "parallel"))]
++            if let Some(started) = reflection_pack_started {
++                recurrence.b3_profile_reflection_pack_ns += started.elapsed().as_nanos();
++            }
+ 
+             let lane_count = if compact { compact_len } else { block_len };
+             let block_sine = if compact {
+@@ -782,6 +820,8 @@ impl<T: ShtScalar> ShtPlan<T> {
+             } else {
+                 &theta_cos[block_ring_start..block_ring_end]
+             };
++            #[cfg(all(test, feature = "parallel"))]
++            let product_safety_started = detailed_profiling.then(std::time::Instant::now);
+             let q_products_safe = T::scalar_analysis_products_safe(
+                 &recurrence.analysis_same_real[..lane_count],
+                 &recurrence.analysis_same_imag[..lane_count],
+@@ -796,6 +836,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 &recurrence.spin_current_minus[..lane_count],
+                 block_cosine,
+             );
++            #[cfg(all(test, feature = "parallel"))]
++            if let Some(started) = product_safety_started {
++                recurrence.b3_profile_product_safety_ns += started.elapsed().as_nanos();
++            }
+             if !q_products_safe || !u_products_safe {
+                 return Ok(false);
+             }
+@@ -803,6 +847,8 @@ impl<T: ShtScalar> ShtPlan<T> {
+             #[cfg(all(test, feature = "parallel"))]
+             let mut block_range_status = (false, false);
+             let mut range_check_was_exercised = false;
++            #[cfg(all(test, feature = "parallel"))]
++            let recurrence_accum_started = detailed_profiling.then(std::time::Instant::now);
+             let fused_block = fused_analysis_enabled
+                 && T::supports_spin1_analysis_pairs()
+                 && Self::try_fused_spin_scalar_analysis_pair_block(
+@@ -891,6 +937,14 @@ impl<T: ShtScalar> ShtPlan<T> {
+                     &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+                 )?;
+                 if !paired_used {
++                    #[cfg(all(test, feature = "parallel"))]
++                    if detailed_profiling {
++                        recurrence.b3_profile_declined_blocks += 1;
++                        if let Some(started) = recurrence_accum_started {
++                            recurrence.b3_profile_recurrence_accum_ns +=
++                                started.elapsed().as_nanos();
++                        }
++                    }
+                     #[cfg(all(test, feature = "parallel"))]
+                     if profiling {
+                         recurrence
+@@ -900,11 +954,26 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 }
+             }
+             #[cfg(all(test, feature = "parallel"))]
+-            if profiling {
+-                recurrence.record_analysis_leaf_block(block_range_status.0, block_range_status.1);
++            {
++                if detailed_profiling {
++                    if fused_block {
++                        recurrence.b3_profile_fused_blocks += 1;
++                    } else {
++                        recurrence.b3_profile_paired_blocks += 1;
++                    }
++                    if let Some(started) = recurrence_accum_started {
++                        recurrence.b3_profile_recurrence_accum_ns += started.elapsed().as_nanos();
++                    }
++                }
++                if profiling {
++                    recurrence
++                        .record_analysis_leaf_block(block_range_status.0, block_range_status.1);
++                }
+             }
+         }
+ 
++        #[cfg(all(test, feature = "parallel"))]
++        let coefficient_convert_started = detailed_profiling.then(std::time::Instant::now);
+         let mut previous_even_first = Complex::new(T::zero(), T::zero());
+         let mut previous_even_second = Complex::new(T::zero(), T::zero());
+         for (pair_index, l) in (m..=scalar_lmax).step_by(2).enumerate() {
+@@ -958,6 +1027,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 b_coefficients[index] += fast_b[index];
+             }
+         }
++        #[cfg(all(test, feature = "parallel"))]
++        if let Some(started) = coefficient_convert_started {
++            recurrence.b3_profile_coefficient_convert_ns += started.elapsed().as_nanos();
++        }
+         Ok(true)
+     }
+ 
+diff --git a/src/transform/spin/tests.rs b/src/transform/spin/tests.rs
+index 375edf23..a1ecb327 100644
+--- a/src/transform/spin/tests.rs
++++ b/src/transform/spin/tests.rs
+@@ -10542,6 +10542,7 @@ fn profile_spin1_standard_synthesis_phases() {
+     );
+ 
+     for _ in 0..3 {
++        crate::legendre::set_b3_ordinary_leaf_skip_second_channel(false);
+         pool.install(|| {
+             plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+         })
+@@ -10894,22 +10895,35 @@ fn profile_spin1_standard_analysis_phases() {
+         HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+     )
+     .unwrap();
+-    let mut state = 0x7a31_9d42_8b6c_05e1_u64;
+-    let mut next_value = || {
+-        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+-        let mut value = state;
+-        value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+-        value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+-        value ^= value >> 31;
+-        ((value >> 11) as f64) * (1.0 / ((1_u64 << 53) as f64)) * 2.0 - 1.0
+-    };
+     let mut first = vec![0.0; plan.sample_count];
+     let mut second = vec![0.0; plan.sample_count];
+-    for value in &mut first {
+-        *value = next_value();
+-    }
+-    for value in &mut second {
+-        *value = next_value();
++    if let (Some(first_path), Some(second_path)) = (
++        std::env::var_os("RUSTSHT_PROFILE_MAP0"),
++        std::env::var_os("RUSTSHT_PROFILE_MAP1"),
++    ) {
++        for (path, output) in [(&first_path, &mut first), (&second_path, &mut second)] {
++            let bytes = std::fs::read(path).unwrap();
++            assert_eq!(bytes.len(), output.len() * 8);
++            for (value, bytes) in output.iter_mut().zip(bytes.chunks_exact(8)) {
++                *value = f64::from_le_bytes(bytes.try_into().unwrap());
++            }
++        }
++    } else {
++        let mut state = 0x7a31_9d42_8b6c_05e1_u64;
++        let mut next_value = || {
++            state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
++            let mut value = state;
++            value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
++            value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
++            value ^= value >> 31;
++            ((value >> 11) as f64) * (1.0 / ((1_u64 << 53) as f64)) * 2.0 - 1.0
++        };
++        for value in &mut first {
++            *value = next_value();
++        }
++        for value in &mut second {
++            *value = next_value();
++        }
+     }
+     let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+     let mut b_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+@@ -10921,6 +10935,9 @@ fn profile_spin1_standard_analysis_phases() {
+     plan.prepare_workspace(&mut workspace, thread_count)
+         .unwrap();
+     let probe = workspace.observe_transform_phases();
++    for worker in &mut workspace.recurrence_workers {
++        worker.b3_profile_enabled = true;
++    }
+     eprintln!(
+         "PROFILE_CONFIG,grid={grid_kind:?},lmax={lmax},mmax={mmax},ntheta={ntheta},nphi={nphi},threads={thread_count},phi0={phi0}"
+     );
+@@ -10934,6 +10951,24 @@ fn profile_spin1_standard_analysis_phases() {
+     }
+     for repetition in 0..repetitions {
+         probe.lock().unwrap().clear();
++        let skip_second_channel = repetition % 2 == 1;
++        crate::legendre::set_b3_ordinary_leaf_skip_second_channel(skip_second_channel);
++        for worker in &mut workspace.recurrence_workers {
++            worker.b3_profile_factor_ns = 0;
++            worker.b3_profile_spectrum_pack_ns = 0;
++            worker.b3_profile_input_safety_ns = 0;
++            worker.b3_profile_reflection_pack_ns = 0;
++            worker.b3_profile_product_safety_ns = 0;
++            worker.b3_profile_recurrence_accum_ns = 0;
++            worker.b3_profile_coefficient_convert_ns = 0;
++            worker.b3_profile_blocks = 0;
++            worker.b3_profile_active_pairs = 0;
++            worker.b3_profile_total_pairs = 0;
++            worker.b3_profile_compacted_blocks = 0;
++            worker.b3_profile_fused_blocks = 0;
++            worker.b3_profile_paired_blocks = 0;
++            worker.b3_profile_declined_blocks = 0;
++        }
+         let started = Instant::now();
+         pool.install(|| {
+             plan.analysis_spin_into(&first, &second, &mut e_alm, &mut b_alm, &mut workspace)
+@@ -10941,9 +10976,89 @@ fn profile_spin1_standard_analysis_phases() {
+         .unwrap();
+         std::hint::black_box((&e_alm, &b_alm));
+         eprintln!(
+-            "PROFILE_TOTAL,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},{:.6}",
++            "PROFILE_TOTAL,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},skip_second_channel={skip_second_channel},{:.6}",
+             started.elapsed().as_secs_f64() * 1.0e3,
+         );
++        let factor_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_factor_ns)
++            .sum();
++        let spectrum_pack_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_spectrum_pack_ns)
++            .sum();
++        let input_safety_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_input_safety_ns)
++            .sum();
++        let reflection_pack_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_reflection_pack_ns)
++            .sum();
++        let product_safety_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_product_safety_ns)
++            .sum();
++        let recurrence_accum_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_recurrence_accum_ns)
++            .sum();
++        let coefficient_convert_ns: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_coefficient_convert_ns)
++            .sum();
++        let blocks: usize = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_blocks)
++            .sum();
++        let active_pairs: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_active_pairs)
++            .sum();
++        let total_pairs: u128 = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_total_pairs)
++            .sum();
++        let compacted_blocks: usize = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_compacted_blocks)
++            .sum();
++        let fused_blocks: usize = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_fused_blocks)
++            .sum();
++        let paired_blocks: usize = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_paired_blocks)
++            .sum();
++        let declined_blocks: usize = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.b3_profile_declined_blocks)
++            .sum();
++        eprintln!(
++            "PROFILE_B3_DETAIL,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},factor_ms={:.6},spectrum_pack_ms={:.6},input_safety_ms={:.6},reflection_pack_ms={:.6},product_safety_ms={:.6},recurrence_accum_ms={:.6},coefficient_convert_ms={:.6},blocks={blocks},active_pairs={active_pairs},total_pairs={total_pairs},compacted_blocks={compacted_blocks},fused_blocks={fused_blocks},paired_blocks={paired_blocks},declined_blocks={declined_blocks}",
++            factor_ns as f64 / 1.0e6,
++            spectrum_pack_ns as f64 / 1.0e6,
++            input_safety_ns as f64 / 1.0e6,
++            reflection_pack_ns as f64 / 1.0e6,
++            product_safety_ns as f64 / 1.0e6,
++            recurrence_accum_ns as f64 / 1.0e6,
++            coefficient_convert_ns as f64 / 1.0e6,
++        );
+         for observation in probe.lock().unwrap().iter() {
+             eprintln!(
+                 "PROFILE_PHASE,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},{},{:.6}",
+@@ -10952,4 +11067,5 @@ fn profile_spin1_standard_analysis_phases() {
+             );
+         }
+     }
++    crate::legendre::set_b3_ordinary_leaf_skip_second_channel(false);
+ }
+diff --git a/src/workspace.rs b/src/workspace.rs
+index d41c2be4..57933b9e 100644
+--- a/src/workspace.rs
++++ b/src/workspace.rs
+@@ -141,6 +141,36 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
+     #[cfg(all(test, feature = "parallel"))]
+     profile_mixed_blocks: usize,
+     #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_factor_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_spectrum_pack_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_input_safety_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_reflection_pack_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_product_safety_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_recurrence_accum_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_coefficient_convert_ns: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_active_pairs: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_total_pairs: u128,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_compacted_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_fused_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_paired_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_declined_blocks: usize,
++    #[cfg(all(test, feature = "parallel"))]
++    pub(crate) b3_profile_enabled: bool,
++    #[cfg(all(test, feature = "parallel"))]
+     analysis_schedule_profile: bool,
+     #[cfg(all(test, feature = "parallel"))]
+     analysis_schedule_stats: AnalysisScheduleStats,
+@@ -461,6 +491,36 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
+             #[cfg(all(test, feature = "parallel"))]
+             profile_mixed_blocks: 0,
+             #[cfg(all(test, feature = "parallel"))]
++            b3_profile_factor_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_spectrum_pack_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_input_safety_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_reflection_pack_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_product_safety_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_recurrence_accum_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_coefficient_convert_ns: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_active_pairs: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_total_pairs: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_compacted_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_fused_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_paired_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_declined_blocks: 0,
++            #[cfg(all(test, feature = "parallel"))]
++            b3_profile_enabled: false,
++            #[cfg(all(test, feature = "parallel"))]
+             analysis_schedule_profile: false,
+             #[cfg(all(test, feature = "parallel"))]
+             analysis_schedule_stats: AnalysisScheduleStats::default(),

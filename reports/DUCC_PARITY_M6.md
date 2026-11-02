@@ -82,7 +82,28 @@ All 15-pair candidate/parent intervals are below 1.0. E/B relative L2 to parent 
 
 One current-source Rust q1 transform and eight pinned-DUCC q1 transforms were profiled with Callgrind on the same full/reduced GL T720 fixtures. After normalizing DUCC by eight, the Rust ordinary `FusedScalarAnalysisPair` leaf accounts for 45.5% of full and 57.5% of reduced total instructions; its instruction count is 1.178×/1.207× DUCC's two-channel `map2alm_kernel`. Rust has fewer simulated data references, slightly more D1 misses, and no YMM stack spill loads/stores in this leaf. Length validation is under 1% of total Ir. Callgrind counts are not cycles; this profile does not identify a cycle-level cause. Exact counters, raw profiles, codegen and reproduction are in the [ordinary-leaf package](archive/experiments/m6-b3-ordinary-leaf-profile-2026-11-02/README.md).
 
-**NEXT:** isolate recurrence cost from the second-channel `AnalysisTwoBasisAccumulation` traversal, then inspect a per-degree shared-channel prototype for register spills and whole-call headroom before another candidate screen. Preserve the scaled exceptional fallback.
+### B3 per-degree shared-channel screen — rejected
+
+The candidate avoided YMM stack traffic but lost the three-pair screen: candidate/parent was 1.068 [1.045, 1.091] full q8, with point estimates 1.119/1.136/1.084 in full q1/reduced q1/reduced q8. Candidate/DUCC was 1.238–1.252×, with all four 95% intervals above 1.0. Parent-relative E/B L2 stayed below `4.8e-17`. A 9-pair test-only leaf probe on deterministic ordinary-range data measured 41.02 versus 28.47 μs/call, `1.425 [1.375, 1.477]` candidate/parent; the helper itself loses, not only q8 scheduling. Synthetic inputs do not apportion the production-versus-DUCC gap. These are screens, not 15-pair claims. Exact hashes, AVX2 summary, pair times and both probe patches/results are in the [per-degree fusion package](archive/experiments/m6-b3-per-degree-shared-channel-2026-11-02/README.md). Production code did not change.
+
+### B3 second-channel accumulation attribution — 2026-11-02
+
+A test-only skip mode on exact source `4a558596` removed only ordinary `AnalysisTwoBasisAccumulation` and its coefficient stores; recurrence state and exceptional/scaled paths remained. Across full/reduced GL T720 q1/q8, skipping it shortened instrumented complete calls by 19.2–23.6% and the combined recurrence/accumulation phase by 35–37%. This is required output math also performed by DUCC, so it measures the importance of that channel but does not prove redundant work or justify a kernel deletion. The active Rust and DUCC dataflow and the exact fixture/run records are in the [second-channel attribution package](archive/experiments/m6-b3-second-channel-attribution-2026-11-02/README.md).
+
+### Exact-current B3 control and profile — `4a558596`
+
+The matched whole-call control uses three interleaved process pairs on the exact current Rust and pinned DUCC binaries. The 95% intervals are Student t intervals on the logs of three paired process ratios (df=2), so they are screens, not promotion evidence.
+
+| GL T720 B3 f64 | Rust ms | DUCC ms | Rust / DUCC (95% interval) | Status |
+|---|---:|---:|---:|---|
+| Full q1 | 33.106 | 30.587 | 1.077 [1.065, 1.090] | GAP |
+| Full q8 | 4.881 | 4.256 | 1.144 [1.070, 1.224] | GAP; wide interval |
+| Reduced q1 | 12.783 | 11.652 | 1.098 [1.075, 1.122] | GAP |
+| Reduced q8 | 1.933 | 1.738 | 1.110 [1.077, 1.143] | GAP |
+
+The current production-path q1 Callgrind profiles reproduce the earlier exact-code counters: the ordinary fused leaf accounts for 45.5%/57.5% of full/reduced Rust instructions and is 1.178×/1.207× DUCC's two-channel `map2alm_kernel` by instruction count. Its 11,160-byte AVX2/FMA body has no YMM stack references; DUCC's corresponding body is 722 bytes and also has no YMM stack references. This confirms the leaf as the dominant instruction-count hotspot, but Callgrind does not establish cycles and the profile does not identify a removable operation. Per-cell timings, process ratios, source/binary/fixture hashes, compressed profiles and exact codegen are in the [4a558596 attribution package](archive/experiments/m6-b3-second-channel-attribution-2026-11-02/README.md).
+
+**NEXT:** B1's bounded attempts are complete. B3's native-leaf, duplicate-pass and per-degree-fusion candidates all lost; the second-channel skip is required work, and the exact-current profile confirms a large fused leaf without demonstrating cycle-level cause or removable work. Stop speculative kernel additions. A new candidate requires a profile that distinguishes front-end/code-footprint cost from recurrence dependency or accumulation throughput. Hardware PMU access remains blocked (`perf_event_paranoid=4`); retain the current implementations until a measured mechanism supports a bounded candidate. Keep f32 performance deferred.
 
 ### B3 captured normalizer-mask screen — rejected
 
@@ -97,6 +118,10 @@ The ordinary two-degree SIMD loop is the measured target. Parent AVX2 code emits
 Fifteen interleaved GL T720 parent/candidate/DUCC pairs show f32 candidate/parent improvement in full q8 and reduced q1/q8, with full q1 INCONCLUSIVE; f64 is INCONCLUSIVE in all cells and shows no resolved regression. Candidate/DUCC remains 2.10–2.72x for f32 and 1.03–1.13x for f64; reduced-q8 f32 has wide uncertainty from DUCC outliers. All parent/candidate outputs are bit-identical across 120 process pairs. The source crosswalk, per-pair results, fixture/binary hashes, test-only microbenchmark patch, Callgrind profiles and instruction excerpts are in the [2026-11-02 B1 package](archive/experiments/m6-b1-zip-loop-2026-11-02/README.md).
 
 A three-pair exact-parent control measured f32/Rust-to-DUCC at 2.26–2.79x and f64 at 1.02–1.14x; this did not reproduce the owner-provided earlier timing ranges, so the source/fixture/host-specific measurements are reported without inferring an unexplained performance change. Clean candidate validation passed formatting, all-feature workspace check, strict Clippy, debug all-feature workspace tests (329 unit and 19 integration tests; 41 ignored), release Rust tests, and Python API tests (20 passed). A protected GL T1023/M1023 f64 spin-1 synthesis control showed parent/candidate medians 1.0005 q1 and 0.9886 q8 over three pairs, with exact outputs/repeat/reset checks; this confirms no code-path change but is too small a sample to establish a timing effect. The latest diagnostic did not modify production source. GitHub Actions status was not refreshed because the local GitHub CLI is unauthenticated.
+
+### Exact-current B1 phase and branch-hoist screen — 2026-11-02
+
+At source `4a558596`, five-call phase medians on GL T720 place 68–81% of full/reduced q1/q8 wall time in combined Legendre recurrence and accumulation; forward FFT accounts for 18–27%, while setup is negligible. The optimized V3 f64 leaf is 6,818 bytes with a 472-byte frame. A const-specialized optional second recurrence step removes a pair-count branch and one base-pointer reload from the common four-lane loop, but grows the leaf 16.7% and adds YMM stack references elsewhere. Three interleaved parent/candidate screens were neutral or noisy: median candidate/parent ratios were 1.003 full q1, 0.991 full q8, 0.987 reduced q1 and 0.994 reduced q8. No candidate was promoted. `perf stat` remained blocked at `perf_event_paranoid=4`; phases do not isolate recurrence from accumulation or establish cycle attribution. The isolated patch, codegen excerpt, test logs, binary hashes and per-process records are in the [branch-hoist screen package](archive/experiments/m6-b1-hoisted-pair-branch-2026-11-02/README.md).
 
 ### Follow-up profile and rejected scale candidate — 2026-11-02
 
@@ -123,4 +148,4 @@ Test-only Callgrind regions on nonzero full-q1 f32 count 719.3M total Ir: scaled
 
 Three f32 changes were screened and rejected: adjacent-factor reuse (15 pairs, all four intervals cross 1.0), fused recurrence range checking (15 pairs, full q8 1.037 [0.888, 1.212]), and lazy hard-factor clearing (15 pairs, all four intervals cross 1.0; full q8 point 0.949). Their helper microbenchmarks improved factor generation/clearing but did not establish a whole-call gain. No production change is promoted. V3 code sizes, representative YMM FMA disassembly, profile gates, exact patches, JSON pair records and hashes are in the [B1 hotspot package](archive/experiments/m6-b1-hotspot-profile-2026-11-01/README.md). The f64 current 15-pair ledger remains 1.032–1.131× DUCC; no f64 candidate was screened in this pass.
 
-**NEXT:** split ordinary recurrence and second-channel accumulation costs; test a per-degree shared-channel route only if assembly predicts no spills and measured helper savings support a material whole-call gain. Keep B1 bounded and f32 performance deferred. See the [ordinary-leaf profile](archive/experiments/m6-b3-ordinary-leaf-profile-2026-11-02/README.md), [seed-handoff package](archive/experiments/m6-b3-seed-materialize-2026-11-02/README.md) and [active f64 plan](../plans/m6-ducc-parity-hotpath-cleanup-2026-10-27.md).
+**NEXT:** no source change is justified by the bounded B1/B3 screens. Stop speculative kernel work. Resume only when a source-matched profile identifies a different, recoverable excess relative to DUCC. Keep f32 performance deferred.
