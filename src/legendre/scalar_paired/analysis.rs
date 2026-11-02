@@ -3695,6 +3695,59 @@ impl<const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
         let pair_count = (lmax - m + 2) / 2;
         let mut normal_range = false;
 
+        // If every scaled sectoral seed can be restored to a normal f64,
+        // continue with the ordinary fused block instead of advancing the
+        // early recurrence through the slower per-lane scaled path.
+        if current
+            .iter()
+            .zip(exponents.iter())
+            .all(|(&mantissa, &exponent)| {
+                if mantissa == 0.0 {
+                    return true;
+                }
+                let restored = scalar::scale_binary(mantissa, exponent);
+                restored.is_finite() && restored.is_normal()
+            })
+        {
+            for (value, exponent) in current.iter_mut().zip(exponents.iter_mut()) {
+                *value = scalar::scale_binary(*value, *exponent);
+                *exponent = 0;
+            }
+            previous.fill(0.0);
+            return Ok(FusedScalarAnalysisPair::<
+                true,
+                CHECK_PAIR_GROUP_RANGE,
+                { cfg!(rustsht_fused_analysis_pair_range_check) },
+                true,
+                true,
+            > {
+                m,
+                lmax,
+                range_check_was_exercised,
+                pair_start: 0,
+                cos_theta,
+                cos_theta_squared,
+                coefficient_a,
+                coefficient_b,
+                same_real: same_real[0],
+                same_imag: same_imag[0],
+                opposite_real: ordinary_opposite_real[0],
+                opposite_imag: ordinary_opposite_imag[0],
+                staged_coefficients: staged_first,
+                second_channel: Some(FusedScalarAnalysisPairSecondChannel {
+                    same_real: same_real[1],
+                    same_imag: same_imag[1],
+                    opposite_real: ordinary_opposite_real[1],
+                    opposite_imag: ordinary_opposite_imag[1],
+                    staged_coefficients: staged_second,
+                }),
+                previous,
+                current,
+                next,
+            }
+            .with_simd(simd));
+        }
+
         for pair_index in 0..pair_count {
             if normal_range {
                 let recurrence_succeeded = FusedScalarAnalysisPair::<

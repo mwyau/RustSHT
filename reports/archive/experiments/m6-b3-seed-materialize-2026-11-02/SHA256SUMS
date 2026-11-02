@@ -1,0 +1,9 @@
+7841757dd6e29980d4735d1a0e6a36ccd9da111b99ab2ccf4205eda2679195c8  ./README.md
+faf0755c4310e8b5723cf053c721ec25b3674cefdaa59a4a20a1de6455e79c77  ./codegen/candidate-wrapper.asm.gz
+85d6916e6dbc4c927c6ae323c689b7707839a85fed79cef7ff8eece47c5c877b  ./codegen/ordinary-kernel.asm.gz
+5435cd65ce8a7744fa1789d1cb99eb2ae79873ef90691f41b6659f56a6e9b36a  ./patches/production-seed-materialization.patch
+f613b3ed4943e42ac2b907e72a44dc3395f5a34f10508fce9f9511c53fe29e61  ./results/full-q1.json
+2096669823f8dc525e8fc1249d5ab1b020aa1c0d894db92c9a69a688a751600b  ./results/full-q8.json
+6614b3ca980aa98a134bc0114be40d353ee96773e4554f56fabb0f9068e85607  ./results/protected-t1023-3pair.json
+8972fc4f8414b87096fee0b350fc5b60a1752ba2fb39bb0eb4d4121cffe4129e  ./results/reduced-q1.json
+08b6c4e62e587de84643cdc0b5b1d764831043af558028acefe52a157783fd1d  ./results/reduced-q8.json
