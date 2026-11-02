@@ -1,0 +1,22 @@
+diff --git a/src/legendre/scalar_paired/analysis.rs b/src/legendre/scalar_paired/analysis.rs
+index a8a8f188..f03e40f4 100644
+--- a/src/legendre/scalar_paired/analysis.rs
++++ b/src/legendre/scalar_paired/analysis.rs
+@@ -4512,7 +4512,7 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
+     )
+ }
+ 
+-#[inline(always)]
++#[inline(never)]
+ fn fused_analysis_two_pair_steps_with_simd<
+     S: Simd,
+     const OPPOSITE_COSINE_WEIGHTED: bool,
+@@ -6538,7 +6538,7 @@ struct AnalysisTwoBasisAccumulation<'a> {
+ impl WithSimd for AnalysisTwoBasisAccumulation<'_> {
+     type Output = [(Complex64, Complex64); 2];
+ 
+-    #[inline(always)]
++    #[inline(never)]
+     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+         let (same_real_vectors, same_real_tail) = S::as_simd_f64s(self.same_real);
+         let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(self.same_imag);

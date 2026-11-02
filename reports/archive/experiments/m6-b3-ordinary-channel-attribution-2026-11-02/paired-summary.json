@@ -1,0 +1,377 @@
+{
+  "caveats": [
+    "The both_channels binary has a .text SHA matching the clean 85f74d6d release baseline; the skip binaries remove math and change code generation.",
+    "Paired skip ratios include compiler-layout, branch, and register-allocation effects, so timing differences are not additive operation costs.",
+    "The DUCC comparison is the separate current-source baseline at 85f74d6d; skip variants are not compared to DUCC because their outputs are invalid.",
+    "perf_event_paranoid=4 blocks hardware PMU events; these wall-time skips do not distinguish frontend stalls from FMA dependency or issue throughput."
+  ],
+  "cells": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "comparisons": [
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.7440188264506196,
+            0.7738169712683484
+          ],
+          "geometric_mean": 0.7587716355074492,
+          "name": "first_only_over_both",
+          "paired_ratios": [
+            0.7567760031515877,
+            0.7540433648327001,
+            0.7655429966628077
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.938750452970849,
+            0.9932753151690695
+          ],
+          "geometric_mean": 0.9656281127016377,
+          "name": "recurrence_only_over_first_only",
+          "paired_ratios": [
+            0.9744023604282869,
+            0.9692166496846849,
+            0.9533898187144293
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.7225825687550737,
+            0.7429412921736539
+          ],
+          "geometric_mean": 0.7326912223665932,
+          "name": "recurrence_only_over_both",
+          "paired_ratios": [
+            0.7374043237863916,
+            0.7308313837801161,
+            0.7298608988064552
+          ]
+        }
+      ],
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "outputs_correct": false,
+      "paired_median_ms": {
+        "both": [
+          12.826551,
+          12.7834845,
+          12.74946525
+        ],
+        "first_only": [
+          9.706826,
+          9.639301666666666,
+          9.760263833333333
+        ],
+        "recurrence_only": [
+          9.458354166666666,
+          9.342571666666666,
+          9.305336166666667
+        ]
+      },
+      "repeat_and_reset_consistent": true,
+      "threads": 1,
+      "wait_fraction_by_variant_pair": {
+        "both_p0": 0.1249493362000185,
+        "both_p1": 0.12470858634109222,
+        "both_p2": 0.12178117384894031,
+        "first_only_p0": 0.12451846979473505,
+        "first_only_p1": 0.12466234304237485,
+        "first_only_p2": 0.1244005829227953,
+        "recurrence_only_p0": 0.12428636905249535,
+        "recurrence_only_p1": 0.12437775248626266,
+        "recurrence_only_p2": 0.12196227668199028
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "comparisons": [
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.7412752678612553,
+            0.815318087694809
+          ],
+          "geometric_mean": 0.7774156763585978,
+          "name": "first_only_over_both",
+          "paired_ratios": [
+            0.7814209153973242,
+            0.7900093044856704,
+            0.7611016155546688
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.927873973540144,
+            1.0956245310915298
+          ],
+          "geometric_mean": 1.0082665754511329,
+          "name": "recurrence_only_over_first_only",
+          "paired_ratios": [
+            1.0479302568526652,
+            0.9904915832619071,
+            0.9875132731233495
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.7046222577793965,
+            0.8719688501127126
+          ],
+          "geometric_mean": 0.7838422417041095,
+          "name": "recurrence_only_over_both",
+          "paired_ratios": [
+            0.8188746205823626,
+            0.7824975667916497,
+            0.7515979475558603
+          ]
+        }
+      ],
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "outputs_correct": false,
+      "paired_median_ms": {
+        "both": [
+          1.9311805416666665,
+          1.94059625,
+          1.9368176818181817
+        ],
+        "first_only": [
+          1.5090648666666668,
+          1.5330890937500001,
+          1.4741150666666667
+        ],
+        "recurrence_only": [
+          1.5813947333333331,
+          1.51851184375,
+          1.4557081944444445
+        ]
+      },
+      "repeat_and_reset_consistent": true,
+      "threads": 8,
+      "wait_fraction_by_variant_pair": {
+        "both_p0": 0.007464258940919208,
+        "both_p1": 0.024768055321808053,
+        "both_p2": 0.008479855078051267,
+        "first_only_p0": 0.019076742236851206,
+        "first_only_p1": 0.026071316897483477,
+        "first_only_p2": 0.009964963266400026,
+        "recurrence_only_p0": 0.0314834301423927,
+        "recurrence_only_p1": 0.03103063117313121,
+        "recurrence_only_p2": 0.012705410944351642
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "comparisons": [
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.7187777159423785,
+            0.9222850004671348
+          ],
+          "geometric_mean": 0.8141977069997696,
+          "name": "first_only_over_both",
+          "paired_ratios": [
+            0.8392334028309939,
+            0.8370123893266014,
+            0.7683780982994909
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.8907569354755044,
+            1.0216499301059978
+          ],
+          "geometric_mean": 0.9539610898092132,
+          "name": "recurrence_only_over_first_only",
+          "paired_ratios": [
+            0.9562363303735557,
+            0.9269627645795443,
+            0.979409819892532
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.71710319047235,
+            0.8412777778429046
+          ],
+          "geometric_mean": 0.7767129318896627,
+          "name": "recurrence_only_over_both",
+          "paired_ratios": [
+            0.8025054694500217,
+            0.7758793183975162,
+            0.7525570548648706
+          ]
+        }
+      ],
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "outputs_correct": false,
+      "paired_median_ms": {
+        "both": [
+          32.980007,
+          32.687733,
+          34.1983765
+        ],
+        "first_only": [
+          27.6779235,
+          27.360037499999997,
+          26.2772835
+        ],
+        "recurrence_only": [
+          26.466636,
+          25.361736,
+          25.7362295
+        ]
+      },
+      "repeat_and_reset_consistent": true,
+      "threads": 1,
+      "wait_fraction_by_variant_pair": {
+        "both_p0": 0.06914152156382969,
+        "both_p1": 0.06801546133448817,
+        "both_p2": 0.06908741636552972,
+        "first_only_p0": 0.07427885716065342,
+        "first_only_p1": 0.0747438275049428,
+        "first_only_p2": 0.07479145608874045,
+        "recurrence_only_p0": 0.07455457513075621,
+        "recurrence_only_p1": 0.07437785876660175,
+        "recurrence_only_p2": 0.07484751476461114
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "comparisons": [
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.6194203353731172,
+            0.9680331550476994
+          ],
+          "geometric_mean": 0.774350967941503,
+          "name": "first_only_over_both",
+          "paired_ratios": [
+            0.8184715375337995,
+            0.8126487477046549,
+            0.6980830367296027
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.8839753769435906,
+            1.0830779624501083
+          ],
+          "geometric_mean": 0.9784754724141687,
+          "name": "recurrence_only_over_first_only",
+          "paired_ratios": [
+            0.940988149474463,
+            1.0209481034176457,
+            0.9751288599865107
+          ]
+        },
+        {
+          "ci95_student_t_on_log_ratio_df2": [
+            0.59109902966833,
+            0.9712148895970008
+          ],
+          "geometric_mean": 0.7576834291709311,
+          "name": "recurrence_only_over_both",
+          "paired_ratios": [
+            0.7701720175014485,
+            0.8296721977137923,
+            0.680720915782059
+          ]
+        }
+      ],
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "outputs_correct": false,
+      "paired_median_ms": {
+        "both": [
+          4.9108915,
+          4.8307188,
+          5.76533825
+        ],
+        "first_only": [
+          4.019424916666667,
+          3.925677583333333,
+          4.024684833333334
+        ],
+        "recurrence_only": [
+          3.7822312142857144,
+          4.007913083333333,
+          3.924586333333333
+        ]
+      },
+      "repeat_and_reset_consistent": true,
+      "threads": 8,
+      "wait_fraction_by_variant_pair": {
+        "both_p0": 0.010804411617094067,
+        "both_p1": 0.005282477230615909,
+        "both_p2": 0.06066027792002401,
+        "first_only_p0": 0.011819250818467547,
+        "first_only_p1": 0.010984457649818377,
+        "first_only_p2": 0.008096247389189013,
+        "recurrence_only_p0": 0.007136312539743349,
+        "recurrence_only_p1": 0.016989606053287885,
+        "recurrence_only_p2": 0.008400312484773447
+      }
+    }
+  ],
+  "current_b3_source_file_sha256": {
+    "src/legendre/scalar_paired/analysis.rs": "15cbe43ee3365f91a54d616a188cd9cc0c955037cfb48ef504d40eefe3701ab1",
+    "src/legendre/spin_fast.rs": "8338ddb8256868038a8b0823516df754d5b880cb2c1696f46caa6c28f6e556a2",
+    "src/transform/spin/analysis.rs": "a6015d8bdb1702e04dcedbca4cf4370b26f10ebaa1598d36914071d8a512a837"
+  },
+  "current_dev_source_sha": "fb3ace0f87fdf542ae26d43213f24ac48b13e65d",
+  "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "fixtures": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "GL",
+      "latitude_mode": "exact",
+      "lmax": 720,
+      "longitude_mode": "even-smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "seed": 1416779897
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "latitude_mode": "exact",
+      "lmax": 720,
+      "longitude_mode": "even-smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "seed": 1416973757
+    }
+  ],
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "purpose": "Diagnostic-only compiled skips of required accumulation operations; output values are intentionally invalid and must not be used for correctness or performance acceptance.",
+  "q1_cpus": [
+    0
+  ],
+  "q8_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs; compile-time diagnostic cfgs select skipped accumulation.",
+  "rust_source_sha": "85f74d6d91863278f06891205d22d30207e2649d",
+  "screen": "3 interleaved process pairs; variants rotated; 10 warm batch timings per worker; 2 transforms per batch; 25ms target.",
+  "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "variant_binary_sha256": {
+    "both": "924f5b155bdf61db6d3581ac19eec851daabc0d8d9e0ab6cf2ba862bf8aee867",
+    "first_only": "6a9f9b080eb80d76d080e222e117ac39c6af39039c9b0591c97035354262c82f",
+    "recurrence_only": "4f5b184d63de838b8cf50cf7879c00598fa1d02350838b73d7c435f9346b3587"
+  }
+}

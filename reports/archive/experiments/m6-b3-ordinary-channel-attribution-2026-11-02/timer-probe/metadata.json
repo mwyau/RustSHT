@@ -1,0 +1,25 @@
+{
+  "rust_source_sha": "85f74d6d91863278f06891205d22d30207e2649d",
+  "current_dev_sha": "fb3ace0f87fdf542ae26d43213f24ac48b13e65d",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "llvm": "23.1.1",
+  "target": "x86-64-v3",
+  "affinity": {"q1": "one pinned CPU", "q8": "eight pinned CPUs"},
+  "profiled_executable_sha256": "b60848d4245ad48248fcfdf587ec5b88524f194f98e042dbc6a549a66f487c76",
+  "plain_executable_sha256": "91a6bed1c4e35c07041a9b1a32b5bd2621586353b6967382405239cb62469751",
+  "profiled_text_sha256": "74dbb9b161243bfc1621c3252efd1aa78863725e011954f88f990464272aa666",
+  "plain_text_sha256": "46364a9a90ff8fecaec3ccb9fa3002875eb6ab8747cfa28568d43c80d71eab58",
+  "fixture_generator": "SplitMix64-derived f64 values in [-0.5,0.5), streams 0 and 1; see m6_b3_stage_timing.rs",
+  "fixture_sha256": {
+    "full_q": "2ff6c2b81530608662954d54b8a31c89af75b83dfc3b5cb95d99f936c7a8de7c",
+    "full_u": "d5b2bf9c2e80e6e8d301c4124505fceeaeb7bf6e8055ca32df6c56a8aaa86d93",
+    "reduced_q": "bd33d66eb7c4c586940ffa5e3e8d202de4a4480da16cc65f01002c21850a3bbf",
+    "reduced_u": "e156c33ae7b003c9afc6175037d05819fc29628bd848bc58ae8a47ce60ed55c9"
+  },
+  "empty_timer_pair_mean_ns": 21.688,
+  "screen_repetitions": 3,
+  "output_checksum_equal_profile_and_plain": true,
+  "perf_event_paranoid": 4
+}

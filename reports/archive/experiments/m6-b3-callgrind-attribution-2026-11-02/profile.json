@@ -1,0 +1,52 @@
+{
+  "rust_source_sha": "fb3ace0f87fdf542ae26d43213f24ac48b13e65d",
+  "analysis_rs_blob": "a8a8f18842af6d7507d1c5174be4aa0331e893c3",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+  "llvm": "23.1.1",
+  "callgrind": "3.26.0",
+  "target": "x86-64-v3",
+  "affinity": {"q1": "one pinned CPU", "q8": "eight pinned CPUs"},
+  "fixtures": {
+    "full_map0_sha256": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+    "full_map1_sha256": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+    "reduced_map0_sha256": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+    "reduced_map1_sha256": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+  },
+  "parent_binary_sha256": "c7eabefc341d8436a52b5d19bc2cc5e4b0c02a8d7900c3292db76697c268d838",
+  "noinline_diagnostic_binary_sha256": "254e7736846ff5e431fb8fc03082d825b5a55981df0f3a04f1dcd46063277f77",
+  "verified_outputs_sha256": {
+    "full_e_parent_and_split": "86e304caa5f14f74ae099e4637a54042cbc79937430ffa8cab2a5f77f9e8935f",
+    "full_b_parent_and_split": "06f12a89aa5f1797e08f38ecc64a37e7ab80e4f179284017b9889bf7f7b17dca",
+    "reduced_e_parent_and_split": "50f3b0cb1ba04214b1518530d3ca35b4bd338bb00542aa4faf8e2d4b2c081d38",
+    "reduced_b_parent_and_split": "0483794c09f8ff295be4cab154a74682ab7a2c4ff70d46ea4ed908131c8e06d0"
+  },
+  "collected_ir": {
+    "full_q1": 574632875,
+    "full_q8": 579883477,
+    "reduced_q1": 233545455,
+    "reduced_q8": 235048494,
+    "split_full_q1": 644425081,
+    "split_reduced_q1": 266613940
+  },
+  "raw_trace_sha256": {
+    "current_full_q1": "06e579da2c3727b9763a1950c63fc440d29a8a5c1d0f52cb588b1414f8637174",
+    "current_full_q8": "147694a1c74c7af2870b040147665e1b4d2384b798e3086dc0e22654afed103e",
+    "current_reduced_q1": "2121a7cf612d5ad7e754ffa6ecfc66221eab8347de994cadc6b6eed1c748e563",
+    "current_reduced_q8": "bb4150fcf8723b6f7d709ccb71256f45b4365d44d21c752b28efd80f429f1adc",
+    "split_full_q1": "5c9ab13085bcbb6a0f161867ea8828ccd89c494b8ef700d3d73f6beaa0b82de5",
+    "split_reduced_q1": "4217c9f6c6eb62b3106f7032dc51dedcd60dfc7dbe0d6a49c9bbccee2d911c6e"
+  },
+  "noinline_split": {
+    "full_helper_calls": 63669,
+    "full_recurrence_first_channel_ir": 31997163,
+    "full_second_channel_ir": 21436806,
+    "reduced_helper_calls": 150945,
+    "reduced_recurrence_first_channel_ir": 81393180,
+    "reduced_second_channel_ir": 55721340,
+    "output_bitwise_equal_to_parent": true
+  },
+  "perf_event_paranoid": 4,
+  "measurement_kind": "Callgrind instruction counts; not cycles"
+}
