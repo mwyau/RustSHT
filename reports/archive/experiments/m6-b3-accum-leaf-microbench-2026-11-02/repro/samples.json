@@ -1,0 +1,20 @@
+{
+  "scope": "accumulator leaf only; no recurrence advancement",
+  "samples": [
+    {"index": 0, "fused_ns": 451.80, "sequential_ns": 505.73, "ratio": 1.11936},
+    {"index": 1, "fused_ns": 454.09, "sequential_ns": 506.67, "ratio": 1.11579},
+    {"index": 2, "fused_ns": 454.74, "sequential_ns": 506.36, "ratio": 1.11353},
+    {"index": 3, "fused_ns": 453.21, "sequential_ns": 506.07, "ratio": 1.11664},
+    {"index": 4, "fused_ns": 454.40, "sequential_ns": 508.81, "ratio": 1.11976},
+    {"index": 5, "fused_ns": 452.43, "sequential_ns": 506.39, "ratio": 1.11927},
+    {"index": 6, "fused_ns": 453.24, "sequential_ns": 508.08, "ratio": 1.12101},
+    {"index": 7, "fused_ns": 454.76, "sequential_ns": 505.63, "ratio": 1.11186},
+    {"index": 8, "fused_ns": 454.17, "sequential_ns": 507.81, "ratio": 1.11810}
+  ],
+  "repetitions_per_sample": 100000,
+  "warm_batches_per_path": 8,
+  "fused_median_ns": 454.09,
+  "sequential_median_ns": 506.39,
+  "ratio_of_medians": 1.11517,
+  "outputs_bitwise_equal": true
+}

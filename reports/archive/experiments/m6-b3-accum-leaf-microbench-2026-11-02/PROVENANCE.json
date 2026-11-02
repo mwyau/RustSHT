@@ -1,0 +1,46 @@
+{
+  "experiment": "B3 scaled-accumulator leaf-only discriminator",
+  "parent_source_sha": "3e20b4997033e4c78927c6226f4e4243769d1d3f",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "production_source_changed": false,
+  "production_dispatch_changed": false,
+  "parent_b3_hot_file_blobs": {
+    "src/transform/spin/analysis.rs": "88a30c434410d8e44f4b690321380fa3671110ed",
+    "src/legendre/scalar_paired/analysis.rs": "baa5cee6c64ac43aa54828ab4c15055e8d23532e",
+    "src/legendre/spin_fast.rs": "64f3e94db724b8fdfc0d71c9d96a6ae6d5f33ba3"
+  },
+  "test_only_files": [
+    "src/legendre/scalar_paired/analysis/tests.rs",
+    "src/legendre/scalar_paired/analysis/tests/b3_accum_bench.rs"
+  ],
+  "fixture": {
+    "lanes": 64,
+    "exceptional_lanes": 23,
+    "sha256": "3f0198cb6844eb40c502d4639f2a964e6efbd6aa5741f225ce269e89163cc981"
+  },
+  "environment": {
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "affinity": "single pinned logical CPU; exact index retained in local scratch",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "llvm": "23.1.1",
+    "rustflags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "simd_dispatch": "V3 (AVX2/FMA)"
+  },
+  "benchmark": {
+    "samples": 9,
+    "repetitions_per_sample": 100000,
+    "warm_batches_per_path": 8,
+    "fused_median_ns": 454.09,
+    "sequential_median_ns": 506.39,
+    "sequential_over_fused": 1.11517,
+    "outputs_bitwise_equal": true,
+    "scope": "accumulator leaf only; no recurrence advancement; not a whole-transform measurement"
+  },
+  "binary_sha256": "5642df183485bcd108d8ee743c98b536891233cf6d8754446656f33bac8ceb88",
+  "artifact_sha256": {
+    "repro/b3_accum_bench.rs": "0c6de4950cd03c4382a8022564244f60bdee575bbbd297e79aea53314dfa23b5",
+    "repro/fixture_hash.py": "3993a3760208903a979674f22d85a3f8f4b1cf09ce6c13f1af66443db96263ff",
+    "repro/samples.json": "6fb0f49db3e96d770eada01138d4cd1046dbac3295aeed59e02fa089517adc39",
+    "repro/test-only.patch.gz": "0707f25bdef321e78332e7f94b03d16f1a83d22d4b1239195e06bb6bacaffa26"
+  }
+}
