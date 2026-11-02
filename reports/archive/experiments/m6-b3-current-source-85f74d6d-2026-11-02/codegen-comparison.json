@@ -1,0 +1,23 @@
+{
+  "baseline_source": "4a55859649d5f74603ad458890edc6a34adf3b6f",
+  "current_source": "85f74d6d91863278f06891205d22d30207e2649d",
+  "baseline_binary_sha256": "c33798bec2ed2df6385929da776a75045e3313ca76b328fda3507d5e551a1d97",
+  "current_binary_sha256": "121e72638ea3038a0ab7db0d7ea6a08c81d405a37ac7df96986707786ec31ee5",
+  "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "text_section": {
+    "address": "0x73480",
+    "size_bytes": 2562230,
+    "sha256_baseline": "28b92a70ce8fa47b31a413757ce48a595de8cde438e2f0de652db5860cdf3a76",
+    "sha256_current": "28b92a70ce8fa47b31a413757ce48a595de8cde438e2f0de652db5860cdf3a76",
+    "identical": true
+  },
+  "active_v3_b3_leaf": {
+    "address": "0x1dd1e0",
+    "size_bytes": 11160,
+    "sha256_baseline_instruction_bytes": "8da541e7f4207570321326aa904381d02884b37e7ad4f6b2454af003625ac119",
+    "sha256_current_instruction_bytes": "8da541e7f4207570321326aa904381d02884b37e7ad4f6b2454af003625ac119",
+    "identical": true
+  },
+  "interpretation": "The B1 source cleanup changed Rust source and symbol spelling but did not change emitted release text on this toolchain."
+}

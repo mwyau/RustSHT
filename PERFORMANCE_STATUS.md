@@ -12,13 +12,13 @@ At the accepted seed-handoff source (`f4344353`, carried at `dev` `4a558596`), 1
 
 The accepted seed handoff improved its exact parent 10–14%; candidate/DUCC parity remains open. The isolated per-degree fusion screen on base `4a558596` was rejected: candidate/parent point estimates were 1.068–1.136× and candidate/DUCC was 1.238–1.252×. A 9-pair synthetic ordinary-leaf probe measured 1.425 [1.375, 1.477]× parent, so the candidate helper itself is slower. No production code changed. Full evidence is in the [screen package](reports/archive/experiments/m6-b3-per-degree-shared-channel-2026-11-02/README.md).
 
-An exact-current `4a558596` three-pair screen gives a separate, small-sample control:
+The latest exact-source 85f74d6d three-pair control is:
 
 | B3 spin-1 analysis | Full q1 | Full q8 | Reduced q1 | Reduced q8 |
 |---|---:|---:|---:|---:|
-| Rust / DUCC, 95% paired interval | 1.077 [1.065, 1.090] GAP | 1.144 [1.070, 1.224] GAP | 1.098 [1.075, 1.122] GAP | 1.110 [1.077, 1.143] GAP |
+| Rust / DUCC, 95% paired interval | 1.109 [1.094, 1.120] GAP | 1.139 [1.108, 1.164] GAP | 1.095 [1.046, 1.151] GAP | 1.130 [1.058, 1.185] GAP |
 
-All four intervals remain above parity; full q8 is wide. This screen does not replace the 15-pair seed-handoff results above. The exact-current production-path Callgrind rerun reproduces the prior q1 counts (577.66M/235.07M full/reduced Rust instructions); the 11,160-byte AVX2/FMA ordinary leaf has no YMM stack traffic and exceeds DUCC's kernel by 1.178×/1.207× in instruction count. Hardware PMU access is blocked, so this does not attribute cycles or justify another kernel change. [Full results, profiles and hashes](reports/archive/experiments/m6-b3-second-channel-attribution-2026-11-02/README.md).
+All intervals are above parity, but three pairs are screening evidence only. Repeat/reset and finite-output checks pass; Rust/DUCC relative L2 is at most 5.21e-14. The release .text hash and active 11,160-byte V3 leaf are identical to the prior 4a558596 build, so the latest B1 source cleanup did not change B3 code generation. Full timings, pair diagnostics, hashes and the narrow runner reproduction are in the [85f74d6d package](reports/archive/experiments/m6-b3-current-source-85f74d6d-2026-11-02/README.md).
 
 Current profile evidence puts 45.5%/57.5% of full/reduced q1 Rust instructions in the ordinary fused leaf; that leaf has no YMM stack traffic, while hardware PMU access is blocked. A test-only second-channel skip shortened instrumented full/reduced T720 calls by 19–24%, but the skipped accumulation is required output math also present in DUCC; this does not identify removable work. Scaled-prefix sampled phase estimates rank exceptional recovery above recurrence/normalization and masked accumulation, but they are not cycle attribution. Native-leaf selection, duplicate scalar passes and per-degree fusion all lost whole-call screens. B3 has reached the bounded stop rule: no more kernel edits before a different source-matched profile identifies recoverable excess.
 

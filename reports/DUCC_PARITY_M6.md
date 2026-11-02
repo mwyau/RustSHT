@@ -90,18 +90,18 @@ The candidate avoided YMM stack traffic but lost the three-pair screen: candidat
 
 A test-only skip mode on exact source `4a558596` removed only ordinary `AnalysisTwoBasisAccumulation` and its coefficient stores; recurrence state and exceptional/scaled paths remained. Across full/reduced GL T720 q1/q8, skipping it shortened instrumented complete calls by 19.2–23.6% and the combined recurrence/accumulation phase by 35–37%. This is required output math also performed by DUCC, so it measures the importance of that channel but does not prove redundant work or justify a kernel deletion. The active Rust and DUCC dataflow and the exact fixture/run records are in the [second-channel attribution package](archive/experiments/m6-b3-second-channel-attribution-2026-11-02/README.md).
 
-### Exact-current B3 control and profile — `4a558596`
+### Exact-current B3 control and profile — 85f74d6d
 
-The matched whole-call control uses three interleaved process pairs on the exact current Rust and pinned DUCC binaries. The 95% intervals are Student t intervals on the logs of three paired process ratios (df=2), so they are screens, not promotion evidence.
+The matched whole-call screen uses three interleaved process pairs against pinned DUCC 0.42.0. Intervals are 95% Student-t on the three log paired ratios (df=2), so these are screens, not promotion evidence.
 
 | GL T720 B3 f64 | Rust ms | DUCC ms | Rust / DUCC (95% interval) | Status |
 |---|---:|---:|---:|---|
-| Full q1 | 33.106 | 30.587 | 1.077 [1.065, 1.090] | GAP |
-| Full q8 | 4.881 | 4.256 | 1.144 [1.070, 1.224] | GAP; wide interval |
-| Reduced q1 | 12.783 | 11.652 | 1.098 [1.075, 1.122] | GAP |
-| Reduced q8 | 1.933 | 1.738 | 1.110 [1.077, 1.143] | GAP |
+| Full q1 | 32.929 | 29.768 | 1.109 [1.094, 1.120] | GAP |
+| Full q8 | 4.853 | 4.282 | 1.139 [1.108, 1.164] | GAP |
+| Reduced q1 | 12.823 | 11.849 | 1.095 [1.046, 1.151] | GAP |
+| Reduced q8 | 1.925 | 1.734 | 1.130 [1.058, 1.185] | GAP |
 
-The current production-path q1 Callgrind profiles reproduce the earlier exact-code counters: the ordinary fused leaf accounts for 45.5%/57.5% of full/reduced Rust instructions and is 1.178×/1.207× DUCC's two-channel `map2alm_kernel` by instruction count. Its 11,160-byte AVX2/FMA body has no YMM stack references; DUCC's corresponding body is 722 bytes and also has no YMM stack references. This confirms the leaf as the dominant instruction-count hotspot, but Callgrind does not establish cycles and the profile does not identify a removable operation. Per-cell timings, process ratios, source/binary/fixture hashes, compressed profiles and exact codegen are in the [4a558596 attribution package](archive/experiments/m6-b3-second-channel-attribution-2026-11-02/README.md).
+Repeat/reset and finite-output checks pass; maximum Rust/DUCC relative L2 is 5.21e-14. The B1 cleanup changed shared scalar-analysis source after 4a558596, but clean release builds made with the same toolchain have identical .text sections and identical bytes for the active 11,160-byte V3 B3 leaf. The older q1 Callgrind profile therefore describes the same emitted code, though it does not attribute CPU cycles. Exact current source, binary and fixture hashes, paired diagnostics, and reproduction are in the [85f74d6d screen package](archive/experiments/m6-b3-current-source-85f74d6d-2026-11-02/README.md).
 
 ### Additional B3 phase and code-outline screens — rejected
 
