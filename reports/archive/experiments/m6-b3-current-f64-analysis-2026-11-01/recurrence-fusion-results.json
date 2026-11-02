@@ -1,0 +1,5243 @@
+{
+  "comparisons": [
+    {
+      "batch_ms": {
+        "candidate": [
+          15.071762000000001,
+          15.09962,
+          15.091344,
+          15.080148,
+          15.313815,
+          15.164818,
+          15.128574500000001,
+          15.113556,
+          15.122127,
+          15.147981
+        ],
+        "ducc": [
+          11.6893035,
+          11.6876905,
+          11.7377605,
+          11.7404405,
+          11.710569,
+          11.6644565,
+          11.7086755,
+          11.7046775,
+          11.6617065,
+          11.7054495
+        ],
+        "parent": [
+          14.8223595,
+          14.820416,
+          14.8253555,
+          14.8475825,
+          14.871382500000001,
+          14.83572,
+          14.8280455,
+          14.869389,
+          14.8456285,
+          14.866087499999999
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 0,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.733226,
+          15.7678495,
+          15.1574645,
+          15.008883,
+          14.809841,
+          14.762381,
+          14.714235,
+          14.720006000000001,
+          14.698164499999999,
+          14.851014
+        ],
+        "ducc": [
+          12.2760995,
+          11.820587,
+          12.3309835,
+          11.766234,
+          12.193428,
+          12.38201,
+          11.8150215,
+          12.2807735,
+          11.760133,
+          11.766134
+        ],
+        "parent": [
+          14.918116,
+          14.9272735,
+          14.938449499999999,
+          14.798729999999999,
+          14.8707115,
+          14.8954935,
+          14.8881245,
+          14.923566500000002,
+          14.904805999999999,
+          14.9020205
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 1,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.7751655,
+          14.814169,
+          14.72485,
+          14.7160585,
+          14.701596,
+          14.7555785,
+          14.761164,
+          14.7566455,
+          14.705273499999999,
+          14.932739
+        ],
+        "ducc": [
+          11.701602,
+          12.2608155,
+          11.7284525,
+          11.7224665,
+          12.20236,
+          11.888536,
+          11.767737,
+          12.256217,
+          11.863904,
+          12.2498445
+        ],
+        "parent": [
+          14.9246585,
+          14.948468499999999,
+          14.926656999999999,
+          14.921447500000001,
+          15.1798515,
+          15.314356499999999,
+          15.808902,
+          15.036740499999999,
+          15.00744,
+          14.9917305
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 2,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          15.1520785,
+          15.166756999999999,
+          15.1924905,
+          15.163781,
+          15.122102,
+          15.134561,
+          15.1793,
+          15.14728,
+          15.092290499999999,
+          15.0849365
+        ],
+        "ducc": [
+          12.1584365,
+          11.692981,
+          11.703065,
+          11.687425,
+          11.7013865,
+          11.675733,
+          11.6740495,
+          11.696532,
+          11.712192,
+          11.6840535
+        ],
+        "parent": [
+          14.987437,
+          14.978585500000001,
+          15.6029275,
+          15.599871499999999,
+          15.857369,
+          15.4983445,
+          15.055942,
+          15.505924,
+          15.1671625,
+          15.9621975
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 3,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.828677,
+          14.8207215,
+          14.849957,
+          14.832995,
+          14.84361,
+          14.8491205,
+          14.919153,
+          14.8502975,
+          14.821042,
+          14.9723785
+        ],
+        "ducc": [
+          11.6960165,
+          11.697179,
+          11.704863,
+          11.69805,
+          11.6846195,
+          11.694198,
+          11.691954,
+          11.713149,
+          11.7060305,
+          11.7347195
+        ],
+        "parent": [
+          15.499441500000001,
+          14.9785205,
+          15.5438505,
+          14.996870000000001,
+          18.130282,
+          15.060756,
+          15.424129,
+          15.446756500000001,
+          14.992276500000001,
+          15.9542775
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 4,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.866483,
+          14.843459999999999,
+          14.831377,
+          14.8048715,
+          14.9166935,
+          14.881326,
+          14.8734265,
+          14.8992305,
+          14.8745585,
+          14.8380145
+        ],
+        "ducc": [
+          11.649949,
+          11.6549235,
+          11.6686295,
+          11.6912175,
+          11.6924445,
+          11.6750165,
+          11.957346,
+          12.306156,
+          11.991641,
+          11.8023275
+        ],
+        "parent": [
+          14.929607500000001,
+          14.938144000000001,
+          14.918036,
+          14.935183499999999,
+          14.9129665,
+          14.909019,
+          14.83299,
+          14.7999875,
+          14.805969000000001,
+          14.8533385
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 5,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.699938,
+          14.772375,
+          14.7775,
+          14.713108,
+          14.7203765,
+          14.702513,
+          14.6895335,
+          14.848875,
+          15.015906000000001,
+          14.728883
+        ],
+        "ducc": [
+          11.683122,
+          11.6666205,
+          11.6813535,
+          11.67173,
+          11.7469975,
+          11.8704115,
+          11.750419,
+          11.6838385,
+          11.704728,
+          11.6908415
+        ],
+        "parent": [
+          14.8983735,
+          14.877364,
+          15.440555,
+          14.9130465,
+          14.9035885,
+          15.312256999999999,
+          15.0626945,
+          15.4513955,
+          15.121476,
+          15.265158
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 6,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          15.359101,
+          14.981205500000002,
+          15.40905,
+          14.9394665,
+          15.425381,
+          14.9282255,
+          15.9399655,
+          15.2491125,
+          14.8090745,
+          14.824283000000001
+        ],
+        "ducc": [
+          11.6792545,
+          11.664602,
+          11.6781425,
+          11.6751865,
+          11.6730475,
+          11.6885425,
+          11.693136,
+          11.6351865,
+          11.6312135,
+          11.633989
+        ],
+        "parent": [
+          14.800032499999999,
+          14.7963105,
+          14.825009999999999,
+          14.7984195,
+          15.2659545,
+          14.967338999999999,
+          14.8767725,
+          15.102905999999999,
+          15.149148,
+          15.096569
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 7,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.9321775,
+          14.959735,
+          14.966382,
+          14.977413,
+          14.954123999999998,
+          14.948728999999998,
+          14.9367015,
+          14.8977775,
+          14.9053015,
+          14.930318999999999
+        ],
+        "ducc": [
+          12.2169675,
+          11.8582735,
+          12.186645,
+          11.773949,
+          12.2501955,
+          11.7679625,
+          11.863293,
+          12.1967295,
+          11.7585,
+          12.2687455
+        ],
+        "parent": [
+          15.521924,
+          15.0817355,
+          15.5749845,
+          15.575851,
+          15.0045195,
+          14.9844065,
+          14.996033500000001,
+          14.962981000000001,
+          15.002486000000001,
+          15.021973
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 8,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.709215499999999,
+          14.686317,
+          14.739112,
+          14.725486499999999,
+          14.71949,
+          14.718313,
+          14.742188,
+          14.699006,
+          14.6649165,
+          14.67202
+        ],
+        "ducc": [
+          12.1757195,
+          11.7272655,
+          11.6970085,
+          11.6537515,
+          11.6748065,
+          11.669972,
+          11.6830265,
+          11.6815795,
+          11.6812885,
+          11.7046125
+        ],
+        "parent": [
+          14.910757,
+          14.8748345,
+          14.889497,
+          14.804962,
+          14.799577,
+          14.9383545,
+          15.013075500000001,
+          15.262507999999999,
+          14.8450975,
+          14.9040195
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 9,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          16.368482,
+          14.78279,
+          14.795078499999999,
+          14.808058,
+          14.8010995,
+          14.7546915,
+          14.861925,
+          14.7855195,
+          14.782669499999999,
+          14.7890865
+        ],
+        "ducc": [
+          13.257878,
+          11.7445785,
+          11.701852,
+          11.8298395,
+          11.701106,
+          11.7330665,
+          11.699638,
+          11.638357,
+          11.711726,
+          11.7172865
+        ],
+        "parent": [
+          15.0756895,
+          15.1671775,
+          14.8406745,
+          16.218052,
+          14.8520255,
+          15.320227000000001,
+          14.8750645,
+          15.3383965,
+          15.359687000000001,
+          14.915015499999999
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 10,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          15.5421025,
+          15.10504,
+          15.4857605,
+          15.5761715,
+          15.093823500000001,
+          15.557010499999999,
+          15.538475499999999,
+          15.578486000000002,
+          15.1127495,
+          15.538155
+        ],
+        "ducc": [
+          11.6838535,
+          11.7080295,
+          11.675848,
+          11.6901805,
+          11.6320005,
+          11.638693,
+          11.6986165,
+          11.692004,
+          11.69257,
+          11.7160895
+        ],
+        "parent": [
+          15.1814745,
+          15.695858,
+          15.683845500000002,
+          15.1818855,
+          15.837867,
+          17.6413765,
+          15.2077595,
+          15.7341555,
+          15.758487000000002,
+          15.2597025
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 11,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          14.6809065,
+          14.738260499999999,
+          14.7488055,
+          14.7371035,
+          14.7297595,
+          14.764580500000001,
+          14.759621000000001,
+          14.754926999999999,
+          14.7716085,
+          14.722285
+        ],
+        "ducc": [
+          11.7372845,
+          12.23951,
+          11.797749,
+          12.293698,
+          11.7812275,
+          12.2862535,
+          11.770813,
+          12.2333385,
+          11.793005,
+          12.284215
+        ],
+        "parent": [
+          14.9173495,
+          14.905191499999999,
+          14.9030425,
+          14.940158,
+          14.909034,
+          14.8897625,
+          14.9021105,
+          14.9602655,
+          14.9216175,
+          14.931220999999999
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 12,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          15.501325,
+          15.3157535,
+          15.988481999999998,
+          15.582093,
+          17.6892415,
+          15.3668005,
+          15.719347500000001,
+          15.623732,
+          15.1406975,
+          15.432946
+        ],
+        "ducc": [
+          12.239731,
+          11.7779315,
+          12.278835,
+          11.7658185,
+          12.0922015,
+          11.9089445,
+          11.780306,
+          12.2600945,
+          11.8310725,
+          12.2688355
+        ],
+        "parent": [
+          15.0278685,
+          15.009063,
+          15.0558065,
+          15.0262555,
+          15.0690715,
+          15.1036475,
+          15.032613,
+          15.099114,
+          15.031335,
+          15.0583515
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 13,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          15.288912999999999,
+          16.4359445,
+          15.033339,
+          14.936570999999999,
+          14.997266,
+          14.98362,
+          14.951354,
+          15.0035975,
+          14.991579999999999,
+          14.995783000000001
+        ],
+        "ducc": [
+          11.670483,
+          11.6840035,
+          11.6829215,
+          11.674681,
+          11.689028,
+          11.6961015,
+          11.65835,
+          11.664707,
+          11.659031,
+          11.693487
+        ],
+        "parent": [
+          14.932754,
+          14.9037285,
+          14.8860755,
+          14.87788,
+          14.91232,
+          14.921197000000001,
+          14.9134925,
+          14.8727555,
+          14.8888555,
+          14.9907085
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 14,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.1724954545454547,
+          2.1707229090909093,
+          2.183777727272727,
+          2.214134181818182,
+          2.164105909090909,
+          2.1736767272727273,
+          2.2799625454545454,
+          2.207463363636364,
+          2.1754337272727273,
+          2.1803575454545454
+        ],
+        "ducc": [
+          1.7244118,
+          1.7475134666666667,
+          1.7468903333333332,
+          1.7152590666666667,
+          1.7497858000000002,
+          1.760965,
+          1.7572946666666667,
+          1.7402650666666666,
+          1.7633661333333335,
+          1.7240824666666665
+        ],
+        "parent": [
+          2.2484783636363637,
+          2.200857272727273,
+          2.1885467272727275,
+          2.1893399999999996,
+          2.176571272727273,
+          2.196405181818182,
+          2.1799167272727273,
+          2.249820909090909,
+          2.1975965454545454,
+          2.199512909090909
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 0,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2013062727272725,
+          2.297229727272727,
+          2.278646363636364,
+          2.2362114545454546,
+          2.2379274545454546,
+          2.166812818181818,
+          2.276403,
+          2.2808204545454545,
+          2.2069998181818185,
+          2.1960481818181816
+        ],
+        "ducc": [
+          1.7719286428571428,
+          1.7377575,
+          1.7408312142857143,
+          1.7873400000000002,
+          1.7467352142857142,
+          1.7280427857142857,
+          1.7394951428571428,
+          1.7467510714285714,
+          1.7441310714285714,
+          1.7286188571428571
+        ],
+        "parent": [
+          2.223267909090909,
+          2.197518181818182,
+          2.247323454545455,
+          2.202180727272727,
+          2.216364818181818,
+          2.2035706363636365,
+          2.1947365454545453,
+          2.270266,
+          2.276782818181818,
+          2.338383
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 1,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.231817,
+          2.5827231999999998,
+          2.2453756,
+          2.2559426,
+          2.2447814999999998,
+          2.2681587999999997,
+          2.2561751,
+          2.2576619,
+          2.242405,
+          2.3352528
+        ],
+        "ducc": [
+          1.7583346666666666,
+          1.7405410000000001,
+          1.735605,
+          1.7347092666666666,
+          1.7430583333333334,
+          1.7571857999999998,
+          1.7477065333333333,
+          1.7472697333333334,
+          1.7575672,
+          1.755544
+        ],
+        "parent": [
+          2.2938359999999998,
+          2.2641753636363635,
+          2.2360147272727273,
+          2.192640818181818,
+          2.2257553636363636,
+          2.201330818181818,
+          2.220214909090909,
+          2.257969909090909,
+          2.241035181818182,
+          2.2585491818181818
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 2,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2166508181818183,
+          2.1809021818181815,
+          2.2202521818181817,
+          2.175964636363636,
+          2.249493,
+          2.1761687272727275,
+          2.233285909090909,
+          2.212994818181818,
+          2.2392026363636366,
+          2.233274090909091
+        ],
+        "ducc": [
+          1.7330928666666667,
+          1.7449226,
+          1.7278108666666665,
+          1.7427190666666665,
+          1.8255178,
+          1.7410926666666666,
+          1.7315045333333332,
+          1.7492922,
+          1.7477914,
+          1.7319788
+        ],
+        "parent": [
+          2.4712883000000003,
+          2.3725303999999996,
+          2.3025548999999996,
+          2.4793466,
+          2.2504162,
+          2.3032993,
+          2.5284916,
+          2.495936,
+          2.7485021,
+          2.7441108
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 3,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2922384545454544,
+          2.1999755454545453,
+          2.2471403636363636,
+          2.1921517272727273,
+          2.3253776363636365,
+          2.2418330909090907,
+          2.2683733636363637,
+          2.225159727272727,
+          2.30844,
+          2.2238308181818183
+        ],
+        "ducc": [
+          1.7390857857142856,
+          1.727784357142857,
+          1.7399417142857143,
+          1.7345672142857143,
+          1.7250864285714285,
+          1.7615669285714286,
+          1.7395717142857143,
+          1.7299842142857143,
+          1.7444473571428571,
+          1.7679218571428572
+        ],
+        "parent": [
+          2.1759774545454547,
+          2.2110274545454547,
+          2.1969380909090908,
+          2.210460909090909,
+          2.1989636363636365,
+          2.2216074545454543,
+          2.2353198181818184,
+          2.2364273636363636,
+          2.2497207272727273,
+          2.2208751818181818
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 4,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2283848181818184,
+          2.23062,
+          2.4236855454545454,
+          2.240311,
+          2.2043675454545455,
+          2.202888454545455,
+          2.2161043636363638,
+          2.2033365454545453,
+          2.186821636363636,
+          2.2477751818181817
+        ],
+        "ducc": [
+          1.7490610714285713,
+          1.7329462857142857,
+          1.749210642857143,
+          1.7550052142857144,
+          1.7638154285714285,
+          1.730128857142857,
+          1.7806745,
+          1.7463931428571429,
+          1.7744742142857142,
+          1.7564415
+        ],
+        "parent": [
+          2.2395040909090906,
+          2.200585909090909,
+          2.2180024545454544,
+          2.321360818181818,
+          2.269192090909091,
+          2.262432,
+          2.3142774545454547,
+          2.270649363636364,
+          2.3725395454545453,
+          2.230743
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 5,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.1836046363636363,
+          2.1653546363636362,
+          2.2701784545454546,
+          2.2914642727272727,
+          2.239717272727273,
+          2.280284909090909,
+          2.203903,
+          2.231233909090909,
+          2.268899727272727,
+          2.2443705454545455
+        ],
+        "ducc": [
+          1.7240074615384615,
+          1.7496159999999998,
+          1.7716306923076923,
+          1.7385782307692308,
+          1.7292436153846156,
+          1.736770076923077,
+          1.7220044615384613,
+          1.7356048461538462,
+          1.7436932307692308,
+          1.7594076153846154
+        ],
+        "parent": [
+          2.2792036,
+          2.24029,
+          2.3733359,
+          2.2816613,
+          2.2040595,
+          2.2151685,
+          2.1969169,
+          2.2364657,
+          2.2253306999999998,
+          2.2743695
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 6,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.192337454545455,
+          2.247480090909091,
+          2.1916535454545456,
+          2.1924495454545454,
+          2.197662090909091,
+          2.228582545454546,
+          2.187713272727273,
+          2.2618864545454547,
+          2.1923884545454544,
+          2.1818249090909094
+        ],
+        "ducc": [
+          1.740073357142857,
+          1.7582084285714286,
+          1.7308094285714284,
+          1.746705142857143,
+          1.7797034285714286,
+          1.7569911428571428,
+          1.7737865,
+          1.7635256428571429,
+          1.7806509285714287,
+          1.748306142857143
+        ],
+        "parent": [
+          2.1917842,
+          2.1732882,
+          2.1807113,
+          2.2218922,
+          2.2863231,
+          2.229726,
+          2.2137919,
+          2.2372983,
+          2.1939371999999997,
+          2.2179006
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 7,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2407865454545455,
+          2.267068090909091,
+          2.214699,
+          2.1655212727272724,
+          2.1801944545454544,
+          2.291406,
+          2.3016452727272725,
+          2.404525545454545,
+          2.370817181818182,
+          2.2109782727272727
+        ],
+        "ducc": [
+          1.7578197857142857,
+          1.7286495714285715,
+          1.7575292857142857,
+          1.7578512857142858,
+          1.7485501428571428,
+          1.7426396428571427,
+          1.768145857142857,
+          1.7508423571428573,
+          1.7487547857142858,
+          1.7417500714285714
+        ],
+        "parent": [
+          2.193163636363636,
+          2.200986545454546,
+          2.2185954545454547,
+          2.198121181818182,
+          2.1923985454545454,
+          2.2036735454545453,
+          2.1781989999999998,
+          2.196335909090909,
+          2.185692181818182,
+          2.282850727272727
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 8,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2223106363636362,
+          2.2262827272727272,
+          2.1987022727272727,
+          2.193586272727273,
+          2.2132626363636363,
+          2.1988097272727276,
+          2.2446510909090907,
+          2.3039697272727273,
+          2.2349436363636364,
+          2.2249073636363637
+        ],
+        "ducc": [
+          1.7778842142857143,
+          1.7435764285714286,
+          1.7471524285714286,
+          1.7506255,
+          1.75451,
+          1.7879732857142856,
+          1.7361380714285715,
+          1.761380857142857,
+          1.7431176428571429,
+          1.7710605714285717
+        ],
+        "parent": [
+          2.3081039090909092,
+          2.216804727272727,
+          2.209604818181818,
+          2.1862806363636365,
+          2.2131505454545457,
+          2.1734335454545453,
+          2.214842,
+          2.188290818181818,
+          2.2188249090909093,
+          2.1914813636363637
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 9,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.239301909090909,
+          2.1459715454545454,
+          2.1700243636363634,
+          2.2851195454545454,
+          2.307070181818182,
+          2.2792165454545454,
+          2.3667540909090907,
+          2.264310181818182,
+          2.277594363636364,
+          2.209960818181818
+        ],
+        "ducc": [
+          1.7179965714285714,
+          1.7383529285714285,
+          1.728336857142857,
+          1.7584145,
+          1.7747533571428573,
+          1.7450635714285716,
+          1.7479268571428572,
+          1.7266894285714287,
+          1.7973839999999999,
+          1.7436200714285714
+        ],
+        "parent": [
+          2.265362181818182,
+          2.2554105454545454,
+          2.3986826363636364,
+          2.3536129090909093,
+          2.4005416363636365,
+          2.4199693636363637,
+          2.2802876363636364,
+          2.3310756363636362,
+          2.4215587272727275,
+          2.3519478181818183
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 10,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2678559090909087,
+          2.3330930909090912,
+          2.2915052727272727,
+          2.2259447272727275,
+          2.2933013636363637,
+          2.191700818181818,
+          2.266578,
+          2.304490727272727,
+          2.508271090909091,
+          2.2304314545454544
+        ],
+        "ducc": [
+          1.742815,
+          1.7338115,
+          1.7633932142857145,
+          1.7447657857142858,
+          1.7464625714285713,
+          1.7379572142857143,
+          1.7414666428571428,
+          1.7458092142857142,
+          1.759625357142857,
+          1.739198857142857
+        ],
+        "parent": [
+          2.2257134545454544,
+          2.2342076363636365,
+          2.200968454545454,
+          2.2397445454545455,
+          2.2281325454545455,
+          2.246335181818182,
+          2.1872925454545458,
+          2.242639090909091,
+          2.1930187272727273,
+          2.188443818181818
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 11,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2873237272727276,
+          2.263700818181818,
+          2.218078,
+          2.219885090909091,
+          2.1935325454545453,
+          2.1871831818181815,
+          2.2324670909090907,
+          2.2813441818181817,
+          2.290364,
+          2.262383818181818
+        ],
+        "ducc": [
+          1.7614502857142857,
+          1.7783966428571427,
+          1.7448989285714287,
+          1.748884285714286,
+          1.7702812857142856,
+          1.7382842142857142,
+          1.7671617857142858,
+          1.7696908571428571,
+          1.7852839285714286,
+          1.7426811428571427
+        ],
+        "parent": [
+          2.2061645454545453,
+          2.2109900909090907,
+          2.2303931818181817,
+          2.267071727272727,
+          2.290500636363636,
+          2.268182,
+          2.2146606363636363,
+          2.2317311818181818,
+          2.2058940909090907,
+          2.304250363636364
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 12,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2641051818181817,
+          2.2408074545454544,
+          2.217364909090909,
+          2.217067,
+          2.2358453636363635,
+          2.2188377272727275,
+          2.227303636363636,
+          2.188942,
+          2.1940589999999998,
+          2.254957
+        ],
+        "ducc": [
+          1.7950030714285714,
+          1.7701917857142857,
+          1.7512788571428572,
+          1.7338723571428571,
+          1.750545357142857,
+          1.7551862142857144,
+          1.7475782857142856,
+          1.746288642857143,
+          1.7722972142857143,
+          1.781453857142857
+        ],
+        "parent": [
+          2.2254067999999996,
+          2.1843702,
+          2.3009247999999998,
+          2.1831078,
+          2.2601196000000003,
+          2.2179887999999996,
+          2.3838538,
+          2.1914746,
+          2.2194335,
+          2.2441082999999997
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 13,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          2.2207404545454543,
+          2.178637,
+          2.2619875454545455,
+          2.1775112727272727,
+          2.1762962727272726,
+          2.2007497272727274,
+          2.170722090909091,
+          2.222133909090909,
+          2.184898,
+          2.1927137272727273
+        ],
+        "ducc": [
+          1.7314744666666668,
+          1.7470319333333333,
+          1.7354627333333332,
+          1.7814530666666668,
+          1.7635111333333335,
+          1.7624210666666669,
+          1.7586933333333334,
+          1.7671854,
+          1.7491205333333333,
+          1.7621766
+        ],
+        "parent": [
+          2.2046170909090907,
+          2.216819272727273,
+          2.2073295454545456,
+          2.25558,
+          2.2205309090909093,
+          2.211708727272727,
+          2.271540181818182,
+          2.197287818181818,
+          2.225268909090909,
+          2.221692181818182
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 2.2234738217862106e-15,
+        "max_relative_above_1e-12_peak": 3.4250869715132727e-10,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.027081263952487864,
+        "relative_l2": 5.2126939837619934e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.02708126395248787,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881"
+      },
+      "mmax": 180,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 14,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          37.505351,
+          37.030722000000004,
+          37.116714,
+          37.253403,
+          37.076979,
+          36.982621,
+          37.000924999999995,
+          36.919511,
+          36.666161,
+          36.663005999999996
+        ],
+        "ducc": [
+          30.517722,
+          29.856621,
+          29.704162,
+          29.397421,
+          29.541474,
+          29.984172,
+          29.770036,
+          29.816746,
+          29.637085,
+          29.557564
+        ],
+        "parent": [
+          38.162414,
+          37.978336,
+          37.01418,
+          38.41393,
+          38.183013,
+          37.083580999999995,
+          36.793232,
+          37.057913,
+          36.732908,
+          36.762755
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 0,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          37.002477999999996,
+          37.421842,
+          38.644887000000004,
+          40.387716999999995,
+          37.193069,
+          37.035771000000004,
+          36.835652,
+          36.947303,
+          36.869015,
+          36.918078
+        ],
+        "ducc": [
+          30.030219,
+          29.876889,
+          29.969925,
+          30.007355,
+          29.980485,
+          29.848926,
+          29.669166,
+          30.029218,
+          29.826764,
+          30.488557
+        ],
+        "parent": [
+          36.777732,
+          36.877922,
+          36.882802,
+          36.827987,
+          36.972372,
+          37.117055,
+          37.074785,
+          38.094395000000006,
+          37.15666,
+          38.045834
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 1,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          38.134601999999994,
+          38.19245,
+          37.053495,
+          38.200606,
+          38.289645,
+          37.072810999999994,
+          37.049467,
+          38.118972,
+          38.080859000000004,
+          38.164739000000004
+        ],
+        "ducc": [
+          29.600526,
+          30.01513,
+          29.782931,
+          29.701628,
+          29.569337,
+          29.669697,
+          29.513852,
+          29.452305,
+          29.538067,
+          29.868813
+        ],
+        "parent": [
+          36.648899,
+          37.782415,
+          36.500859,
+          36.57548,
+          37.73231,
+          37.781023,
+          36.603783,
+          37.484601,
+          36.620174999999996,
+          38.446582
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 2,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.587924,
+          36.53377,
+          36.357267,
+          36.48011,
+          36.246756999999995,
+          36.320337,
+          36.33281,
+          36.174661,
+          36.176485,
+          36.465872000000005
+        ],
+        "ducc": [
+          29.759086,
+          29.737785,
+          29.67151,
+          29.467654,
+          29.435743,
+          29.547174,
+          29.553216,
+          29.67167,
+          29.794683,
+          29.568785
+        ],
+        "parent": [
+          38.724087,
+          38.097120999999994,
+          38.877738,
+          38.686295,
+          38.394824,
+          38.432745999999995,
+          38.314061,
+          38.339448999999995,
+          37.104522,
+          38.147045
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 3,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.017914,
+          36.216139,
+          36.511619,
+          36.060095,
+          36.046278,
+          36.006613,
+          36.013946999999995,
+          36.404767,
+          36.343771,
+          36.262106
+        ],
+        "ducc": [
+          29.367034,
+          29.436555,
+          29.427187,
+          29.29139,
+          29.408192,
+          30.102857,
+          29.598782,
+          29.430854,
+          29.279248,
+          29.373847
+        ],
+        "parent": [
+          36.361004,
+          36.268599,
+          36.314626000000004,
+          36.118464,
+          36.162147999999995,
+          36.072717999999995,
+          36.455031999999996,
+          36.42776,
+          39.295919999999995,
+          39.033664
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 4,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          37.367339,
+          37.130351,
+          37.002648,
+          37.094593,
+          36.88707,
+          36.889445,
+          36.902499,
+          36.904412,
+          37.332213,
+          37.539564999999996
+        ],
+        "ducc": [
+          29.399556,
+          29.611627,
+          29.560901,
+          29.277805,
+          29.346254,
+          29.634741,
+          29.549479,
+          29.631404,
+          29.655781,
+          29.637907
+        ],
+        "parent": [
+          36.371533,
+          36.345324,
+          36.469349,
+          36.342048,
+          36.732768,
+          36.341738,
+          36.330266,
+          36.542888000000005,
+          36.306290999999995,
+          36.440163999999996
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 5,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          37.35751,
+          36.808872,
+          36.439893,
+          37.230981,
+          36.822097,
+          36.690819,
+          36.668206000000005,
+          36.524663,
+          36.823059,
+          36.707119000000006
+        ],
+        "ducc": [
+          30.215741,
+          30.170595,
+          29.924479,
+          29.727446,
+          29.46036,
+          29.330154,
+          29.532367,
+          29.508361,
+          29.612138,
+          29.630413
+        ],
+        "parent": [
+          37.031152,
+          36.755992,
+          36.708301,
+          36.636305,
+          36.711708,
+          36.802851,
+          36.706437,
+          36.703603,
+          36.607490999999996,
+          36.583484999999996
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 6,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.959376,
+          37.138886,
+          36.923308,
+          37.026182999999996,
+          37.1405,
+          37.006536,
+          37.105092,
+          37.033146,
+          36.98758,
+          36.82392
+        ],
+        "ducc": [
+          29.611777,
+          29.707669,
+          29.622758,
+          29.908399,
+          29.617047,
+          29.700886,
+          30.058703,
+          29.696738,
+          29.373115,
+          29.386851
+        ],
+        "parent": [
+          37.549163,
+          37.551899,
+          37.655965,
+          37.30683500000001,
+          37.395372,
+          37.372729,
+          37.337101,
+          37.261057,
+          37.153814,
+          37.189322
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 7,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.43821,
+          36.44869,
+          36.553838999999996,
+          36.565652,
+          36.538921,
+          36.699374999999996,
+          36.599626,
+          36.627888999999996,
+          36.397273,
+          36.405598
+        ],
+        "ducc": [
+          29.81897,
+          29.748356,
+          30.576965,
+          30.877203,
+          30.85464,
+          30.764239,
+          29.610254,
+          30.630185,
+          29.663345,
+          30.313946
+        ],
+        "parent": [
+          37.15658,
+          37.159275,
+          37.839453,
+          37.600801000000004,
+          37.409609,
+          36.947524,
+          36.439341999999996,
+          37.040169999999996,
+          36.005421000000005,
+          35.961726999999996
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 8,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          37.757116,
+          36.547035,
+          36.491541000000005,
+          36.464459,
+          36.38541,
+          36.354782,
+          36.446606,
+          36.843587,
+          36.524774,
+          36.58608
+        ],
+        "ducc": [
+          30.393146,
+          29.818779,
+          30.862254,
+          31.023058,
+          31.101808,
+          30.270885,
+          30.799435,
+          30.81263,
+          29.973292,
+          31.043688
+        ],
+        "parent": [
+          36.408344,
+          36.81861,
+          36.51752,
+          36.44367,
+          36.561514,
+          36.520927,
+          36.568467,
+          36.54954,
+          36.656103,
+          37.859921
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 9,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.403214000000006,
+          36.503574,
+          36.311209999999996,
+          36.398635,
+          37.440507,
+          36.927667,
+          37.120070999999996,
+          37.777846,
+          36.888753,
+          36.701428
+        ],
+        "ducc": [
+          29.730261,
+          29.601648,
+          31.890872,
+          30.159123,
+          30.050407,
+          29.70299,
+          29.70356,
+          30.760121,
+          30.392114,
+          30.058322
+        ],
+        "parent": [
+          36.69083800000001,
+          36.683344,
+          36.861641,
+          36.827307,
+          36.962863,
+          37.044056,
+          36.943737,
+          36.893471999999996,
+          36.966219,
+          36.956121
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 10,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          38.415663,
+          36.952923999999996,
+          37.966803,
+          38.201368,
+          36.805846,
+          37.986872,
+          36.665780000000005,
+          36.606068,
+          36.541605,
+          36.391712
+        ],
+        "ducc": [
+          29.469228,
+          29.421627,
+          29.446615,
+          29.291852,
+          29.319514,
+          29.284988,
+          29.394426,
+          29.400568,
+          31.029521,
+          31.163174
+        ],
+        "parent": [
+          37.728954,
+          37.487927,
+          37.618643999999996,
+          37.239928,
+          38.172814,
+          36.773034,
+          37.628783999999996,
+          37.672566999999994,
+          38.712945999999995,
+          38.875995
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 11,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.64432,
+          36.553087999999995,
+          36.743558,
+          36.629020999999995,
+          36.579498,
+          36.503303,
+          36.434924,
+          36.384347999999996,
+          36.605026,
+          36.935331000000005
+        ],
+        "ducc": [
+          29.896616,
+          29.664417,
+          29.6451,
+          29.596157,
+          29.6398,
+          29.621837,
+          29.573244,
+          29.478746,
+          29.498052,
+          29.55531
+        ],
+        "parent": [
+          40.628442,
+          38.114464,
+          37.880149,
+          37.731688999999996,
+          37.906048999999996,
+          38.044631,
+          37.978125,
+          38.262603,
+          37.965592,
+          37.846797
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 12,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          35.61425,
+          35.917203,
+          35.795233,
+          36.972911999999994,
+          38.666107999999994,
+          40.700258000000005,
+          37.646688,
+          36.427309,
+          36.497142000000004,
+          36.245044
+        ],
+        "ducc": [
+          29.914681,
+          31.063145,
+          29.892989,
+          31.418046,
+          31.297007,
+          30.286414,
+          30.709205,
+          29.573906,
+          29.49745,
+          29.969795
+        ],
+        "parent": [
+          38.267183,
+          38.289675,
+          38.549868000000004,
+          38.321295,
+          38.201628,
+          37.86941,
+          37.187298,
+          37.042263999999996,
+          36.36976,
+          36.858937000000005
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 13,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          36.332079,
+          37.62671,
+          40.993103000000005,
+          36.59654,
+          36.343491,
+          36.318394,
+          36.133363,
+          36.073519999999995,
+          36.4809,
+          36.372074
+        ],
+        "ducc": [
+          31.401214,
+          31.074075,
+          30.97624,
+          31.915358,
+          31.076029,
+          31.117528,
+          30.855502,
+          31.64159,
+          29.24922,
+          29.083286
+        ],
+        "parent": [
+          37.032344,
+          36.664388,
+          36.718850999999994,
+          36.584557,
+          36.415807,
+          36.380311,
+          36.452507000000004,
+          37.386846,
+          36.79211,
+          36.813631
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 14,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 1
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.3827178,
+          5.650951600000001,
+          5.3839582,
+          5.6900576,
+          5.611545,
+          5.9324106,
+          5.4286228,
+          5.570335,
+          5.2508942,
+          5.3012216
+        ],
+        "ducc": [
+          4.295697166666667,
+          4.309115833333333,
+          4.2451965,
+          4.3008,
+          4.212387666666666,
+          4.2459896666666666,
+          4.275821166666667,
+          4.283791166666666,
+          4.587668,
+          4.672076333333333
+        ],
+        "parent": [
+          5.5515620000000006,
+          5.77217975,
+          5.4631595,
+          5.4931012500000005,
+          5.41615325,
+          5.42597175,
+          5.35842625,
+          5.8138535,
+          5.46219025,
+          5.76191
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 0,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.2812818,
+          5.4110996,
+          5.418255,
+          5.4528766,
+          5.3000976,
+          5.4722574,
+          5.4666106,
+          5.5479546,
+          5.4983046,
+          5.633767000000001
+        ],
+        "ducc": [
+          4.474914666666667,
+          4.836781333333334,
+          4.317324666666667,
+          4.312221666666667,
+          4.445791166666667,
+          4.380081833333334,
+          4.5132305,
+          4.396725,
+          4.336906666666667,
+          4.7823215
+        ],
+        "parent": [
+          5.6182398,
+          5.4644064,
+          5.494597799999999,
+          5.6054134,
+          5.4961405999999995,
+          5.469099399999999,
+          5.4422906,
+          5.3121062,
+          5.5442236000000005,
+          5.3897812
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 1,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.283983,
+          5.3593656,
+          5.4042988,
+          5.2311268,
+          5.2694513999999995,
+          5.5028152,
+          5.331583,
+          5.2807408,
+          5.434492,
+          5.3050828
+        ],
+        "ducc": [
+          4.2748325,
+          4.297482,
+          4.2760665,
+          4.273859166666667,
+          4.2493425,
+          4.2260401666666665,
+          4.23912,
+          4.5404305,
+          4.263599666666667,
+          4.229521833333333
+        ],
+        "parent": [
+          5.4997614,
+          5.490842600000001,
+          5.3602814,
+          5.2962359999999995,
+          5.372550599999999,
+          5.4547159999999995,
+          5.4463924,
+          5.4955914,
+          5.3256418,
+          5.4034672
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 2,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.3167408,
+          5.5128002,
+          5.6740674,
+          5.3929252,
+          5.4151831999999995,
+          5.3515728,
+          5.4650016,
+          5.2695296,
+          5.296138000000001,
+          5.2969256
+        ],
+        "ducc": [
+          4.2049468333333335,
+          4.265505,
+          4.21534,
+          4.239068166666667,
+          4.2452615,
+          4.311293166666666,
+          4.201974666666667,
+          4.217973166666667,
+          4.2167025,
+          4.272160833333333
+        ],
+        "parent": [
+          5.3011274,
+          5.6879298,
+          5.4314282,
+          5.4306226,
+          5.3950072,
+          5.2936952,
+          5.4938082,
+          5.4453404,
+          5.412346,
+          5.4087492
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 3,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.3707312,
+          5.428819,
+          5.428462399999999,
+          5.4129432,
+          5.356454,
+          6.0081098,
+          5.397189200000001,
+          5.8810611999999995,
+          5.446781,
+          5.5985385999999995
+        ],
+        "ducc": [
+          4.236960833333334,
+          4.244279833333334,
+          4.221718666666667,
+          4.263541166666667,
+          4.288129333333333,
+          4.220045333333333,
+          4.212252333333333,
+          4.249695,
+          4.238846166666667,
+          4.246393666666667
+        ],
+        "parent": [
+          5.4412426,
+          5.4021646,
+          5.318961,
+          5.3438684,
+          5.441222600000001,
+          5.3634574,
+          5.3848959999999995,
+          5.2725032,
+          5.3148032,
+          5.3953717999999995
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 4,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.2832214,
+          5.3825376,
+          5.449785,
+          5.3069444,
+          5.4162254,
+          5.348992000000001,
+          5.314869400000001,
+          5.4528024,
+          5.3028908,
+          5.2757152000000005
+        ],
+        "ducc": [
+          4.243498166666667,
+          4.2382531666666665,
+          4.270663,
+          4.334842833333333,
+          4.283104833333334,
+          4.2823085,
+          4.2438155,
+          4.2395941666666666,
+          4.311385166666667,
+          4.3702615
+        ],
+        "parent": [
+          5.4975492,
+          5.3379832,
+          5.3279724,
+          5.490504,
+          5.319466199999999,
+          5.386563,
+          5.2828306,
+          5.3180394,
+          5.3734262,
+          5.298502399999999
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 5,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.3119258,
+          5.293404799999999,
+          5.309066400000001,
+          5.5176412,
+          5.309006200000001,
+          5.3399008,
+          5.4439177999999995,
+          5.3323166,
+          5.283598199999999,
+          5.3551576
+        ],
+        "ducc": [
+          4.2208955,
+          4.204855,
+          4.265817166666666,
+          4.3502905,
+          4.446527666666666,
+          4.270988666666667,
+          4.278738333333333,
+          4.241046833333333,
+          4.233303833333333,
+          4.237346666666666
+        ],
+        "parent": [
+          5.3789046,
+          5.4406213999999995,
+          5.278550600000001,
+          5.3346408,
+          5.424014,
+          5.3328554,
+          5.4154018,
+          5.3686191999999995,
+          5.5395188,
+          5.434618
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 6,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.2678664,
+          5.446781199999999,
+          5.3460204,
+          5.489490000000001,
+          5.6281784,
+          5.314178,
+          5.3060746000000005,
+          5.3149216,
+          5.6384198,
+          5.313639
+        ],
+        "ducc": [
+          4.220508166666667,
+          4.2359773333333335,
+          4.2362028333333335,
+          4.259158,
+          4.2498135,
+          4.306454,
+          4.232948166666667,
+          4.269337166666666,
+          4.2234869999999995,
+          4.232893166666667
+        ],
+        "parent": [
+          5.3671684,
+          5.3502564,
+          5.3069704,
+          5.3821388,
+          5.3045118,
+          5.3745946,
+          5.4651458,
+          5.3646878000000005,
+          5.3056578000000005,
+          5.450870800000001
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 7,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.241460399999999,
+          5.2620896,
+          5.3124126,
+          5.6318234,
+          5.299324,
+          5.3139698,
+          5.3365844000000004,
+          5.771299399999999,
+          5.3702964,
+          5.3379812
+        ],
+        "ducc": [
+          4.235810333333333,
+          4.244779,
+          4.283168333333333,
+          4.265356333333333,
+          4.2434515,
+          4.3484435,
+          4.280892333333333,
+          4.3001555,
+          4.333381666666667,
+          4.2140691666666665
+        ],
+        "parent": [
+          5.2805684,
+          5.2656002,
+          5.3736026,
+          5.3309458,
+          5.3162460000000005,
+          5.2994962,
+          5.2575468,
+          5.3814554,
+          5.3217904,
+          5.3549614000000005
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 8,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.28768,
+          5.3058202,
+          5.823903,
+          5.2980636,
+          5.4264728,
+          5.3303188,
+          5.3264534,
+          5.4065148,
+          5.5039534,
+          5.2839768
+        ],
+        "ducc": [
+          4.2615975,
+          4.221536666666666,
+          4.270809833333334,
+          4.254086666666667,
+          4.310790666666667,
+          4.2369125,
+          4.288278,
+          4.21539,
+          4.422422,
+          4.2608793333333335
+        ],
+        "parent": [
+          5.282854800000001,
+          5.3039868,
+          5.3597906,
+          5.6050768,
+          5.3762434,
+          5.2903932,
+          5.2590596000000005,
+          5.2641734,
+          5.3556186,
+          5.2609572
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 9,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.3294148,
+          5.2709522,
+          5.3100362,
+          5.3110642,
+          5.2678464,
+          5.3423514,
+          5.2886958,
+          5.3369352,
+          5.2713790000000005,
+          5.256054000000001
+        ],
+        "ducc": [
+          4.369516833333333,
+          4.510689,
+          4.334193333333333,
+          4.254407166666667,
+          4.3601540000000005,
+          4.344083666666667,
+          4.2390281666666665,
+          4.254241833333333,
+          4.230986333333333,
+          4.218666166666667
+        ],
+        "parent": [
+          5.304960599999999,
+          5.2986366,
+          5.26656,
+          5.292615400000001,
+          5.525957,
+          5.2812038,
+          5.288798,
+          5.3640626,
+          5.700383199999999,
+          5.332593
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 10,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.2859206,
+          5.325227,
+          5.3951896,
+          5.290439,
+          5.2950078,
+          5.329368799999999,
+          5.353164,
+          5.3734864,
+          5.371121799999999,
+          5.7037336000000005
+        ],
+        "ducc": [
+          4.260998,
+          4.2518891666666665,
+          4.258172666666667,
+          4.232635833333333,
+          4.261088166666666,
+          4.255091833333333,
+          4.306113333333333,
+          4.296443333333333,
+          4.229087666666667,
+          4.2129286666666665
+        ],
+        "parent": [
+          5.3222005,
+          5.2896085,
+          5.27940175,
+          5.572895,
+          5.3684305000000005,
+          5.3345234999999995,
+          5.338123,
+          5.52829275,
+          5.414555249999999,
+          5.73606875
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 11,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          6.1371218,
+          6.1042276,
+          6.159592600000001,
+          6.362713,
+          6.0971722,
+          6.5011172,
+          6.413876,
+          5.306722,
+          5.347409000000001,
+          5.3536808
+        ],
+        "ducc": [
+          4.271123833333333,
+          4.26553,
+          4.265316166666667,
+          4.2904721666666665,
+          4.304249833333333,
+          4.272134166666667,
+          4.314794833333333,
+          4.3071003333333335,
+          4.289037833333333,
+          4.3470976666666665
+        ],
+        "parent": [
+          5.3643312000000005,
+          5.319023199999999,
+          5.2980356,
+          5.2842856,
+          5.364603600000001,
+          5.4558964,
+          5.3368832,
+          5.3185564,
+          5.383056399999999,
+          5.5885696
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 12,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.3312804,
+          5.359299399999999,
+          5.344684,
+          5.4807654,
+          5.9810344,
+          5.3562918,
+          5.4319049999999995,
+          5.3502644,
+          5.3635216,
+          5.392815000000001
+        ],
+        "ducc": [
+          4.2854426666666665,
+          4.2711155,
+          4.260577166666667,
+          4.3073675,
+          4.334549,
+          4.351701333333334,
+          4.300898666666667,
+          4.243271166666667,
+          4.2897875,
+          4.3316368333333335
+        ],
+        "parent": [
+          5.6426818,
+          5.3563498,
+          5.3802994,
+          5.4334638,
+          5.3566404,
+          5.4050102,
+          5.515852000000001,
+          5.365926,
+          5.339105399999999,
+          5.45777
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "ducc",
+        "candidate",
+        "parent"
+      ],
+      "pair": 13,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    },
+    {
+      "batch_ms": {
+        "candidate": [
+          5.372783,
+          5.3987862,
+          5.358057199999999,
+          5.3768668,
+          5.3005344,
+          5.3398046,
+          5.4015676,
+          5.6524444,
+          5.4089154,
+          5.412392
+        ],
+        "ducc": [
+          4.266122666666667,
+          4.252199666666667,
+          4.27792,
+          4.3791131666666665,
+          4.240968333333334,
+          4.296689,
+          4.279668333333333,
+          4.243221,
+          4.2506385,
+          4.324334666666666
+        ],
+        "parent": [
+          5.321999,
+          5.4481556,
+          5.2872992000000005,
+          5.333082,
+          5.3858296,
+          5.4015696,
+          5.549149,
+          5.4129752,
+          5.5754848,
+          5.3928028
+        ]
+      },
+      "candidate_vs_ducc": {
+        "absolute_max": 1.2958384365546749e-15,
+        "max_relative_above_1e-12_peak": 2.6248966535808065e-11,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 4.760590461219097e-14
+      },
+      "candidate_vs_parent": {
+        "absolute_max": 0.0,
+        "max_relative_above_1e-12_peak": 0.0,
+        "metrics_finite": true,
+        "near_zero_reference_count": 2,
+        "reference_peak": 0.014041249823522176,
+        "relative_l2": 0.0
+      },
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "finite": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "input_sha256": {
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc"
+      },
+      "mmax": 720,
+      "order": [
+        "parent",
+        "candidate",
+        "ducc"
+      ],
+      "pair": 14,
+      "parent_candidate_bitwise_equal": true,
+      "repeat_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "reset_consistent": {
+        "candidate": true,
+        "ducc": true,
+        "parent": true
+      },
+      "threads": 8
+    }
+  ],
+  "metadata": {
+    "affinity_unit": "physical CPU count; exact CPU identifiers omitted from the committed summary",
+    "candidate_binary_sha256": "1b4c2762ed7e0787b6e96d0bbc38445f2b9b0ea96955a90786d32ad6b6fa0df9",
+    "candidate_production_source_sha256": "10d682237fa54bdd7872f9798d0739d1e2e382e4fd45ab5df3951843d3b5a114",
+    "candidate_source_parent": "31c7cd5046d2389d5f0de230577dc147ff37f873",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "ducc_binary_sha256": "5dacb5987ee621a5115fed405775dc85231361ab703b3eae1694d086a5a7bdf8",
+    "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "fixture_method": "existing benchmark_ducc_spin1_analysis_only_tmp.py deterministic PCG64 fixture generator",
+    "parent_binary_sha256": "3364b487f4d9fa1caa8a7de485c602fdc135620ef98376e80f5893b0207104ba",
+    "parent_source_sha": "31c7cd5046d2389d5f0de230577dc147ff37f873",
+    "process_pairs": 15,
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "target_ms": 25,
+    "threads_affinity": {
+      "q1": 1,
+      "q8": 8
+    }
+  }
+}

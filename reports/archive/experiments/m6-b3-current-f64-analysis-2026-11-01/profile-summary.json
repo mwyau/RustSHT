@@ -1,0 +1,180 @@
+{
+  "cells": {
+    "full_q1": {
+      "geometry_and_work": {
+        "active_pair_lanes": 194197,
+        "avx2_f64_chunks": 48135,
+        "compacted_blocks": 609,
+        "eligible_blocks": 3579,
+        "grid": "GaussLegendre",
+        "lmax": 720,
+        "mmax": 720,
+        "scalar_tail_lanes": 1657
+      },
+      "instrumented_whole_call_ms_median": 36.51523,
+      "phases_ms_median": {
+        "Legendre recurrence and accumulation": 29.876675,
+        "coefficient cleanup": 0.001904,
+        "coefficient initialization": 0.268017,
+        "forward FFT": 6.325774,
+        "latitude geometry setup": 0.014312,
+        "strategy selection and table setup": 3e-05
+      },
+      "route": {
+        "active_ring_order_pairs": 387673,
+        "estimated_work": 161324575,
+        "grid": "GaussLegendre",
+        "leaves": 1,
+        "lmax": 720,
+        "mixed_blocks": 0,
+        "mmax": 720,
+        "normal_blocks": 3579,
+        "scaled_blocks": 0,
+        "sum_leaf_ms": 29.942054,
+        "threads": 1
+      }
+    },
+    "full_q8": {
+      "geometry_and_work": {
+        "active_pair_lanes": 194197,
+        "avx2_f64_chunks": 48135,
+        "compacted_blocks": 609,
+        "eligible_blocks": 3579,
+        "grid": "GaussLegendre",
+        "lmax": 720,
+        "mmax": 720,
+        "scalar_tail_lanes": 1657
+      },
+      "instrumented_whole_call_ms_median": 5.477282,
+      "phases_ms_median": {
+        "Legendre recurrence and accumulation": 4.180468,
+        "coefficient cleanup": 0.002014,
+        "coefficient initialization": 0.239764,
+        "forward FFT": 0.965993,
+        "latitude geometry setup": 0.015193,
+        "strategy selection and table setup": 9.5e-05
+      },
+      "route": {
+        "active_ring_order_pairs": 387673,
+        "estimated_work": 161324575,
+        "grid": "GaussLegendre",
+        "leaves": 721,
+        "lmax": 720,
+        "mixed_blocks": 0,
+        "mmax": 720,
+        "normal_blocks": 3579,
+        "scaled_blocks": 0,
+        "sum_leaf_ms": 33.001502,
+        "threads": 8
+      }
+    },
+    "reduced_q1": {
+      "geometry_and_work": {
+        "active_pair_lanes": 64364,
+        "avx2_f64_chunks": 16015,
+        "compacted_blocks": 77,
+        "eligible_blocks": 1086,
+        "grid": "GaussLegendre",
+        "lmax": 720,
+        "mmax": 180,
+        "scalar_tail_lanes": 304
+      },
+      "instrumented_whole_call_ms_median": 15.079752,
+      "phases_ms_median": {
+        "Legendre recurrence and accumulation": 13.510603,
+        "coefficient cleanup": 0.001843,
+        "coefficient initialization": 0.0475,
+        "forward FFT": 1.494769,
+        "latitude geometry setup": 0.014292,
+        "strategy selection and table setup": 4e-05
+      },
+      "route": {
+        "active_ring_order_pairs": 128547,
+        "estimated_work": 81239181,
+        "grid": "GaussLegendre",
+        "leaves": 1,
+        "lmax": 720,
+        "mixed_blocks": 0,
+        "mmax": 180,
+        "normal_blocks": 1086,
+        "scaled_blocks": 0,
+        "sum_leaf_ms": 14.161194,
+        "threads": 1
+      }
+    },
+    "reduced_q8": {
+      "geometry_and_work": {
+        "active_pair_lanes": 64364,
+        "avx2_f64_chunks": 16015,
+        "compacted_blocks": 77,
+        "eligible_blocks": 1086,
+        "grid": "GaussLegendre",
+        "lmax": 720,
+        "mmax": 180,
+        "scalar_tail_lanes": 304
+      },
+      "instrumented_whole_call_ms_median": 2.169005,
+      "phases_ms_median": {
+        "Legendre recurrence and accumulation": 1.853663,
+        "coefficient cleanup": 0.001914,
+        "coefficient initialization": 0.054873,
+        "forward FFT": 0.220001,
+        "latitude geometry setup": 0.014572,
+        "strategy selection and table setup": 4e-05
+      },
+      "route": {
+        "active_ring_order_pairs": 128547,
+        "estimated_work": 81239181,
+        "grid": "GaussLegendre",
+        "leaves": 181,
+        "lmax": 720,
+        "mixed_blocks": 0,
+        "mmax": 180,
+        "normal_blocks": 1086,
+        "scaled_blocks": 0,
+        "sum_leaf_ms": 14.43665,
+        "threads": 8
+      }
+    }
+  },
+  "method": "test-only stage timers; medians over captured repeated calls; not PMU cycle data",
+  "sampled_block_profile": {
+    "full_q1": {
+      "estimated_scale": 32,
+      "median_sampled_ms": {
+        "fused_compute_ms": 0.692536,
+        "gather_active_ms": 0.078779,
+        "pair_safety_ms": 0.011854,
+        "raw_safety_ms": 0.012518,
+        "reflect_compact_ms": 0.026626
+      },
+      "sampled_blocks_median": 110,
+      "scaled_estimate_ms": {
+        "fused_compute_ms": 22.1612,
+        "gather_active_ms": 2.5209,
+        "pair_safety_ms": 0.3793,
+        "raw_safety_ms": 0.4006,
+        "reflect_compact_ms": 0.852
+      }
+    },
+    "reduced_q1": {
+      "estimated_scale": 32,
+      "median_sampled_ms": {
+        "fused_compute_ms": 0.312384,
+        "gather_active_ms": 0.016462,
+        "pair_safety_ms": 0.003466,
+        "raw_safety_ms": 0.003675,
+        "reflect_compact_ms": 0.007327
+      },
+      "sampled_blocks_median": 31,
+      "scaled_estimate_ms": {
+        "fused_compute_ms": 9.9963,
+        "gather_active_ms": 0.5268,
+        "pair_safety_ms": 0.1109,
+        "raw_safety_ms": 0.1176,
+        "reflect_compact_ms": 0.2345
+      }
+    }
+  },
+  "source_parent_sha": "31c7cd5046d2389d5f0de230577dc147ff37f873"
+}

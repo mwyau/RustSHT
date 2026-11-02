@@ -1,0 +1,448 @@
+{
+  "cells": [
+    {
+      "case_id": "T720-m180-even_smooth",
+      "fixture_sha256": {
+        "alm": "d8568adda375db30135373a6b9cd20797bea6a8e9a3fad27292ad17f45119599",
+        "map": "a8236a82af804dd85df8a14e3992933f9017c6e3cc8a1300da33d6a9ab174681"
+      },
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "pair_rows": [
+        {
+          "candidate_ducc": 2.81322218719129,
+          "candidate_parent": 2.7497754688651397,
+          "candidate_parent_byte_equal": false,
+          "candidate_validation": {
+            "analysis_adjoint_relative_residual": 3.4031902230085116e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 1.0293299594103488e-13,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 1.2080333392953141e-14,
+            "zero_finite": true
+          },
+          "ducc_validation": {
+            "analysis_adjoint_relative_residual": 5.068581183204556e-15,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 1.0093046474903875e-13,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 4.026777797651061e-15,
+            "zero_finite": true
+          },
+          "median_ms": {
+            "candidate": 16.730584,
+            "ducc": 5.947125,
+            "parent": 6.0843454999999995
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "output_sha256": {
+            "candidate": "1671432da31b74a7fb4ec69924469fd9efc3f1cf19721ba12ce20cd2c7deeb5e",
+            "ducc": "c0d17ce8633ee9e673660a5f8538c2e5fe09df30d4f35ac9c19f5df07bf86de1",
+            "parent": "cc39c67b0b3c9261654c2dba9fb006b1fb6d2409923d3639dbc5cb3b2a69fbb4"
+          },
+          "pair": 1,
+          "parent_ducc": 1.023073417827942,
+          "parent_validation": {
+            "analysis_adjoint_relative_residual": 3.3669860716999107e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 1.0293325733260026e-13,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 8.689362615983838e-15,
+            "zero_finite": true
+          }
+        },
+        {
+          "candidate_ducc": 2.7625227071012053,
+          "candidate_parent": 2.740611004153722,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 16.6520725,
+            "ducc": 6.02785,
+            "parent": 6.076043800000001
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "output_sha256": {
+            "candidate": "1671432da31b74a7fb4ec69924469fd9efc3f1cf19721ba12ce20cd2c7deeb5e",
+            "ducc": "c0d17ce8633ee9e673660a5f8538c2e5fe09df30d4f35ac9c19f5df07bf86de1",
+            "parent": "cc39c67b0b3c9261654c2dba9fb006b1fb6d2409923d3639dbc5cb3b2a69fbb4"
+          },
+          "pair": 2,
+          "parent_ducc": 1.0079951889977357
+        },
+        {
+          "candidate_ducc": 2.771467860953727,
+          "candidate_parent": 2.6608286595147956,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 16.596963000000002,
+            "ducc": 5.98851,
+            "parent": 6.237516625
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "output_sha256": {
+            "candidate": "1671432da31b74a7fb4ec69924469fd9efc3f1cf19721ba12ce20cd2c7deeb5e",
+            "ducc": "c0d17ce8633ee9e673660a5f8538c2e5fe09df30d4f35ac9c19f5df07bf86de1",
+            "parent": "cc39c67b0b3c9261654c2dba9fb006b1fb6d2409923d3639dbc5cb3b2a69fbb4"
+          },
+          "pair": 3,
+          "parent_ducc": 1.041580731267043
+        }
+      ],
+      "threads": 1
+    },
+    {
+      "case_id": "T720-m180-even_smooth",
+      "fixture_sha256": {
+        "alm": "d8568adda375db30135373a6b9cd20797bea6a8e9a3fad27292ad17f45119599",
+        "map": "a8236a82af804dd85df8a14e3992933f9017c6e3cc8a1300da33d6a9ab174681"
+      },
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "pair_rows": [
+        {
+          "candidate_ducc": 2.528436619198326,
+          "candidate_parent": 2.5517707000301826,
+          "candidate_parent_byte_equal": false,
+          "candidate_validation": {
+            "analysis_adjoint_relative_residual": 3.4031902230085116e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 1.0293299594103488e-13,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 1.2080333392953141e-14,
+            "zero_finite": true
+          },
+          "ducc_validation": {
+            "analysis_adjoint_relative_residual": 5.068581183204556e-15,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 1.0093046474903875e-13,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 4.026777797651061e-15,
+            "zero_finite": true
+          },
+          "median_ms": {
+            "candidate": 2.3627797729999998,
+            "ducc": 0.9344825,
+            "parent": 0.9259373395
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "output_sha256": {
+            "candidate": "1671432da31b74a7fb4ec69924469fd9efc3f1cf19721ba12ce20cd2c7deeb5e",
+            "ducc": "c0d17ce8633ee9e673660a5f8538c2e5fe09df30d4f35ac9c19f5df07bf86de1",
+            "parent": "cc39c67b0b3c9261654c2dba9fb006b1fb6d2409923d3639dbc5cb3b2a69fbb4"
+          },
+          "pair": 1,
+          "parent_ducc": 0.990855729775571,
+          "parent_validation": {
+            "analysis_adjoint_relative_residual": 3.3669860716999107e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 1.0293325733260026e-13,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 8.689362615983838e-15,
+            "zero_finite": true
+          }
+        },
+        {
+          "candidate_ducc": 2.469824079577952,
+          "candidate_parent": 2.512895674415268,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 2.3309680999999998,
+            "ducc": 0.9437789999999999,
+            "parent": 0.9276024165
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "output_sha256": {
+            "candidate": "1671432da31b74a7fb4ec69924469fd9efc3f1cf19721ba12ce20cd2c7deeb5e",
+            "ducc": "c0d17ce8633ee9e673660a5f8538c2e5fe09df30d4f35ac9c19f5df07bf86de1",
+            "parent": "cc39c67b0b3c9261654c2dba9fb006b1fb6d2409923d3639dbc5cb3b2a69fbb4"
+          },
+          "pair": 2,
+          "parent_ducc": 0.9828597759645002
+        },
+        {
+          "candidate_ducc": 2.454993149176358,
+          "candidate_parent": 2.4946965172364677,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 2.3462971,
+            "ducc": 0.9557245,
+            "parent": 0.94051404
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "output_sha256": {
+            "candidate": "1671432da31b74a7fb4ec69924469fd9efc3f1cf19721ba12ce20cd2c7deeb5e",
+            "ducc": "c0d17ce8633ee9e673660a5f8538c2e5fe09df30d4f35ac9c19f5df07bf86de1",
+            "parent": "cc39c67b0b3c9261654c2dba9fb006b1fb6d2409923d3639dbc5cb3b2a69fbb4"
+          },
+          "pair": 3,
+          "parent_ducc": 0.9840848905725448
+        }
+      ],
+      "threads": 8
+    },
+    {
+      "case_id": "T720-m720-even_smooth",
+      "fixture_sha256": {
+        "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+        "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+      },
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "pair_rows": [
+        {
+          "candidate_ducc": 2.3424141641463256,
+          "candidate_parent": 2.2605170264044587,
+          "candidate_parent_byte_equal": false,
+          "candidate_validation": {
+            "analysis_adjoint_relative_residual": 6.04305056257486e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 8.571024276150124e-14,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 7.886465108046966e-14,
+            "zero_finite": true
+          },
+          "ducc_validation": {
+            "analysis_adjoint_relative_residual": 7.877347102052699e-16,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 8.283658109585198e-14,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 9.020466626851898e-16,
+            "zero_finite": true
+          },
+          "median_ms": {
+            "candidate": 34.504112,
+            "ducc": 14.73015,
+            "parent": 15.26381425
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "output_sha256": {
+            "candidate": "e1282f719d47a1fc917fdfb6dfa4a157300813b5c9178fba76352586d768d87b",
+            "ducc": "62066542bda806a5e17c634bc517775ce855596881822a09c299519aa7ec1e86",
+            "parent": "acc39d3cc9797801db6c26c0169833f654d9fcf87b5b559dc6926a76304e258a"
+          },
+          "pair": 1,
+          "parent_ducc": 1.0362293832717249,
+          "parent_validation": {
+            "analysis_adjoint_relative_residual": 6.133077386598316e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 8.571031860368199e-14,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 7.886465108046966e-14,
+            "zero_finite": true
+          }
+        },
+        {
+          "candidate_ducc": 2.3809903800935017,
+          "candidate_parent": 2.2724681823916093,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 34.4281685,
+            "ducc": 14.4596,
+            "parent": 15.15012125
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "output_sha256": {
+            "candidate": "e1282f719d47a1fc917fdfb6dfa4a157300813b5c9178fba76352586d768d87b",
+            "ducc": "62066542bda806a5e17c634bc517775ce855596881822a09c299519aa7ec1e86",
+            "parent": "acc39d3cc9797801db6c26c0169833f654d9fcf87b5b559dc6926a76304e258a"
+          },
+          "pair": 2,
+          "parent_ducc": 1.0477552110708457
+        },
+        {
+          "candidate_ducc": 2.3378394284880777,
+          "candidate_parent": 2.2642916752622204,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 34.459402499999996,
+            "ducc": 14.73985,
+            "parent": 15.2186235
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "output_sha256": {
+            "candidate": "e1282f719d47a1fc917fdfb6dfa4a157300813b5c9178fba76352586d768d87b",
+            "ducc": "62066542bda806a5e17c634bc517775ce855596881822a09c299519aa7ec1e86",
+            "parent": "acc39d3cc9797801db6c26c0169833f654d9fcf87b5b559dc6926a76304e258a"
+          },
+          "pair": 3,
+          "parent_ducc": 1.0324815720648446
+        }
+      ],
+      "threads": 1
+    },
+    {
+      "case_id": "T720-m720-even_smooth",
+      "fixture_sha256": {
+        "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+        "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+      },
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "pair_rows": [
+        {
+          "candidate_ducc": 2.2391577047946507,
+          "candidate_parent": 2.1337473033344962,
+          "candidate_parent_byte_equal": false,
+          "candidate_validation": {
+            "analysis_adjoint_relative_residual": 6.04305056257486e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 8.571024276150124e-14,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 7.886465108046966e-14,
+            "zero_finite": true
+          },
+          "ducc_validation": {
+            "analysis_adjoint_relative_residual": 7.877347102052699e-16,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 8.283658109585198e-14,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 9.020466626851898e-16,
+            "zero_finite": true
+          },
+          "median_ms": {
+            "candidate": 4.7899054,
+            "ducc": 2.1391549999999997,
+            "parent": 2.24483255
+          },
+          "order": [
+            "parent",
+            "candidate",
+            "ducc"
+          ],
+          "output_sha256": {
+            "candidate": "e1282f719d47a1fc917fdfb6dfa4a157300813b5c9178fba76352586d768d87b",
+            "ducc": "62066542bda806a5e17c634bc517775ce855596881822a09c299519aa7ec1e86",
+            "parent": "acc39d3cc9797801db6c26c0169833f654d9fcf87b5b559dc6926a76304e258a"
+          },
+          "pair": 1,
+          "parent_ducc": 1.0494015393928913,
+          "parent_validation": {
+            "analysis_adjoint_relative_residual": 6.133077386598316e-14,
+            "extreme_finite": true,
+            "roundtrip_relative_l2": 8.571031860368199e-14,
+            "selected_basis_modes": 4,
+            "subnormal_finite": true,
+            "synthesis_adjoint_relative_residual": 7.886465108046966e-14,
+            "zero_finite": true
+          }
+        },
+        {
+          "candidate_ducc": 2.26188307873778,
+          "candidate_parent": 2.116303188682278,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 4.8322757,
+            "ducc": 2.1363950000000003,
+            "parent": 2.283357
+          },
+          "order": [
+            "ducc",
+            "parent",
+            "candidate"
+          ],
+          "output_sha256": {
+            "candidate": "e1282f719d47a1fc917fdfb6dfa4a157300813b5c9178fba76352586d768d87b",
+            "ducc": "62066542bda806a5e17c634bc517775ce855596881822a09c299519aa7ec1e86",
+            "parent": "acc39d3cc9797801db6c26c0169833f654d9fcf87b5b559dc6926a76304e258a"
+          },
+          "pair": 2,
+          "parent_ducc": 1.0687897135127165
+        },
+        {
+          "candidate_ducc": 2.2514234757573446,
+          "candidate_parent": 2.1333857563762573,
+          "candidate_parent_byte_equal": false,
+          "median_ms": {
+            "candidate": 4.860136600000001,
+            "ducc": 2.158695,
+            "parent": 2.27813305
+          },
+          "order": [
+            "candidate",
+            "ducc",
+            "parent"
+          ],
+          "output_sha256": {
+            "candidate": "e1282f719d47a1fc917fdfb6dfa4a157300813b5c9178fba76352586d768d87b",
+            "ducc": "62066542bda806a5e17c634bc517775ce855596881822a09c299519aa7ec1e86",
+            "parent": "acc39d3cc9797801db6c26c0169833f654d9fcf87b5b559dc6926a76304e258a"
+          },
+          "pair": 3,
+          "parent_ducc": 1.0553288213480831
+        }
+      ],
+      "threads": 8
+    }
+  ],
+  "metadata": {
+    "affinity_description": "q1 pinned to one physical core; q8 pinned to eight physical cores",
+    "candidate_binary_sha256": "20d28bbde7a74fe86974207a279137491b73ed8578876556568ff7085a17b52f",
+    "candidate_description": "f64 SIMD-scaled seed continuation into typed B1 recurrence",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "ducc_binary_sha256": "e6e1bcc81fada8a794b7af5054c06b088dd63458c8a42ec1b666e5975b710f18",
+    "ducc_source_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "fixture_method": "deterministic GL T720 PCG64 fixture from the existing parity runner",
+    "pairs_per_cell": 3,
+    "parent_binary_sha256": "9ae3085763fbf19bc45dd0c5103628dc5c4d99f5113b7147b7f352b3966dba35",
+    "physical_core_count": 16,
+    "rust_compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "source_parent_sha": "31c7cd5046d2389d5f0de230577dc147ff37f873",
+    "target_ms": 25.0
+  }
+}
